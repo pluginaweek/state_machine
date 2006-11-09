@@ -237,18 +237,10 @@ module PluginAWeek #:nodoc:
           model_assoc_name = model_name.demodulize.underscore
           
           # Create the State model
-          const_set('State', Class.new(::State)).class_eval do
-            def self.reloadable?
-              false
-            end
-          end
+          const_set('State', Class.new(::State))
           
           # Create a model for recording each change in state
-          const_set('Event', Class.new(::Event)).class_eval do
-            def self.reloadable?
-              false
-            end
-          end
+          const_set('Event', Class.new(::Event))
           
           # Create a model for recording each change in state
           const_set('StateChange', Class.new(::StateChange)).class_eval do
@@ -259,10 +251,6 @@ module PluginAWeek #:nodoc:
             
             alias_method    model_assoc_name, :stateful
             alias_attribute "#{model_assoc_name}_id", :stateful_id
-            
-            def self.reloadable?
-              false
-            end
           end
           
           # Create a model for tracking a deadline for each state
@@ -276,10 +264,6 @@ module PluginAWeek #:nodoc:
               
               alias_method    model_assoc_name, :stateful
               alias_attribute "#{model_assoc_name}_id", :stateful_id
-              
-              def self.reloadable?
-                false
-              end
             end
           end
           
@@ -297,15 +281,22 @@ module PluginAWeek #:nodoc:
           before_create               :set_initial_state_id
           after_create                :run_initial_state_actions
           
-          module_eval <<-end_eval
-            module StateExtension
-              def find_in_states(number, state_names, *args)
-                @reflection.klass.with_state_scope(state_names) do
-                  find(number, *args)
-                end
+          const_set('StateExtension', Module.new).class_eval do
+            def find_in_states(number, state_names, *args)
+              @reflection.klass.with_state_scope(state_names) do
+                find(number, *args)
               end
             end
-          end_eval
+          end
+#          module_eval <<-end_eval
+#            module StateExtension
+#              def find_in_states(number, state_names, *args)
+#                @reflection.klass.with_state_scope(state_names) do
+#                  find(number, *args)
+#                end
+#              end
+#            end
+#          end_eval
           
           belongs_to  :state,
                         :class_name => "#{model_name}::State",
