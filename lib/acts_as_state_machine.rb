@@ -288,15 +288,6 @@ module PluginAWeek #:nodoc:
               end
             end
           end
-#          module_eval <<-end_eval
-#            module StateExtension
-#              def find_in_states(number, state_names, *args)
-#                @reflection.klass.with_state_scope(state_names) do
-#                  find(number, *args)
-#                end
-#              end
-#            end
-#          end_eval
           
           belongs_to  :state,
                         :class_name => "#{model_name}::State",
