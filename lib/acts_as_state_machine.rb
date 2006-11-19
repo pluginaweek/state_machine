@@ -46,7 +46,7 @@ module PluginAWeek #:nodoc:
           end
           
           # Indicates that the state is being entered
-          def entering(record)
+          def entering(record, *args)
             # If the class supports deadlines, then see if we can set it now
             if record.class.use_state_deadlines && record.respond_to?("set_#{name}_deadline")
               record.send("set_#{name}_deadline")
@@ -55,28 +55,28 @@ module PluginAWeek #:nodoc:
             # Execute the actions for entering
             if enter_actions = @options[:enter]
               Array(enter_actions).each do |action|
-                record.send(:run_transition_action, action)
+                record.send(:run_transition_action, action, *args)
               end
             end
           end
           
           # Indicates that the state has been entered
-          def entered(record)
+          def entered(record, *args)
             # Execute the actions after entering the state
             if after_actions = @options[:after]
               Array(after_actions).each do |action|
-                record.send(:run_transition_action, action)
+                record.send(:run_transition_action, action, *args)
               end
             end
           end
           
           # Indicates the the state has been exited
           #
-          def exited(record)
+          def exited(record, *args)
             # Execute the actions for exiting
             if exit_actions = @options[:exit]
               Array(exit_actions).each do |action|
-                record.send(:run_transition_action, action)
+                record.send(:run_transition_action, action, *args)
               end
             end
           end
@@ -181,7 +181,7 @@ module PluginAWeek #:nodoc:
               
               parallel_state_machines.each do |machine, event|
                 machine = Symbol === machine ? record.send(machine) : machine.call(self)
-                success = machine.send("#{event}!", options)
+                success = machine.send("#{event}!", *args)
                 
                 break if !success
               end
@@ -400,8 +400,8 @@ module PluginAWeek #:nodoc:
         end
         
         #
-        def run_transition_action(action)
-          Symbol === action ? send(action) : action.call(self)
+        def run_transition_action(action, *args)
+          Symbol === action ? send(action, *args) : action.call(*args.unshift(self))
         end
       end
       
@@ -512,7 +512,7 @@ module PluginAWeek #:nodoc:
                 success = false
                 transaction(self) do
                   event = self.events[#{name.dump}]
-                  if success = event.fire(self, args)
+                  if success = event.fire(self, *args)
                     success = save if !new_record?
                   end
                   
