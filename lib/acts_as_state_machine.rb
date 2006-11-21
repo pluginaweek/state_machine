@@ -463,7 +463,9 @@ module PluginAWeek #:nodoc:
           
           self::StateExtension.module_eval <<-end_eval
             def #{name}(*args)
-              find_all_by_state_id(#{record.id}, *args)
+              with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
+                find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
+              end
             end
           end_eval
         end
