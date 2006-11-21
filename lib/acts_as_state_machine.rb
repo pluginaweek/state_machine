@@ -26,7 +26,7 @@ module PluginAWeek #:nodoc:
           attr_reader :record
           delegate    :name, :id, :to => :record
           
-          def initialize(record, options)
+          def initialize(record, options) #:nodoc:
             options.symbolize_keys!.assert_valid_keys(
               :enter,
               :after,
@@ -40,13 +40,14 @@ module PluginAWeek #:nodoc:
             @record, @options = record, options
           end
           
-          #
+          # Gets the name of the event that should be invoked when the state's
+          # deadline has passed
           def deadline_passed_event
             "#{@options[:deadline_passed_event]}!"
           end
           
           # Indicates that the state is being entered
-          def entering(record, *args)
+          def entering(record, args)
             # If the class supports deadlines, then see if we can set it now
             if record.class.use_state_deadlines && record.respond_to?("set_#{name}_deadline")
               record.send("set_#{name}_deadline")
@@ -55,28 +56,27 @@ module PluginAWeek #:nodoc:
             # Execute the actions for entering
             if enter_actions = @options[:enter]
               Array(enter_actions).each do |action|
-                record.send(:run_transition_action, action, *args)
+                record.send(:run_transition_action, action, args)
               end
             end
           end
           
           # Indicates that the state has been entered
-          def entered(record, *args)
+          def entered(record, args)
             # Execute the actions after entering the state
             if after_actions = @options[:after]
               Array(after_actions).each do |action|
-                record.send(:run_transition_action, action, *args)
+                record.send(:run_transition_action, action, args)
               end
             end
           end
           
           # Indicates the the state has been exited
-          #
-          def exited(record, *args)
+          def exited(record, args)
             # Execute the actions for exiting
             if exit_actions = @options[:exit]
               Array(exit_actions).each do |action|
-                record.send(:run_transition_action, action, *args)
+                record.send(:run_transition_action, action, args)
               end
             end
           end
@@ -97,15 +97,14 @@ module PluginAWeek #:nodoc:
           
           # Ensures that the transition can occur by checking the guard associated
           # with it
-          #
-          def guard(record)
-            @guard ? record.send(:run_transition_action, @guard) : true
+          def guard(record, args)
+            @guard ? record.send(:run_transition_action, @guard, args) : true
           end
           
           # Runs the actual transition and any actions associated with entering
           # and exiting the states
-          def perform(record, *args)
-            return false unless guard(record)
+          def perform(record, args)
+            return false unless guard(record, args)
             
             loopback = record.state_name == to_name
             
@@ -113,16 +112,16 @@ module PluginAWeek #:nodoc:
             old_state = record.class.states[record.state_name]
             
             # Start entering the next state
-            next_state.entering(record, *args) unless loopback
+            next_state.entering(record, args) unless loopback
             
             # Update that we've entered the state
             record.state = next_state.record
             
             # Enter the next state
-            next_state.entered(record, *args) unless loopback
+            next_state.entered(record, args) unless loopback
             
             # Leave the last state
-            old_state.exited(record, *args) unless loopback
+            old_state.exited(record, args) unless loopback
             
             true
           end
@@ -157,12 +156,12 @@ module PluginAWeek #:nodoc:
           end
           
           #
-          def fire(record, *args)
+          def fire(record, args)
             success = false
             
             original_state_name = record.state_name
             next_states(record).each do |transition|
-              if success = transition.perform(record, *args)
+              if success = transition.perform(record, args)
                 record.record_transition(name, original_state_name, record.state_name)
                 break
               end
@@ -400,7 +399,7 @@ module PluginAWeek #:nodoc:
         end
         
         #
-        def run_transition_action(action, *args)
+        def run_transition_action(action, args)
           Symbol === action ? send(action, *args) : action.call(*args.unshift(self))
         end
       end
@@ -512,7 +511,7 @@ module PluginAWeek #:nodoc:
                 success = false
                 transaction(self) do
                   event = self.events[#{name.dump}]
-                  if success = event.fire(self, *args)
+                  if success = event.fire(self, args)
                     success = save if !new_record?
                   end
                   
