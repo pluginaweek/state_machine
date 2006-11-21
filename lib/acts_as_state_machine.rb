@@ -28,9 +28,10 @@ module PluginAWeek #:nodoc:
           
           def initialize(record, options) #:nodoc:
             options.symbolize_keys!.assert_valid_keys(
-              :enter,
-              :after,
-              :exit,
+              :before_enter,
+              :after_enter,
+              :before_exit,
+              :after_exit,
               :deadline_passed_event
             )
             options.reverse_merge!(
@@ -53,29 +54,28 @@ module PluginAWeek #:nodoc:
               record.send("set_#{name}_deadline")
             end
             
-            # Execute the actions for entering
-            if enter_actions = @options[:enter]
-              Array(enter_actions).each do |action|
-                record.send(:run_transition_action, action, args)
-              end
-            end
+            run_actions(record, args, :before_enter)
           end
           
           # Indicates that the state has been entered
           def entered(record, args)
-            # Execute the actions after entering the state
-            if after_actions = @options[:after]
-              Array(after_actions).each do |action|
-                record.send(:run_transition_action, action, args)
-              end
-            end
+            run_actions(record, args, :after_enter)
+          end
+          
+          # Indicates the the state is being exited
+          def exiting(record, args)
+            run_actions(record, args, :before_exit)
           end
           
           # Indicates the the state has been exited
           def exited(record, args)
-            # Execute the actions for exiting
-            if exit_actions = @options[:exit]
-              Array(exit_actions).each do |action|
+            run_actions(record, args, :after_exit)
+          end
+          
+          private
+          def run_actions(record, args, action_type) #:nodoc:
+            if actions = @options[action_type]
+              Array(actions).each do |action|
                 record.send(:run_transition_action, action, args)
               end
             end
@@ -92,13 +92,14 @@ module PluginAWeek #:nodoc:
           def initialize(from_name, to_name, options) #:nodoc:
             options.symbolize_keys!.assert_valid_keys(:guard)
             
-            @from_name, @to_name, @guard = from_name.to_s, to_name.to_s, options[:guard]
+            @from_name, @to_name, @guards = from_name.to_s, to_name.to_s, options[:guard]
+            @guards = Array(@guards) if @guards
           end
           
-          # Ensures that the transition can occur by checking the guard associated
-          # with it
+          # Ensures that the transition can occur by checking the guards
+          # associated with it
           def guard(record, args)
-            @guard ? record.send(:run_transition_action, @guard, args) : true
+            @guards.nil? || @guards.all? {|guard| record.send(:run_transition_action, guard, args)}
           end
           
           # Runs the actual transition and any actions associated with entering
@@ -109,19 +110,21 @@ module PluginAWeek #:nodoc:
             loopback = record.state_name == to_name
             
             next_state = record.class.states[to_name]
-            old_state = record.class.states[record.state_name]
+            last_state = record.class.states[record.state_name]
+            
+            # Start leaving the last state
+            last_state.exiting(record, args) unless loopback
             
             # Start entering the next state
             next_state.entering(record, args) unless loopback
             
-            # Update that we've entered the state
             record.state = next_state.record
+            
+            # Leave the last state
+            last_state.exited(record, args) unless loopback
             
             # Enter the next state
             next_state.entered(record, args) unless loopback
-            
-            # Leave the last state
-            old_state.exited(record, args) unless loopback
             
             true
           end
