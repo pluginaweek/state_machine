@@ -1,9 +1,27 @@
-require 'dry_transaction_rollbacks'
-
 module PluginAWeek #:nodoc:
   module Acts #:nodoc:
+    # A state machine is a model of behavior composed of states, transitions,
+    # and events.
+    # 
+    # Parts of definitions courtesy of http://en.wikipedia.org/wiki/Finite_state_machine.
+    # 
+    # Switch example:
+    # 
+    #   class Switch < ActiveRecord::Base
+    #     acts_as_state_machine :initial => :off
+    #     
+    #     state :off
+    #     state :on
+    #     
+    #     event :turn_on do
+    #       transition_to :on, :from => :off
+    #     end
+    #     
+    #     event :turn_off do
+    #       transition_to :off, :from => :on
+    #     end
+    #   end
     module StateMachine
-      
       # An unknown state was specified
       class InvalidState < Exception #:nodoc:
       end
@@ -16,12 +34,9 @@ module PluginAWeek #:nodoc:
       class NoInitialState < Exception #:nodoc:
       end
       
-      def self.included(base) #:nodoc:
-        base.extend(MacroMethods)
-      end
-      
       module SupportingClasses #:nodoc:
-        # Represents a state in the machine
+        # A state stores information about the past; i.e. it reflects the input
+        # changes from the system start to the present moment.
         class State
           attr_reader :record
           delegate    :name, :id, :to => :record
@@ -48,27 +63,29 @@ module PluginAWeek #:nodoc:
           end
           
           # Indicates that the state is being entered
-          def entering(record, args)
+          def entering(record, args = [])
+            run_actions(record, args, :before_enter)
+          end
+          
+          # Indicates that the state has been entered.  If a deadline needs to
+          # be set when this state is being entered, "set_#{name}_deadline"
+          # should be defined in the record's class.
+          def entered(record, args = [])
             # If the class supports deadlines, then see if we can set it now
             if record.class.use_state_deadlines && record.respond_to?("set_#{name}_deadline")
               record.send("set_#{name}_deadline")
             end
             
-            run_actions(record, args, :before_enter)
-          end
-          
-          # Indicates that the state has been entered
-          def entered(record, args)
             run_actions(record, args, :after_enter)
           end
           
           # Indicates the the state is being exited
-          def exiting(record, args)
+          def exiting(record, args = [])
             run_actions(record, args, :before_exit)
           end
           
           # Indicates the the state has been exited
-          def exited(record, args)
+          def exited(record, args = [])
             run_actions(record, args, :after_exit)
           end
           
@@ -82,24 +99,28 @@ module PluginAWeek #:nodoc:
           end
         end
         
-        # Represents a transition in the machine.  A transition consists of:
+        # A transition indicates a state change and is described by a condition
+        # that would need to be fulfilled to enable the transition.  Transitions
+        # consist of:
         # * The starting state
         # * The ending state
         # * A guard to check if the transition is allowed
         class StateTransition
-          attr_reader :from_name, :to_name, :options
+          attr_reader :from_name,
+                      :to_name,
+                      :options
           
           def initialize(from_name, to_name, options) #:nodoc:
-            options.symbolize_keys!.assert_valid_keys(:guard)
+            options.symbolize_keys!.assert_valid_keys(:if)
             
-            @from_name, @to_name, @guards = from_name.to_s, to_name.to_s, options[:guard]
-            @guards = Array(@guards) if @guards
+            @from_name, @to_name = from_name.to_s, to_name.to_s
+            @guards = Array(options[:if])
           end
           
           # Ensures that the transition can occur by checking the guards
           # associated with it
           def guard(record, args)
-            @guards.nil? || @guards.all? {|guard| record.send(:run_transition_action, guard, args)}
+            @guards.all? {|guard| record.send(:run_transition_action, guard, args)}
           end
           
           # Runs the actual transition and any actions associated with entering
@@ -134,23 +155,23 @@ module PluginAWeek #:nodoc:
           end
         end
         
-        # Represents an event that can occur in the machine
+        # An event is a description of activity that is to be performed at a
+        # given moment.
         class Event
           attr_writer :valid_state_names
-          attr_reader :record,
-                      :transitions,
-                      :options
+          attr_reader :record
           
           delegate    :name, :id, :to => :record
           
-          #
-          def initialize(record, options, transitions, valid_state_names, &block)
-            @record = record
-            @options = options.symbolize_keys!
-            @transitions = transitions[name] = []
-            @valid_state_names = valid_state_names
+          def initialize(record, options, transitions, valid_state_names, &block) #:nodoc:
+            options.symbolize_keys!.assert_valid_keys(
+              :parallel
+            )
             
-            instance_eval(&block) if block
+            @record, @options, @valid_state_names = record, options, valid_state_names
+            @transitions = transitions[name] = []
+            
+            instance_eval(&block) if block_given?
           end
           
           # Gets all of the possible next states for the record
@@ -158,10 +179,13 @@ module PluginAWeek #:nodoc:
             @transitions.select {|transition| transition.from_name == record.state_name}
           end
           
-          #
+          # Attempts to transition to one of the next possible states.  If it is
+          # successful, then any parallel machines that have been configured
+          # will have their events fired as well
           def fire(record, args)
             success = false
             
+            # Find a state that we can transition into
             original_state_name = record.state_name
             next_states(record).each do |transition|
               if success = transition.perform(record, args)
@@ -171,8 +195,8 @@ module PluginAWeek #:nodoc:
             end
             
             # Execute the event on all other state machines running in parallel
-            if parallel_state_machines = options[:parallel]
-              parallel_state_machines = [parallel_state_machines].flatten.inject({}) do |machine_events, machine|
+            if success && parallel_state_machines = options[:parallel]
+              @parallel_state_machines ||= [parallel_state_machines].flatten.inject({}) do |machine_events, machine|
                 if machine.is_a?(Hash)
                   machine_events.merge(machine)
                 else
@@ -181,7 +205,7 @@ module PluginAWeek #:nodoc:
                 machine_events
               end
               
-              parallel_state_machines.each do |machine, event|
+              @parallel_state_machines.each do |machine, event|
                 machine = Symbol === machine ? record.send(machine) : machine.call(self)
                 success = machine.send("#{event}!", *args)
                 
@@ -192,7 +216,11 @@ module PluginAWeek #:nodoc:
             success
           end
           
-          #
+          # Creates a new transition to the specified state.
+          # 
+          # Configuration options:
+          # <tt>from</tt> - A state or array of states that can be transitioned to
+          # <tt>if</tt> - An optional condition that must be met for the transition to occur
           def transition_to(to_name, options = {})
             raise InvalidState, "#{to_name} is not a valid state for #{self.name}" unless @valid_state_names.include?(to_name.to_s)
             
@@ -207,10 +235,14 @@ module PluginAWeek #:nodoc:
         end
       end
       
+      def self.included(base) #:nodoc:
+        base.extend(MacroMethods)
+      end
+      
       module MacroMethods
         # Configuration options:
-        # * <tt>initial</tt> - Specifies an initial state for newly created objects (required)
-        # * <tt>use_deadlines</tt> - 
+        # * <tt>initial</tt> - The initial state to place each record in.  This can either be a string/symbol or a Proc for dynamic initial states.
+        # * <tt>use_deadlines</tt> - Whether or not deadlines will be used for states.
         def acts_as_state_machine(options)
           options.assert_valid_keys(
             :initial,
@@ -224,13 +256,30 @@ module PluginAWeek #:nodoc:
           model_assoc_name = model_name.demodulize.underscore
           
           # Create the State model
-          const_set('State', Class.new(::State))
+          const_set('State', Class.new(::State)).class_eval do
+            has_many  :changes,
+                        :class_name => "#{model_name}::StateChange"
+            has_many  :deadlines,
+                        :class_name => "#{model_name}::StateDeadline"
+          end
           
           # Create a model for recording each change in state
-          const_set('Event', Class.new(::Event))
+          const_set('Event', Class.new(::Event)).class_eval do
+            has_many  :state_changes,
+                        :class_name => "#{model_name}::StateChange"
+          end
           
           # Create a model for recording each change in state
           const_set('StateChange', Class.new(::StateChange)).class_eval do
+            belongs_to  :event,
+                          :class_name => "#{model_name}::Event",
+                          :foreign_key => 'event_id'
+            belongs_to  :from_state,
+                          :class_name => "#{model_name}::State",
+                          :foreign_key => 'to_state_id'
+            belongs_to  :to_state,
+                          :class_name => "#{model_name}::State",
+                          :foreign_key => 'to_state_id'
             belongs_to  :stateful,
                           :class_name => model_name,
                           :foreign_key => 'stateful_id',
@@ -244,6 +293,9 @@ module PluginAWeek #:nodoc:
           use_deadlines = options[:use_deadlines]
           if use_deadlines
             const_set('StateDeadline', Class.new(::StateDeadline)).class_eval do
+              belongs_to  :state,
+                            :class_name => "#{model_name}::State",
+                            :foreign_key => 'to_state_id'
               belongs_to  :stateful,
                             :class_name => model_name,
                             :foreign_key => 'stateful_id',
@@ -300,7 +352,7 @@ module PluginAWeek #:nodoc:
           end
         end
         
-        #
+        # Gets the name of the initial state that records will be placed in.
         def initial_state_name
           name = self.class.read_inheritable_attribute(:initial_state_name)
           name = name.call(self) if name.is_a?(Proc)
@@ -308,23 +360,24 @@ module PluginAWeek #:nodoc:
           name
         end
         
-        #
+        # Gets the actual State record for the initial state
         def initial_state
           self.class.states[initial_state_name.to_s].record
         end
         
-        #
+        # Gets the state of the record.  If this record has not been saved, then
+        # the initial state will be returned.
         def state_with_initial_check
           state_without_initial_check || (new_record? ? initial_state : nil)
         end
         
-        #
-        #
+        # Gets the state id of the record.  If this record has not been saved,
+        # then the id of the initial state will be returned.
         def state_id
           read_attribute(:state_id) || (new_record? ? state.id : nil)
         end
         
-        # The current state the object is in
+        # The name of the current state the object is in
         def state_name
           state.name
         end
@@ -332,14 +385,14 @@ module PluginAWeek #:nodoc:
         # Returns what the next state for a given event would be, as a Ruby symbol.
         def next_state_for_event(event_name)
           next_states = next_states_for_event(event_name)
-          next_states.empty? ? nil : next_states.first.to
+          next_states.empty? ? nil : next_states.first.to_sym
         end
         
         # Returns all of the next possible states for a given event, as Ruby symbols.
         def next_states_for_event(event_name)
           self.class.transitions[event_name.to_s].select do |transition|
-            transition.from == state_name
-          end
+            transition.from_name == state_name
+          end.map {|transition| transition.to_name.to_sym}
         end
         
         #
@@ -467,6 +520,12 @@ module PluginAWeek #:nodoc:
                 find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
               end
             end
+            
+            def #{name}_count(*args)
+              with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
+                count(*args)
+              end
+            end
           end_eval
         end
         
@@ -504,11 +563,15 @@ module PluginAWeek #:nodoc:
           raise InvalidEvent, "#{name} is not a valid event for #{self.name}" unless record
           
           if event = events[name]
+            # The event has already been defined, so just evaluate the new
+            # block.  The state names will be redefined since it is likely this
+            # is being called from a subclass.
             event.valid_state_names = state_names
             event.instance_eval(&block) if block
           else
             events[name] = SupportingClasses::Event.new(record, options, transitions, state_names, &block)
             
+            # Add action for transitioning the model
             class_eval <<-end_eval
               def #{name}!(*args)
                 run_initial_state_actions if new_record?
