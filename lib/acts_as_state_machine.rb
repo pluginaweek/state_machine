@@ -1,3 +1,5 @@
+require 'dry_transaction_rollbacks'
+
 module PluginAWeek #:nodoc:
   module Acts #:nodoc:
     # A state machine is a model of behavior composed of states, transitions,
@@ -395,7 +397,7 @@ module PluginAWeek #:nodoc:
           end.map {|transition| transition.to_name.to_sym}
         end
         
-        #
+        # Records the state change in the database
         def record_transition(event_name, from_state_name, to_state_name)
           from_record = self.class.states[from_state_name].record if from_state_name
           to_record = self.class.states[to_state_name].record
@@ -407,20 +409,25 @@ module PluginAWeek #:nodoc:
           state_attrs[:event_id] = self.class.events[event_name].id if event_name
           state_attrs[:from_state_id] = from_record.id if from_record
           
-          state_changes.create(state_attrs)
+          state_change = state_changes.build(state_attrs)
+          state_change.save!
           
+          # If a deadline already existed for the state, then clear it so that
+          # we can generate a new one
           if self.class.use_state_deadlines && send("#{to_state_name}_deadline")
             send("clear_#{to_state_name}_deadline")
           end
         end
         
-        #
+        # Ensures that deadlines are checked after a record has been retrieved
+        # from the database
         def after_find
           check_deadlines
         end
         
-        #
-        def check_deadlines(options = {})
+        # Checks that the deadline hasn't passed for the current state of the
+        # record
+        def check_deadlines
           transitioned = false
           
           if self.class.use_state_deadlines
@@ -428,7 +435,7 @@ module PluginAWeek #:nodoc:
             
             if current_deadline && current_deadline <= Time.now
               state = self.class.states[state_name]
-              transitioned = send(state.deadline_passed_event, options)
+              transitioned = send(state.deadline_passed_event)
             end
           end
           
@@ -436,12 +443,13 @@ module PluginAWeek #:nodoc:
         end
         
         private
-        #
+        # Sets the initial state id of the record so long as it hasn't already
+        # been set
         def set_initial_state_id
           self.state_id = state.id if read_attribute(:state_id).nil?
         end
         
-        #
+        # Records the transition for the record going into its initial state
         def run_initial_state_actions
           if state_changes.empty?
             transaction(self) do
@@ -454,14 +462,20 @@ module PluginAWeek #:nodoc:
           end
         end
         
-        #
+        # If the action is a symbol, then it will be called on the current
+        # record, giving it any arguments that were provided in the original
+        # call.
+        # 
+        # If the action is a Proc, then it will be called with two arguments:
+        # the first being the record, the second being any arguments provided in
+        # the original call.
         def run_transition_action(action, args)
           Symbol === action ? send(action, *args) : action.call(*args.unshift(self))
         end
       end
       
       module ClassMethods
-        # Returns an array of all known states.
+        # Returns an array of the names of all known states.
         def state_names
           states.keys
         end
@@ -505,7 +519,8 @@ module PluginAWeek #:nodoc:
               end
               
               def #{name}_deadline=(value)
-                state_deadlines.create(:state_id => #{record.id}, :deadline => value)
+                state_deadline = state_deadlines.build(:state_id => #{record.id}, :deadline => value)
+                state_deadline.save!
               end
               
               def clear_#{name}_deadline
@@ -578,12 +593,11 @@ module PluginAWeek #:nodoc:
                 
                 success = false
                 transaction(self) do
-                  event = self.events[#{name.dump}]
-                  if success = event.fire(self, args)
-                    success = save if !new_record?
+                  if self.class.events[#{name.dump}].fire(self, args)
+                    success = save!
+                  else
+                    rollback
                   end
-                  
-                  rollback if !success
                 end
                 
                 success
@@ -592,11 +606,11 @@ module PluginAWeek #:nodoc:
           end
         end
         
-        # Wraps ActiveRecord::Base.find to conveniently find all records in
-        # a given set of states.  Options:
-        #
-        # * +number+ - This is just :first or :all from ActiveRecord +find+
-        # * +state+ - The state to find
+        # Finds all records that are in a given set of states.
+        # 
+        # Options:
+        # * +number+ - :first or :all
+        # * +state_names+ - A state name or list of state names to find
         # * +args+ - The rest of the args are passed down to ActiveRecord +find+
         def find_in_states(number, state_names, *args)
           with_state_scope(state_names) do
@@ -604,10 +618,10 @@ module PluginAWeek #:nodoc:
           end
         end
         
-        # Wraps ActiveRecord::Base.count to conveniently count all records in
-        # a given set of states.  Options:
-        #
-        # * +states+ - The states to find
+        # Counts all records in a given set of states.
+        # 
+        # Options:
+        # * +state_names+ - A state name or list of state names to find
         # * +args+ - The rest of the args are passed down to ActiveRecord +find+
         def count_in_states(state_names, *args)
           with_state_scope(state_names) do
@@ -615,10 +629,10 @@ module PluginAWeek #:nodoc:
           end
         end
         
-        # Wraps ActiveRecord::Base.calculate to conveniently calculate all
-        # records in a given set of states.  Options:
-        #
-        # * +states+ - The states to find
+        # Calculates all records in a given set of states.
+        # 
+        # Options:
+        # * +state_names+ - A state name or list of state names to find
         # * +args+ - The rest of the args are passed down to ActiveRecord +calculate+
         def calculate_in_state(state_names, *args)
           with_state_scope(state_names) do
