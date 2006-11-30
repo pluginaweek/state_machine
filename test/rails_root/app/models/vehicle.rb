@@ -1,5 +1,6 @@
 class Vehicle < ActiveRecord::Base
-  acts_as_state_machine :initial => Proc.new {|vehicle| vehicle.force_idle? ? :idling : :parked}
+  acts_as_state_machine :initial => Proc.new {|vehicle| vehicle.force_idle? ? :idling : :parked},
+                          :use_deadlines => true
   
   belongs_to :auto_shop
   
@@ -14,7 +15,7 @@ class Vehicle < ActiveRecord::Base
     :before_enter => :increase_insurance_premium
   
   event :park do
-    transition_to :parked, :from => [:idling, :first_gear, :stalled]
+    transition_to :parked, :from => [:idling, :first_gear]
   end
   
   event :ignite do
@@ -32,7 +33,7 @@ class Vehicle < ActiveRecord::Base
     transition_to :third_gear, :from => :second_gear
   end
   
-  event :shift_down
+  event :shift_down do
     transition_to :second_gear, :from => :third_gear
     transition_to :first_gear, :from => :second_gear
   end

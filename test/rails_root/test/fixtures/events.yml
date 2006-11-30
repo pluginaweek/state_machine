@@ -20,7 +20,7 @@ auto_shop_tow_vehicle:
   id: 201
   name: tow_vehicle
   long_description: A vehicle is being towed to the shop
-  type: AutShop::Event
+  type: AutoShop::Event
   
 auto_shop_fix_vehicle:
   id: 202
@@ -31,7 +31,7 @@ auto_shop_fix_vehicle:
 vehicle_park:
   id: 301
   name: park
-  long_description: Parks the vehicle
+  long_description: Parks the vehicle and turns off the car
   type: Vehicle::Event
   
 vehicle_ignite:
@@ -40,26 +40,32 @@ vehicle_ignite:
   long_description: Ignites the engine and turns on the car
   type: Vehicle::Event
   
-vehicle_shift_up:
+vehicle_idle:
   id: 303
+  name: idle
+  long_description: Puts the car in park with the car still running
+  type: Vehicle::Event
+  
+vehicle_shift_up:
+  id: 304
   name: shift_up
   long_description: Shifts the vehicle up to the next gear
   type: Vehicle::Event
   
 vehicle_shift_down:
-  id: 304
+  id: 305
   name: shift_down
   long_description: Shifts the vehicle down to the previous gear
   type: Vehicle::Event
   
 vehicle_crash:
-  id: 305
+  id: 306
   name: crash
   long_description: Crashes the vehicle so that it keeps stalling until it gets repaired
   type: Vehicle::Event
   
 vehicle_repair:
-  id: 306
+  id: 307
   name: repair
   long_description: Repairs the vehicle so that it no longer stalles
   type: Vehicle::Event

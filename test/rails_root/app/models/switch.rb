@@ -1,6 +1,5 @@
 class Switch < ActiveRecord::Base
-  acts_as_state_machine :initial => :off,
-                          :use_deadlines => true
+  acts_as_state_machine :initial => :off
   
   state :on
   state :off

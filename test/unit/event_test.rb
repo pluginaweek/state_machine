@@ -29,6 +29,14 @@ class EventTest < Test::Unit::TestCase
     assert_equal 'valid', event.short_description
   end
   
+  def test_event_class
+    assert_not_nil Vehicle::Event
+  end
+  
+  def test_subclassed_event_class
+    assert_not_equal Car::Event, Vehicle::Event
+  end
+  
   def test_state_changes
     event = events(:switch_turn_on)
     expected = [
@@ -37,5 +45,20 @@ class EventTest < Test::Unit::TestCase
     ]
     
     assert_equal expected, event.state_changes
+  end
+  
+  def test_state_change_types
+    event = Vehicle::Event.new
+    
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {event.state_changes << StateChange.new}
+    assert_nothing_raised {event.state_changes << Vehicle::StateChange.new}
+  end
+  
+  def test_state_change_types_for_subclass
+    event = Car::Event.new
+    
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {event.state_changes << StateChange.new}
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {event.state_changes << Vehicle::StateChange.new}
+    assert_nothing_raised {event.state_changes << Car::StateChange.new}
   end
 end

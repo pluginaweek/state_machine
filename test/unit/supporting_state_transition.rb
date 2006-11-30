@@ -1,12 +1,12 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class PluginAWeek::Acts::StateMachine::SupportingClasses::StateTransition
+class PluginAWeek::Acts::StateMachine::Support::StateTransition
   attr_reader :guards
   public :guard
 end
 
 class SupportingStateTransitionTest < Test::Unit::TestCase
-  const_set('SupportingStateTransition', PluginAWeek::Acts::StateMachine::SupportingClasses::StateTransition)
+  const_set('SupportingStateTransition', PluginAWeek::Acts::StateMachine::Support::StateTransition)
   
   def setup
   end

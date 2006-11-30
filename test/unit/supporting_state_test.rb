@@ -1,11 +1,11 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class PluginAWeek::Acts::StateMachine::SupportingClasses::State
+class PluginAWeek::Acts::StateMachine::Support::State
   attr_reader :options
 end
 
 class SupportingStateTest < Test::Unit::TestCase
-  const_set('SupportingState', PluginAWeek::Acts::StateMachine::SupportingClasses::State)
+  const_set('SupportingState', PluginAWeek::Acts::StateMachine::Support::State)
   
   cattr_accessor :use_state_deadlines
   

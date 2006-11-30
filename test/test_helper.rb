@@ -13,20 +13,8 @@ PluginAWeek::PluginMigrator.migrate(File.dirname(__FILE__) + '/../db/migrate')
 # Run the migrations
 ActiveRecord::Migrator.migrate("#{RAILS_ROOT}/db/migrate")
 
-# Setup the fixtures path
-Test::Unit::TestCase.fixture_path = File.dirname(__FILE__) + '/fixtures/'
-$LOAD_PATH.unshift(Test::Unit::TestCase.fixture_path)
-
 class Test::Unit::TestCase #:nodoc:
   fixtures :states, :events
-  
-  def create_fixtures(*table_names)
-    if block_given?
-      Fixtures.create_fixtures(Test::Unit::TestCase.fixture_path, table_names) { yield }
-    else
-      Fixtures.create_fixtures(Test::Unit::TestCase.fixture_path, table_names)
-    end
-  end
   
   def self.require_fixture_classes(table_names=nil)
     # Don't allow fixture classes to be required because classes like Switch are

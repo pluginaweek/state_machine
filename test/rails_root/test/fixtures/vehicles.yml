@@ -1,0 +1,6 @@
+valid:
+  id: 1
+  highway_id: 1
+  seatbelt_on: false
+  insurance_premium: 100.00
+  type: Vehicle

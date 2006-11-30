@@ -37,7 +37,7 @@ module PluginAWeek #:nodoc:
       class NoInitialState < Exception #:nodoc:
       end
       
-      module SupportingClasses #:nodoc:
+      module Support #:nodoc:
         # A state stores information about the past; i.e. it reflects the input
         # changes from the system start to the present moment.
         class State
@@ -233,10 +233,86 @@ module PluginAWeek #:nodoc:
             Array(options.delete(:from)).each do |from_name|
               raise InvalidState, "#{from_name} is not a valid state for #{self.name}" unless @valid_state_names.include?(from_name.to_sym)
               
-              @transitions << SupportingClasses::StateTransition.new(from_name, to_name, options)
+              @transitions << Support::StateTransition.new(from_name, to_name, options)
             end
           end
         end
+        
+        def create_association_classes(klass, parent = Object)
+          klass.class_eval do
+            model_name = "::#{self.name}"
+            model_assoc_name = model_name.demodulize.underscore
+            
+            if parent == Object
+              parent_model_name = model_name
+            else
+              parent_model_name = "::#{parent.name}"
+            end
+            
+            # Create the State model
+            const_set('State', Class.new(parent::State)).class_eval do
+              has_many  :changes,
+                          :class_name => "#{model_name}::StateChange",
+                          :foreign_key => 'to_state_id'
+              has_many  :deadlines,
+                          :class_name => "#{model_name}::StateDeadline"
+            end
+            
+            # Create a model for recording each change in state
+            const_set('Event', Class.new(parent::Event)).class_eval do
+              has_many  :state_changes,
+                          :class_name => "#{model_name}::StateChange"
+            end
+            
+            # Create a model for recording each change in state
+            const_set('StateChange', Class.new(parent::StateChange)).class_eval do
+              belongs_to  :event,
+                            :class_name => "#{parent_model_name}::Event",
+                            :foreign_key => 'event_id'
+              belongs_to  :from_state,
+                            :class_name => "#{parent_model_name}::State",
+                            :foreign_key => 'to_state_id'
+              belongs_to  :to_state,
+                            :class_name => "#{parent_model_name}::State",
+                            :foreign_key => 'to_state_id'
+              belongs_to  :stateful,
+                            :class_name => model_name,
+                            :foreign_key => 'stateful_id',
+                            :dependent => :destroy
+              
+              alias_method    model_assoc_name, :stateful
+              alias_attribute "#{model_assoc_name}_id", :stateful_id
+            end
+            
+            if klass.use_state_deadlines
+              const_set('StateDeadline', Class.new(::StateDeadline)).class_eval do
+                belongs_to  :state,
+                              :class_name => "#{parent_model_name}::State",
+                              :foreign_key => 'state_id'
+                belongs_to  :stateful,
+                              :class_name => model_name,
+                              :foreign_key => 'stateful_id',
+                              :dependent => :destroy
+                
+                alias_method    model_assoc_name, :stateful
+                alias_attribute "#{model_assoc_name}_id", :stateful_id
+              end
+            end
+            
+            belongs_to  :state,
+                          :class_name => "#{parent_model_name}::State",
+                          :foreign_key => 'state_id'
+            has_many    :state_changes,
+                          :class_name => "#{model_name}::StateChange",
+                          :foreign_key => 'stateful_id',
+                          :dependent => :destroy
+            has_many    :state_deadlines,
+                          :class_name => "#{model_name}::StateDeadline",
+                          :foreign_key => 'stateful_id',
+                          :dependent => :destroy if klass.use_state_deadlines
+          end
+        end
+        module_function :create_association_classes
       end
       
       def self.included(base) #:nodoc:
@@ -256,66 +332,11 @@ module PluginAWeek #:nodoc:
           
           options.reverse_merge!(:use_deadlines => false)
           
-          model_name = "::#{self.name}"
-          model_assoc_name = model_name.demodulize.underscore
-          
-          # Create the State model
-          const_set('State', Class.new(::State)).class_eval do
-            has_many  :changes,
-                        :class_name => "#{model_name}::StateChange",
-                        :foreign_key => 'to_state_id'
-            has_many  :deadlines,
-                        :class_name => "#{model_name}::StateDeadline"
-          end
-          
-          # Create a model for recording each change in state
-          const_set('Event', Class.new(::Event)).class_eval do
-            has_many  :state_changes,
-                        :class_name => "#{model_name}::StateChange"
-          end
-          
-          # Create a model for recording each change in state
-          const_set('StateChange', Class.new(::StateChange)).class_eval do
-            belongs_to  :event,
-                          :class_name => "#{model_name}::Event",
-                          :foreign_key => 'event_id'
-            belongs_to  :from_state,
-                          :class_name => "#{model_name}::State",
-                          :foreign_key => 'to_state_id'
-            belongs_to  :to_state,
-                          :class_name => "#{model_name}::State",
-                          :foreign_key => 'to_state_id'
-            belongs_to  :stateful,
-                          :class_name => model_name,
-                          :foreign_key => 'stateful_id',
-                          :dependent => :destroy
-            
-            alias_method    model_assoc_name, :stateful
-            alias_attribute "#{model_assoc_name}_id", :stateful_id
-          end
-          
-          # Create a model for tracking a deadline for each state
-          use_deadlines = options[:use_deadlines]
-          if use_deadlines
-            const_set('StateDeadline', Class.new(::StateDeadline)).class_eval do
-              belongs_to  :state,
-                            :class_name => "#{model_name}::State",
-                            :foreign_key => 'state_id'
-              belongs_to  :stateful,
-                            :class_name => model_name,
-                            :foreign_key => 'stateful_id',
-                            :dependent => :destroy
-              
-              alias_method    model_assoc_name, :stateful
-              alias_attribute "#{model_assoc_name}_id", :stateful_id
-            end
-          end
-          
           write_inheritable_attribute :states, {}
-          write_inheritable_attribute :initial_state_name, options[:initial].to_sym
+          write_inheritable_attribute :initial_state_name, options[:initial]
           write_inheritable_attribute :transitions, {}
           write_inheritable_attribute :events, {}
-          write_inheritable_attribute :use_state_deadlines, use_deadlines
+          write_inheritable_attribute :use_state_deadlines, options[:use_deadlines]
           
           class_inheritable_reader    :states
           class_inheritable_reader    :transitions
@@ -333,17 +354,7 @@ module PluginAWeek #:nodoc:
             end
           end
           
-          belongs_to  :state,
-                        :class_name => "#{model_name}::State",
-                        :foreign_key => 'state_id'
-          has_many    :state_changes,
-                        :class_name => "#{model_name}::StateChange",
-                        :foreign_key => 'stateful_id',
-                        :dependent => :destroy
-          has_many    :state_deadlines,
-                        :class_name => "#{model_name}::StateDeadline",
-                        :foreign_key => 'stateful_id',
-                        :dependent => :destroy if use_deadlines
+          Support.create_association_classes(self)
           
           extend PluginAWeek::Acts::StateMachine::ClassMethods
           include PluginAWeek::Acts::StateMachine::InstanceMethods
@@ -467,134 +478,34 @@ module PluginAWeek #:nodoc:
       end
       
       module ClassMethods
+        def self.extended(base) #:nodoc:
+          class << base
+            alias inherited_without_association_classes inherited
+            alias inherited inherited_with_association_classes
+          end
+        end
+        
+        # Adds the proper associations and nested classes
+        def inherited_with_association_classes(subclass)
+          inherited_without_association_classes(subclass) if respond_to?(:inherited_without_association_classes)
+          
+          Support.create_association_classes(subclass, self)
+        end
+        
         # Returns an array of the names of all known states.
         def state_names
           states.keys
         end
         
-        # Define a state of the system. +state+ can take an optional Proc object
-        # which will be executed every time the system transitions into that
-        # state.  The proc will be passed the current object.
-        #
-        # Example:
-        #
-        # class Order < ActiveRecord::Base
-        #   acts_as_state_machine :initial => :open
-        #
-        #   state :open
-        #   state :closed, Proc.new { |o| Mailer.send_notice(o) }
-        # end
-        def state(name, options = {})
-          name = name.to_sym
-          record = self::State.find_by_name(name.to_s)
-          raise InvalidState, "#{name} is not a valid state for #{self.name}" unless record
-          
-          states[name] = SupportingClasses::State.new(record, options)
-          
-          class_eval <<-end_eval
-            def #{name}?
-              state_id == #{record.id}
-            end
-            
-            def #{name}_at
-              state_change = state_changes.find_by_to_state_id(#{record.id}, :order => 'occurred_at DESC')
-              state_change.occurred_at if !state_change.nil?
-            end
-          end_eval
-          
-          # Add support for checking deadlines
-          if use_state_deadlines
-            class_eval <<-end_eval
-              def #{name}_deadline
-                state_deadline = state_deadlines.find_by_state_id(#{record.id})
-                state_deadline.deadline if state_deadline
-              end
-              
-              def #{name}_deadline=(value)
-                state_deadline = state_deadlines.build(:state_id => #{record.id}, :deadline => value)
-                state_deadline.save!
-              end
-              
-              def clear_#{name}_deadline
-                state_deadlines.find_by_state_id(#{record.id}).destroy
-              end
-            end_eval
-          end
-          
-          self::StateExtension.module_eval <<-end_eval
-            def #{name}(*args)
-              with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
-                find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
-              end
-            end
-            
-            def #{name}_count(*args)
-              with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
-                count(*args)
-              end
-            end
-          end_eval
+        # Finds the state with the specified name
+        def find_state(name)
+          find_valid_states(:first, :conditions => ['states.name = ?', name.to_s])
         end
         
-        # Returns an array of all known states.
-        def event_names
-          events.keys
-        end
-        
-        # Define an event.  This takes a block which describes all valid transitions
-        # for this event.
-        #
-        # Example:
-        #
-        # class Order < ActiveRecord::Base
-        #   acts_as_state_machine :initial => :open
-        #
-        #   state :open
-        #   state :closed
-        #
-        #   event :close_order do
-        #     transitions :to => :closed, :from => :open
-        #   end
-        # end
-        #
-        # +transitions+ takes a hash where <tt>:to</tt> is the state to transition
-        # to and <tt>:from</tt> is a state (or Array of states) from which this
-        # event can be fired.
-        #
-        # This creates an instance method used for firing the event.  The method
-        # created is the name of the event followed by an exclamation point (!).
-        # Example: <tt>order.close_order!</tt>.
-        def event(name, options = {}, &block)
-          name = name.to_sym
-          record = self::Event.find_by_name(name.to_s)
-          raise InvalidEvent, "#{name} is not a valid event for #{self.name}" unless record
-          
-          if event = events[name]
-            # The event has already been defined, so just evaluate the new
-            # block.  The state names will be redefined since it is likely this
-            # is being called from a subclass.
-            event.valid_state_names = state_names
-            event.instance_eval(&block) if block
-          else
-            events[name] = SupportingClasses::Event.new(record, options, transitions, state_names, &block)
-            
-            # Add action for transitioning the model
-            class_eval <<-end_eval
-              def #{name}!(*args)
-                run_initial_state_actions if new_record?
-                
-                success = false
-                transaction(self) do
-                  if self.class.events[#{name.to_s.dump}].fire(self, args)
-                    success = save!
-                  else
-                    rollback
-                  end
-                end
-                
-                success
-              end
-            end_eval
+        # Finds all of the valid events for this class
+        def find_valid_states(*args)
+          State.with_scope(:find => {:conditions => ["states.type IN (?)", nested_classes_for('State')]}) do
+            State.find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
           end
         end
         
@@ -645,6 +556,171 @@ module PluginAWeek #:nodoc:
           
           with_scope(:find => {:include => :state, :conditions => state_conditions}) do
             yield
+          end
+        end
+        
+        # Returns an array of all known states.
+        def event_names
+          events.keys
+        end
+        
+        # Finds the event with the specified name
+        def find_event(name)
+          find_valid_events(:first, :conditions => ['events.name = ?', name.to_s])
+        end
+        
+        # Finds all of the valid events for this class
+        def find_valid_events(*args)
+          Event.with_scope(:find => {:conditions => ["events.type IN (?)", nested_classes_for('Event')]}) do
+            Event.find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
+          end
+        end
+        
+        private
+        # Gets all of superclasses for this machine (include this class) that
+        # have the specified type as a nested class.
+        # 
+        # For example,
+        # 
+        #   class Vehicle < ActiveRecord::Base
+        #     acts_as_state_machine :initial => :parked
+        #   end
+        #   
+        #   class Car < Vehicle
+        #   end
+        #   
+        #   Car.nested_classes_for('State')  => ['Car::State', 'Vehicle::State']
+        def nested_classes_for(type)
+          classes = []
+          
+          klass = self
+          while klass.const_defined?(type)
+            classes << "#{klass.name}::#{type}"
+            klass = klass.superclass
+          end
+          
+          classes
+        end
+        
+        # Define a state of the system. +state+ can take an optional Proc object
+        # which will be executed every time the system transitions into that
+        # state.  The proc will be passed the current object.
+        #
+        # Example:
+        #
+        # class Order < ActiveRecord::Base
+        #   acts_as_state_machine :initial => :open
+        #
+        #   state :open
+        #   state :closed, Proc.new { |o| Mailer.send_notice(o) }
+        # end
+        def state(name, options = {})
+          name = name.to_sym
+          record = find_state(name)
+          raise InvalidState, "#{name} is not a valid state for #{self.name}" unless record
+          
+          states[name] = Support::State.new(record, options)
+          
+          class_eval <<-end_eval
+            def #{name}?
+              state_id == #{record.id}
+            end
+            
+            def #{name}_at
+              state_change = state_changes.find_by_to_state_id(#{record.id}, :order => 'occurred_at DESC')
+              state_change.occurred_at if !state_change.nil?
+            end
+          end_eval
+          
+          # Add support for checking deadlines
+          if use_state_deadlines
+            class_eval <<-end_eval
+              def #{name}_deadline
+                state_deadline = state_deadlines.find_by_state_id(#{record.id})
+                state_deadline.deadline if state_deadline
+              end
+              
+              def #{name}_deadline=(value)
+                state_deadline = state_deadlines.build(:state_id => #{record.id}, :deadline => value)
+                state_deadline.save!
+              end
+              
+              def clear_#{name}_deadline
+                state_deadlines.find_by_state_id(#{record.id}).destroy
+              end
+            end_eval
+          end
+          
+          self::StateExtension.module_eval <<-end_eval
+            def #{name}(*args)
+              with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
+                find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
+              end
+            end
+            
+            def #{name}_count(*args)
+              with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
+                count(*args)
+              end
+            end
+          end_eval
+        end
+        
+        # Define an event.  This takes a block which describes all valid transitions
+        # for this event.
+        #
+        # Example:
+        #
+        # class Order < ActiveRecord::Base
+        #   acts_as_state_machine :initial => :open
+        #
+        #   state :open
+        #   state :closed
+        #
+        #   event :close_order do
+        #     transitions :to => :closed, :from => :open
+        #   end
+        # end
+        #
+        # +transitions+ takes a hash where <tt>:to</tt> is the state to transition
+        # to and <tt>:from</tt> is a state (or Array of states) from which this
+        # event can be fired.
+        #
+        # This creates an instance method used for firing the event.  The method
+        # created is the name of the event followed by an exclamation point (!).
+        # Example: <tt>order.close_order!</tt>.
+        def event(name, options = {}, &block)
+          name = name.to_sym
+          
+          if event = events[name]
+            # The event has already been defined, so just evaluate the new
+            # block.  The state names will be redefined since it is likely this
+            # is being called from a subclass.
+            event.valid_state_names = state_names
+            event.instance_eval(&block) if block
+          else
+            record = find_event(name)
+            raise InvalidEvent, "#{name} is not a valid event for #{self.name}" unless record
+            
+            events[name] = Support::Event.new(record, options, transitions, state_names, &block)
+            
+            # Add action for transitioning the model
+            class_eval <<-end_eval
+              def #{name}!(*args)
+                run_initial_state_actions if new_record?
+                
+                success = false
+                transaction(self) do
+                  if self.class.events[#{name.to_s.dump}].fire(self, args)
+                    success = save!
+                  else
+                    rollback
+                  end
+                end
+                
+                success
+              end
+            end_eval
           end
         end
       end

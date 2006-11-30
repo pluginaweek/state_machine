@@ -5,9 +5,9 @@ valid:
   deadline: <%= Time.now.to_s(:db) %>
   type: StateDeadline
   
-switch_on:
+vehicle_stalled:
   id: 2
   stateful_id: 1
-  state_id: 101
+  state_id: 306
   deadline: <%= 10.days.from_now.to_s(:db) %>
-  type: Switch::StateDeadline
+  type: Vehicle::StateDeadline

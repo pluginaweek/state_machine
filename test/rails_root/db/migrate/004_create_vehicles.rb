@@ -5,6 +5,7 @@ class CreateVehicles < ActiveRecord::Migration
   
   def self.up
     create_table :vehicles do |t|
+      t.column :highway_id,         :integer, :null => false, :unsigned => true
       t.column :seatbelt_on,        :boolean, :null => false, :default => true
       t.column :insurance_premium,  :integer, :null => false, :default => 50
       t.column :type,               :string,  :null => false

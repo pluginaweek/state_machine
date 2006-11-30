@@ -29,7 +29,15 @@ class StateTest < Test::Unit::TestCase
     assert_equal 'valid', state.short_description
   end
   
-  def test_state_changes
+  def test_state_class
+    assert_not_nil Vehicle::State
+  end
+  
+  def test_subclassed_state
+    assert_not_equal Car::State, Vehicle::State
+  end
+  
+  def test_stored_changes
     state = states(:switch_on)
     expected = [
       state_changes(:light_turned_on),
@@ -39,8 +47,38 @@ class StateTest < Test::Unit::TestCase
     assert_equal expected, state.changes
   end
   
-  def test_state_deadlines
-    state = states(:switch_on)
-    assert_equal [state_deadlines(:switch_on)], state.deadlines
+  def test_stored_deadlines
+    state = states(:vehicle_stalled)
+    assert_equal [state_deadlines(:vehicle_stalled)], state.deadlines
+  end
+  
+  def test_change_types
+    state = Vehicle::State.new
+    
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {state.changes << StateChange.new}
+    assert_nothing_raised {state.changes << Vehicle::StateChange.new}
+  end
+  
+  def test_change_types_for_subclass
+    state = Car::State.new
+    
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {state.changes << StateChange.new}
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {state.changes << Vehicle::StateChange.new}
+    assert_nothing_raised {state.changes << Car::StateChange.new}
+  end
+  
+  def test_deadline_types
+    state = Vehicle::State.new
+    
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {state.deadlines << StateDeadline.new}
+    assert_nothing_raised {state.deadlines << Vehicle::StateDeadline.new}
+  end
+  
+  def test_deadline_types_for_subclass
+    state = Car::State.new
+    
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {state.deadlines << StateDeadline.new}
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {state.deadlines << Vehicle::StateDeadline.new}
+    assert_nothing_raised {state.deadlines << Car::StateDeadline.new}
   end
 end

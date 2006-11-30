@@ -1,11 +1,10 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class StateDeadlineTest < Test::Unit::TestCase
-  fixtures :state_deadlines, :switches
+  fixtures :state_deadlines, :vehicles
   
   def setup
-    switches(:light)
-    @switch_state_deadline = state_deadlines(:switch_on)
+    @vehicle_stalled = state_deadlines(:vehicle_stalled)
   end
   
   def valid_state_deadline
@@ -20,24 +19,37 @@ class StateDeadlineTest < Test::Unit::TestCase
     assert_invalid valid_state_deadline, 'stateful_id', nil
   end
   
-  def test_state
-    assert_not_nil @switch_state_deadline.state
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {@switch_state_deadline.state = State.new}
-    assert_nothing_raised {@switch_state_deadline.state = Switch::State.new}
+  def test_deadline_class
+    assert_not_nil Vehicle::StateDeadline
+  end
+  
+  def test_state_type
+    deadline = Vehicle::StateDeadline.new
+    
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {deadline.state = State.new}
+    assert_nothing_raised {deadline.state = Vehicle::State.new}
+  end
+  
+  def test_state_type_for_subclass
+    deadline = Car::StateDeadline.new
+    
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {deadline.state = State.new}
+    assert_nothing_raised {deadline.state = Vehicle::State.new}
+    assert_nothing_raised {deadline.state = Car::State.new}
   end
   
   def test_stateful
-    assert_not_nil @switch_state_deadline.stateful
-    assert_instance_of Switch, @switch_state_deadline.stateful
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {@switch_state_deadline.stateful = State.new}
-    assert_nothing_raised {@switch_state_deadline.stateful = Switch.new}
+    assert_not_nil @vehicle_stalled.stateful
+    assert_instance_of Vehicle, @vehicle_stalled.stateful
+    assert_raise(ActiveRecord::AssociationTypeMismatch) {@vehicle_stalled.stateful = State.new}
+    assert_nothing_raised {@vehicle_stalled.stateful = Vehicle.new}
   end
   
   def test_aliased_stateful
-    assert_equal @switch_state_deadline.switch, @switch_state_deadline.stateful
+    assert_equal @vehicle_stalled.vehicle, @vehicle_stalled.stateful
   end
   
   def test_aliased_stateful_id
-    assert_equal @switch_state_deadline.switch_id, @switch_state_deadline.stateful_id
+    assert_equal @vehicle_stalled.vehicle_id, @vehicle_stalled.stateful_id
   end
 end

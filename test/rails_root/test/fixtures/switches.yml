@@ -1,0 +1,9 @@
+valid:
+  id: 1
+  device: Valid
+  state_id: 101
+  
+light:
+  id: 2
+  device: Light
+  state_id: 101

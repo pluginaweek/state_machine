@@ -63,3 +63,9 @@ vehicle_stalled:
   name: stalled
   long_description: The vehicle has been in an accident and has now stalled
   type: Vehicle::State
+  
+car_backing_up:
+  id: 401
+  name: backing_up
+  long_description: The car is backing up
+  type: Car::State

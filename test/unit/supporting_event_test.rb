@@ -2,12 +2,12 @@ require File.dirname(__FILE__) + '/../test_helper'
 require File.dirname(__FILE__) + '/../mocks/mock_transition'
 require File.dirname(__FILE__) + '/../mocks/parallel_machine'
 
-class PluginAWeek::Acts::StateMachine::SupportingClasses::Event
+class PluginAWeek::Acts::StateMachine::Support::Event
   attr_accessor :transitions
 end
 
 class SupportingEventTest < Test::Unit::TestCase
-  const_set('SupportingEvent', PluginAWeek::Acts::StateMachine::SupportingClasses::Event)
+  const_set('SupportingEvent', PluginAWeek::Acts::StateMachine::Support::Event)
   
   attr_accessor :state_name,
                 :first_parallel,
