@@ -1,0 +1,13 @@
+valid:
+  id: 1
+  stateful_id: 1
+  state_id: 1
+  deadline: <%= Time.now.to_s(:db) %>
+  type: StateDeadline
+  
+on_deadline:
+  id: 2
+  stateful_id: 1
+  state_id: 101
+  deadline: <%= 10.days.from_now.to_s(:db) %>
+  type: Switch::StateDeadline

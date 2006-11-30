@@ -1,3 +1,9 @@
+valid:
+  id: 1
+  name: valid
+  long_description: A valid event
+  type: State
+  
 switch_turn_on:
   id: 101
   name: turn_on

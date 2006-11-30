@@ -262,7 +262,8 @@ module PluginAWeek #:nodoc:
           # Create the State model
           const_set('State', Class.new(::State)).class_eval do
             has_many  :changes,
-                        :class_name => "#{model_name}::StateChange"
+                        :class_name => "#{model_name}::StateChange",
+                        :foreign_key => 'to_state_id'
             has_many  :deadlines,
                         :class_name => "#{model_name}::StateDeadline"
           end

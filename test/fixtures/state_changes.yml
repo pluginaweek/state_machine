@@ -1,0 +1,35 @@
+valid:
+  id: 1
+  stateful_id: 1
+  from_state_id: 1
+  to_state_id: 1
+  event_id: 1
+  occurred_at: <%= Time.now.to_s(:db) %>
+  type: State
+  
+light_turned_on:
+  id: 2
+  stateful_id: 1
+  from_state_id: 102
+  to_state_id: 101
+  event_id: 101
+  occurred_at: <%= Time.now.to_s(:db) %>
+  type: Switch::StateChange
+  
+light_turned_off:
+  id: 3
+  stateful_id: 1
+  from_state_id: 101
+  to_state_id: 102
+  event_id: 102
+  occurred_at: <%= Time.now.to_s(:db) %>
+  type: Switch::StateChange
+  
+light_turned_on_again:
+  id: 4
+  stateful_id: 1
+  from_state_id: 102
+  to_state_id: 101
+  event_id: 101
+  occurred_at: <%= Time.now.to_s(:db) %>
+  type: Switch::StateChange

@@ -1,3 +1,9 @@
+valid:
+  id: 1
+  name: valid
+  long_description: A valid state
+  type: State
+  
 switch_on:
   id: 101
   name: 'on'

@@ -1,0 +1,4 @@
+light_switch:
+  id: 1
+  name: Light
+  state_id: 101
