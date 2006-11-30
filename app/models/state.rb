@@ -9,7 +9,7 @@ class State < ActiveRecord::Base
     def migrate_up
       model = parent
       if !model.content_columns.any? {|c| c.name == :state_id}
-        self.connection.add_column(model.table_name, :state_id, :integer, :null => false, :unsigned => true)
+        self.connection.add_column(model.table_name, :state_id, :integer, :null => false, :default => 0, :unsigned => true)
       end
     end
     
@@ -21,7 +21,13 @@ class State < ActiveRecord::Base
   end
   
   #
+  def name
+    name = read_attribute(:name)
+    name ? name.to_sym : name
+  end
+  
+  #
   def short_description
-    read_attribute(:short_description) || name.titleize
+    read_attribute(:short_description) || name.to_s.titleize
   end
 end

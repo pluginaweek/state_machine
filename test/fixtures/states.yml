@@ -1,0 +1,59 @@
+switch_on:
+  id: 101
+  name: 'on'
+  long_description: The switch is on
+  type: Switch::State
+  
+switch_off:
+  id: 102
+  name: 'off'
+  long_description: The switch is off
+  type: Switch::State
+  
+auto_shop_available:
+  id: 201
+  name: available
+  long_description: The mechanic is available
+  type: AutoShop::State
+  
+auto_shop_busy:
+  id: 202
+  name: busy
+  long_description: The mechanic is busy
+  type: AutoShop::State
+  
+vehicle_parked:
+  id: 301
+  name: parked
+  long_description: The vehicle is parked
+  type: Vehicle::State
+  
+vehicle_idling:
+  id: 302
+  name: idling
+  long_description: The vehicle is idling
+  type: Vehicle::State
+  
+vehicle_first_gear:
+  id: 303
+  name: first_gear
+  long_description: The vehicle is driving in first gear
+  type: Vehicle::State
+  
+vehicle_second_gear:
+  id: 304
+  name: second_gear
+  long_description: The vehicle is driving in second gear
+  type: Vehicle::State
+  
+vehicle_third_gear:
+  id: 305
+  name: third_gear
+  long_description: The vehicle is driving in third gear
+  type: Vehicle::State
+  
+vehicle_stalled:
+  id: 306
+  name: stalled
+  long_description: The vehicle has been in an accident and has now stalled
+  type: Vehicle::State

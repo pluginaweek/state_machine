@@ -1,0 +1,2 @@
+class Motorcycle < Vehicle
+end

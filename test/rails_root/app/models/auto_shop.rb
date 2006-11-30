@@ -1,0 +1,24 @@
+class AutoShop < ActiveRecord::Base
+  acts_as_state_machine :initial => :available
+  
+  state :available,
+    :after_enter => :increment_customers
+  state :busy,
+    :after_exit => :decrement_customers
+  
+  event :tow_vehicle do
+    transition_to :busy, :from => :available
+  end
+  
+  event :fix_vehicle do
+    transition_to :available, :from => :busy
+  end
+  
+  def increment_customers
+    update_attribute(:num_customers, self.num_customers + 1)
+  end
+  
+  def decrement_customers
+    update_attribute(:num_customers, self.num_customers - 1)
+  end
+end

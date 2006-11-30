@@ -1,4 +1,5 @@
 require 'dry_transaction_rollbacks'
+require 'eval_call'
 
 module PluginAWeek #:nodoc:
   module Acts #:nodoc:
@@ -95,7 +96,7 @@ module PluginAWeek #:nodoc:
           def run_actions(record, args, action_type) #:nodoc:
             if actions = @options[action_type]
               Array(actions).each do |action|
-                record.send(:run_transition_action, action, args)
+                record.eval_call(action, *args)
               end
             end
           end
@@ -115,19 +116,13 @@ module PluginAWeek #:nodoc:
           def initialize(from_name, to_name, options) #:nodoc:
             options.symbolize_keys!.assert_valid_keys(:if)
             
-            @from_name, @to_name = from_name.to_s, to_name.to_s
+            @from_name, @to_name = from_name.to_sym, to_name.to_sym
             @guards = Array(options[:if])
-          end
-          
-          # Ensures that the transition can occur by checking the guards
-          # associated with it
-          def guard(record, args)
-            @guards.all? {|guard| record.send(:run_transition_action, guard, args)}
           end
           
           # Runs the actual transition and any actions associated with entering
           # and exiting the states
-          def perform(record, args)
+          def perform(record, args = [])
             return false unless guard(record, args)
             
             loopback = record.state_name == to_name
@@ -155,6 +150,13 @@ module PluginAWeek #:nodoc:
           def ==(obj) #:nodoc:
             @from_name == obj.from_name && @to_name == obj.to_name
           end
+          
+          private
+          # Ensures that the transition can occur by checking the guards
+          # associated with it
+          def guard(record, args = [])
+            @guards.all? {|guard| record.eval_call(guard, *args)}
+          end
         end
         
         # An event is a description of activity that is to be performed at a
@@ -177,30 +179,30 @@ module PluginAWeek #:nodoc:
           end
           
           # Gets all of the possible next states for the record
-          def next_states(record)
+          def next_states_for(record)
             @transitions.select {|transition| transition.from_name == record.state_name}
           end
           
           # Attempts to transition to one of the next possible states.  If it is
           # successful, then any parallel machines that have been configured
           # will have their events fired as well
-          def fire(record, args)
+          def fire(record, args = [])
             success = false
             
             # Find a state that we can transition into
             original_state_name = record.state_name
-            next_states(record).each do |transition|
+            next_states_for(record).each do |transition|
               if success = transition.perform(record, args)
-                record.record_transition(name, original_state_name, record.state_name)
+                record.send(:record_transition, name, original_state_name, record.state_name)
                 break
               end
             end
             
             # Execute the event on all other state machines running in parallel
-            if success && parallel_state_machines = options[:parallel]
+            if success && parallel_state_machines = @options[:parallel]
               @parallel_state_machines ||= [parallel_state_machines].flatten.inject({}) do |machine_events, machine|
                 if machine.is_a?(Hash)
-                  machine_events.merge(machine)
+                  machine_events.merge!(machine)
                 else
                   machine_events[machine] = name
                 end
@@ -224,12 +226,12 @@ module PluginAWeek #:nodoc:
           # <tt>from</tt> - A state or array of states that can be transitioned to
           # <tt>if</tt> - An optional condition that must be met for the transition to occur
           def transition_to(to_name, options = {})
-            raise InvalidState, "#{to_name} is not a valid state for #{self.name}" unless @valid_state_names.include?(to_name.to_s)
+            raise InvalidState, "#{to_name} is not a valid state for #{self.name}" unless @valid_state_names.include?(to_name.to_sym)
             
             options.symbolize_keys!
             
             Array(options.delete(:from)).each do |from_name|
-              raise InvalidState, "#{from_name} is not a valid state for #{self.name}" unless @valid_state_names.include?(from_name.to_s)
+              raise InvalidState, "#{from_name} is not a valid state for #{self.name}" unless @valid_state_names.include?(from_name.to_sym)
               
               @transitions << SupportingClasses::StateTransition.new(from_name, to_name, options)
             end
@@ -309,7 +311,7 @@ module PluginAWeek #:nodoc:
           end
           
           write_inheritable_attribute :states, {}
-          write_inheritable_attribute :initial_state_name, options[:initial]
+          write_inheritable_attribute :initial_state_name, options[:initial].to_sym
           write_inheritable_attribute :transitions, {}
           write_inheritable_attribute :events, {}
           write_inheritable_attribute :use_state_deadlines, use_deadlines
@@ -359,12 +361,12 @@ module PluginAWeek #:nodoc:
           name = self.class.read_inheritable_attribute(:initial_state_name)
           name = name.call(self) if name.is_a?(Proc)
           
-          name
+          name.to_sym
         end
         
         # Gets the actual State record for the initial state
         def initial_state
-          self.class.states[initial_state_name.to_s].record
+          self.class.states[initial_state_name].record
         end
         
         # Gets the state of the record.  If this record has not been saved, then
@@ -387,16 +389,17 @@ module PluginAWeek #:nodoc:
         # Returns what the next state for a given event would be, as a Ruby symbol.
         def next_state_for_event(event_name)
           next_states = next_states_for_event(event_name)
-          next_states.empty? ? nil : next_states.first.to_sym
+          next_states.empty? ? nil : next_states.first
         end
         
         # Returns all of the next possible states for a given event, as Ruby symbols.
         def next_states_for_event(event_name)
-          self.class.transitions[event_name.to_s].select do |transition|
+          self.class.transitions[event_name.to_sym].select do |transition|
             transition.from_name == state_name
-          end.map {|transition| transition.to_name.to_sym}
+          end.map(&:to_name)
         end
         
+        private
         # Records the state change in the database
         def record_transition(event_name, from_state_name, to_state_name)
           from_record = self.class.states[from_state_name].record if from_state_name
@@ -442,7 +445,6 @@ module PluginAWeek #:nodoc:
           transitioned
         end
         
-        private
         # Sets the initial state id of the record so long as it hasn't already
         # been set
         def set_initial_state_id
@@ -453,24 +455,13 @@ module PluginAWeek #:nodoc:
         def run_initial_state_actions
           if state_changes.empty?
             transaction(self) do
-              state = self.class.states[initial_state_name.to_s]
+              state = self.class.states[initial_state_name]
               state.entering(self)
               state.entered(self)
               
               record_transition(nil, nil, state.name)
             end
           end
-        end
-        
-        # If the action is a symbol, then it will be called on the current
-        # record, giving it any arguments that were provided in the original
-        # call.
-        # 
-        # If the action is a Proc, then it will be called with two arguments:
-        # the first being the record, the second being any arguments provided in
-        # the original call.
-        def run_transition_action(action, args)
-          Symbol === action ? send(action, *args) : action.call(*args.unshift(self))
         end
       end
       
@@ -493,8 +484,8 @@ module PluginAWeek #:nodoc:
         #   state :closed, Proc.new { |o| Mailer.send_notice(o) }
         # end
         def state(name, options = {})
-          name = name.to_s
-          record = self::State.find_by_name(name)
+          name = name.to_sym
+          record = self::State.find_by_name(name.to_s)
           raise InvalidState, "#{name} is not a valid state for #{self.name}" unless record
           
           states[name] = SupportingClasses::State.new(record, options)
@@ -573,8 +564,8 @@ module PluginAWeek #:nodoc:
         # created is the name of the event followed by an exclamation point (!).
         # Example: <tt>order.close_order!</tt>.
         def event(name, options = {}, &block)
-          name = name.to_s
-          record = self::Event.find_by_name(name)
+          name = name.to_sym
+          record = self::Event.find_by_name(name.to_s)
           raise InvalidEvent, "#{name} is not a valid event for #{self.name}" unless record
           
           if event = events[name]
@@ -593,7 +584,7 @@ module PluginAWeek #:nodoc:
                 
                 success = false
                 transaction(self) do
-                  if self.class.events[#{name.dump}].fire(self, args)
+                  if self.class.events[#{name.to_s.dump}].fire(self, args)
                     success = save!
                   else
                     rollback

@@ -1,36 +1,16 @@
-= Acts As State Machine
-
-This act gives an Active Record model the ability to act as a finite state
-machine (FSM).
-
-Acquire via subversion at:
-
-http://elitists.textdriven.com/svn/plugins/acts_as_state_machine/trunk
-
-If prompted, use the user/pass anonymous/anonymous.
+= acts_as_state_machine
 
 == Example
 
- class Order < ActiveRecord::Base
-   acts_as_state_machine :initial => :opened
+== Testing
 
-   state :opened
-   state :closed, :enter => Proc.new {|o| Mailer.send_notice(o)}
-   state :returned
+Add the following plugins under acts_as_state_machine/test/rails_root/vendor/plugins:
+* dry_transaction_rollbacks
+* eval_call
+* modulized_inheritance_column
+* appable_plugins
+* loaded_plugins
+* plugin_migrations
+* prerequisites/plugin_dependencies
 
-   event :close do
-     transitions :to => :closed, :from => :opened
-   end
-
-   event :return do
-     transitions :to => :returned, :from => :closed
-   end
- end
-
- o = Order.create
- o.close! # notice is sent by mailer
- o.return!
-
-Viewing the state machines
-==========================
-http://www.cs.usfca.edu/~jbovet/vas.html
+or install the gems

@@ -1,0 +1,65 @@
+switch_turn_on:
+  id: 101
+  name: turn_on
+  long_description: Turns the switch on
+  type: Switch::Event
+  
+switch_turn_off:
+  id: 102
+  name: turn_off
+  long_description: Turns the switch off
+  type: Switch::Event
+  
+auto_shop_tow_vehicle:
+  id: 201
+  name: tow_vehicle
+  long_description: A vehicle is being towed to the shop
+  type: AutShop::Event
+  
+auto_shop_fix_vehicle:
+  id: 202
+  name: fix_vehicle
+  long_description: The mechanic is fixing the vehicle
+  type: AutoShop::Event
+  
+vehicle_park:
+  id: 301
+  name: park
+  long_description: Parks the vehicle
+  type: Vehicle::Event
+  
+vehicle_ignite:
+  id: 302
+  name: ignite
+  long_description: Ignites the engine and turns on the car
+  type: Vehicle::Event
+  
+vehicle_shift_up:
+  id: 303
+  name: shift_up
+  long_description: Shifts the vehicle up to the next gear
+  type: Vehicle::Event
+  
+vehicle_shift_down:
+  id: 304
+  name: shift_down
+  long_description: Shifts the vehicle down to the previous gear
+  type: Vehicle::Event
+  
+vehicle_crash:
+  id: 305
+  name: crash
+  long_description: Crashes the vehicle so that it keeps stalling until it gets repaired
+  type: Vehicle::Event
+  
+vehicle_repair:
+  id: 306
+  name: repair
+  long_description: Repairs the vehicle so that it no longer stalles
+  type: Vehicle::Event
+  
+car_reverse:
+  id: 401
+  name: reverse
+  long_description: Puts the car into reverse
+  type: Car::Event

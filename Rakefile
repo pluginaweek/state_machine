@@ -13,7 +13,7 @@ end
 desc 'Test the acts as state machine plugin.'
 Rake::TestTask.new(:test) do |t|
   t.libs << 'lib'
-  t.pattern = 'test/**/*_test.rb'
+  t.pattern = 'test/unit/**/*_test.rb'
   t.verbose = true
 end
 
