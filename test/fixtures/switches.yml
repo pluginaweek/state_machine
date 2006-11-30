@@ -1,4 +1,4 @@
-light_switch:
+light:
   id: 1
-  name: Light
+  device: Light
   state_id: 101

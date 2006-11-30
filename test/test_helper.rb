@@ -28,6 +28,12 @@ class Test::Unit::TestCase #:nodoc:
     end
   end
   
+  def self.require_fixture_classes(table_names=nil)
+    # Don't allow fixture classes to be required because classes like Switch are
+    # going to throw an error since the states and events have not yet been
+    # loaded
+  end
+  
   self.use_transactional_fixtures = true
   self.use_instantiated_fixtures  = false
 end

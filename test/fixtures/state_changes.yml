@@ -5,7 +5,7 @@ valid:
   to_state_id: 1
   event_id: 1
   occurred_at: <%= Time.now.to_s(:db) %>
-  type: State
+  type: StateChange
   
 light_turned_on:
   id: 2
