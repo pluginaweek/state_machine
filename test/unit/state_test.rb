@@ -41,6 +41,6 @@ class StateTest < Test::Unit::TestCase
   
   def test_state_deadlines
     state = states(:switch_on)
-    assert_equal [state_deadlines(:on_deadline)], state.deadlines
+    assert_equal [state_deadlines(:switch_on)], state.deadlines
   end
 end

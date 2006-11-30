@@ -5,7 +5,7 @@ valid:
   deadline: <%= Time.now.to_s(:db) %>
   type: StateDeadline
   
-on_deadline:
+switch_on:
   id: 2
   stateful_id: 1
   state_id: 101

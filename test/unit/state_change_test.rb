@@ -4,7 +4,6 @@ class StateChangeTest < Test::Unit::TestCase
   fixtures :state_changes, :switches
   
   def setup
-    switches(:light)
     @switch_state_change = state_changes(:light_turned_on)
   end
   

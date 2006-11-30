@@ -300,7 +300,7 @@ module PluginAWeek #:nodoc:
             const_set('StateDeadline', Class.new(::StateDeadline)).class_eval do
               belongs_to  :state,
                             :class_name => "#{model_name}::State",
-                            :foreign_key => 'to_state_id'
+                            :foreign_key => 'state_id'
               belongs_to  :stateful,
                             :class_name => model_name,
                             :foreign_key => 'stateful_id',
