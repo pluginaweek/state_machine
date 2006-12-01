@@ -1,13 +1,13 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
+class PluginAWeek::Acts::StateMachine::Support::Event
+  attr_accessor :valid_state_names
+end
+
 Message.class_eval do
   def self.initial_state_name
     read_inheritable_attribute(:initial_state_name)
   end
-end
-
-class PluginAWeek::Acts::StateMachine::Support::Event
-  attr_accessor :valid_state_names
 end
 
 class ActsAsStateMachineTest < Test::Unit::TestCase
@@ -25,6 +25,11 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
                 :state,
                 :event
       end
+      
+      public  :record_transition,
+              :after_find,
+              :check_deadlines,
+              :set_initial_state_id
     end
   end
   
@@ -216,6 +221,7 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
       :park,
       :ignite,
       :idle,
+      :idling_deadline_passed,
       :shift_up,
       :shift_down,
       :crash,
@@ -230,6 +236,7 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
       :park,
       :ignite,
       :idle,
+      :idling_deadline_passed,
       :shift_up,
       :shift_down,
       :crash,
@@ -258,6 +265,7 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
       :park,
       :ignite,
       :idle,
+      :idling_deadline_passed,
       :shift_up,
       :shift_down,
       :crash,
@@ -380,7 +388,8 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
       vehicles(:parked),
       vehicles(:idling),
       vehicles(:first_gear),
-      vehicles(:first_gear_2)
+      vehicles(:first_gear_2),
+      vehicles(:stalled)
     ]
     assert_equal expected, highway.vehicles
     
@@ -420,24 +429,24 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
   end
   
   def test_event_action_on_new_record
-    v = Vehicle.new
+    vehicle = Vehicle.new
     
-    assert v.ignite!
-    assert !v.new_record?
-    assert_equal 2, v.state_changes.size
-    assert_equal 0, v.state_deadlines.size
-    assert v.seatbelt_on
+    assert vehicle.ignite!
+    assert !vehicle.new_record?
+    assert_equal 2, vehicle.state_changes.size
+    assert_equal 0, vehicle.state_deadlines.size
+    assert vehicle.seatbelt_on
   end
   
   def test_event_action_failure_on_new_record
-    v = Vehicle.new
+    vehicle = Vehicle.new
     
-    assert !v.shift_up!
-    assert v.new_record?
+    assert !vehicle.shift_up!
+    assert vehicle.new_record?
   end
   
   def test_event_action_no_transition_available
-    v = vehicles(:parked)
+    vehicle = vehicles(:parked)
     
     [
       :park,
@@ -447,29 +456,47 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
       :crash,
       :repair
     ].each do |event|
-      assert !v.send("#{event}!")
+      assert !vehicle.send("#{event}!")
     end
   end
   
   def test_event_action_save_failed
-  end
-  
-  def test_parallel_state_machines
-  end
-  
-  def test_no_crash_if_shop_unavailable
+    v = vehicles(:parked)
+    v.highway_id = nil
+    
+    assert_raise(ActiveRecord::RecordInvalid) {v.ignite!}
   end
   
   def test_crash_if_shop_available
+    v = vehicles(:first_gear)
+    assert v.auto_shop.available?
+    assert_equal 0, v.auto_shop.num_customers
+    assert v.crash!
+    assert v.auto_shop.busy?
+    assert_equal 1, v.auto_shop.num_customers
+    assert_equal 200.00, v.insurance_premium
+  end
+  
+  def test_no_crash_if_shop_unavailable
+    v = vehicles(:first_gear)
+    assert v.auto_shop.available?
+    assert v.auto_shop.tow_vehicle!
+    assert v.auto_shop.busy?
+    assert !v.crash!
   end
   
   def test_repair_if_shop_busy
+    v = vehicles(:stalled)
+    assert v.repair!
+    assert v.parked?
+    assert v.auto_shop.available?
   end
   
   def test_no_repair_if_shop_available
-  end
-  
-  def test_insurance_premium_increased_on_stalled
+    v = vehicles(:stalled)
+    assert v.auto_shop.fix_vehicle!
+    assert v.auto_shop.available?
+    assert !v.repair!
   end
   
   def test_event_action_success
@@ -478,6 +505,14 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     assert v.ignite!
     assert_equal 2, v.state_changes.size
     assert v.seatbelt_on
+  end
+  
+  def test_circular_event_action
+    v = vehicles(:stalled)
+    
+    assert v.stalled?
+    assert v.ignite!
+    assert v.stalled?
   end
   
   def test_initial_state_name_as_symbol
@@ -521,27 +556,98 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     assert_equal :parked, vehicles(:parked).state_name
   end
   
+  def test_next_state_for_event_invalid_name
+    vehicle = vehicles(:idling)
+    assert_raise(PluginAWeek::Acts::StateMachine::InvalidEvent) {vehicle.next_state_for_event(:invalid_name)}
+  end
+  
   def test_next_state_for_event
+    vehicle = vehicles(:idling)
+    assert_nil vehicle.next_state_for_event(:shift_down)
+    assert_equal :first_gear, vehicle.next_state_for_event(:shift_up)
   end
   
   def test_next_states_for_event
+    vehicle = vehicles(:idling)
+    assert_equal [], vehicle.next_states_for_event(:shift_down)
+    assert_equal [:first_gear], vehicle.next_states_for_event(:shift_up)
   end
   
   def test_record_transition_no_event
+    vehicle = vehicles(:idling)
+    vehicle.record_transition(nil, :idling, :first_gear)
+    
+    assert_equal 3, vehicle.state_changes.size
+    
+    state_change = vehicle.state_changes.last
+    assert_nil state_change.event
+    assert_equal :idling, state_change.from_state.name
+    assert_equal :first_gear, state_change.to_state.name
   end
   
   def test_record_transition_no_from_state
+    vehicle = vehicles(:idling)
+    vehicle.record_transition(:shift_up, nil, :second_gear)
+    
+    assert_equal 3, vehicle.state_changes.size
+    
+    state_change = vehicle.state_changes.last
+    assert_equal :shift_up, state_change.event.name
+    assert_nil state_change.from_state
+    assert_equal :second_gear, state_change.to_state.name
   end
   
   def test_record_transition_with_deadline_cleared
+    vehicle = vehicles(:idling)
+    assert vehicle.idling_deadline
+    
+    vehicle.record_transition(:ignite, :parked, :idling)
+    assert_nil vehicle.idling_deadline
   end
   
   def test_check_deadlines_no_transition
+    vehicle = vehicles(:idling)
+    vehicle.update_attribute(:idling_deadline, 10.minutes.from_now)
+    assert !vehicle.check_deadlines
   end
   
   def test_check_deadlines_with_transition
+    vehicle = vehicles(:idling)
+    assert vehicle.idling?
+    
+    vehicle.update_attribute(:idling_deadline, 10.minutes.ago)
+    assert vehicle.check_deadlines
+    assert !vehicle.idling?
+    assert vehicle.parked?
   end
   
   def test_deadlines_checked_after_find
+    vehicle = vehicles(:idling)
+    assert vehicle.idling?
+    vehicle.update_attribute(:idling_deadline, 10.minutes.ago)
+    assert vehicle.idling?
+    
+    vehicle = Vehicle.find(vehicle.id)
+    assert !vehicle.idling?
+    assert vehicle.parked?
+  end
+  
+  def test_set_initial_state_id_on_nil
+    v = Vehicle.new
+    assert v[:state_id].nil?
+    
+    v.set_initial_state_id
+    assert v[:state_id]
+  end
+  
+  def test_set_initial_state_id_already_exists
+    v = Vehicle.new
+    assert v[:state_id].nil?
+    
+    v.state_id = 302
+    assert v[:state_id]
+    
+    v.set_initial_state_id
+    assert_equal 302, v[:state_id]
   end
 end

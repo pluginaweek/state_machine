@@ -1,4 +1,11 @@
-mechanics_etc:
+available:
   id: 1
   name: Mechanics Etc.
   state_id: 201
+  num_customers: 0
+  
+busy:
+  id: 2
+  name: Mechanics Etc.
+  state_id: 202
+  num_customers: 1

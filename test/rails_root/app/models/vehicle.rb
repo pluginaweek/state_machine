@@ -6,6 +6,8 @@ class Vehicle < ActiveRecord::Base
   
   attr_accessor :force_idle
   
+  validates_presence_of :highway_id
+  
   state :parked,
     :before_exit => :put_on_seatbelt,
     :after_enter => Proc.new {|vehicle| vehicle.update_attribute(:seatbelt_on, false)}
@@ -27,6 +29,10 @@ class Vehicle < ActiveRecord::Base
   
   event :idle do
     transition_to :idling, :from => :first_gear
+  end
+  
+  event :idling_deadline_passed do
+    transition_to :parked, :from => :idling
   end
   
   event :shift_up do

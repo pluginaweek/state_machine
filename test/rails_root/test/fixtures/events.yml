@@ -46,26 +46,32 @@ vehicle_idle:
   long_description: Puts the car in park with the car still running
   type: Vehicle::Event
   
-vehicle_shift_up:
+vehicle_idling_deadline_passed:
   id: 304
+  name: idling_deadline_passed
+  long_description: The deadline for idling has passed
+  type: Vehicle::Event
+  
+vehicle_shift_up:
+  id: 305
   name: shift_up
   long_description: Shifts the vehicle up to the next gear
   type: Vehicle::Event
   
 vehicle_shift_down:
-  id: 305
+  id: 306
   name: shift_down
   long_description: Shifts the vehicle down to the previous gear
   type: Vehicle::Event
   
 vehicle_crash:
-  id: 306
+  id: 307
   name: crash
   long_description: Crashes the vehicle so that it keeps stalling until it gets repaired
   type: Vehicle::Event
   
 vehicle_repair:
-  id: 307
+  id: 308
   name: repair
   long_description: Repairs the vehicle so that it no longer stalles
   type: Vehicle::Event

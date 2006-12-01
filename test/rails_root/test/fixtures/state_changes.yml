@@ -124,3 +124,30 @@ vehicle_first_gear_2_first_gear_again:
   event_id: 305
   occurred_at: <%= 5.seconds.from_now.to_s(:db) %>
   type: Vehicle::StateChange
+  
+vehicle_stalled_idle:
+  id: 16
+  stateful_id: 6
+  from_state_id: 301
+  to_state_id: 302
+  event_id: 302
+  occurred_at: <%= Time.now.to_s(:db) %>
+  type: Vehicle::StateChange
+  
+vehicle_stalled_first_gear:
+  id: 17
+  stateful_id: 6
+  from_state_id: 302
+  to_state_id: 303
+  event_id: 304
+  occurred_at: <%= Time.now.to_s(:db) %>
+  type: Vehicle::StateChange
+  
+vehicle_stalled_stalled:
+  id: 18
+  stateful_id: 6
+  from_state_id: 303
+  to_state_id: 306
+  event_id: 307
+  occurred_at: <%= Time.now.to_s(:db) %>
+  type: Vehicle::StateChange

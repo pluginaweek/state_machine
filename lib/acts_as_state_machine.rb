@@ -271,7 +271,7 @@ module PluginAWeek #:nodoc:
                             :foreign_key => 'event_id'
               belongs_to  :from_state,
                             :class_name => "#{parent_model_name}::State",
-                            :foreign_key => 'to_state_id'
+                            :foreign_key => 'from_state_id'
               belongs_to  :to_state,
                             :class_name => "#{parent_model_name}::State",
                             :foreign_key => 'to_state_id'
@@ -533,7 +533,8 @@ module PluginAWeek #:nodoc:
               end
               
               def #{name}_deadline=(value)
-                state_deadline = state_deadlines.build(:state_id => #{record.id}, :deadline => value)
+                state_deadline = self.class::StateDeadline.find_or_initialize_by_stateful_id_and_state_id(self.id, #{record.id})
+                state_deadline.deadline = value
                 state_deadline.save!
               end
               
@@ -655,14 +656,17 @@ module PluginAWeek #:nodoc:
         end
         
         # Returns what the next state for a given event would be, as a Ruby symbol.
-        def next_state_for_event(event_name)
-          next_states = next_states_for_event(event_name)
+        def next_state_for_event(name)
+          next_states = next_states_for_event(name)
           next_states.empty? ? nil : next_states.first
         end
         
         # Returns all of the next possible states for a given event, as Ruby symbols.
-        def next_states_for_event(event_name)
-          self.class.transitions[event_name.to_sym].select do |transition|
+        def next_states_for_event(name)
+          transitions = self.class.transitions[name.to_sym]
+          raise InvalidEvent, "#{name} is not a valid event for #{self.class.name}" unless transitions
+          
+          transitions.select do |transition|
             transition.from_name == state_name
           end.map(&:to_name)
         end

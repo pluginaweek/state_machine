@@ -2,7 +2,7 @@ class AutoShop < ActiveRecord::Base
   acts_as_state_machine :initial => :available
   
   state :available,
-    :after_enter => :increment_customers
+    :after_exit => :increment_customers
   state :busy,
     :after_exit => :decrement_customers
   
