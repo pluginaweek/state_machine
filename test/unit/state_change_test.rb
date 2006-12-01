@@ -14,7 +14,7 @@ class StateChangeTest < Test::Unit::TestCase
   end
   
   def test_no_event_id
-    assert_invalid valid_state_change, 'event_id', nil
+    assert_valid valid_state_change, 'event_id', nil
   end
   
   def test_no_stateful_id

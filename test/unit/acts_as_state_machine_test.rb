@@ -6,6 +6,10 @@ Message.class_eval do
   end
 end
 
+class PluginAWeek::Acts::StateMachine::Support::Event
+  attr_accessor :valid_state_names
+end
+
 class ActsAsStateMachineTest < Test::Unit::TestCase
   fixtures :highways, :auto_shops, :vehicles, :state_changes, :state_deadlines
   
@@ -392,6 +396,90 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     assert_equal 2, highway.vehicles.first_gear_count
   end
   
+  def test_invalid_event
+    assert_raise(PluginAWeek::Acts::StateMachine::InvalidEvent) {Vehicle.event(:invalid_event)}
+  end
+  
+  def test_event_already_exists
+    expected = [
+      :parked,
+      :idling,
+      :first_gear,
+      :second_gear,
+      :third_gear,
+      :stalled
+    ]
+    assert_equal expected.size, Vehicle.events[:park].valid_state_names.size
+    assert_equal [], expected - Vehicle.events[:park].valid_state_names
+    
+    car_expected = expected + [
+      :backing_up
+    ]
+    assert_equal car_expected.size, Car.events[:park].valid_state_names.size
+    assert_equal [], car_expected - Car.events[:park].valid_state_names
+  end
+  
+  def test_event_action_on_new_record
+    v = Vehicle.new
+    
+    assert v.ignite!
+    assert !v.new_record?
+    assert_equal 2, v.state_changes.size
+    assert_equal 0, v.state_deadlines.size
+    assert v.seatbelt_on
+  end
+  
+  def test_event_action_failure_on_new_record
+    v = Vehicle.new
+    
+    assert !v.shift_up!
+    assert v.new_record?
+  end
+  
+  def test_event_action_no_transition_available
+    v = vehicles(:parked)
+    
+    [
+      :park,
+      :idle,
+      :shift_up,
+      :shift_down,
+      :crash,
+      :repair
+    ].each do |event|
+      assert !v.send("#{event}!")
+    end
+  end
+  
+  def test_event_action_save_failed
+  end
+  
+  def test_parallel_state_machines
+  end
+  
+  def test_no_crash_if_shop_unavailable
+  end
+  
+  def test_crash_if_shop_available
+  end
+  
+  def test_repair_if_shop_busy
+  end
+  
+  def test_no_repair_if_shop_available
+  end
+  
+  def test_insurance_premium_increased_on_stalled
+  end
+  
+  def test_event_action_success
+    v = vehicles(:parked)
+    
+    assert v.ignite!
+    assert_equal 2, v.state_changes.size
+    assert v.seatbelt_on
+  end
+  
   def test_initial_state_name_as_symbol
     Message.write_inheritable_attribute(:initial_state_name, :dummy)
     assert_equal :dummy, Message.new.initial_state_name
@@ -419,5 +507,41 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
   
   def test_state_for_existing_record
     assert_equal states(:vehicle_idling), vehicles(:idling).state
+  end
+  
+  def test_state_id_for_new_record
+    assert_equal states(:vehicle_parked).id, Vehicle.new.state_id
+  end
+  
+  def test_state_id_for_existing_record
+    assert_equal states(:vehicle_idling).id, vehicles(:idling).state_id
+  end
+  
+  def test_state_name
+    assert_equal :parked, vehicles(:parked).state_name
+  end
+  
+  def test_next_state_for_event
+  end
+  
+  def test_next_states_for_event
+  end
+  
+  def test_record_transition_no_event
+  end
+  
+  def test_record_transition_no_from_state
+  end
+  
+  def test_record_transition_with_deadline_cleared
+  end
+  
+  def test_check_deadlines_no_transition
+  end
+  
+  def test_check_deadlines_with_transition
+  end
+  
+  def test_deadlines_checked_after_find
   end
 end

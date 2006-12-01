@@ -9,7 +9,7 @@ class State < ActiveRecord::Base
     def migrate_up
       model = parent
       if !model.content_columns.any? {|c| c.name == :state_id}
-        self.connection.add_column(model.table_name, :state_id, :integer, :null => false, :default => 0, :unsigned => true)
+        self.connection.add_column(model.table_name, :state_id, :integer, :null => false, :default => nil, :unsigned => true)
       end
     end
     

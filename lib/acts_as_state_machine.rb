@@ -373,7 +373,12 @@ module PluginAWeek #:nodoc:
         def inherited_with_association_classes(subclass)
           inherited_without_association_classes(subclass) if respond_to?(:inherited_without_association_classes)
           
+          # Create individual association classes for subclasses
           Support.create_association_classes(subclass, self)
+          
+          # Create copies of the Support::Events because their valid state names
+          # depend on which class its in
+          events.each {|name, event| events[name] = event.dup}
         end
         
         # Returns an array of the names of all known states.
@@ -594,11 +599,11 @@ module PluginAWeek #:nodoc:
             # Add action for transitioning the model
             class_eval <<-end_eval
               def #{name}!(*args)
-                run_initial_state_actions if new_record?
-                
                 success = false
                 transaction(self) do
-                  if self.class.events[#{name.to_s.dump}].fire(self, args)
+                  save! if new_record?
+                  
+                  if self.class.events[:#{name.to_s.dump}].fire(self, args)
                     success = save!
                   else
                     rollback
