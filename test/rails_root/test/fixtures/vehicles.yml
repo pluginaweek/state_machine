@@ -3,4 +3,37 @@ valid:
   highway_id: 1
   seatbelt_on: false
   insurance_premium: 100.00
+  state_id: 301
+  type: Vehicle
+  
+parked:
+  id: 2
+  highway_id: 1
+  seatbelt_on: false
+  insurance_premium: 100.00
+  state_id: 301
+  type: Vehicle
+  
+idling:
+  id: 3
+  highway_id: 1
+  seatbelt_on: true
+  insurance_premium: 100.00
+  state_id: 302
+  type: Vehicle
+  
+first_gear:
+  id: 4
+  highway_id: 1
+  seatbelt_on: true
+  insurance_premium: 100.00
+  state_id: 303
+  type: Vehicle
+  
+first_gear_2:
+  id: 5
+  highway_id: 1
+  seatbelt_on: true
+  insurance_premium: 100.00
+  state_id: 303
   type: Vehicle

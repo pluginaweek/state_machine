@@ -4,6 +4,8 @@ class Vehicle < ActiveRecord::Base
   
   belongs_to :auto_shop
   
+  attr_accessor :force_idle
+  
   state :parked,
     :before_exit => :put_on_seatbelt,
     :after_enter => Proc.new {|vehicle| vehicle.update_attribute(:seatbelt_on, false)}
@@ -46,6 +48,10 @@ class Vehicle < ActiveRecord::Base
   event :repair, :parallel => {:auto_shop => :fix_vehicle} do
     transition_to :parked, :from => :stalled,
                     :if => :auto_shop_busy?
+  end
+  
+  def force_idle?
+    @force_idle
   end
   
   private

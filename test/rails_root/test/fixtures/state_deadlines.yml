@@ -11,3 +11,10 @@ vehicle_stalled:
   state_id: 306
   deadline: <%= 10.days.from_now.to_s(:db) %>
   type: Vehicle::StateDeadline
+  
+vehicle_idling:
+  id: 3
+  stateful_id: 3
+  state_id: 302
+  deadline: <%= 10.days.from_now.to_s(:db) %>
+  type: Vehicle::StateDeadline
