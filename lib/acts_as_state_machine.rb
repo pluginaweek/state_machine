@@ -533,7 +533,8 @@ module PluginAWeek #:nodoc:
               end
               
               def #{name}_deadline=(value)
-                state_deadline = self.class::StateDeadline.find_or_initialize_by_stateful_id_and_state_id(self.id, #{record.id})
+                state_deadline = state_deadlines.find_or_initialize_by_state_id(#{record.id})
+                state_deadline.stateful_id = self.id
                 state_deadline.deadline = value
                 state_deadline.save!
               end
