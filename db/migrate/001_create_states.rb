@@ -10,6 +10,6 @@ class CreateStates < ActiveRecord::Migration
   end
   
   def self.down
-    drop_table_if_exists :states
+    drop_table :states
   end
 end

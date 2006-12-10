@@ -10,6 +10,6 @@ class CreateStateDeadlines < ActiveRecord::Migration
   end
   
   def self.down
-    drop_table_if_exists :state_deadlines
+    drop_table :state_deadlines
   end
 end

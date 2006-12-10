@@ -10,6 +10,6 @@ class CreateEvents < ActiveRecord::Migration
   end
   
   def self.down
-    drop_table_if_exists :events
+    drop_table :events
   end
 end
