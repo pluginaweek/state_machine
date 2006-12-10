@@ -1,5 +1,6 @@
 require 'dry_transaction_rollbacks'
 require 'eval_call'
+require 'module_creation_helper'
 
 module PluginAWeek #:nodoc:
   module Acts #:nodoc:
@@ -66,14 +67,14 @@ module PluginAWeek #:nodoc:
           end
           
           # Indicates that the state is being entered
-          def entering(record, args = [])
+          def before_enter(record, args = [])
             run_actions(record, args, :before_enter)
           end
           
           # Indicates that the state has been entered.  If a deadline needs to
           # be set when this state is being entered, "set_#{name}_deadline"
           # should be defined in the record's class.
-          def entered(record, args = [])
+          def after_enter(record, args = [])
             # If the class supports deadlines, then see if we can set it now
             if record.class.use_state_deadlines && record.respond_to?("set_#{name}_deadline")
               record.send("set_#{name}_deadline")
@@ -83,12 +84,12 @@ module PluginAWeek #:nodoc:
           end
           
           # Indicates the the state is being exited
-          def exiting(record, args = [])
+          def before_exit(record, args = [])
             run_actions(record, args, :before_exit)
           end
           
           # Indicates the the state has been exited
-          def exited(record, args = [])
+          def after_exit(record, args = [])
             run_actions(record, args, :after_exit)
           end
           
@@ -131,18 +132,18 @@ module PluginAWeek #:nodoc:
             last_state = record.class.states[record.state_name]
             
             # Start leaving the last state
-            last_state.exiting(record, args) unless loopback
+            last_state.before_exit(record, args) unless loopback
             
             # Start entering the next state
-            next_state.entering(record, args) unless loopback
+            next_state.before_enter(record, args) unless loopback
             
             record.state = next_state.record
             
             # Leave the last state
-            last_state.exited(record, args) unless loopback
+            last_state.after_exit(record, args) unless loopback
             
             # Enter the next state
-            next_state.entered(record, args) unless loopback
+            next_state.after_enter(record, args) unless loopback
             
             true
           end
@@ -240,7 +241,7 @@ module PluginAWeek #:nodoc:
         
         def create_association_classes(klass, parent = Object)
           klass.class_eval do
-            model_name = "::#{self.name}"
+            model_name = "::#{klass.name}"
             model_assoc_name = model_name.demodulize.underscore
             
             if parent == Object
@@ -250,7 +251,7 @@ module PluginAWeek #:nodoc:
             end
             
             # Create the State model
-            const_set('State', Class.new(parent::State)).class_eval do
+            Class.create('State', :superclass => parent::State, :parent => klass) do
               has_many  :changes,
                           :class_name => "#{model_name}::StateChange",
                           :foreign_key => 'to_state_id'
@@ -259,13 +260,13 @@ module PluginAWeek #:nodoc:
             end
             
             # Create a model for recording each change in state
-            const_set('Event', Class.new(parent::Event)).class_eval do
+            Class.create('Event', :superclass => parent::Event, :parent => klass).class_eval do
               has_many  :state_changes,
                           :class_name => "#{model_name}::StateChange"
             end
             
             # Create a model for recording each change in state
-            const_set('StateChange', Class.new(parent::StateChange)).class_eval do
+            Class.create('StateChange', :superclass => parent::StateChange, :parent => klass) do
               belongs_to  :event,
                             :class_name => "#{parent_model_name}::Event",
                             :foreign_key => 'event_id'
@@ -277,15 +278,14 @@ module PluginAWeek #:nodoc:
                             :foreign_key => 'to_state_id'
               belongs_to  :stateful,
                             :class_name => model_name,
-                            :foreign_key => 'stateful_id',
-                            :dependent => :destroy
+                            :foreign_key => 'stateful_id'
               
               alias_method    model_assoc_name, :stateful
               alias_attribute "#{model_assoc_name}_id", :stateful_id
             end
             
             if klass.use_state_deadlines
-              const_set('StateDeadline', Class.new(::StateDeadline)).class_eval do
+              Class.create('StateDeadline', :superclass => parent::StateDeadline, :parent => klass) do
                 belongs_to  :state,
                               :class_name => "#{parent_model_name}::State",
                               :foreign_key => 'state_id'
@@ -729,8 +729,8 @@ module PluginAWeek #:nodoc:
           if state_changes.empty?
             transaction(self) do
               state = self.class.states[initial_state_name]
-              state.entering(self)
-              state.entered(self)
+              state.before_enter(self)
+              state.after_enter(self)
               
               record_transition(nil, nil, state.name)
             end

@@ -19,8 +19,12 @@ class StateDeadlineTest < Test::Unit::TestCase
     assert_invalid valid_state_deadline, 'stateful_id', nil
   end
   
-  def test_deadline_class
+  def test_state_deadline_class
     assert_not_nil Vehicle::StateDeadline
+  end
+  
+  def test_subclassed_state_deadline_class
+    assert_not_equal Car::StateDeadline, Vehicle::StateDeadline
   end
   
   def test_state_type

@@ -49,57 +49,57 @@ class SupportingStateTest < Test::Unit::TestCase
     assert_equal 'on_passed!', state.deadline_passed_event
   end
   
-  def test_entering
+  def test_before_enter
     options = {:before_enter => :before_enter_action}
     state = SupportingState.new(@record, options)
-    state.entering(self)
+    state.before_enter(self)
     
     assert @called_before_enter
     assert !@deadline_set
   end
   
-  def test_entered_without_state_deadlines
+  def test_after_enter_without_state_deadlines
     options = {:after_enter => :after_enter_action}
     state = SupportingState.new(@record, options)
-    state.entered(self)
+    state.after_enter(self)
     
     assert @called_after_enter
     assert !@deadline_set
   end
   
-  def test_entered_with_state_deadlines
+  def test_after_enter_with_state_deadlines
     self.class.use_state_deadlines = true
     
     options = {:after_enter => :after_enter_action}
     state = SupportingState.new(@record, options)
-    state.entered(self)
+    state.after_enter(self)
     
     assert @called_after_enter
     assert @deadline_set
   end
   
-  def test_exiting
+  def test_before_exit
     options = {:before_exit => :before_exit_action}
     state = SupportingState.new(@record, options)
-    state.exiting(self)
+    state.before_exit(self)
     
     assert @called_before_exit
     assert !@deadline_set
   end
   
-  def test_exited
+  def test_after_exit
     options = {:after_exit => :after_exit_action}
     state = SupportingState.new(@record, options)
-    state.exited(self)
+    state.after_exit(self)
     
     assert @called_after_exit
     assert !@deadline_set
   end
   
-  def test_exited_with_parameters
+  def test_after_exit_with_parameters
     options = {:after_exit => :action_with_parameters}
     state = SupportingState.new(@record, options)
-    state.exited(self, [1, 2])
+    state.after_exit(self, [1, 2])
     
     assert !@deadline_set
     assert_equal 1, @param_one
