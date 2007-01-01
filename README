@@ -1,10 +1,31 @@
-= acts_as_state_machine
+== acts_as_state_machine
 
-== Example
+acts_as_state_machine .
 
-== Testing
+== Resources
 
-Add the following plugins under acts_as_state_machine/test/rails_root/vendor/plugins:
+Wiki
+
+* http://wiki.pluginaweek.org/Acts_as_state_machine
+
+Announcement
+
+* http://www.pluginaweek.org/
+
+Source
+
+* http://svn.pluginaweek.org/trunk/plugins/active_record/acts/acts_as_state_machine
+
+Development
+
+* http://dev.pluginaweek.org/browser/trunk/plugins/active_record/acts/acts_as_state_machine
+
+== Description
+
+
+
+== Dependencies
+
 * dry_transaction_rollbacks
 * eval_call
 * modulized_inheritance_column
@@ -16,4 +37,6 @@ Add the following plugins under acts_as_state_machine/test/rails_root/vendor/plu
 * plugin_migrations
 * prerequisites/plugin_dependencies
 
-or install the gems
+== References
+
+http://www.cs.usfca.edu/~jbovet/vas.html
