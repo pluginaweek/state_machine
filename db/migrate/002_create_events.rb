@@ -6,7 +6,7 @@ class CreateEvents < ActiveRecord::Migration
       t.column :long_description,   :string, :limit => 1024,  :null => false
       t.column :type,               :string
     end
-    add_index :events, [:name, :type], :unique => true, :name => 'unique_event_name'
+    add_index :events, [:name, :type], :unique => true
   end
   
   def self.down

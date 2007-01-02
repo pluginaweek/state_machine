@@ -6,7 +6,7 @@ class CreateStates < ActiveRecord::Migration
       t.column :long_description,   :string, :limit => 1024,  :null => false
       t.column :type,               :string
     end
-    add_index :states, [:name, :type], :unique => true, :name => 'unique_state_name'
+    add_index :states, [:name, :type], :unique => true
   end
   
   def self.down
