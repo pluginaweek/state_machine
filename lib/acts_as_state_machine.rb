@@ -319,6 +319,18 @@ module PluginAWeek #:nodoc:
         base.extend(MacroMethods)
       end
       
+      #
+      def self.migrate_up(model)
+        if !model.content_columns.any? {|c| c.name == :state_id}
+          model.connection.add_column(model.table_name, :state_id, :integer, :null => false, :default => nil, :unsigned => true)
+        end
+      end
+      
+      #
+      def self.migrate_down(model)
+        model.connection.remove_column(model.table_name, :state_id)
+      end
+      
       module MacroMethods
         # Configuration options:
         # * <tt>initial</tt> - The initial state to place each record in.  This can either be a string/symbol or a Proc for dynamic initial states.
