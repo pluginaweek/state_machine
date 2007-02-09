@@ -2,70 +2,100 @@ valid:
   id: 1
   name: valid
   long_description: A valid state
-  type: State
+  owner_type: ActiveRecord::Base
   
 switch_on:
   id: 101
   name: 'on'
   long_description: The switch is on
-  type: Switch::State
+  owner_type: Switch
   
 switch_off:
   id: 102
   name: 'off'
   long_description: The switch is off
-  type: Switch::State
+  owner_type: Switch
   
 auto_shop_available:
   id: 201
   name: available
   long_description: The mechanic is available
-  type: AutoShop::State
+  owner_type: AutoShop
   
 auto_shop_busy:
   id: 202
   name: busy
   long_description: The mechanic is busy
-  type: AutoShop::State
+  owner_type: AutoShop
   
 vehicle_parked:
   id: 301
   name: parked
   long_description: The vehicle is parked
-  type: Vehicle::State
+  owner_type: Vehicle
   
 vehicle_idling:
   id: 302
   name: idling
   long_description: The vehicle is idling
-  type: Vehicle::State
+  owner_type: Vehicle
   
 vehicle_first_gear:
   id: 303
   name: first_gear
   long_description: The vehicle is driving in first gear
-  type: Vehicle::State
+  owner_type: Vehicle
   
 vehicle_second_gear:
   id: 304
   name: second_gear
   long_description: The vehicle is driving in second gear
-  type: Vehicle::State
+  owner_type: Vehicle
   
 vehicle_third_gear:
   id: 305
   name: third_gear
   long_description: The vehicle is driving in third gear
-  type: Vehicle::State
+  owner_type: Vehicle
   
 vehicle_stalled:
   id: 306
   name: stalled
   long_description: The vehicle has been in an accident and has now stalled
-  type: Vehicle::State
+  owner_type: Vehicle
   
 car_backing_up:
   id: 401
   name: backing_up
   long_description: The car is backing up
-  type: Car::State
+  owner_type: Car
+  
+project_requirements:
+  id: 501
+  name: requirements
+  long_description: Requirements and Specification
+  owner_type: Project
+  
+project_design:
+  id: 502
+  name: design
+  long_description: Detailed system and component design
+  owner_type: Project
+  
+project_implementation:
+  id: 503
+  name: implementation
+  long_description: Implementation/integration
+  owner_type: Project
+  
+project_test:
+  id: 504
+  name: test
+  long_description: Testing
+  owner_type: Project
+  
+project_maintenance:
+  id: 505
+  name: maintenance
+  long_description: System maintenance
+  owner_type: Project

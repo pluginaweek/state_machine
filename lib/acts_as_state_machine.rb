@@ -1,6 +1,6 @@
+require 'class_associations'
 require 'dry_transaction_rollbacks'
 require 'eval_call'
-require 'module_creation_helper'
 
 module PluginAWeek #:nodoc:
   module Acts #:nodoc:
@@ -43,7 +43,9 @@ module PluginAWeek #:nodoc:
         # changes from the system start to the present moment.
         class State
           attr_reader :record
-          delegate    :name, :id, :to => :record
+          delegate    :name,
+                      :id,
+                        :to => :record
           
           def initialize(record, options) #:nodoc:
             options.symbolize_keys!.assert_valid_keys(
@@ -67,14 +69,14 @@ module PluginAWeek #:nodoc:
           end
           
           # Indicates that the state is being entered
-          def before_enter(record, args = [])
+          def before_enter(record, *args)
             run_actions(record, args, :before_enter)
           end
           
           # Indicates that the state has been entered.  If a deadline needs to
           # be set when this state is being entered, "set_#{name}_deadline"
           # should be defined in the record's class.
-          def after_enter(record, args = [])
+          def after_enter(record, *args)
             # If the class supports deadlines, then see if we can set it now
             if record.class.use_state_deadlines && record.respond_to?("set_#{name}_deadline")
               record.send("set_#{name}_deadline")
@@ -84,21 +86,19 @@ module PluginAWeek #:nodoc:
           end
           
           # Indicates the the state is being exited
-          def before_exit(record, args = [])
+          def before_exit(record, *args)
             run_actions(record, args, :before_exit)
           end
           
           # Indicates the the state has been exited
-          def after_exit(record, args = [])
+          def after_exit(record, *args)
             run_actions(record, args, :after_exit)
           end
           
           private
           def run_actions(record, args, action_type) #:nodoc:
             if actions = @options[action_type]
-              Array(actions).each do |action|
-                record.eval_call(action, *args)
-              end
+              Array(actions).each {|action| record.eval_call(action, *args)}
             end
           end
         end
@@ -123,27 +123,27 @@ module PluginAWeek #:nodoc:
           
           # Runs the actual transition and any actions associated with entering
           # and exiting the states
-          def perform(record, args = [])
-            return false unless guard(record, args)
+          def perform(record, *args)
+            return false unless guard(record, *args)
             
             loopback = record.state_name == to_name
             
-            next_state = record.class.states[to_name]
-            last_state = record.class.states[record.state_name]
+            next_state = record.class.valid_states[to_name]
+            last_state = record.class.valid_states[record.state_name]
             
             # Start leaving the last state
-            last_state.before_exit(record, args) unless loopback
+            last_state.before_exit(record, *args) unless loopback
             
             # Start entering the next state
-            next_state.before_enter(record, args) unless loopback
+            next_state.before_enter(record, *args) unless loopback
             
             record.state = next_state.record
             
             # Leave the last state
-            last_state.after_exit(record, args) unless loopback
+            last_state.after_exit(record, *args) unless loopback
             
             # Enter the next state
-            next_state.after_enter(record, args) unless loopback
+            next_state.after_enter(record, *args) unless loopback
             
             true
           end
@@ -155,7 +155,7 @@ module PluginAWeek #:nodoc:
           private
           # Ensures that the transition can occur by checking the guards
           # associated with it
-          def guard(record, args = [])
+          def guard(record, *args)
             @guards.all? {|guard| record.eval_call(guard, *args)}
           end
         end
@@ -163,18 +163,27 @@ module PluginAWeek #:nodoc:
         # An event is a description of activity that is to be performed at a
         # given moment.
         class Event
-          attr_writer :valid_state_names
-          attr_reader :record
+          attr_writer   :klass
+          attr_reader   :record
+          attr_accessor :transitions
+                    
+          delegate      :name,
+                        :id,
+                          :to => :record
+          delegate      :valid_state_names,
+                          :to => '@klass'
           
-          delegate    :name, :id, :to => :record
+          private       :transitions,
+                        :transitions=,
+                        :valid_state_names
           
-          def initialize(record, options, transitions, valid_state_names, &block) #:nodoc:
+          def initialize(record, options, klass, &block) #:nodoc:
             options.symbolize_keys!.assert_valid_keys(
               :parallel
             )
             
-            @record, @options, @valid_state_names = record, options, valid_state_names
-            @transitions = transitions[name] = []
+            @record, @options, @klass = record, options, klass
+            @transitions = []
             
             instance_eval(&block) if block_given?
           end
@@ -187,13 +196,13 @@ module PluginAWeek #:nodoc:
           # Attempts to transition to one of the next possible states.  If it is
           # successful, then any parallel machines that have been configured
           # will have their events fired as well
-          def fire(record, args = [])
+          def fire(record, *args)
             success = false
             
             # Find a state that we can transition into
             original_state_name = record.state_name
             next_states_for(record).each do |transition|
-              if success = transition.perform(record, args)
+              if success = transition.perform(record, *args)
                 record.send(:record_transition, name, original_state_name, record.state_name)
                 break
               end
@@ -227,108 +236,42 @@ module PluginAWeek #:nodoc:
           # <tt>from</tt> - A state or array of states that can be transitioned to
           # <tt>if</tt> - An optional condition that must be met for the transition to occur
           def transition_to(to_name, options = {})
-            raise InvalidState, "#{to_name} is not a valid state for #{self.name}" unless @valid_state_names.include?(to_name.to_sym)
+            raise InvalidState, "#{to_name} is not a valid state for #{self.name}" unless valid_state_names.include?(to_name.to_sym)
             
             options.symbolize_keys!
             
             Array(options.delete(:from)).each do |from_name|
-              raise InvalidState, "#{from_name} is not a valid state for #{self.name}" unless @valid_state_names.include?(from_name.to_sym)
+              raise InvalidState, "#{from_name} is not a valid state for #{self.name}" unless valid_state_names.include?(from_name.to_sym)
               
               @transitions << Support::StateTransition.new(from_name, to_name, options)
             end
           end
-        end
-        
-        def create_association_classes(klass, parent = Object)
-          klass.class_eval do
-            model_name = "::#{klass.name}"
-            model_assoc_name = model_name.demodulize.underscore
-            
-            if parent == Object
-              parent_model_name = model_name
-            else
-              parent_model_name = "::#{parent.name}"
-            end
-            
-            # Create the State model
-            Class.create('State', :superclass => parent::State, :parent => klass) do
-              has_many  :changes,
-                          :class_name => "#{model_name}::StateChange",
-                          :foreign_key => 'to_state_id'
-              has_many  :deadlines,
-                          :class_name => "#{model_name}::StateDeadline"
-            end
-            
-            # Create a model for recording each change in state
-            Class.create('Event', :superclass => parent::Event, :parent => klass).class_eval do
-              has_many  :state_changes,
-                          :class_name => "#{model_name}::StateChange"
-            end
-            
-            # Create a model for recording each change in state
-            Class.create('StateChange', :superclass => parent::StateChange, :parent => klass) do
-              belongs_to  :event,
-                            :class_name => "#{parent_model_name}::Event",
-                            :foreign_key => 'event_id'
-              belongs_to  :from_state,
-                            :class_name => "#{parent_model_name}::State",
-                            :foreign_key => 'from_state_id'
-              belongs_to  :to_state,
-                            :class_name => "#{parent_model_name}::State",
-                            :foreign_key => 'to_state_id'
-              belongs_to  :stateful,
-                            :class_name => model_name,
-                            :foreign_key => 'stateful_id'
-              
-              alias_method    model_assoc_name, :stateful
-              alias_attribute "#{model_assoc_name}_id", :stateful_id
-            end
-            
-            if klass.use_state_deadlines
-              Class.create('StateDeadline', :superclass => parent::StateDeadline, :parent => klass) do
-                belongs_to  :state,
-                              :class_name => "#{parent_model_name}::State",
-                              :foreign_key => 'state_id'
-                belongs_to  :stateful,
-                              :class_name => model_name,
-                              :foreign_key => 'stateful_id',
-                              :dependent => :destroy
-                
-                alias_method    model_assoc_name, :stateful
-                alias_attribute "#{model_assoc_name}_id", :stateful_id
-              end
-            end
-            
-            belongs_to  :state,
-                          :class_name => "#{parent_model_name}::State",
-                          :foreign_key => 'state_id'
-            has_many    :state_changes,
-                          :class_name => "#{model_name}::StateChange",
-                          :foreign_key => 'stateful_id',
-                          :dependent => :destroy
-            has_many    :state_deadlines,
-                          :class_name => "#{model_name}::StateDeadline",
-                          :foreign_key => 'stateful_id',
-                          :dependent => :destroy if klass.use_state_deadlines
+          
+          # Copies the content of the event, duplicating the transitions as well
+          def dup
+            event = super
+            event.transitions = event.transitions.dup
+            event
           end
         end
-        module_function :create_association_classes
       end
       
-      def self.included(base) #:nodoc:
-        base.extend(MacroMethods)
-      end
-      
-      #
+      # Migrates the database up by adding a state_id column to the model's
+      # table
       def self.migrate_up(model)
         if !model.content_columns.any? {|c| c.name == :state_id}
           model.connection.add_column(model.table_name, :state_id, :integer, :null => false, :default => nil, :unsigned => true)
         end
       end
       
-      #
+      # Migrates the database down by removing the state_id column from the
+      # model's table
       def self.migrate_down(model)
         model.connection.remove_column(model.table_name, :state_id)
+      end
+      
+      def self.included(base) #:nodoc:
+        base.extend(MacroMethods)
       end
       
       module MacroMethods
@@ -344,20 +287,20 @@ module PluginAWeek #:nodoc:
           
           options.reverse_merge!(:use_deadlines => false)
           
-          write_inheritable_attribute :states, {}
+          write_inheritable_attribute :valid_states, {}
           write_inheritable_attribute :initial_state_name, options[:initial]
-          write_inheritable_attribute :transitions, {}
-          write_inheritable_attribute :events, {}
+          write_inheritable_attribute :valid_events, {}
           write_inheritable_attribute :use_state_deadlines, options[:use_deadlines]
           
-          class_inheritable_reader    :states
-          class_inheritable_reader    :transitions
-          class_inheritable_reader    :events
+          class_inheritable_reader    :valid_states
+          class_inheritable_reader    :valid_events
           class_inheritable_reader    :use_state_deadlines
           
           before_create               :set_initial_state_id
           after_create                :run_initial_state_actions
           
+          # Create the extension that can be used with association collections
+          # like has_many
           const_set('StateExtension', Module.new).class_eval do
             def find_in_states(number, state_names, *args)
               @reflection.klass.with_state_scope(state_names) do
@@ -366,7 +309,27 @@ module PluginAWeek #:nodoc:
             end
           end
           
-          Support.create_association_classes(self)
+          belongs_to  :state
+          has_many    :state_changes,
+                        :as => :stateful,
+                        :dependent => :destroy
+          has_many    :state_deadlines,
+                        :as => :stateful,
+                        :dependent => :destroy if use_state_deadlines
+          
+          class << self
+            has_many  :states,
+                        :include_superclasses => true
+            has_many  :events,
+                        :include_superclasses => true
+            has_many  :state_changes,
+                        :as => :stateful
+            has_many  :state_deadlines,
+                        :as => :stateful
+            
+            # Deprecate errors from Rails 1.2.* force us to remove the method
+            remove_method(:find_in_states) if method_defined?(:find_in_states)
+          end
           
           extend PluginAWeek::Acts::StateMachine::ClassMethods
           include PluginAWeek::Acts::StateMachine::InstanceMethods
@@ -385,29 +348,18 @@ module PluginAWeek #:nodoc:
         def inherited_with_association_classes(subclass)
           inherited_without_association_classes(subclass) if respond_to?(:inherited_without_association_classes)
           
-          # Create individual association classes for subclasses
-          Support.create_association_classes(subclass, self)
-          
           # Create copies of the Support::Events because their valid state names
           # depend on which class its in
-          events.each {|name, event| events[name] = event.dup}
+          subclass.valid_events.each do |name, event|
+            event = event.dup
+            event.klass = subclass
+            subclass.valid_events[name] = event
+          end
         end
         
         # Returns an array of the names of all known states.
-        def state_names
-          states.keys
-        end
-        
-        # Finds the state with the specified name
-        def find_state(name)
-          find_valid_states(:first, :conditions => ['states.name = ?', name.to_s])
-        end
-        
-        # Finds all of the valid events for this class
-        def find_valid_states(*args)
-          State.with_scope(:find => {:conditions => ["states.type IN (?)", nested_classes_for('State')]}) do
-            State.find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
-          end
+        def valid_state_names
+          valid_states.keys
         end
         
         # Finds all records that are in a given set of states.
@@ -417,11 +369,11 @@ module PluginAWeek #:nodoc:
         # * +state_names+ - A state name or list of state names to find
         # * +args+ - The rest of the args are passed down to ActiveRecord +find+
         def find_in_states(number, *args)
-          options = Hash === args.last ? args.pop : {}
-          with_state_scope(args) do
+          with_state_scope(args) do |options|
             find(number, options)
           end
         end
+        alias_method :find_in_state, :find_in_states
         
         # Counts all records in a given set of states.
         # 
@@ -429,28 +381,29 @@ module PluginAWeek #:nodoc:
         # * +state_names+ - A state name or list of state names to find
         # * +args+ - The rest of the args are passed down to ActiveRecord +find+
         def count_in_states(*args)
-          options = Hash === args.last ? args.pop : {}
-          with_state_scope(args) do
+          with_state_scope(args) do |options|
             count(options)
           end
         end
+        alias_method :count_in_state, :count_in_states
         
         # Calculates all records in a given set of states.
         # 
         # Options:
         # * +state_names+ - A state name or list of state names to find
         # * +args+ - The rest of the args are passed down to ActiveRecord +calculate+
-        def calculate_in_state(operation, column_name, *args)
-          options = Hash === args.last ? args.pop : {}
-          with_state_scope(args) do
+        def calculate_in_states(operation, column_name, *args)
+          with_state_scope(args) do |options|
             calculate(operation, column_name, options)
           end
         end
+        alias_method :calculate_in_state, :calculate_in_states
         
         # Creates a :find scope for matching certain state names.  We can't use
         # the cached records or check if the states are real because subclasses
         # which add additional states may not necessarily have been added yet.
         def with_state_scope(state_names)
+          options = Hash === state_names.last ? state_names.pop : {}
           state_names = Array(state_names).map(&:to_s)
           if state_names.size == 1
             state_conditions = ['states.name = ?', state_names.first]
@@ -459,53 +412,16 @@ module PluginAWeek #:nodoc:
           end
           
           with_scope(:find => {:include => :state, :conditions => state_conditions}) do
-            yield
+            yield options
           end
         end
         
         # Returns an array of all known states.
-        def event_names
-          events.keys
+        def valid_event_names
+          valid_events.keys
         end
         
-        # Finds the event with the specified name
-        def find_event(name)
-          find_valid_events(:first, :conditions => ['events.name = ?', name.to_s])
-        end
-        
-        # Finds all of the valid events for this class
-        def find_valid_events(*args)
-          Event.with_scope(:find => {:conditions => ["events.type IN (?)", nested_classes_for('Event')]}) do
-            Event.find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
-          end
-        end
-        
-        private
-        # Gets all of superclasses for this machine (include this class) that
-        # have the specified type as a nested class.
-        # 
-        # For example,
-        # 
-        #   class Vehicle < ActiveRecord::Base
-        #     acts_as_state_machine :initial => :parked
-        #   end
-        #   
-        #   class Car < Vehicle
-        #   end
-        #   
-        #   Car.nested_classes_for('State')  => ['Car::State', 'Vehicle::State']
-        def nested_classes_for(type)
-          classes = []
-          
-          klass = self
-          while klass.const_defined?(type)
-            classes << "#{klass.name}::#{type}"
-            klass = klass.superclass
-          end
-          
-          classes
-        end
-        
+        private  
         # Define a state of the system. +state+ can take an optional Proc object
         # which will be executed every time the system transitions into that
         # state.  The proc will be passed the current object.
@@ -520,10 +436,10 @@ module PluginAWeek #:nodoc:
         # end
         def state(name, options = {})
           name = name.to_sym
-          record = find_state(name)
+          record = states.find_by_name(name.to_s)
           raise InvalidState, "#{name} is not a valid state for #{self.name}" unless record
           
-          states[name] = Support::State.new(record, options)
+          valid_states[name] = Support::State.new(record, options)
           
           class_eval <<-end_eval
             def #{name}?
@@ -544,9 +460,14 @@ module PluginAWeek #:nodoc:
                 state_deadline.deadline if state_deadline
               end
               
+              def #{name}_deadline_passed?
+                state_deadline = state_deadlines.find_by_state_id(#{record.id})
+                state_deadline && state_deadline.passed?
+              end
+              
               def #{name}_deadline=(value)
                 state_deadline = state_deadlines.find_or_initialize_by_state_id(#{record.id})
-                state_deadline.stateful_id = self.id
+                state_deadline.stateful = self
                 state_deadline.deadline = value
                 state_deadline.save!
               end
@@ -598,26 +519,24 @@ module PluginAWeek #:nodoc:
         def event(name, options = {}, &block)
           name = name.to_sym
           
-          if event = events[name]
+          if event = valid_events[name]
             # The event has already been defined, so just evaluate the new
-            # block.  The state names will be redefined since it is likely this
-            # is being called from a subclass.
-            event.valid_state_names = state_names
+            # block
             event.instance_eval(&block) if block
           else
-            record = find_event(name)
+            record = events.find_by_name(name.to_s)
             raise InvalidEvent, "#{name} is not a valid event for #{self.name}" unless record
             
-            events[name] = Support::Event.new(record, options, transitions, state_names, &block)
+            valid_events[name] = Support::Event.new(record, options, self, &block)
             
             # Add action for transitioning the model
             class_eval <<-end_eval
               def #{name}!(*args)
                 success = false
-                transaction(self) do
+                transaction do
                   save! if new_record?
                   
-                  if self.class.events[:#{name.to_s.dump}].fire(self, args)
+                  if self.class.valid_events[:#{name.to_s.dump}].fire(self, *args)
                     success = save!
                   else
                     rollback
@@ -648,7 +567,7 @@ module PluginAWeek #:nodoc:
         
         # Gets the actual State record for the initial state
         def initial_state
-          self.class.states[initial_state_name].record
+          self.class.valid_states[initial_state_name].record
         end
         
         # Gets the state of the record.  If this record has not been saved, then
@@ -676,25 +595,23 @@ module PluginAWeek #:nodoc:
         
         # Returns all of the next possible states for a given event, as Ruby symbols.
         def next_states_for_event(name)
-          transitions = self.class.transitions[name.to_sym]
-          raise InvalidEvent, "#{name} is not a valid event for #{self.class.name}" unless transitions
+          event = self.class.valid_events[name.to_sym]
+          raise InvalidEvent, "#{name} is not a valid event for #{self.class.name}" unless event
           
-          transitions.select do |transition|
-            transition.from_name == state_name
-          end.map(&:to_name)
+          event.next_states_for(self).map(&:to_name)
         end
         
         private
         # Records the state change in the database
         def record_transition(event_name, from_state_name, to_state_name)
-          from_record = self.class.states[from_state_name].record if from_state_name
-          to_record = self.class.states[to_state_name].record
+          from_record = self.class.valid_states[from_state_name].record if from_state_name
+          to_record = self.class.valid_states[to_state_name].record
           
           state_attrs = {
             :to_state_id => to_record.id,
             :occurred_at => Time.now
           }
-          state_attrs[:event_id] = self.class.events[event_name].id if event_name
+          state_attrs[:event_id] = self.class.valid_events[event_name].id if event_name
           state_attrs[:from_state_id] = from_record.id if from_record
           
           state_change = state_changes.build(state_attrs)
@@ -722,7 +639,7 @@ module PluginAWeek #:nodoc:
             current_deadline = send("#{state_name}_deadline")
             
             if current_deadline && current_deadline <= Time.now
-              state = self.class.states[state_name]
+              state = self.class.valid_states[state_name]
               transitioned = send(state.deadline_passed_event)
             end
           end
@@ -739,8 +656,8 @@ module PluginAWeek #:nodoc:
         # Records the transition for the record going into its initial state
         def run_initial_state_actions
           if state_changes.empty?
-            transaction(self) do
-              state = self.class.states[initial_state_name]
+            transaction do
+              state = self.class.valid_states[initial_state_name]
               state.before_enter(self)
               state.after_enter(self)
               

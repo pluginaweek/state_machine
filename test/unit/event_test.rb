@@ -1,14 +1,27 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class EventTest < Test::Unit::TestCase
-  fixtures :state_changes, :state_deadlines
+  fixtures :state_changes
   
   def valid_event
     events(:valid)
   end
   
+  def test_valid_event
+    assert_valid valid_event
+  end
+  
   def test_no_name
     assert_invalid valid_event, 'name', nil
+  end
+  
+  def test_unique_name
+    existing_event = events(:project_elicit_requirements)
+    similar_event = existing_event.clone
+    similar_event.owner_type = 'Employee'
+    
+    assert_valid similar_event
+    assert_invalid Event.new(:name => 'elicit_requirements', :owner_type => 'Project')
   end
   
   def test_no_long_description
@@ -29,36 +42,12 @@ class EventTest < Test::Unit::TestCase
     assert_equal 'valid', event.short_description
   end
   
-  def test_event_class
-    assert_not_nil Vehicle::Event
-  end
-  
-  def test_subclassed_event_class
-    assert_not_equal Car::Event, Vehicle::Event
-  end
-  
-  def test_state_changes
-    event = events(:switch_turn_on)
+  def test_stored_changes
+    event = events(:project_design)
     expected = [
-      state_changes(:light_turned_on),
-      state_changes(:light_turned_on_again)
+      state_changes(:rss_reader_design)
     ]
     
     assert_equal expected, event.state_changes
-  end
-  
-  def test_state_change_types
-    event = Vehicle::Event.new
-    
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {event.state_changes << StateChange.new}
-    assert_nothing_raised {event.state_changes << Vehicle::StateChange.new}
-  end
-  
-  def test_state_change_types_for_subclass
-    event = Car::Event.new
-    
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {event.state_changes << StateChange.new}
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {event.state_changes << Vehicle::StateChange.new}
-    assert_nothing_raised {event.state_changes << Car::StateChange.new}
   end
 end

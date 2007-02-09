@@ -26,16 +26,18 @@ Development
 
 == Dependencies
 
+* class_associations
 * dry_transaction_rollbacks
 * eval_call
-* modulized_inheritance_column
-* polymorphic_eager_loading
-* polymorphic_eager_loading_modulized_columns
-* dry_validity_assertions
 * appable_plugins
 * loaded_plugins
+* plugin_dependencies (only if dependencies are being installed as plugins)
+
+For migrations:
 * plugin_migrations
-* prerequisites/plugin_dependencies
+
+For testing:
+* dry_validity_assertions
 
 == References
 

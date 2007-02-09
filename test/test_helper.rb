@@ -6,9 +6,12 @@ require File.dirname(__FILE__) + '/rails_root/config/environment.rb'
 require 'test_help'
 silence_warnings { RAILS_ENV = ENV['RAILS_ENV'] }
 
+# Get some additional help
+require 'dry_validity_assertions'
+
 # Run the plugin migrations
-PluginAWeek::PluginMigrator.current_plugin = 'acts_as_state_machine'
-PluginAWeek::PluginMigrator.migrate(File.dirname(__FILE__) + '/../db/migrate')
+PluginAWeek::PluginMigrations::Migrator.current_plugin = 'acts_as_state_machine'
+PluginAWeek::PluginMigrations::Migrator.migrate(File.dirname(__FILE__) + '/../db/migrate')
 
 # Run the migrations
 ActiveRecord::Migrator.migrate("#{RAILS_ROOT}/db/migrate")

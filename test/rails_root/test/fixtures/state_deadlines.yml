@@ -1,20 +1,55 @@
 valid:
   id: 1
   stateful_id: 1
+  stateful_type: ActiveRecord::Base
   state_id: 1
   deadline: <%= Time.now.to_s(:db) %>
-  type: StateDeadline
   
 vehicle_stalled:
   id: 2
   stateful_id: 1
+  stateful_type: Vehicle
   state_id: 306
   deadline: <%= 10.days.from_now.to_s(:db) %>
-  type: Vehicle::StateDeadline
   
 vehicle_idling:
   id: 3
   stateful_id: 3
+  stateful_type: Vehicle
   state_id: 302
   deadline: <%= 10.days.from_now.to_s(:db) %>
-  type: Vehicle::StateDeadline
+  
+rss_reader_requirements:
+  id: 4
+  stateful_id: 2
+  stateful_type: Project
+  state_id: 501
+  deadline: <%= 3.weeks.ago.to_s(:db) %>
+  
+rss_reader_design:
+  id: 5
+  stateful_id: 2
+  stateful_type: Project
+  state_id: 502
+  deadline: <%= Time.now.to_s(:db) %>
+  
+rss_reader_implementation:
+  id: 6
+  stateful_id: 2
+  stateful_type: Project
+  state_id: 503
+  deadline: <%= 1.month.from_now.to_s(:db) %>
+  
+rss_reader_test:
+  id: 7
+  stateful_id: 2
+  stateful_type: Project
+  state_id: 504
+  deadline: <%= 2.months.from_now.to_s(:db) %>
+  
+rss_reader_maintenance:
+  id: 8
+  stateful_id: 2
+  stateful_type: Project
+  state_id: 505
+  deadline: <%= 3.months.from_now.to_s(:db) %>

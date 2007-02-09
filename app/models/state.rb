@@ -1,8 +1,16 @@
 # 
 class State < ActiveRecord::Base
+  has_many                :changes,
+                            :class_name => 'StateChange',
+                            :foreign_key => 'to_state_id',
+                            :order => 'occurred_at ASC'
+  has_many                :deadlines,
+                            :class_name => 'StateDeadline'
+  
   validates_presence_of   :name,
                           :long_description
-  validates_uniqueness_of :name
+  validates_uniqueness_of :name,
+                            :scope => :owner_type
   
   #
   def name

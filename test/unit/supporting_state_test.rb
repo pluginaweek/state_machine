@@ -99,7 +99,7 @@ class SupportingStateTest < Test::Unit::TestCase
   def test_after_exit_with_parameters
     options = {:after_exit => :action_with_parameters}
     state = SupportingState.new(@record, options)
-    state.after_exit(self, [1, 2])
+    state.after_exit(self, 1, 2)
     
     assert !@deadline_set
     assert_equal 1, @param_one

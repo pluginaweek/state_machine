@@ -1,0 +1,9 @@
+valid:
+  id: 1
+  name: Valid
+  state_id: 501
+  
+rss_reader:
+  id: 2
+  name: RSS Reader
+  state_id: 501

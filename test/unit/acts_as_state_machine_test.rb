@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class PluginAWeek::Acts::StateMachine::Support::Event
-  attr_accessor :valid_state_names
+  attr_reader :klass
 end
 
 Message.class_eval do
@@ -21,8 +21,7 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     
     Vehicle.class_eval do
       class << self
-        public  :nested_classes_for,
-                :state,
+        public  :state,
                 :event
       end
       
@@ -42,23 +41,18 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     assert_raise(PluginAWeek::Acts::StateMachine::NoInitialState) {Message.acts_as_state_machine({})}
   end
   
-  def test_default_states
+  def test_default_valid_states
     expected = {}
-    assert_equal expected, Message.states
+    assert_equal expected, Message.valid_states
   end
   
   def test_default_initial_state_name
     assert_equal :dummy, Message.initial_state_name
   end
   
-  def test_default_transitions
+  def test_default_valid_events
     expected = {}
-    assert_equal expected, Message.transitions
-  end
-  
-  def test_default_events
-    expected = {}
-    assert_equal expected, Message.events
+    assert_equal expected, Message.valid_events
   end
   
   def test_default_use_state_deadlines
@@ -74,52 +68,93 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     assert !Switch.const_defined?('StateDeadline')
   end
   
-  def test_state_type
-    vehicle = Vehicle.new
+  def test_states
+    expected = [
+      :parked,
+      :idling,
+      :first_gear,
+      :second_gear,
+      :third_gear,
+      :stalled
+    ].collect! {|state| states(:"vehicle_#{state}")}
     
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {vehicle.state = State.new}
-    assert_nothing_raised {vehicle.state = Vehicle::State.new}
+    assert_equal expected, Vehicle.states
+    assert_equal expected, Motorcycle.states
+    
+    car_expected = expected + [
+      :backing_up
+    ].collect! {|state| states(:"car_#{state}")}
+    
+    assert_equal car_expected, Car.states
   end
   
-  def test_state_type_for_subclass
-    car = Car.new
+  def test_events
+    expected = [
+      :park,
+      :ignite,
+      :idle,
+      :idling_deadline_passed,
+      :shift_up,
+      :shift_down,
+      :crash,
+      :repair
+    ].collect! {|event| events(:"vehicle_#{event}")}
     
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {car.state = State.new}
-    assert_nothing_raised {car.state = Vehicle::State.new}
-    assert_nothing_raised {car.state = Car::State.new}
+    assert_equal expected, Vehicle.events
+    assert_equal expected, Motorcycle.events
+    
+    car_expected = expected + [
+      :reverse
+    ].collect! {|event| events(:"car_#{event}")}
+    
+    assert_equal car_expected, Car.events
   end
   
-  def test_state_change_types
-    vehicle = Vehicle.new
+  def test_state_changes
+    expected = [
+      :parked_initial,
+      :idling_initial,
+      :idling_idle,
+      :first_gear_initial,
+      :first_gear_idle,
+      :first_gear_first_gear,
+      :first_gear_2_initial,
+      :first_gear_2_idle,
+      :first_gear_2_first_gear,
+      :first_gear_2_second_gear,
+      :first_gear_2_first_gear_again,
+      :stalled_idle,
+      :stalled_first_gear,
+      :stalled_stalled
+    ].collect! {|state_change| state_changes(:"vehicle_#{state_change}")}
     
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {vehicle.state_changes << StateChange.new}
-    assert_nothing_raised {vehicle.state_changes << Vehicle::StateChange.new}
+    assert_equal expected, Vehicle.state_changes
+    assert_equal expected, Car.state_changes
   end
   
-  def test_state_change_types_for_subclass
-    car = Car.new
+  def test_state_deadlines
+    expected = [
+      :stalled,
+      :idling
+    ].collect! {|state| state_deadlines(:"vehicle_#{state}")}
     
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {car.state_changes << StateChange.new}
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {car.state_changes << Vehicle::StateChange.new}
-    assert_nothing_raised {car.state_changes << Car::StateChange.new}
+    assert_equal expected, Vehicle.state_deadlines
+    assert_equal expected, Car.state_deadlines
   end
   
-  def test_state_deadline_types
-    vehicle = Vehicle.new
+  def test_events_not_same_objects
+    assert_not_equal Car.valid_events.object_id, Vehicle.valid_events.object_id
     
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {vehicle.state_deadlines << StateDeadline.new}
-    assert_nothing_raised {vehicle.state_deadlines << Vehicle::StateDeadline.new}
+    Vehicle.valid_events.each do |name, vehicle_event|
+      car_event = Car.valid_events[name]
+      assert_not_equal car_event.object_id, vehicle_event.object_id
+      
+      assert_equal Car, car_event.klass
+      assert_equal Vehicle, vehicle_event.klass
+    end
   end
   
-  def test_state_deadline_types_for_subclass
-    car = Car.new
-    
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {car.state_deadlines << StateDeadline.new}
-    assert_raise(ActiveRecord::AssociationTypeMismatch) {car.state_deadlines << Vehicle::StateDeadline.new}
-    assert_nothing_raised {car.state_deadlines << Car::StateDeadline.new}
-  end
-  
-  def test_state_names
+  def test_valid_state_names
     expected = [
       :parked,
       :idling,
@@ -128,11 +163,11 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
       :third_gear,
       :stalled
     ]
-    assert_equal expected.size, Vehicle.state_names.size
-    assert_equal [], expected - Vehicle.state_names
+    assert_equal expected.size, Vehicle.valid_state_names.size
+    assert_equal [], expected - Vehicle.valid_state_names
   end
   
-  def test_state_names_for_subclasses
+  def test_valid_state_names_for_subclasses
     shared = [
       :parked,
       :idling,
@@ -145,38 +180,11 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     car_expected = shared + [
       :backing_up
     ]
-    assert_equal car_expected.size, Car.state_names.size
-    assert_equal [], car_expected - Car.state_names
+    assert_equal car_expected.size, Car.valid_state_names.size
+    assert_equal [], car_expected - Car.valid_state_names
     
-    assert_equal shared.size, Motorcycle.state_names.size
-    assert_equal [], shared - Motorcycle.state_names
-  end
-  
-  def test_find_state
-    assert_nil Vehicle.find_state(:invalid_state)
-    assert_equal states(:vehicle_parked), Vehicle.find_state(:parked)
-    assert_equal states(:vehicle_parked), Car.find_state(:parked)
-    assert_equal states(:car_backing_up), Car.find_state(:backing_up)
-  end
-  
-  def test_find_valid_states
-    expected = [
-      :parked,
-      :idling,
-      :first_gear,
-      :second_gear,
-      :third_gear,
-      :stalled
-    ].collect! {|state| states(:"vehicle_#{state}")}
-    
-    assert_equal expected, Vehicle.find_valid_states
-    assert_equal expected, Motorcycle.find_valid_states
-    
-    car_expected = expected + [
-      :backing_up
-    ].collect! {|state| states(:"car_#{state}")}
-    
-    assert_equal car_expected, Car.find_valid_states
+    assert_equal shared.size, Motorcycle.valid_state_names.size
+    assert_equal [], shared - Motorcycle.valid_state_names
   end
   
   def test_find_first_in_states
@@ -184,9 +192,9 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     assert_equal vehicles(:valid), Vehicle.find_in_states(:first, :parked)
   end
   
-  def test_find_in_states
-    assert_equal [], Vehicle.find_in_states(:all, :second_gear)
-    assert_equal [vehicles(:valid), vehicles(:parked)], Vehicle.find_in_states(:all, :parked)
+  def test_find_in_state
+    assert_equal [], Vehicle.find_in_state(:all, :second_gear)
+    assert_equal [vehicles(:valid), vehicles(:parked)], Vehicle.find_in_state(:all, :parked)
   end
   
   def test_find_in_multiple_states
@@ -209,11 +217,11 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
   end
   
   def test_calculate_in_state
-    assert_equal 200.00, Vehicle.calculate_in_state(:sum, :insurance_premium, :parked)
+    assert_equal 200.00, Vehicle.calculate_in_states(:sum, :insurance_premium, :parked)
   end
   
   def test_calculate_in_multiple_states
-    assert_equal 300.00, Vehicle.calculate_in_state(:sum, :insurance_premium, :parked, :idling)
+    assert_equal 300.00, Vehicle.calculate_in_states(:sum, :insurance_premium, :parked, :idling)
   end
   
   def test_event_names
@@ -227,8 +235,8 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
       :crash,
       :repair
     ]
-    assert_equal expected.size, Vehicle.event_names.size
-    assert_equal [], expected - Vehicle.event_names
+    assert_equal expected.size, Vehicle.valid_event_names.size
+    assert_equal [], expected - Vehicle.valid_event_names
   end
   
   def test_event_names_for_subclasses
@@ -246,48 +254,11 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     car_expected = shared + [
       :reverse
     ]
-    assert_equal car_expected.size, Car.event_names.size
-    assert_equal [], car_expected - Car.event_names
+    assert_equal car_expected.size, Car.valid_event_names.size
+    assert_equal [], car_expected - Car.valid_event_names
     
-    assert_equal shared.size, Motorcycle.event_names.size
-    assert_equal [], shared - Motorcycle.event_names
-  end
-  
-  def test_find_event
-    assert_nil Vehicle.find_event(:invalid_state)
-    assert_equal events(:vehicle_park), Vehicle.find_event(:park)
-    assert_equal events(:vehicle_park), Car.find_event(:park)
-    assert_equal events(:car_reverse), Car.find_event(:reverse)
-  end
-  
-  def test_find_valid_events
-    expected = [
-      :park,
-      :ignite,
-      :idle,
-      :idling_deadline_passed,
-      :shift_up,
-      :shift_down,
-      :crash,
-      :repair
-    ].collect! {|event| events(:"vehicle_#{event}")}
-    
-    assert_equal expected, Vehicle.find_valid_events
-    assert_equal expected, Motorcycle.find_valid_events
-    
-    car_expected = expected + [
-      :reverse
-    ].collect! {|event| events(:"car_#{event}")}
-    
-    assert_equal car_expected, Car.find_valid_events
-  end
-  
-  def test_nested_classes
-    assert_equal ['Vehicle::State'], Vehicle.nested_classes_for('State')
-  end
-  
-  def test_nested_classes_for_subclass
-    assert_equal ['Car::Event', 'Vehicle::Event'], Car.nested_classes_for('Event')
+    assert_equal shared.size, Motorcycle.valid_event_names.size
+    assert_equal [], shared - Motorcycle.valid_event_names
   end
   
   def test_invalid_state
@@ -380,6 +351,14 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     assert_nil vehicle.state_deadlines.find_by_state_id(state.id)
   end
   
+  def test_deadlined_passed?
+    vehicle = vehicles(:idling)
+    assert !vehicle.idling_deadline_passed?
+    
+    vehicle.idling_deadline = 10.days.ago
+    assert vehicle.idling_deadline_passed?
+  end
+  
   def test_find_state_in_association
     highway = highways(:route_66)
     
@@ -409,25 +388,6 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     assert_raise(PluginAWeek::Acts::StateMachine::InvalidEvent) {Vehicle.event(:invalid_event)}
   end
   
-  def test_event_already_exists
-    expected = [
-      :parked,
-      :idling,
-      :first_gear,
-      :second_gear,
-      :third_gear,
-      :stalled
-    ]
-    assert_equal expected.size, Vehicle.events[:park].valid_state_names.size
-    assert_equal [], expected - Vehicle.events[:park].valid_state_names
-    
-    car_expected = expected + [
-      :backing_up
-    ]
-    assert_equal car_expected.size, Car.events[:park].valid_state_names.size
-    assert_equal [], car_expected - Car.events[:park].valid_state_names
-  end
-  
   def test_event_action_on_new_record
     vehicle = Vehicle.new
     
@@ -442,7 +402,8 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     vehicle = Vehicle.new
     
     assert !vehicle.shift_up!
-    assert vehicle.new_record?
+    assert_raise(ActiveRecord::RecordNotFound) {Vehicle.find(vehicle.id)}
+    assert_equal 6, Vehicle.count
   end
   
   def test_event_action_no_transition_available
