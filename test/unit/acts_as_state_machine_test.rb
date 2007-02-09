@@ -398,6 +398,7 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
     assert vehicle.seatbelt_on
   end
   
+  uses_transaction :test_event_action_failure_on_new_record
   def test_event_action_failure_on_new_record
     vehicle = Vehicle.new
     
