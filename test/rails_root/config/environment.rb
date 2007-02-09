@@ -1,45 +1,17 @@
+# Specifies gem version of Rails to use when vendor/rails is not present
+#RAILS_GEM_VERSION = '1.2.0'
+
 require File.join(File.dirname(__FILE__), 'boot')
 
-# set_load_path
-load_paths = %w(app app/models config vendor).collect {|dir| "#{APP_ROOT}/#{dir}"}
-load_paths.reverse_each {|dir| $LOAD_PATH.unshift("#{APP_ROOT}/#{dir}") if File.directory?(dir)}
-$LOAD_PATH.uniq!
+require 'appable_plugins'
+require 'plugin_migrations'
 
-# set_autoload_paths
-Dependencies.load_paths = load_paths
-
-# load_environment
-APP_ENV = ENV['DB']
-
-# initialize_database
-ActiveRecord::Base.configurations = YAML::load(IO.read("#{APP_ROOT}/config/database.yml"))
-ActiveRecord::Base.establish_connection(ActiveRecord::Base.configurations[APP_ENV])
-
-# initializer_logger
-log_path = "#{APP_ROOT}/log/#{APP_ENV}.log"
-begin
-  logger = Logger.new(log_path)
-  logger.level = Logger::DEBUG
-rescue StandardError
-  logger = Logger.new(STDERR)
-  logger.level = Logger::WARN
-  logger.warn(
-    "Logger Error: Unable to access log file. Please ensure that #{log_path} exists and is chmod 0666. " +
-    "The log level has been raised to WARN and the output directed to STDERR until the problem is fixed."
-  )
+Rails::Initializer.run do |config|
+  config.log_level = :debug
+  config.cache_classes = false
+  config.whiny_nils = true
+  config.breakpoint_server = true
+  config.load_paths << "#{File.dirname(__FILE__)}/../../../lib/"
 end
 
-# initialize_framework_logging
-ActiveRecord::Base.logger = logger
-
-# initialize_dependency_mechanism
-Dependencies.mechanism = :require
-
-# initialize_breakpoints
-require 'active_support/breakpoint'
-
-# initialize_whiny_nils
-# require('active_support/whiny_nil')
-
-# load_observers
-ActiveRecord::Base.instantiate_observers
+Dependencies.log_activity = true
