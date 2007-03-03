@@ -39,7 +39,7 @@ spec = Gem::Specification.new do |s|
   s.has_rdoc        = true
   s.test_files      = Dir['test/unit/**/*_test.rb']
   
-  s.author          = 'Aaron Pfeifer and Neil Abraham'
+  s.author          = 'Aaron Pfeifer, Neil Abraham'
   s.email           = 'info@pluginaweek.org'
   s.homepage        = 'http://www.pluginaweek.org'
 end
