@@ -6,7 +6,7 @@ class CreateStateDeadlines < ActiveRecord::Migration
       t.column :state_id,       :integer,   :null => false, :unsigned => true
       t.column :deadline,       :datetime,  :null => false
     end
-    add_index :state_deadlines, [:stateful_id, :stateful_type, :state_id], :unique => true
+    add_index :state_deadlines, [:stateful_id, :stateful_type, :state_id], :unique => true, :name => 'index_state_deadlines_on_stateful_and_state_id'
   end
   
   def self.down

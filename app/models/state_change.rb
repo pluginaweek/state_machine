@@ -1,4 +1,4 @@
-#
+# 
 class StateChange < ActiveRecord::Base
   belongs_to  :event
   belongs_to  :from_state,
