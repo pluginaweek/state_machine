@@ -1,7 +1,8 @@
 # An event is an observable stimulus, response, or action 
 class Event < ActiveRecord::Base
   has_many                :state_changes,
-                            :order => 'occurred_at ASC'
+                            :order => 'occurred_at ASC',
+                            :dependent => :destroy
   
   validates_presence_of   :name,
                           :long_description

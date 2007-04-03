@@ -38,6 +38,9 @@ module PluginAWeek #:nodoc:
       class NoInitialState < Exception #:nodoc:
       end
       
+      class BogusModel < ActiveRecord::Base #:nodoc:
+      end
+      
       module Support #:nodoc:
         # A state stores information about the past; i.e. it reflects the input
         # changes from the system start to the present moment.
@@ -250,7 +253,7 @@ module PluginAWeek #:nodoc:
           # Copies the content of the event, duplicating the transitions as well
           def dup
             event = super
-            event.transitions = event.transitions.dup
+            event.send(:transitions=, event.send(:transitions).dup)
             event
           end
         end
@@ -259,6 +262,11 @@ module PluginAWeek #:nodoc:
       # Migrates the database up by adding a state_id column to the model's
       # table
       def self.migrate_up(model)
+        if !model.is_a?(Class)
+          BogusModel.set_table_name(model.to_s)
+          model = BogusModel
+        end
+        
         if !model.content_columns.any? {|c| c.name == :state_id}
           model.connection.add_column(model.table_name, :state_id, :integer, :null => false, :default => nil, :unsigned => true)
         end
@@ -267,6 +275,11 @@ module PluginAWeek #:nodoc:
       # Migrates the database down by removing the state_id column from the
       # model's table
       def self.migrate_down(model)
+        if !model.is_a?(Class)
+          BogusModel.set_table_name(model.to_s)
+          model = BogusModel
+        end
+        
         model.connection.remove_column(model.table_name, :state_id)
       end
       
