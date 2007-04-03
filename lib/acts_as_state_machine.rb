@@ -632,9 +632,10 @@ module PluginAWeek #:nodoc:
           
           # If a deadline already existed for the state, then clear it so that
           # we can generate a new one
-          if self.class.use_state_deadlines && send("#{to_state_name}_deadline")
-            send("clear_#{to_state_name}_deadline")
-          end
+          # TODO: This doesn't work
+#          if self.class.use_state_deadlines && send("#{to_state_name}_deadline")
+#            send("clear_#{to_state_name}_deadline")
+#          end
         end
         
         # Ensures that deadlines are checked after a record has been retrieved

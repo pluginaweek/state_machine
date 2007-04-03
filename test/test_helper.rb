@@ -10,8 +10,7 @@ silence_warnings { RAILS_ENV = ENV['RAILS_ENV'] }
 require 'dry_validity_assertions'
 
 # Run the plugin migrations
-PluginAWeek::PluginMigrations::Migrator.current_plugin = 'acts_as_state_machine'
-PluginAWeek::PluginMigrations::Migrator.migrate(File.dirname(__FILE__) + '/../db/migrate')
+PluginAWeek::PluginMigrations.migrate('acts_as_state_machine')
 
 # Run the migrations
 ActiveRecord::Migrator.migrate("#{RAILS_ROOT}/db/migrate")
@@ -25,6 +24,6 @@ class Test::Unit::TestCase #:nodoc:
     # loaded
   end
   
-  self.use_transactional_fixtures = true
+#  self.use_transactional_fixtures = true
   self.use_instantiated_fixtures  = false
 end
