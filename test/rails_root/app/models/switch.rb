@@ -1,5 +1,5 @@
 class Switch < ActiveRecord::Base
-  acts_as_state_machine :initial => :off
+  has_states :initial => :off
   
   state :on
   state :off

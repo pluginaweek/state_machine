@@ -1,12 +1,6 @@
-# Load the environment
-ENV['RAILS_ENV'] ||= 'in_memory'
-require File.dirname(__FILE__) + '/rails_root/config/environment.rb'
-
-# Load the testing framework
-require 'test_help'
-silence_warnings { RAILS_ENV = ENV['RAILS_ENV'] }
-
-# Get some additional help
+$:.unshift("#{File.dirname(__FILE__)}/../../../../test/plugin_test_helper/lib")
+require 'rubygems'
+require 'plugin_test_helper'
 require 'dry_validity_assertions'
 
 # Run the plugin migrations
@@ -25,5 +19,5 @@ class Test::Unit::TestCase #:nodoc:
   end
   
 #  self.use_transactional_fixtures = true
-  self.use_instantiated_fixtures  = false
+#  self.use_instantiated_fixtures  = false
 end

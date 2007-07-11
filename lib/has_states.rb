@@ -3,7 +3,7 @@ require 'dry_transaction_rollbacks'
 require 'eval_call'
 
 module PluginAWeek #:nodoc:
-  module Acts #:nodoc:
+  module Has #:nodoc:
     # A state machine is a model of behavior composed of states, transitions,
     # and events.
     # 
@@ -25,7 +25,7 @@ module PluginAWeek #:nodoc:
     #       transition_to :off, :from => :on
     #     end
     #   end
-    module StateMachine
+    module States
       # An unknown state was specified
       class InvalidState < Exception #:nodoc:
       end
@@ -290,20 +290,20 @@ module PluginAWeek #:nodoc:
       module MacroMethods
         # Configuration options:
         # * <tt>initial</tt> - The initial state to place each record in.  This can either be a string/symbol or a Proc for dynamic initial states.
-        # * <tt>use_deadlines</tt> - Whether or not deadlines will be used for states.
-        def acts_as_state_machine(options)
+        # * <tt>deadlines</tt> - Whether or not deadlines will be used for states.
+        def has_states(options)
           options.assert_valid_keys(
             :initial,
-            :use_deadlines
+            :deadlines
           )
           raise NoInitialState unless options[:initial]
           
-          options.reverse_merge!(:use_deadlines => false)
+          options.reverse_merge!(:deadlines => false)
           
           write_inheritable_attribute :valid_states, {}
           write_inheritable_attribute :initial_state_name, options[:initial]
           write_inheritable_attribute :valid_events, {}
-          write_inheritable_attribute :use_state_deadlines, options[:use_deadlines]
+          write_inheritable_attribute :use_state_deadlines, options[:deadlines]
           
           class_inheritable_reader    :valid_states
           class_inheritable_reader    :valid_events
@@ -447,63 +447,67 @@ module PluginAWeek #:nodoc:
         #   state :open
         #   state :closed, Proc.new { |o| Mailer.send_notice(o) }
         # end
-        def state(name, options = {})
-          name = name.to_sym
-          record = states.find_by_name(name.to_s)
-          raise InvalidState, "#{name} is not a valid state for #{self.name}" unless record
+        def state(*names)
+          options = names.last.is_a?(Hash) ? names.pop : {}
           
-          valid_states[name] = Support::State.new(record, options)
-          
-          class_eval <<-end_eval
-            def #{name}?
-              state_id == #{record.id}
-            end
+          names.each do |name|
+            name = name.to_sym
+            record = states.find_by_name(name.to_s)
+            raise InvalidState, "#{name} is not a valid state for #{self.name}" unless record
             
-            def #{name}_at
-              state_change = state_changes.find_by_to_state_id(#{record.id}, :order => 'occurred_at DESC')
-              state_change.occurred_at if state_change
-            end
-          end_eval
-          
-          # Add support for checking deadlines
-          if use_state_deadlines
+            valid_states[name] = Support::State.new(record, options)
+            
             class_eval <<-end_eval
-              def #{name}_deadline
-                state_deadline = state_deadlines.find_by_state_id(#{record.id})
-                state_deadline.deadline if state_deadline
+              def #{name}?
+                state_id == #{record.id}
               end
               
-              def #{name}_deadline_passed?
-                state_deadline = state_deadlines.find_by_state_id(#{record.id})
-                state_deadline && state_deadline.passed?
-              end
-              
-              def #{name}_deadline=(value)
-                state_deadline = state_deadlines.find_or_initialize_by_state_id(#{record.id})
-                state_deadline.stateful = self
-                state_deadline.deadline = value
-                state_deadline.save!
-              end
-              
-              def clear_#{name}_deadline
-                state_deadlines.find_by_state_id(#{record.id}).destroy
+              def #{name}_at
+                state_change = state_changes.find_by_to_state_id(#{record.id}, :order => 'occurred_at DESC')
+                state_change.occurred_at if state_change
               end
             end_eval
-          end
-          
-          self::StateExtension.module_eval <<-end_eval
-            def #{name}(*args)
-              with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
-                find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
-              end
+            
+            # Add support for checking deadlines
+            if use_state_deadlines
+              class_eval <<-end_eval
+                def #{name}_deadline
+                  state_deadline = state_deadlines.find_by_state_id(#{record.id})
+                  state_deadline.deadline if state_deadline
+                end
+                
+                def #{name}_deadline_passed?
+                  state_deadline = state_deadlines.find_by_state_id(#{record.id})
+                  state_deadline && state_deadline.passed?
+                end
+                
+                def #{name}_deadline=(value)
+                  state_deadline = state_deadlines.find_or_initialize_by_state_id(#{record.id})
+                  state_deadline.stateful = self
+                  state_deadline.deadline = value
+                  state_deadline.save!
+                end
+                
+                def clear_#{name}_deadline
+                  state_deadlines.find_by_state_id(#{record.id}).destroy
+                end
+              end_eval
             end
             
-            def #{name}_count(*args)
-              with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
-                count(*args)
+            self::StateExtension.module_eval <<-end_eval
+              def #{name}(*args)
+                with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
+                  find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
+                end
               end
-            end
+              
+              def #{name}_count(*args)
+                with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{record.id}]}) do
+                  count(*args)
+                end
+              end
           end_eval
+          end
         end
         
         # Define an event.  This takes a block which describes all valid transitions

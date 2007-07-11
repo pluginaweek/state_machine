@@ -1,5 +1,5 @@
 class AutoShop < ActiveRecord::Base
-  acts_as_state_machine :initial => :available
+  has_states :initial => :available
   
   state :available,
     :after_exit => :increment_customers

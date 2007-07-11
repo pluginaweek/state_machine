@@ -1,5 +1,5 @@
 class Vehicle < ActiveRecord::Base
-  acts_as_state_machine :initial => Proc.new {|vehicle| vehicle.force_idle? ? :idling : :parked},
+  has_states :initial => Proc.new {|vehicle| vehicle.force_idle? ? :idling : :parked},
                           :use_deadlines => true
   
   belongs_to :auto_shop

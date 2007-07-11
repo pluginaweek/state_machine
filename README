@@ -1,12 +1,12 @@
-== acts_as_state_machine
+== has_states
 
-acts_as_state_machine .
+has_states .
 
 == Resources
 
 Wiki
 
-* http://wiki.pluginaweek.org/Acts_as_state_machine
+* http://wiki.pluginaweek.org/Has_states
 
 Announcement
 
@@ -14,11 +14,11 @@ Announcement
 
 Source
 
-* http://svn.pluginaweek.org/trunk/plugins/active_record/acts/acts_as_state_machine
+* http://svn.pluginaweek.org/trunk/plugins/active_record/acts/has_states
 
 Development
 
-* http://dev.pluginaweek.org/browser/trunk/plugins/active_record/acts/acts_as_state_machine
+* http://dev.pluginaweek.org/browser/trunk/plugins/active_record/acts/has_states
 
 == Description
 
