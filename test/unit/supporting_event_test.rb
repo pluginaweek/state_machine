@@ -142,7 +142,7 @@ class PluginAWeek::Has::States::EventTest < Test::Unit::TestCase
   end
   
   def test_transition_to_with_invalid_to
-    assert_raise(PluginAWeek::Acts::StateMachine::InvalidState) do
+    assert_raise(PluginAWeek::Has::States::InvalidState) do
       event = PluginAWeek::Has::States::Event.new(@record, {}, self.class) do
         transition_to :invalid_to_state, :from => :off
       end
@@ -150,7 +150,7 @@ class PluginAWeek::Has::States::EventTest < Test::Unit::TestCase
   end
   
   def test_transition_to_with_invalid_from
-    assert_raise(PluginAWeek::Acts::StateMachine::InvalidState) do
+    assert_raise(PluginAWeek::Has::States::InvalidState) do
       event = PluginAWeek::Has::States::Event.new(@record, {}, self.class) do
         transition_to :on, :from => :invalid_from_state
       end

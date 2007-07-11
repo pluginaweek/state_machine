@@ -1,5 +1,5 @@
 require 'class_associations'
-#require 'dry_transaction_rollbacks'
+require 'dry_transaction_rollbacks'
 require 'eval_call'
 
 require 'has_states/invalid_state'
@@ -138,7 +138,7 @@ module PluginAWeek #:nodoc:
         def inherited_with_association_classes(subclass)
           inherited_without_association_classes(subclass) if respond_to?(:inherited_without_association_classes)
           
-          # Create copies of the parent::Events because their valid state names
+          # Create copies of the Events because their valid state names
           # depend on which class its in
           subclass.valid_events.each do |name, event|
             event = event.dup
@@ -232,7 +232,7 @@ module PluginAWeek #:nodoc:
             record = states.find_by_name(name.to_s)
             raise InvalidState, "#{name} is not a valid state for #{self.name}" unless record
             
-            valid_states[name] = parent::State.new(record, options)
+            valid_states[name] = PluginAWeek::Has::States::State.new(record, options)
             
             class_eval <<-end_eval
               def #{name}?
@@ -321,7 +321,7 @@ module PluginAWeek #:nodoc:
             record = events.find_by_name(name.to_s)
             raise InvalidEvent, "#{name} is not a valid event for #{self.name}" unless record
             
-            valid_events[name] = parent::Event.new(record, options, self, &block)
+            valid_events[name] = PluginAWeek::Has::States::Event.new(record, options, self, &block)
             
             # Add action for transitioning the model
             class_eval <<-end_eval
@@ -413,10 +413,10 @@ module PluginAWeek #:nodoc:
           
           # If a deadline already existed for the state, then clear it so that
           # we can generate a new one
-          # TODO: This doesn't work
-#          if self.class.use_state_deadlines && send("#{to_state_name}_deadline")
-#            send("clear_#{to_state_name}_deadline")
-#          end
+          # TODO: I'm not sure if this works
+          if self.class.use_state_deadlines && send("#{to_state_name}_deadline")
+            send("clear_#{to_state_name}_deadline")
+          end
         end
         
         # Ensures that deadlines are checked after a record has been retrieved

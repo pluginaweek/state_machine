@@ -10,7 +10,7 @@ Message.class_eval do
   end
 end
 
-class ActsAsStateMachineTest < Test::Unit::TestCase
+class HasStatesTest < Test::Unit::TestCase
   fixtures :highways, :auto_shops, :vehicles, :state_changes, :state_deadlines
   
   def setup
@@ -34,11 +34,11 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
   
   def test_invalid_key
     options = {:invalid_key => true}
-    assert_raise(ArgumentError) {Message.acts_as_state_machine(options)}
+    assert_raise(ArgumentError) {Message.has_states(options)}
   end
   
   def test_no_initial_state
-    assert_raise(PluginAWeek::Acts::StateMachine::NoInitialState) {Message.acts_as_state_machine({})}
+    assert_raise(PluginAWeek::Has::States::NoInitialState) {Message.has_states({})}
   end
   
   def test_default_valid_states
@@ -262,7 +262,7 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
   end
   
   def test_invalid_state
-    assert_raise(PluginAWeek::Acts::StateMachine::InvalidState) {Vehicle.state(:invalid_state)}
+    assert_raise(PluginAWeek::Has::States::InvalidState) {Vehicle.state(:invalid_state)}
   end
   
   def test_in_state
@@ -385,7 +385,7 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
   end
   
   def test_invalid_event
-    assert_raise(PluginAWeek::Acts::StateMachine::InvalidEvent) {Vehicle.event(:invalid_event)}
+    assert_raise(PluginAWeek::Has::States::InvalidEvent) {Vehicle.event(:invalid_event)}
   end
   
   def test_event_action_on_new_record
@@ -520,7 +520,7 @@ class ActsAsStateMachineTest < Test::Unit::TestCase
   
   def test_next_state_for_event_invalid_name
     vehicle = vehicles(:idling)
-    assert_raise(PluginAWeek::Acts::StateMachine::InvalidEvent) {vehicle.next_state_for_event(:invalid_name)}
+    assert_raise(PluginAWeek::Has::States::InvalidEvent) {vehicle.next_state_for_event(:invalid_name)}
   end
   
   def test_next_state_for_event

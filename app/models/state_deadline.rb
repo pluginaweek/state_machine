@@ -1,8 +1,8 @@
 # 
 class StateDeadline < ActiveRecord::Base
-  belongs_to            :state
-  belongs_to            :stateful,
-                          :polymorphic => true
+  belongs_to  :state
+  belongs_to  :stateful,
+                :polymorphic => true
   
   validates_presence_of :state_id,
                         :stateful_id,

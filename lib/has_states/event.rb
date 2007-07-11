@@ -84,7 +84,7 @@ module PluginAWeek #:nodoc:
           Array(options.delete(:from)).each do |from_name|
             raise InvalidState, "#{from_name} is not a valid state for #{self.name}" unless valid_state_names.include?(from_name.to_sym)
             
-            @transitions << parent::StateTransition.new(from_name, to_name, options)
+            @transitions << PluginAWeek::Has::States::StateTransition.new(from_name, to_name, options)
           end
         end
         
