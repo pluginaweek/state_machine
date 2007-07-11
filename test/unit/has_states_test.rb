@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class PluginAWeek::Acts::StateMachine::Support::Event
+class PluginAWeek::Has::States::Event
   attr_reader :klass
 end
 

@@ -2,14 +2,12 @@ require File.dirname(__FILE__) + '/../test_helper'
 require File.dirname(__FILE__) + '/../mocks/mock_transition'
 require File.dirname(__FILE__) + '/../mocks/parallel_machine'
 
-class PluginAWeek::Acts::StateMachine::Support::Event
+class PluginAWeek::Has::States::Event
   public  :transitions,
           :transitions=
 end
 
-class SupportingEventTest < Test::Unit::TestCase
-  const_set('SupportingEvent', PluginAWeek::Acts::StateMachine::Support::Event)
-  
+class PluginAWeek::Has::States::EventTest < Test::Unit::TestCase
   cattr_accessor :valid_state_names
   
   attr_accessor :state_name,
@@ -28,35 +26,35 @@ class SupportingEventTest < Test::Unit::TestCase
   def test_no_transitions
     @state_name = :on
     
-    event = SupportingEvent.new(@record, {}, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, {}, self.class)
     assert_equal [], event.next_states_for(self)
   end
   
   def test_transitions
-    event = SupportingEvent.new(@record, {}, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, {}, self.class)
     event.transitions = @event_transitions
     assert_equal [@event_transitions.first], event.next_states_for(self)
   end
   
   def test_invalid_key
     options = {:invalid_key => true}
-    assert_raise(ArgumentError) {SupportingEvent.new(@record, options, self.class)}
+    assert_raise(ArgumentError) {PluginAWeek::Has::States::Event.new(@record, options, self.class)}
   end
   
   def test_initialize_with_block
-    event = SupportingEvent.new(@record, {}, self.class) do
+    event = PluginAWeek::Has::States::Event.new(@record, {}, self.class) do
     end
     
-    assert_instance_of SupportingEvent, event
+    assert_instance_of PluginAWeek::Has::States::Event, event
   end
   
   def test_fire_with_no_transitions
-    event = SupportingEvent.new(@record, {}, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, {}, self.class)
     assert !event.fire(self)
   end
   
   def test_fire_with_failed_transitions
-    event = SupportingEvent.new(@record, {}, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, {}, self.class)
     event.transitions = [
       MockTransition.new(:off, :on, false)
     ]
@@ -68,7 +66,7 @@ class SupportingEventTest < Test::Unit::TestCase
   end
   
   def test_fire_with_successful_transitions
-    event = SupportingEvent.new(@record, {}, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, {}, self.class)
     event.transitions = [
       MockTransition.new(:off, :on, true)
     ]
@@ -80,7 +78,7 @@ class SupportingEventTest < Test::Unit::TestCase
   end
   
   def test_fire_with_failed_then_successful_transition
-    event = SupportingEvent.new(@record, {}, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, {}, self.class)
     event.transitions = [
       MockTransition.new(:off, :on, false),
       MockTransition.new(:off, :on, true)
@@ -96,7 +94,7 @@ class SupportingEventTest < Test::Unit::TestCase
     @first_parallel = ParallelMachine.new(false)
     
     options = {:parallel => :first_parallel}
-    event = SupportingEvent.new(@record, options, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, options, self.class)
     event.transitions = [
       MockTransition.new(:off, :on, true)
     ]
@@ -112,7 +110,7 @@ class SupportingEventTest < Test::Unit::TestCase
     @first_parallel = ParallelMachine.new(true)
     
     options = {:parallel => :first_parallel}
-    event = SupportingEvent.new(@record, options, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, options, self.class)
     event.transitions = [
       MockTransition.new(:off, :on, true)
     ]
@@ -129,7 +127,7 @@ class SupportingEventTest < Test::Unit::TestCase
     @second_parallel = ParallelMachine.new(true)
     
     options = {:parallel => [:first_parallel, {:second_parallel => :turn_on_now}]}
-    event = SupportingEvent.new(@record, options, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, options, self.class)
     event.transitions = [
       MockTransition.new(:off, :on, true)
     ]
@@ -145,7 +143,7 @@ class SupportingEventTest < Test::Unit::TestCase
   
   def test_transition_to_with_invalid_to
     assert_raise(PluginAWeek::Acts::StateMachine::InvalidState) do
-      event = SupportingEvent.new(@record, {}, self.class) do
+      event = PluginAWeek::Has::States::Event.new(@record, {}, self.class) do
         transition_to :invalid_to_state, :from => :off
       end
     end
@@ -153,14 +151,14 @@ class SupportingEventTest < Test::Unit::TestCase
   
   def test_transition_to_with_invalid_from
     assert_raise(PluginAWeek::Acts::StateMachine::InvalidState) do
-      event = SupportingEvent.new(@record, {}, self.class) do
+      event = PluginAWeek::Has::States::Event.new(@record, {}, self.class) do
         transition_to :on, :from => :invalid_from_state
       end
     end
   end
   
   def test_transition_to
-    event = SupportingEvent.new(@record, {}, self.class) do
+    event = PluginAWeek::Has::States::Event.new(@record, {}, self.class) do
       transition_to :on, :from => :off
     end
     
@@ -168,7 +166,7 @@ class SupportingEventTest < Test::Unit::TestCase
   end
   
   def test_dup
-    event = SupportingEvent.new(@record, {}, self.class)
+    event = PluginAWeek::Has::States::Event.new(@record, {}, self.class)
     dup_event = event.dup
     
     assert_not_equal event.object_id, dup_event.object_id

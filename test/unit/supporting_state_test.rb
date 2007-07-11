@@ -1,12 +1,10 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class PluginAWeek::Acts::StateMachine::Support::State
+class PluginAWeek::Has::States::State
   attr_reader :options
 end
 
-class SupportingStateTest < Test::Unit::TestCase
-  const_set('SupportingState', PluginAWeek::Acts::StateMachine::Support::State)
-  
+class PluginAWeek::Has::States::StateTest < Test::Unit::TestCase
   cattr_accessor :use_state_deadlines
   
   def setup
@@ -25,16 +23,16 @@ class SupportingStateTest < Test::Unit::TestCase
   
   def test_invalid_key
     options = {:invalid_key => true}
-    assert_raise(ArgumentError) {SupportingState.new(@record, options)}
+    assert_raise(ArgumentError) {PluginAWeek::Has::States::State.new(@record, options)}
   end
   
   def test_valid_key_as_string
     options = {:before_enter => :foo}
-    assert_nothing_raised {SupportingState.new(@record, options)}
+    assert_nothing_raised {PluginAWeek::Has::States::State.new(@record, options)}
   end
   
   def test_default_deadline_passed_event
-    state = SupportingState.new(@record, {})
+    state = PluginAWeek::Has::States::State.new(@record, {})
     
     assert_equal :on, state.name
     assert_equal 'on_deadline_passed', state.options[:deadline_passed_event]
@@ -43,7 +41,7 @@ class SupportingStateTest < Test::Unit::TestCase
   
   def test_custom_deadline_passed_event
     options = {:deadline_passed_event => 'on_passed'}
-    state = SupportingState.new(@record, options)
+    state = PluginAWeek::Has::States::State.new(@record, options)
     
     assert_equal 'on_passed', state.options[:deadline_passed_event]
     assert_equal 'on_passed!', state.deadline_passed_event
@@ -51,7 +49,7 @@ class SupportingStateTest < Test::Unit::TestCase
   
   def test_before_enter
     options = {:before_enter => :before_enter_action}
-    state = SupportingState.new(@record, options)
+    state = PluginAWeek::Has::States::State.new(@record, options)
     state.before_enter(self)
     
     assert @called_before_enter
@@ -60,7 +58,7 @@ class SupportingStateTest < Test::Unit::TestCase
   
   def test_after_enter_without_state_deadlines
     options = {:after_enter => :after_enter_action}
-    state = SupportingState.new(@record, options)
+    state = PluginAWeek::Has::States::State.new(@record, options)
     state.after_enter(self)
     
     assert @called_after_enter
@@ -71,7 +69,7 @@ class SupportingStateTest < Test::Unit::TestCase
     self.class.use_state_deadlines = true
     
     options = {:after_enter => :after_enter_action}
-    state = SupportingState.new(@record, options)
+    state = PluginAWeek::Has::States::State.new(@record, options)
     state.after_enter(self)
     
     assert @called_after_enter
@@ -80,7 +78,7 @@ class SupportingStateTest < Test::Unit::TestCase
   
   def test_before_exit
     options = {:before_exit => :before_exit_action}
-    state = SupportingState.new(@record, options)
+    state = PluginAWeek::Has::States::State.new(@record, options)
     state.before_exit(self)
     
     assert @called_before_exit
@@ -89,7 +87,7 @@ class SupportingStateTest < Test::Unit::TestCase
   
   def test_after_exit
     options = {:after_exit => :after_exit_action}
-    state = SupportingState.new(@record, options)
+    state = PluginAWeek::Has::States::State.new(@record, options)
     state.after_exit(self)
     
     assert @called_after_exit
@@ -98,7 +96,7 @@ class SupportingStateTest < Test::Unit::TestCase
   
   def test_after_exit_with_parameters
     options = {:after_exit => :action_with_parameters}
-    state = SupportingState.new(@record, options)
+    state = PluginAWeek::Has::States::State.new(@record, options)
     state.after_exit(self, 1, 2)
     
     assert !@deadline_set
@@ -107,12 +105,12 @@ class SupportingStateTest < Test::Unit::TestCase
   end
   
   def test_name
-    state = SupportingState.new(@record, {})
+    state = PluginAWeek::Has::States::State.new(@record, {})
     assert_equal :on, state.name
   end
   
   def test_id
-    state = SupportingState.new(@record, {})
+    state = PluginAWeek::Has::States::State.new(@record, {})
     assert_equal @record.id, state.id
   end
   

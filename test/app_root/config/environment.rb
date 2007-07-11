@@ -1,6 +1,3 @@
-# Specifies gem version of Rails to use when vendor/rails is not present
-#RAILS_GEM_VERSION = '1.2.0'
-
 require 'config/boot'
 
 require 'appable_plugins'

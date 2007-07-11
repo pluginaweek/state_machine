@@ -1,6 +1,13 @@
 require 'class_associations'
-require 'dry_transaction_rollbacks'
+#require 'dry_transaction_rollbacks'
 require 'eval_call'
+
+require 'has_states/invalid_state'
+require 'has_states/invalid_event'
+require 'has_states/no_initial_state'
+require 'has_states/state'
+require 'has_states/state_transition'
+require 'has_states/event'
 
 module PluginAWeek #:nodoc:
   module Has #:nodoc:
@@ -26,237 +33,7 @@ module PluginAWeek #:nodoc:
     #     end
     #   end
     module States
-      # An unknown state was specified
-      class InvalidState < Exception #:nodoc:
-      end
-      
-      # An unknown event was specified
-      class InvalidEvent < Exception #:nodoc:
-      end
-      
-      # No initial state was specified for the machine
-      class NoInitialState < Exception #:nodoc:
-      end
-      
       class BogusModel < ActiveRecord::Base #:nodoc:
-      end
-      
-      module Support #:nodoc:
-        # A state stores information about the past; i.e. it reflects the input
-        # changes from the system start to the present moment.
-        class State
-          attr_reader :record
-          delegate    :name,
-                      :id,
-                        :to => :record
-          
-          def initialize(record, options) #:nodoc:
-            options.symbolize_keys!.assert_valid_keys(
-              :before_enter,
-              :after_enter,
-              :before_exit,
-              :after_exit,
-              :deadline_passed_event
-            )
-            options.reverse_merge!(
-              :deadline_passed_event => "#{record.name}_deadline_passed"
-            )
-            
-            @record, @options = record, options
-          end
-          
-          # Gets the name of the event that should be invoked when the state's
-          # deadline has passed
-          def deadline_passed_event
-            "#{@options[:deadline_passed_event]}!"
-          end
-          
-          # Indicates that the state is being entered
-          def before_enter(record, *args)
-            run_actions(record, args, :before_enter)
-          end
-          
-          # Indicates that the state has been entered.  If a deadline needs to
-          # be set when this state is being entered, "set_#{name}_deadline"
-          # should be defined in the record's class.
-          def after_enter(record, *args)
-            # If the class supports deadlines, then see if we can set it now
-            if record.class.use_state_deadlines && record.respond_to?("set_#{name}_deadline")
-              record.send("set_#{name}_deadline")
-            end
-            
-            run_actions(record, args, :after_enter)
-          end
-          
-          # Indicates the the state is being exited
-          def before_exit(record, *args)
-            run_actions(record, args, :before_exit)
-          end
-          
-          # Indicates the the state has been exited
-          def after_exit(record, *args)
-            run_actions(record, args, :after_exit)
-          end
-          
-          private
-          def run_actions(record, args, action_type) #:nodoc:
-            if actions = @options[action_type]
-              Array(actions).each {|action| record.eval_call(action, *args)}
-            end
-          end
-        end
-        
-        # A transition indicates a state change and is described by a condition
-        # that would need to be fulfilled to enable the transition.  Transitions
-        # consist of:
-        # * The starting state
-        # * The ending state
-        # * A guard to check if the transition is allowed
-        class StateTransition
-          attr_reader :from_name,
-                      :to_name,
-                      :options
-          
-          def initialize(from_name, to_name, options) #:nodoc:
-            options.symbolize_keys!.assert_valid_keys(:if)
-            
-            @from_name, @to_name = from_name.to_sym, to_name.to_sym
-            @guards = Array(options[:if])
-          end
-          
-          # Runs the actual transition and any actions associated with entering
-          # and exiting the states
-          def perform(record, *args)
-            return false unless guard(record, *args)
-            
-            loopback = record.state_name == to_name
-            
-            next_state = record.class.valid_states[to_name]
-            last_state = record.class.valid_states[record.state_name]
-            
-            # Start leaving the last state
-            last_state.before_exit(record, *args) unless loopback
-            
-            # Start entering the next state
-            next_state.before_enter(record, *args) unless loopback
-            
-            record.state = next_state.record
-            
-            # Leave the last state
-            last_state.after_exit(record, *args) unless loopback
-            
-            # Enter the next state
-            next_state.after_enter(record, *args) unless loopback
-            
-            true
-          end
-          
-          def ==(obj) #:nodoc:
-            @from_name == obj.from_name && @to_name == obj.to_name
-          end
-          
-          private
-          # Ensures that the transition can occur by checking the guards
-          # associated with it
-          def guard(record, *args)
-            @guards.all? {|guard| record.eval_call(guard, *args)}
-          end
-        end
-        
-        # An event is a description of activity that is to be performed at a
-        # given moment.
-        class Event
-          attr_writer   :klass
-          attr_reader   :record
-          attr_accessor :transitions
-                    
-          delegate      :name,
-                        :id,
-                          :to => :record
-          delegate      :valid_state_names,
-                          :to => '@klass'
-          
-          private       :transitions,
-                        :transitions=,
-                        :valid_state_names
-          
-          def initialize(record, options, klass, &block) #:nodoc:
-            options.symbolize_keys!.assert_valid_keys(
-              :parallel
-            )
-            
-            @record, @options, @klass = record, options, klass
-            @transitions = []
-            
-            instance_eval(&block) if block_given?
-          end
-          
-          # Gets all of the possible next states for the record
-          def next_states_for(record)
-            @transitions.select {|transition| transition.from_name == record.state_name}
-          end
-          
-          # Attempts to transition to one of the next possible states.  If it is
-          # successful, then any parallel machines that have been configured
-          # will have their events fired as well
-          def fire(record, *args)
-            success = false
-            
-            # Find a state that we can transition into
-            original_state_name = record.state_name
-            next_states_for(record).each do |transition|
-              if success = transition.perform(record, *args)
-                record.send(:record_transition, name, original_state_name, record.state_name)
-                break
-              end
-            end
-            
-            # Execute the event on all other state machines running in parallel
-            if success && parallel_state_machines = @options[:parallel]
-              @parallel_state_machines ||= [parallel_state_machines].flatten.inject({}) do |machine_events, machine|
-                if machine.is_a?(Hash)
-                  machine_events.merge!(machine)
-                else
-                  machine_events[machine] = name
-                end
-                machine_events
-              end
-              
-              @parallel_state_machines.each do |machine, event|
-                machine = Symbol === machine ? record.send(machine) : machine.call(self)
-                success = machine.send("#{event}!", *args)
-                
-                break if !success
-              end
-            end
-            
-            success
-          end
-          
-          # Creates a new transition to the specified state.
-          # 
-          # Configuration options:
-          # <tt>from</tt> - A state or array of states that can be transitioned to
-          # <tt>if</tt> - An optional condition that must be met for the transition to occur
-          def transition_to(to_name, options = {})
-            raise InvalidState, "#{to_name} is not a valid state for #{self.name}" unless valid_state_names.include?(to_name.to_sym)
-            
-            options.symbolize_keys!
-            
-            Array(options.delete(:from)).each do |from_name|
-              raise InvalidState, "#{from_name} is not a valid state for #{self.name}" unless valid_state_names.include?(from_name.to_sym)
-              
-              @transitions << Support::StateTransition.new(from_name, to_name, options)
-            end
-          end
-          
-          # Copies the content of the event, duplicating the transitions as well
-          def dup
-            event = super
-            event.send(:transitions=, event.send(:transitions).dup)
-            event
-          end
-        end
       end
       
       # Migrates the database up by adding a state_id column to the model's
@@ -344,8 +121,8 @@ module PluginAWeek #:nodoc:
             remove_method(:find_in_states) if method_defined?(:find_in_states)
           end
           
-          extend PluginAWeek::Acts::StateMachine::ClassMethods
-          include PluginAWeek::Acts::StateMachine::InstanceMethods
+          extend PluginAWeek::Has::States::ClassMethods
+          include PluginAWeek::Has::States::InstanceMethods
         end
       end
       
@@ -361,7 +138,7 @@ module PluginAWeek #:nodoc:
         def inherited_with_association_classes(subclass)
           inherited_without_association_classes(subclass) if respond_to?(:inherited_without_association_classes)
           
-          # Create copies of the Support::Events because their valid state names
+          # Create copies of the parent::Events because their valid state names
           # depend on which class its in
           subclass.valid_events.each do |name, event|
             event = event.dup
@@ -455,7 +232,7 @@ module PluginAWeek #:nodoc:
             record = states.find_by_name(name.to_s)
             raise InvalidState, "#{name} is not a valid state for #{self.name}" unless record
             
-            valid_states[name] = Support::State.new(record, options)
+            valid_states[name] = parent::State.new(record, options)
             
             class_eval <<-end_eval
               def #{name}?
@@ -544,7 +321,7 @@ module PluginAWeek #:nodoc:
             record = events.find_by_name(name.to_s)
             raise InvalidEvent, "#{name} is not a valid event for #{self.name}" unless record
             
-            valid_events[name] = Support::Event.new(record, options, self, &block)
+            valid_events[name] = parent::Event.new(record, options, self, &block)
             
             # Add action for transitioning the model
             class_eval <<-end_eval
@@ -689,5 +466,5 @@ module PluginAWeek #:nodoc:
 end
 
 ActiveRecord::Base.class_eval do
-  include PluginAWeek::Acts::StateMachine
+  include PluginAWeek::Has::States
 end

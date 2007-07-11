@@ -1,10 +1,12 @@
 $:.unshift("#{File.dirname(__FILE__)}/../../../../test/plugin_test_helper/lib")
 require 'rubygems'
 require 'plugin_test_helper'
+
+$:.unshift("#{File.dirname(__FILE__)}/../../../../test/dry_validity_assertions/lib")
 require 'dry_validity_assertions'
 
 # Run the plugin migrations
-PluginAWeek::PluginMigrations.migrate('acts_as_state_machine')
+PluginAWeek::PluginMigrations.migrate('has_states')
 
 # Run the migrations
 ActiveRecord::Migrator.migrate("#{RAILS_ROOT}/db/migrate")
@@ -17,7 +19,4 @@ class Test::Unit::TestCase #:nodoc:
     # going to throw an error since the states and events have not yet been
     # loaded
   end
-  
-#  self.use_transactional_fixtures = true
-#  self.use_instantiated_fixtures  = false
 end
