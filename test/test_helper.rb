@@ -1,18 +1,13 @@
+# Load local repository plugin paths
+$:.unshift("#{RAILS_ROOT}/../../../../associations/class_associations/lib")
+$:.unshift("#{RAILS_ROOT}/../../../../miscellaneous/dry_transaction_rollbacks/lib")
+$:.unshift("#{RAILS_ROOT}/../../../../../ruby/object/eval_call/lib")
+
+# Load the plugin testing framework
 $:.unshift("#{File.dirname(__FILE__)}/../../../../test/plugin_test_helper/lib")
 require 'rubygems'
 require 'plugin_test_helper'
-#
-#$:.unshift("#{File.dirname(__FILE__)}/../../../../test/dry_validity_assertions/lib")
-#require 'dry_validity_assertions'
-#
-#$:.unshift("#{RAILS_ROOT}/../../../plugin_dependencies/lib")
-#$:.unshift("#{RAILS_ROOT}/../../../loaded_plugins/lib")
-#
-#require 'appable_plugins'
-#require 'plugin_migrations'
-#
-#puts Rails.plugins.map(&:name)
-# Run the plugin migrations
+
 PluginAWeek::PluginMigrations.migrate('has_states')
 
 # Run the migrations
