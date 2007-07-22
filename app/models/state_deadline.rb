@@ -1,4 +1,4 @@
-# 
+# Represents the time at which a state expires and must move to another state
 class StateDeadline < ActiveRecord::Base
   belongs_to  :state
   belongs_to  :stateful,

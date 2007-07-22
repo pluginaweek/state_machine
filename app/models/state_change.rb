@@ -1,4 +1,4 @@
-# 
+# Represents a change from one state to another via a stimulus (event)
 class StateChange < ActiveRecord::Base
   belongs_to  :event
   belongs_to  :from_state,

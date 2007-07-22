@@ -4,19 +4,18 @@ class Event < ActiveRecord::Base
               :order => 'occurred_at ASC',
               :dependent => :destroy
   
-  validates_presence_of   :name,
-                          :long_description
+  validates_presence_of   :name
   validates_uniqueness_of :name,
                             :scope => :owner_type
   
-  # 
+  # The symbolic name of the event
   def name
     name = read_attribute(:name)
     name ? name.to_sym : name
   end
   
-  # 
-  def short_description
-    read_attribute(:short_description) || name.to_s.titleize
+  # A humanized version of the name
+  def human_name
+    read_attribute(:human_name) || name.to_s.titleize
   end
 end
