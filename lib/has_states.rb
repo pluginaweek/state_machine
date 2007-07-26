@@ -17,10 +17,9 @@ module PluginAWeek #:nodoc:
     # Switch example:
     # 
     #   class Switch < ActiveRecord::Base
-    #     acts_as_state_machine :initial => :off
+    #     has_states :initial => :off
     #     
-    #     state :off
-    #     state :on
+    #     state :off, :on
     #     
     #     event :turn_on do
     #       transition_to :on, :from => :off
