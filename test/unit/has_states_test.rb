@@ -21,6 +21,11 @@ class HasStatesTest < Test::Unit::TestCase
     assert_raise(PluginAWeek::Has::States::NoInitialState) {Message.has_states({})}
   end
   
+  def test_should_allow_subclasses_to_override_initial_state
+    assert_equal :idling, Motorcycle.read_inheritable_attribute(:initial_state)
+    assert_not_equal Motorcycle.read_inheritable_attribute(:initial_state), Vehicle.read_inheritable_attribute(:initial_state)
+  end
+  
   def test_active_states_should_be_initially_empty
     expected = {}
     assert_equal expected, Message.active_states

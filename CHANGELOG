@@ -1,5 +1,7 @@
 *SVN*
 
+* Allow subclasses to override the initial state
+
 * Fix problem with migrations using default null when column cannot be null
 
 * Moved deadline support into a separate plugin (has_state_deadlines).

@@ -99,11 +99,12 @@ module PluginAWeek #:nodoc:
           # Save options for referencing later
           write_inheritable_attribute :active_states, {}
           write_inheritable_attribute :active_events, {}
-          write_inheritable_attribute :initial_state_name, options[:initial]
+          write_inheritable_attribute :initial_state, options[:initial]
           write_inheritable_attribute :record_state_changes, options[:record_changes]
           
           class_inheritable_reader    :active_states
           class_inheritable_reader    :active_events
+          class_inheritable_writer    :initial_state
           class_inheritable_reader    :record_state_changes
           
           before_create               :set_initial_state_id
@@ -376,7 +377,7 @@ module PluginAWeek #:nodoc:
         
         # Gets the name of the initial state that records will be placed in.
         def initial_state_name
-          name = self.class.read_inheritable_attribute(:initial_state_name)
+          name = self.class.read_inheritable_attribute(:initial_state)
           name = name.call(self) if name.is_a?(Proc)
           
           name.to_sym
