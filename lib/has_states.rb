@@ -55,14 +55,16 @@ module PluginAWeek #:nodoc:
       
       class << self
         # Migrates up the model's table by adding support for states
-        def migrate_up(model)
+        def migrate_up(model, options = {})
           if !model.is_a?(Class)
             StatefulModel.set_table_name(model.to_s)
             model = StatefulModel
           end
           
           if !model.column_names.include?(:state_id)
-            ActiveRecord::Base.connection.add_column(model.table_name, :state_id, :integer, :null => false, :default => nil, :unsigned => true)
+            options.reverse_merge!(:null => false, :unsigned => true)
+            options[:default] ||= 0 if !options[:null]
+            ActiveRecord::Base.connection.add_column(model.table_name, :state_id, :integer, options)
           end
         end
         
@@ -388,13 +390,15 @@ module PluginAWeek #:nodoc:
         # Gets the state of the record.  If this record has not been saved, then
         # the initial state will be returned.
         def state_with_initial_check
-          state_without_initial_check || (new_record? ? initial_state : nil)
+          state_id = read_attribute(:state_id)
+          (new_record? && (!state_id || state_id == 0) ? initial_state : nil) || state_without_initial_check
         end
         
         # Gets the state id of the record.  If this record has not been saved,
         # then the id of the initial state will be returned.
         def state_id
-          read_attribute(:state_id) || (new_record? ? initial_state.id : nil)
+          state_id = read_attribute(:state_id)
+          (new_record? && (!state_id || state_id == 0) ? initial_state.id : nil) || state_id
         end
         
         # Returns what the next state for a given event would be, as a Ruby symbol
@@ -427,7 +431,7 @@ module PluginAWeek #:nodoc:
         # Sets the initial state id of the record so long as it hasn't already
         # been set
         def set_initial_state_id
-          self.state_id = state.id if read_attribute(:state_id).nil?
+          self.state_id = state.id if [0, nil].include?(read_attribute(:state_id))
         end
         
         # Records the transition for the record going into its initial state

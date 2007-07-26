@@ -1,5 +1,7 @@
 *SVN*
 
+* Fix problem with migrations using default null when column cannot be null
+
 * Moved deadline support into a separate plugin (has_state_deadlines).
 
 * Added many more unit tests.
