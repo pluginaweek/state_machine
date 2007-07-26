@@ -1,22 +1,22 @@
 class Vehicle < ActiveRecord::Base
-  has_states :initial => Proc.new {|vehicle| vehicle.force_idle? ? :idling : :parked},
-                          :deadlines => true
+  has_states :initial => Proc.new {|vehicle| vehicle.force_idle? ? :idling : :parked}
   
   belongs_to :auto_shop
+  delegate :tow_vehicle!, :fix_vehicle!, :to => :auto_shop
   
   attr_accessor :force_idle
   
   validates_presence_of :highway_id
   
   state :parked,
-    :before_exit => :put_on_seatbelt,
-    :after_enter => Proc.new {|vehicle| vehicle.update_attribute(:seatbelt_on, false)}
-  state :idling
-  state :first_gear
-  state :second_gear
-  state :third_gear
+          :before_exit => :put_on_seatbelt,
+          :after_enter => Proc.new {|vehicle| vehicle.update_attribute(:seatbelt_on, false)}
+  state :idling,
+        :first_gear,
+        :second_gear,
+        :third_gear
   state :stalled,
-    :before_enter => :increase_insurance_premium
+          :before_enter => :increase_insurance_premium
   
   event :park do
     transition_to :parked, :from => [:idling, :first_gear]
@@ -31,10 +31,6 @@ class Vehicle < ActiveRecord::Base
     transition_to :idling, :from => :first_gear
   end
   
-  event :idling_deadline_passed do
-    transition_to :parked, :from => :idling
-  end
-  
   event :shift_up do
     transition_to :first_gear, :from => :idling
     transition_to :second_gear, :from => :first_gear
@@ -46,12 +42,12 @@ class Vehicle < ActiveRecord::Base
     transition_to :first_gear, :from => :second_gear
   end
   
-  event :crash, :parallel => {:auto_shop => :tow_vehicle} do
+  event :crash, :after => :tow_vehicle! do
     transition_to :stalled, :from => [:first_gear, :second_gear, :third_gear],
                     :if => Proc.new {|vehicle| vehicle.auto_shop.available?}
   end
   
-  event :repair, :parallel => {:auto_shop => :fix_vehicle} do
+  event :repair, :after => :fix_vehicle! do
     transition_to :parked, :from => :stalled,
                     :if => :auto_shop_busy?
   end

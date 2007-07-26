@@ -1,113 +1,89 @@
-valid:
-  id: 1
-  name: valid
-  long_description: A valid event
-  owner_type: ActiveRecord::Base
-  
 switch_turn_on:
   id: 101
   name: turn_on
-  long_description: Turns the switch on
   owner_type: Switch
   
 switch_turn_off:
   id: 102
   name: turn_off
-  long_description: Turns the switch off
   owner_type: Switch
   
 auto_shop_tow_vehicle:
   id: 201
   name: tow_vehicle
-  long_description: A vehicle is being towed to the shop
   owner_type: AutoShop
   
 auto_shop_fix_vehicle:
   id: 202
   name: fix_vehicle
-  long_description: The mechanic is fixing the vehicle
   owner_type: AutoShop
   
 vehicle_park:
   id: 301
   name: park
-  long_description: Parks the vehicle and turns off the car
   owner_type: Vehicle
   
 vehicle_ignite:
   id: 302
   name: ignite
-  long_description: Ignites the engine and turns on the car
   owner_type: Vehicle
   
 vehicle_idle:
   id: 303
   name: idle
-  long_description: Puts the car in park with the car still running
-  owner_type: Vehicle
-  
-vehicle_idling_deadline_passed:
-  id: 304
-  name: idling_deadline_passed
-  long_description: The deadline for idling has passed
   owner_type: Vehicle
   
 vehicle_shift_up:
-  id: 305
+  id: 304
   name: shift_up
-  long_description: Shifts the vehicle up to the next gear
   owner_type: Vehicle
   
 vehicle_shift_down:
-  id: 306
+  id: 305
   name: shift_down
-  long_description: Shifts the vehicle down to the previous gear
   owner_type: Vehicle
   
 vehicle_crash:
-  id: 307
+  id: 306
   name: crash
-  long_description: Crashes the vehicle so that it keeps stalling until it gets repaired
   owner_type: Vehicle
   
 vehicle_repair:
-  id: 308
+  id: 307
   name: repair
-  long_description: Repairs the vehicle so that it no longer stalles
+  owner_type: Vehicle
+  
+vehicle_inactive:
+  id: 308
+  name: event
   owner_type: Vehicle
   
 car_reverse:
   id: 401
   name: reverse
-  long_description: Puts the car into reverse
   owner_type: Car
   
 project_elicit_requirements:
   id: 501
   name: elicit_requirements
-  long_description: Elicits the requirements from the customer
   owner_type: Project
   
 project_design:
   id: 502
   name: design
-  long_description: Designs the system
   owner_type: Project
   
 project_implement:
   id: 503
   name: implement
-  long_description: Implements the system
   owner_type: Project
   
 project_test:
   id: 504
   name: test
-  long_description: Tests that the requirements have been met
   owner_type: Project
   
 project_deliver:
   id: 505
   name: deliver
-  long_description: Deliver the software and forget about it
   owner_type: Project

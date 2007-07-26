@@ -1,8 +1,7 @@
 class Switch < ActiveRecord::Base
-  has_states :initial => :off
+  has_states :initial => :off, :record_changes => false
   
-  state :on
-  state :off
+  state :on, :off
   
   event :turn_on do
     transition_to :on, :from => :off

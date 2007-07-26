@@ -29,9 +29,6 @@ Development
 * class_associations
 * dry_transaction_rollbacks
 * eval_call
-* appable_plugins
-* loaded_plugins
-* plugin_dependencies (only if dependencies are being installed as plugins)
 
 For migrations:
 * plugin_migrations

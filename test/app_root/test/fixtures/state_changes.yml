@@ -1,72 +1,36 @@
-valid:
+vehicle_parked_parked:
   id: 1
   stateful_id: 1
-  stateful_type: ActiveRecord::Base
-  from_state_id: 1
-  to_state_id: 1
-  event_id: 1
+  stateful_type: Vehicle
+  to_state_id: 301
   occurred_at: <%= Time.now.to_s(:db) %>
   
-light_turned_on:
+vehicle_idling_parked:
   id: 2
-  stateful_id: 1
-  stateful_type: Switch
-  from_state_id: 102
-  to_state_id: 101
-  event_id: 101
-  occurred_at: <%= Time.now.to_s(:db) %>
-  
-light_turned_off:
-  id: 3
-  stateful_id: 1
-  stateful_type: Switch
-  from_state_id: 101
-  to_state_id: 102
-  event_id: 102
-  occurred_at: <%= Time.now.to_s(:db) %>
-  
-light_turned_on_again:
-  id: 4
-  stateful_id: 1
-  stateful_type: Switch
-  from_state_id: 102
-  to_state_id: 101
-  event_id: 101
-  occurred_at: <%= Time.now.to_s(:db) %>
-  
-vehicle_parked_initial:
-  id: 5
   stateful_id: 2
   stateful_type: Vehicle
   to_state_id: 301
   occurred_at: <%= Time.now.to_s(:db) %>
   
-vehicle_idling_initial:
-  id: 6
-  stateful_id: 3
-  stateful_type: Vehicle
-  to_state_id: 301
-  occurred_at: <%= Time.now.to_s(:db) %>
-  
-vehicle_idling_idle:
-  id: 7
-  stateful_id: 3
+vehicle_idling_idling:
+  id: 3
+  stateful_id: 2
   stateful_type: Vehicle
   from_state_id: 301
   to_state_id: 302
   event_id: 302
   occurred_at: <%= Time.now.to_s(:db) %>
   
-vehicle_first_gear_initial:
-  id: 8
-  stateful_id: 4
+vehicle_first_gear_parked:
+  id: 4
+  stateful_id: 3
   stateful_type: Vehicle
   to_state_id: 301
   occurred_at: <%= Time.now.to_s(:db) %>
   
-vehicle_first_gear_idle:
-  id: 9
-  stateful_id: 4
+vehicle_first_gear_idling:
+  id: 5
+  stateful_id: 3
   stateful_type: Vehicle
   from_state_id: 301
   to_state_id: 302
@@ -74,7 +38,32 @@ vehicle_first_gear_idle:
   occurred_at: <%= Time.now.to_s(:db) %>
   
 vehicle_first_gear_first_gear:
-  id: 10
+  id: 6
+  stateful_id: 3
+  stateful_type: Vehicle
+  from_state_id: 302
+  to_state_id: 303
+  event_id: 304
+  occurred_at: <%= Time.now.to_s(:db) %>
+  
+vehicle_first_gear_2_parked:
+  id: 7
+  stateful_id: 4
+  stateful_type: Vehicle
+  to_state_id: 301
+  occurred_at: <%= Time.now.to_s(:db) %>
+  
+vehicle_first_gear_2_idling:
+  id: 8
+  stateful_id: 4
+  stateful_type: Vehicle
+  from_state_id: 301
+  to_state_id: 302
+  event_id: 302
+  occurred_at: <%= Time.now.to_s(:db) %>
+  
+vehicle_first_gear_2_first_gear:
+  id: 9
   stateful_id: 4
   stateful_type: Vehicle
   from_state_id: 302
@@ -82,14 +71,25 @@ vehicle_first_gear_first_gear:
   event_id: 304
   occurred_at: <%= Time.now.to_s(:db) %>
   
-vehicle_first_gear_2_initial:
-  id: 11
-  stateful_id: 5
+vehicle_first_gear_2_second_gear:
+  id: 10
+  stateful_id: 4
   stateful_type: Vehicle
-  to_state_id: 301
+  from_state_id: 303
+  to_state_id: 304
+  event_id: 304
   occurred_at: <%= Time.now.to_s(:db) %>
   
-vehicle_first_gear_2_idle:
+vehicle_first_gear_2_first_gear_again:
+  id: 11
+  stateful_id: 4
+  stateful_type: Vehicle
+  from_state_id: 304
+  to_state_id: 303
+  event_id: 305
+  occurred_at: <%= 5.seconds.from_now.to_s(:db) %>
+  
+vehicle_stalled_idling:
   id: 12
   stateful_id: 5
   stateful_type: Vehicle
@@ -98,7 +98,7 @@ vehicle_first_gear_2_idle:
   event_id: 302
   occurred_at: <%= Time.now.to_s(:db) %>
   
-vehicle_first_gear_2_first_gear:
+vehicle_stalled_first_gear:
   id: 13
   stateful_id: 5
   stateful_type: Vehicle
@@ -107,61 +107,25 @@ vehicle_first_gear_2_first_gear:
   event_id: 304
   occurred_at: <%= Time.now.to_s(:db) %>
   
-vehicle_first_gear_2_second_gear:
+vehicle_stalled_stalled:
   id: 14
   stateful_id: 5
   stateful_type: Vehicle
   from_state_id: 303
-  to_state_id: 304
-  event_id: 304
-  occurred_at: <%= Time.now.to_s(:db) %>
-  
-vehicle_first_gear_2_first_gear_again:
-  id: 15
-  stateful_id: 5
-  stateful_type: Vehicle
-  from_state_id: 304
-  to_state_id: 303
-  event_id: 305
-  occurred_at: <%= 5.seconds.from_now.to_s(:db) %>
-  
-vehicle_stalled_idle:
-  id: 16
-  stateful_id: 6
-  stateful_type: Vehicle
-  from_state_id: 301
-  to_state_id: 302
-  event_id: 302
-  occurred_at: <%= Time.now.to_s(:db) %>
-  
-vehicle_stalled_first_gear:
-  id: 17
-  stateful_id: 6
-  stateful_type: Vehicle
-  from_state_id: 302
-  to_state_id: 303
-  event_id: 304
-  occurred_at: <%= Time.now.to_s(:db) %>
-  
-vehicle_stalled_stalled:
-  id: 18
-  stateful_id: 6
-  stateful_type: Vehicle
-  from_state_id: 303
   to_state_id: 306
-  event_id: 307
+  event_id: 306
   occurred_at: <%= Time.now.to_s(:db) %>
   
 rss_reader_requirements:
-  id: 19
-  stateful_id: 2
+  id: 15
+  stateful_id: 1
   stateful_type: Project
   to_state_id: 501
   occurred_at: <%= Time.now.to_s(:db) %>
   
 rss_reader_design:
-  id: 20
-  stateful_id: 2
+  id: 16
+  stateful_id: 1
   stateful_type: Project
   from_state_id: 501
   to_state_id: 502
@@ -169,8 +133,8 @@ rss_reader_design:
   occurred_at: <%= Time.now.to_s(:db) %>
   
 rss_reader_requirements_again:
-  id: 21
-  stateful_id: 2
+  id: 17
+  stateful_id: 1
   stateful_type: Project
   from_state_id: 502
   to_state_id: 501

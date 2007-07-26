@@ -1,2 +1,45 @@
 *SVN*
 
+* Moved deadline support into a separate plugin (has_state_deadlines).
+
+* Added many more unit tests.
+
+* Simplified many of the interfaces for maintainability.
+
+* Added support for turning off recording state changes.
+
+* Removed the short_description and long_description columns, in favor of an optional human_name column.
+
+* Fixed not overriding the correct equality methods in the StateTransition class.
+
+* Added to_sym to State and Event.
+
+* State#name and Event#name now return the string version of the name instead of the symbol version.
+
+* Added State#human_name and Event#human_name to automatically figure out what the human name is if it isn't specified in the table.
+
+* Updated manual rollbacks to use the new Rails edge api (ActiveRecord::Rollback exception).
+
+* Moved StateExtension class into a separate file in order to help keep the has_state files clean.
+
+* Renamed InvalidState and InvalidEvent exceptions to StateNotFound and EventNotFound in order to follow the ActiveRecord convention (i.e. RecordNotFound).
+
+* Added StateNotActive and EventNotActive exceptions to help differentiate between states which don't exist and states which weren't defined in the class.
+
+* Added support for defining callbacks like so:
+
+  def before_exit_parked
+  end
+  
+  def after_enter_idling
+  end
+
+* Added support for defining callbacks using class methods:
+
+  before_exit_parked :fasten_seatbelt
+
+* Added event callbacks after the transition has occurred (e.g. after_park)
+
+* State callbacks no longer receive any of the arguments that were provided in the event action
+
+* Updated license to include our names.

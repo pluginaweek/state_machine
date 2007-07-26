@@ -1,4 +1,4 @@
-valid:
+parked:
   id: 1
   highway_id: 1
   auto_shop_id: 1
@@ -7,17 +7,8 @@ valid:
   state_id: 301
   type: Vehicle
   
-parked:
-  id: 2
-  highway_id: 1
-  auto_shop_id: 1
-  seatbelt_on: false
-  insurance_premium: 100.00
-  state_id: 301
-  type: Vehicle
-  
 idling:
-  id: 3
+  id: 2
   highway_id: 1
   auto_shop_id: 1
   seatbelt_on: true
@@ -26,7 +17,7 @@ idling:
   type: Vehicle
   
 first_gear:
-  id: 4
+  id: 3
   highway_id: 1
   auto_shop_id: 1
   seatbelt_on: true
@@ -35,7 +26,7 @@ first_gear:
   type: Vehicle
   
 first_gear_2:
-  id: 5
+  id: 4
   highway_id: 1
   auto_shop_id: 1
   seatbelt_on: true
@@ -44,7 +35,7 @@ first_gear_2:
   type: Vehicle
   
 stalled:
-  id: 6
+  id: 5
   highway_id: 1
   auto_shop_id: 2
   seatbelt_on: true

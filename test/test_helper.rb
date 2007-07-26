@@ -1,7 +1,7 @@
 # Load local repository plugin paths
-$:.unshift("#{RAILS_ROOT}/../../../../associations/class_associations/lib")
-$:.unshift("#{RAILS_ROOT}/../../../../miscellaneous/dry_transaction_rollbacks/lib")
-$:.unshift("#{RAILS_ROOT}/../../../../../ruby/object/eval_call/lib")
+$:.unshift("#{File.dirname(__FILE__)}/../../../associations/class_associations/lib")
+$:.unshift("#{File.dirname(__FILE__)}/../../../miscellaneous/dry_transaction_rollbacks/lib")
+$:.unshift("#{File.dirname(__FILE__)}/../../../../ruby/object/eval_call/lib")
 
 # Load the plugin testing framework
 $:.unshift("#{File.dirname(__FILE__)}/../../../../test/plugin_test_helper/lib")
