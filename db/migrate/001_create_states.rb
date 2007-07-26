@@ -1,7 +1,7 @@
 class CreateStates < ActiveRecord::Migration
   def self.up
     create_table :states do |t|
-      t.column :name,       :string, :null => false
+      t.column :name, :string, :null => false
       t.column :human_name, :string
       t.column :owner_type, :string, :null => false
     end
