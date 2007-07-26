@@ -231,7 +231,7 @@ module PluginAWeek #:nodoc:
         # Example:
         #
         # class Car < ActiveRecord::Base
-        #   acts_as_state_machine :initial => :parked
+        #   has_states :initial => :parked
         #
         #   state :parked, :idling
         #   state :first_gear, :before_enter => :put_on_seatbelt
@@ -304,13 +304,13 @@ module PluginAWeek #:nodoc:
         # Example:
         #
         # class Order < ActiveRecord::Base
-        #   acts_as_state_machine :initial => :open
+        #   has_states :initial => :open
         #
         #   state :open
         #   state :closed
         #
         #   event :close_order do
-        #     transitions :to => :closed, :from => :open
+        #     transition_to :closed, :from => :open
         #   end
         # end
         #
