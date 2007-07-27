@@ -1,21 +1,44 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class PluginAWeek::Has::States::EventTest < Test::Unit::TestCase
+class ActveEventTest < Test::Unit::TestCase
+  class ActiveState
+    attr_reader :record
+    
+    def initialize(record)
+      @record = record
+    end
+    
+    def respond_to?(symbol, include_priv = false) #:nodoc:
+      super || @record.respond_to?(symbol, include_priv)
+    end
+    
+    def hash #:nodoc:
+      @record.hash
+    end
+    
+    def ==(obj) #:nodoc:
+      @record == (obj.is_a?(State) ? obj : obj.record)
+    end
+    alias :eql? :==
+    
+    private
+    def method_missing(method, *args, &block) #:nodoc:
+      @record.send(method, *args, &block) if @record
+    end
+  end
+  
   cattr_accessor :active_states
   attr_accessor :state
   
   def setup
     @@active_states = {
-      :off => states(:switch_off),
-      :on => states(:switch_on)
+      :off => ActiveState.new(states(:switch_off)),
+      :on => ActiveState.new(states(:switch_on))
     }
     
-    @event = Event.new(:name => 'execute', :owner_type => self.class.name)
-    @event.extend PluginAWeek::Has::States::ActiveEvent
-    class << @event
-      public :transitions
-    end
-    
+    event = Event.new(:name => 'execute')
+    event.id = 999
+    @event = PluginAWeek::Has::States::ActiveEvent.new(self.class, event)
     @callbacks = []
   end
   
@@ -37,13 +60,54 @@ class PluginAWeek::Has::States::EventTest < Test::Unit::TestCase
     @callbacks << method
   end
   
-  def test_should_user_owner_type_for_owner_class
+  def test_should_raise_exception_if_invalid_option_used_on_create
+    assert_raise(ArgumentError) {PluginAWeek::Has::States::ActiveEvent.new(self.class, Event.new, :invalid_option => true)}
+  end
+  
+  def test_should_set_owner_class_to_initialized_class
     assert_equal self.class, @event.owner_class
+  end
+  
+  def test_should_allow_owner_class_to_be_modified
+    @event.owner_class = Event
+    assert_equal Event, @event.owner_class
+  end
+  
+  def test_should_have_no_transitions_by_default
+    assert_equal [], @event.transitions
+  end
+  
+  def test_should_not_add_after_callback_on_initialization
+    assert_equal [], @event.callbacks
+  end
+  
+  def test_should_be_able_to_read_event_being_represented
+    assert_instance_of Event, @event.record
+  end
+  
+  def test_should_allow_custom_callbacks_in_addition_to_default
+    event = PluginAWeek::Has::States::ActiveEvent.new(self.class, Event.new(:id => 999, :name => 'execute'), :after => :return_false)
+    assert_equal [:return_false], event.callbacks
+  end
+  
+  def test_should_create_event_action_method
+    assert self.class.instance_methods.include?('execute!')
+  end
+  
+  def test_should_create_event_callback_method
+    assert self.class.singleton_methods.include?('after_execute')
+  end
+  
+  def test_should_forward_missing_methods_to_record
+    assert_equal 999, @event.id
+    assert_equal 'execute', @event.name
+    assert_equal 'Execute', @event.human_name
+    assert_equal :execute, @event.to_sym
   end
   
   def test_should_not_cache_owner_class
     owner_class = @event.owner_class
-    @event.owner_type = 'Event'
+    @event.owner_class = Event
     assert_not_equal owner_class, @event.owner_class
     assert_equal Event, @event.owner_class
   end
@@ -66,7 +130,7 @@ class PluginAWeek::Has::States::EventTest < Test::Unit::TestCase
     assert_raise(PluginAWeek::Has::States::StateNotActive) {@event.transition_to :on, :from => :off}
   end
   
-  def test_should_raise_exception_if_using_invalid_option
+  def test_should_raise_exception_if_using_invalid_transition_option
     assert_raise(ArgumentError) {@event.transition_to :on, :invalid_option => true}
   end
   
@@ -207,7 +271,7 @@ class PluginAWeek::Has::States::EventTest < Test::Unit::TestCase
     @event.transition_to :on, :from => :off
     @event.fire(self)
     
-    assert_equal @event, @recorded_event
+    assert_equal @event.record, @recorded_event
     assert_equal states(:switch_off), @recorded_from_state
     assert_equal states(:switch_on), @recorded_to_state
   end
@@ -249,6 +313,8 @@ class PluginAWeek::Has::States::EventTest < Test::Unit::TestCase
   end
   
   def record_state_change(event, from_state, to_state)
-    @recorded_event, @recorded_from_state, @recorded_to_state = event, from_state, to_state
+    @recorded_event = event.record if event
+    @recorded_from_state = from_state.record if from_state
+    @recorded_to_state = to_state.record if to_state
   end
 end

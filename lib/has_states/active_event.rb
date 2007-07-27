@@ -3,22 +3,34 @@ module PluginAWeek #:nodoc:
     module States #:nodoc:
       # An active event is one which has transitions to active states in the
       # system
-      module ActiveEvent
-        def self.extended(event) #:nodoc:
-          event.instance_eval do
-            @callbacks = []
-            @transitions = []
-          end
+      class ActiveEvent
+        # The callbacks to invoke when the event is performed
+        attr_accessor :callbacks
+        
+        # The possible transitions that can occur through this event
+        attr_reader :transitions
+        
+        # The class which this is an event for
+        attr_accessor :owner_class
+        
+        # The event which is being represented
+        attr_reader :record
+        
+        delegate :id, :to => '@record'
+        
+        def initialize(owner_class, record, options = {}) #:nodoc:
+          options.assert_valid_keys(:after)
           
-          class << event
-            attr_accessor :callbacks
-            attr_reader :transitions
-          end
+          @owner_class, @record, @options = owner_class, record, options
+          @callbacks = []
+          @transitions = []
+          
+          add_callbacks
+          add_transition_action
         end
         
-        # Gets the owner of this event as an actual class
-        def owner_class
-          owner_type.constantize
+        def respond_to?(symbol, include_priv = false) #:nodoc:
+          super || @record.respond_to?(symbol, include_priv)
         end
         
         # Gets all of the possible transitions for the record
@@ -64,6 +76,20 @@ module PluginAWeek #:nodoc:
           end
         end
         
+        def hash #:nodoc:
+          @record.hash
+        end
+        
+        def ==(obj) #:nodoc:
+          @record == (obj.is_a?(Event) ? obj : obj.record)
+        end
+        alias :eql? :==
+        
+        private
+        def method_missing(method, *args, &block) #:nodoc:
+          @record.send(method, *args, &block) if @record
+        end
+        
         # Copies the content of the event, duplicating the transitions as well
         def initialize_copy(event)
           super
@@ -73,10 +99,35 @@ module PluginAWeek #:nodoc:
           self
         end
         
-        def dup #:nodoc:
-          event = super
-          event.extend PluginAWeek::Has::States::ActiveEvent
-          event
+        # Adds the callbacks for when the event is performed
+        def add_callbacks
+          @callbacks << @options[:after] if @options[:after]
+        end
+        
+        # Add action for transitioning the model
+        def add_transition_action
+          @owner_class.class_eval <<-end_eval
+            def #{name}!(*args)
+              success = false
+              transaction do
+                save! if new_record?
+                
+                if self.class.active_events[:#{name.to_s.dump}].fire(self, *args)
+                  success = save!
+                else
+                  raise ActiveRecord::Rollback
+                end
+              end
+              
+              success
+            end
+            
+            # Add callbacks
+            def self.after_#{name}(*callbacks, &block)
+              callbacks << block if block_given?
+              active_events[:#{name}].callbacks.concat(callbacks)
+            end
+          end_eval
         end
         
         private

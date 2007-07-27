@@ -38,7 +38,7 @@ module PluginAWeek #:nodoc:
             record.send(:callback, "before_enter_#{to_state.name}")
           end
           
-          record.state = to_state
+          record.state = to_state.record
           
           unless loopback
             # Leave the last state

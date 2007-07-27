@@ -6,6 +6,32 @@ class PluginAWeek::Has::States::StateTransition
 end
 
 class StateTransitionTest < Test::Unit::TestCase
+  class ActiveState
+    attr_reader :record
+    
+    def initialize(record)
+      @record = record
+    end
+    
+    def respond_to?(symbol, include_priv = false) #:nodoc:
+      super || @record.respond_to?(symbol, include_priv)
+    end
+    
+    def hash #:nodoc:
+      @record.hash
+    end
+    
+    def ==(obj) #:nodoc:
+      @record == (obj.is_a?(State) ? obj : obj.record)
+    end
+    alias :eql? :==
+    
+    private
+    def method_missing(method, *args, &block) #:nodoc:
+      @record.send(method, *args, &block) if @record
+    end
+  end
+  
   fixtures :states
   attr_accessor :state
   
@@ -19,12 +45,12 @@ class StateTransitionTest < Test::Unit::TestCase
   
   def test_should_store_from_state
     transition = create_transition
-    assert_equal states(:switch_off), transition.from_state
+    assert_equal states(:switch_off), transition.from_state.record
   end
   
   def test_should_store_to_state
     transition = create_transition
-    assert_equal states(:switch_on), transition.to_state
+    assert_equal states(:switch_on), transition.to_state.record
   end
   
   def test_should_perform_with_guard_check
@@ -90,29 +116,33 @@ class StateTransitionTest < Test::Unit::TestCase
   end
   
   def test_should_not_invoke_callbacks_when_looping_back_to_same_state
-    transition = PluginAWeek::Has::States::StateTransition.new(states(:switch_on), states(:switch_on), {})
+    transition = PluginAWeek::Has::States::StateTransition.new(active_state(:switch_on), active_state(:switch_on), {})
     transition.perform(self)
     
     assert_equal [], @callbacks
   end
   
   def test_different_transitions_should_not_be_equal
-    transition = PluginAWeek::Has::States::StateTransition.new(states(:switch_off), states(:switch_on), {})
-    different_transition = PluginAWeek::Has::States::StateTransition.new(states(:switch_on), states(:switch_off), {})
+    transition = PluginAWeek::Has::States::StateTransition.new(active_state(:switch_off), active_state(:switch_on), {})
+    different_transition = PluginAWeek::Has::States::StateTransition.new(active_state(:switch_on), active_state(:switch_off), {})
     
     assert transition != different_transition
   end
   
   def test_same_transitions_should_be_equal
-    transition = PluginAWeek::Has::States::StateTransition.new(states(:switch_off), states(:switch_on), {})
-    same_transition = PluginAWeek::Has::States::StateTransition.new(states(:switch_off), states(:switch_on), {})
+    transition = PluginAWeek::Has::States::StateTransition.new(active_state(:switch_off), active_state(:switch_on), {})
+    same_transition = PluginAWeek::Has::States::StateTransition.new(active_state(:switch_off), active_state(:switch_on), {})
     
     assert transition == same_transition
   end
   
   private
   def create_transition(options = {})
-    PluginAWeek::Has::States::StateTransition.new(states(:switch_off), states(:switch_on), options)
+    PluginAWeek::Has::States::StateTransition.new(active_state(:switch_off), active_state(:switch_on), options)
+  end
+  
+  def active_state(name)
+    ActiveState.new(states(name))
   end
   
   def return_true

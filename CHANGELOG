@@ -1,5 +1,13 @@
 *SVN*
 
+* Raise exception if a class tries to define a state more than once
+
+* Add tests for PluginAWeek::Has::States::ActiveState
+
+* Refactor active state/active event creation
+
+* Fix owner_type not being set correctly in active states/events of subclasses
+
 * Allow subclasses to override the initial state
 
 * Fix problem with migrations using default null when column cannot be null

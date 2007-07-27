@@ -41,6 +41,10 @@ module PluginAWeek #:nodoc:
       class StateNotActive < StandardError #:nodoc:
       end
       
+      # An state has already been activated
+      class StateAlreadyActive < StandardError #:nodoc:
+      end
+      
       # An unknown event was specified
       class EventNotFound < StandardError #:nodoc:
       end
@@ -131,9 +135,10 @@ module PluginAWeek #:nodoc:
             remove_method(:find_in_states) if method_defined?(:find_in_states)
           end
           
-          State.class_eval <<-end_eval
-            has_many :#{self.to_s.tableize}, :extend => #{self}::StateExtension
-          end_eval
+          klass = self
+          State.class_eval do
+            has_many klass.to_s.tableize.to_sym, :extend => klass::StateExtension
+          end
           
           extend PluginAWeek::Has::States::ClassMethods
           include PluginAWeek::Has::States::InstanceMethods
@@ -153,8 +158,15 @@ module PluginAWeek #:nodoc:
           # Update the active events to point to the new subclass
           subclass.active_events.each do |name, event|
             event = event.dup
-            event.owner_type = subclass.name
+            event.owner_class = subclass
             subclass.active_events[name] = event
+          end
+          
+          # Update the active states to point to the new subclass
+          subclass.active_states.each do |name, state|
+            state = state.dup
+            state.owner_class = subclass
+            subclass.active_states[name] = state
           end
           
           # Create a new state extension class for the subclass
@@ -244,60 +256,14 @@ module PluginAWeek #:nodoc:
           
           names.each do |name|
             name = name.to_sym
-            state = states.find_by_name(name.to_s, :readonly => true)
-            raise StateNotFound, "Couldn't find #{self.name} state with name=#{name.to_s.inspect}" unless state
             
-            state.extend PluginAWeek::Has::States::ActiveState
-            active_states[name] = state
-            
-            # Add checking the current state
-            class_eval <<-end_eval
-              def #{name}?
-                state_id == #{state.id}
-              end
-            end_eval
-            
-            # Add checking when the change in state occurred
-            if record_state_changes
-              class_eval <<-end_eval
-                def #{name}_at(count = :last)
-                  if [:first, :last].include?(count)
-                    state_change = state_changes.find_by_to_state_id(#{state.id}, :order => "occurred_at \#{count == :first ? 'ASC' : 'DESC'}")
-                    state_change.occurred_at if state_change
-                  else
-                    state_changes.find_all_by_to_state_id(#{state.id}, :order => 'occurred_at ASC').map(&:occurred_at)
-                  end
-                end
-              end_eval
+            if active_states[name]
+              raise StateAlreadyActive, "#{self} state with name=#{name.to_s.inspect} has already been defined"
+            elsif record = states.find_by_name(name.to_s, :readonly => true)
+              active_states[name] = ActiveState.new(self, record, options)
+            else
+              raise StateNotFound, "Couldn't find #{self} state with name=#{name.to_s.inspect}"
             end
-            
-            # Add callbacks
-            [:before_enter, :after_enter, :before_exit, :after_exit].each do |callback|
-              class_eval <<-end_eval
-                def self.#{callback}_#{name}(*callbacks, &block)
-                  callbacks << block if block_given?
-                  write_inheritable_array(:#{callback}_#{name}, callbacks)
-                end
-              end_eval
-              
-              send("#{callback}_#{name}", options[callback]) if options[callback]
-            end
-            
-            # Update the state extension module to support looking up records
-            # of this object by state in a has_many association
-            self::StateExtension.module_eval <<-end_eval
-              def #{name}(*args)
-                with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{state.id}]}) do
-                  find(args.first.is_a?(Symbol) ? args.shift : :all, *args)
-                end
-              end
-              
-              def #{name}_count(*args)
-                with_scope(:find => {:conditions => ["\#{aliased_table_name}.state_id = ?", #{state.id}]}) do
-                  count(*args)
-                end
-              end
-            end_eval
           end
         end
         
@@ -326,45 +292,12 @@ module PluginAWeek #:nodoc:
         # Example: <tt>order.close_order!</tt>.
         def event(name, options = {}, &block)
           name = name.to_sym
-          options.assert_valid_keys(:after)
           
-          if event = active_events[name]
-            # The event has already been defined, so just evaluate the new block
-            event.instance_eval(&block) if block
-          else
-            event = events.find_by_name(name.to_s, :readonly => true)
-            raise EventNotFound, "Couldn't find #{self.name} state with name=#{name.to_s.inspect}" unless event
-            
-            event.extend PluginAWeek::Has::States::ActiveEvent
-            active_events[name] = event
-            event.instance_eval(&block) if block
-            
-            class_eval <<-end_eval
-              # Add action for transitioning the model
-              def #{name}!(*args)
-                success = false
-                transaction do
-                  save! if new_record?
-                  
-                  if self.class.active_events[:#{name.to_s.dump}].fire(self, *args)
-                    success = save!
-                  else
-                    raise ActiveRecord::Rollback
-                  end
-                end
-                
-                success
-              end
-              
-              # Add callbacks
-              def self.after_#{name}(*callbacks, &block)
-                callbacks << block if block_given?
-                active_events[:#{name}].callbacks.concat(callbacks)
-              end
-            end_eval
-          end
+          record = events.find_by_name(name.to_s, :readonly => true)
+          raise EventNotFound, "Couldn't find #{self} state with name=#{name.to_s.inspect}" unless record
           
-          event.callbacks << options[:after] if options[:after]
+          active_events[name] ||= ActiveEvent.new(self, record, options)
+          active_events[name].instance_eval(&block) if block
         end
       end
       
@@ -385,7 +318,7 @@ module PluginAWeek #:nodoc:
         
         # Gets the actual record for the initial state
         def initial_state
-          self.class.active_states[initial_state_name]
+          self.class.active_states[initial_state_name].record
         end
         
         # Gets the state of the record.  If this record has not been saved, then
@@ -413,7 +346,7 @@ module PluginAWeek #:nodoc:
           event = self.class.active_events[name.to_sym]
           raise StateNotActive, "Couldn't find active #{self.class.name} state with name=#{name.to_s.inspect}" unless event
           
-          event.possible_transitions_from(self.state).map(&:to_state)
+          event.possible_transitions_from(self.state).map(&:to_state).map(&:record)
         end
         
         private
@@ -421,9 +354,9 @@ module PluginAWeek #:nodoc:
         def record_state_change(event, from_state, to_state)
           if self.class.record_state_changes
             state_change = state_changes.build
-            state_change.to_state = to_state
-            state_change.from_state = from_state if from_state
-            state_change.event = event if event
+            state_change.to_state = to_state.record
+            state_change.from_state = from_state.record if from_state
+            state_change.event = event.record if event
             
             state_change.save!
           end

@@ -171,10 +171,22 @@ class HasStatesTest < Test::Unit::TestCase
     end
   end
   
-  def test_should_change_cloned_active_event_owner_type_to_subclass_name
-    Vehicle.active_events.each do |name, vehicle_event|
-      car_event = Car.active_events[name]
-      assert_not_equal car_event.object_id, vehicle_event.object_id
+  def test_should_change_cloned_active_event_owner_class_to_subclass
+    Car.active_events.each do |name, event|
+      assert_equal Car, event.owner_class
+    end
+  end
+  
+  def test_should_clone_active_states_for_subclasses
+    Vehicle.active_states.each do |name, vehicle_state|
+      car_state = Car.active_states[name]
+      assert_not_equal car_state.object_id, vehicle_state.object_id
+    end
+  end
+  
+  def test_should_change_cloned_active_state_owner_class_to_subclass
+    Car.active_states.each do |name, state|
+      assert_equal Car, state.owner_class
     end
   end
   
@@ -529,7 +541,7 @@ class HasStatesTest < Test::Unit::TestCase
   
   def test_should_record_state_change_with_no_event
     vehicle = vehicles(:idling)
-    vehicle.send(:record_state_change, nil, states(:vehicle_idling), states(:vehicle_first_gear))
+    vehicle.send(:record_state_change, nil, Vehicle.active_states[:idling], Vehicle.active_states[:first_gear])
     
     assert_equal 3, vehicle.state_changes.size
     
@@ -541,7 +553,7 @@ class HasStatesTest < Test::Unit::TestCase
   
   def test_record_state_change_with_no_from_state
     vehicle = vehicles(:idling)
-    vehicle.send(:record_state_change, events(:vehicle_shift_up), nil, states(:vehicle_second_gear))
+    vehicle.send(:record_state_change, Vehicle.active_events[:shift_up], nil, Vehicle.active_states[:second_gear])
     
     assert_equal 3, vehicle.state_changes.size
     
