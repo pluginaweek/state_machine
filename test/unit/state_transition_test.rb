@@ -43,6 +43,13 @@ class StateTransitionTest < Test::Unit::TestCase
     @callbacks << method
   end
   
+  def state(force_reload = false)
+  end
+  
+  def update_attributes!(attrs)
+    @state_id = attrs[:state_id]
+  end
+  
   def test_should_store_from_state
     transition = create_transition
     assert_equal states(:switch_off), transition.from_state.record
@@ -91,7 +98,7 @@ class StateTransitionTest < Test::Unit::TestCase
     transition = create_transition
     transition.perform(self)
     
-    assert_equal states(:switch_on), @state
+    assert_equal states(:switch_on).id, @state_id
   end
   
   def test_should_not_change_state_when_not_performed

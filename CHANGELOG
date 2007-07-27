@@ -1,5 +1,9 @@
 *SVN*
 
+* Allow force_reload option to be set in the state association
+
+* Don't save the entire model when updating the state_id
+
 * Raise exception if a class tries to define a state more than once
 
 * Add tests for PluginAWeek::Has::States::ActiveState

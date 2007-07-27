@@ -323,9 +323,9 @@ module PluginAWeek #:nodoc:
         
         # Gets the state of the record.  If this record has not been saved, then
         # the initial state will be returned.
-        def state_with_initial_check
+        def state_with_initial_check(*args)
           state_id = read_attribute(:state_id)
-          (new_record? && (!state_id || state_id == 0) ? initial_state : nil) || state_without_initial_check
+          (new_record? && (!state_id || state_id == 0) ? initial_state : nil) || state_without_initial_check(*args)
         end
         
         # Gets the state id of the record.  If this record has not been saved,

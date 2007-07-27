@@ -38,7 +38,8 @@ module PluginAWeek #:nodoc:
             record.send(:callback, "before_enter_#{to_state.name}")
           end
           
-          record.state = to_state.record
+          record.update_attributes!(:state_id => to_state.record.id)
+          record.instance_variable_set('@state', nil) if !loopback # Unload the association
           
           unless loopback
             # Leave the last state

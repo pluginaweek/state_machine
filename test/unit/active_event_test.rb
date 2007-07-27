@@ -60,6 +60,10 @@ class ActveEventTest < Test::Unit::TestCase
     @callbacks << method
   end
   
+  def update_attributes!(attrs)
+    @state_id = attrs[:state_id]
+  end
+  
   def test_should_raise_exception_if_invalid_option_used_on_create
     assert_raise(ArgumentError) {PluginAWeek::Has::States::ActiveEvent.new(self.class, Event.new, :invalid_option => true)}
   end
@@ -230,6 +234,7 @@ class ActveEventTest < Test::Unit::TestCase
     @event.transition_to :on, :from => :off
     @event.fire(self)
     
+    assert_not_nil self.state
     assert_same original_state, self.state
   end
   
@@ -261,8 +266,8 @@ class ActveEventTest < Test::Unit::TestCase
     @event.transition_to :on, :from => :off
     @event.fire(self)
     
-    assert_not_equal original_state, self.state
-    assert_equal states(:switch_on), self.state
+    assert_not_equal original_state.id, @state_id
+    assert_equal states(:switch_on).id, @state_id
   end
   
   def test_should_record_state_change_if_fired

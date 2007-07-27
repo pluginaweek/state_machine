@@ -112,11 +112,7 @@ module PluginAWeek #:nodoc:
               transaction do
                 save! if new_record?
                 
-                if self.class.active_events[:#{name.to_s.dump}].fire(self, *args)
-                  success = save!
-                else
-                  raise ActiveRecord::Rollback
-                end
+                success = self.class.active_events[:#{name}].fire(self, *args) || raise(ActiveRecord::Rollback)
               end
               
               success

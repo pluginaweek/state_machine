@@ -82,3 +82,13 @@ project_maintenance:
   id: 505
   name: maintenance
   owner_type: Project
+  
+message_pending:
+  id: 601
+  name: pending
+  owner_type: Message
+  
+message_deleted:
+  id: 602
+  name: deleted
+  owner_type: Message

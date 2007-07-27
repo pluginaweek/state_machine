@@ -87,3 +87,8 @@ project_deliver:
   id: 505
   name: deliver
   owner_type: Project
+  
+message_delete:
+  id: 601
+  name: delete
+  owner_type: Message

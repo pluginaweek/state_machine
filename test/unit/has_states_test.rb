@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class HasStatesTest < Test::Unit::TestCase
-  fixtures :switches, :highways, :auto_shops, :vehicles, :state_changes
+  fixtures :messages, :switches, :highways, :auto_shops, :vehicles, :state_changes
   
   def setup
     Vehicle.class_eval do
@@ -14,11 +14,11 @@ class HasStatesTest < Test::Unit::TestCase
   
   def test_should_raise_exception_with_invalid_option
     options = {:invalid_option => true}
-    assert_raise(ArgumentError) {Message.has_states(options)}
+    assert_raise(ArgumentError) {Task.has_states(options)}
   end
   
   def test_should_raise_exception_if_no_initial_state_given
-    assert_raise(PluginAWeek::Has::States::NoInitialState) {Message.has_states({})}
+    assert_raise(PluginAWeek::Has::States::NoInitialState) {Task.has_states({})}
   end
   
   def test_should_allow_subclasses_to_override_initial_state
@@ -28,20 +28,20 @@ class HasStatesTest < Test::Unit::TestCase
   
   def test_active_states_should_be_initially_empty
     expected = {}
-    assert_equal expected, Message.active_states
+    assert_equal expected, Task.active_states
   end
   
   def test_active_events_should_be_initially_empty
     expected = {}
-    assert_equal expected, Message.active_events
+    assert_equal expected, Task.active_events
   end
   
   def test_should_set_initial_state_name_to_initial_option
-    assert_equal :dummy, Message.read_inheritable_attribute(:initial_state_name)
+    assert_equal :dummy, Task.read_inheritable_attribute(:initial_state)
   end
   
   def test_should_record_state_changes_by_default
-    assert Message.record_state_changes
+    assert Task.record_state_changes
   end
   
   def test_should_not_record_state_changes_if_specified_not_to
@@ -455,12 +455,12 @@ class HasStatesTest < Test::Unit::TestCase
   
   def test_should_be_able_to_use_symbol_for_initial_state_name
     Message.write_inheritable_attribute(:initial_state_name, :dummy)
-    assert_equal :dummy, Message.new.initial_state_name
+    assert_equal :dummy, Task.new.initial_state_name
   end
   
   def test_should_evaluate_procs_for_dynamic_initial_state_names
     Message.write_inheritable_attribute(:initial_state_name, Proc.new {|machine| :dummy})
-    assert_equal :dummy, Message.new.initial_state_name
+    assert_equal :dummy, Task.new.initial_state_name
   ensure
     Message.write_inheritable_attribute(:initial_state_name, :dummy)
   end
@@ -565,6 +565,14 @@ class HasStatesTest < Test::Unit::TestCase
   
   # Go through some state machine scenarios
   
+  def test_should_reload_state_after_transitioning
+    v = vehicles(:parked)
+    v.ignite!
+    assert v.idling?
+    assert_equal states(:vehicle_idling).id, v.state_id
+    assert_equal states(:vehicle_idling), v.state
+  end
+  
   def test_crash_if_shop_available
     v = vehicles(:first_gear)
     assert v.auto_shop.available?
@@ -611,5 +619,19 @@ class HasStatesTest < Test::Unit::TestCase
     assert v.stalled?
     assert v.ignite!
     assert v.stalled?
+  end
+  
+  def test_should_allow_destroying_on_event_action
+    m = messages(:pending)
+    assert m.delete!
+    assert m.frozen?
+    assert_nil Message.find_by_id(m.id)
+  end
+  
+  def test_should_not_save_other_attributes_when_updating_state
+    m = messages(:pending)
+    m.sender = 'Jane Done'
+    assert m.delete!
+    assert_nil Message.find_by_id(m.id)
   end
 end
