@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class HasStatesTest < Test::Unit::TestCase
-  fixtures :messages, :switches, :highways, :auto_shops, :vehicles, :state_changes
+  fixtures :messages, :highways, :auto_shops, :vehicles, :state_changes
   
   def setup
     Vehicle.class_eval do
@@ -45,7 +45,7 @@ class HasStatesTest < Test::Unit::TestCase
   end
   
   def test_should_not_record_state_changes_if_specified_not_to
-    assert !Switch.record_state_changes
+    assert !AutoShop.record_state_changes
   end
   
   def test_should_create_state_extension
@@ -139,7 +139,7 @@ class HasStatesTest < Test::Unit::TestCase
   end
   
   def test_should_not_create_class_level_state_changes_association_if_not_recording_changes
-    assert !Switch.respond_to?(:state_changes)
+    assert !AutoShop.respond_to?(:state_changes)
   end
   
   def test_should_create_stateful_association_in_state_class
@@ -161,7 +161,7 @@ class HasStatesTest < Test::Unit::TestCase
   end
   
   def test_should_not_create_state_changes_association_for_model_if_not_recording_changes
-    assert !switches(:light).respond_to?(:state_changes)
+    assert !auto_shops(:available).respond_to?(:state_changes)
   end
   
   def test_should_clone_active_events_for_subclasses
@@ -325,8 +325,8 @@ class HasStatesTest < Test::Unit::TestCase
   end
   
   def test_should_not_create_state_change_accessor_for_each_state_if_not_recording_changes
-    Switch.active_states.keys.each do |state_name|
-      assert !Switch.instance_methods.include?("#{state_name}_at")
+    AutoShop.active_states.keys.each do |state_name|
+      assert !AutoShop.instance_methods.include?("#{state_name}_at")
     end
   end
   
@@ -533,10 +533,10 @@ class HasStatesTest < Test::Unit::TestCase
   end
   
   def test_should_not_record_state_change_if_not_option_disabled
-    switch = switches(:light)
-    switch.send(:record_state_change, nil, states(:switch_off), states(:switch_on))
+    auto_shop = auto_shops(:available)
+    auto_shop.send(:record_state_change, nil, auto_shops(:available), auto_shops(:busy))
     
-    assert_nil StateChange.find_by_stateful_type('Switch')
+    assert_nil StateChange.find_by_stateful_type('AutoShop')
   end
   
   def test_should_record_state_change_with_no_event
@@ -607,7 +607,6 @@ class HasStatesTest < Test::Unit::TestCase
   
   def test_event_action_success
     v = vehicles(:parked)
-    
     assert v.ignite!
     assert_equal 2, v.state_changes.size
     assert v.seatbelt_on
@@ -615,7 +614,6 @@ class HasStatesTest < Test::Unit::TestCase
   
   def test_circular_event_action
     v = vehicles(:stalled)
-    
     assert v.stalled?
     assert v.ignite!
     assert v.stalled?

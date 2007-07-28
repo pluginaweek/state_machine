@@ -14,7 +14,13 @@ module PluginAWeek #:nodoc:
           options.symbolize_keys!.assert_valid_keys(:if)
           
           @from_state, @to_state = from_state, to_state
+          @loopback = from_state == to_state
           @guards = Array(options[:if])
+        end
+        
+        # Whether or not this is a loopback transition
+        def loopback?
+          @loopback == true
         end
         
         # Ensures that the transition can occur by checking the guards
@@ -25,31 +31,17 @@ module PluginAWeek #:nodoc:
         
         # Runs the actual transition and any actions associated with entering
         # and exiting the states
-        def perform(record, *args)
-          return false unless can_perform_on?(record, *args)
-          
-          loopback = from_state == to_state
-          
-          unless loopback
-            # Start leaving the last state
-            record.send(:callback, "before_exit_#{from_state.name}")
+        def perform(event, record, *args)
+          if can_perform_on?(record, *args) && invoke_before_callbacks(record) && (!record.respond_to?(event.name) || record.send(event.name, *args) != false)
+            # Update the state and 
+            record.update_attributes!(:state_id => to_state.record.id)
+            record.instance_variable_set('@state', nil) if !loopback? # Unload the association
+            record.send(:record_state_change, event, from_state, to_state)
             
-            # Start entering the next state
-            record.send(:callback, "before_enter_#{to_state.name}")
+            result = invoke_after_callbacks(record)
           end
           
-          record.update_attributes!(:state_id => to_state.record.id)
-          record.instance_variable_set('@state', nil) if !loopback # Unload the association
-          
-          unless loopback
-            # Leave the last state
-            record.send(:callback, "after_exit_#{from_state.name}")
-            
-            # Enter the next state
-            record.send(:callback, "after_enter_#{to_state.name}")
-          end
-          
-          true
+          result || false
         end
         
         def hash #:nodoc:
@@ -60,6 +52,17 @@ module PluginAWeek #:nodoc:
           @from_state == obj.from_state && @to_state == obj.to_state
         end
         alias :eql? :==
+        
+        private
+        def invoke_before_callbacks(record) #:nodoc:
+          # Start leaving the last state and start entering the next state
+          loopback? || record.send(:callback, "before_exit_#{from_state.name}") != false && record.send(:callback, "before_enter_#{to_state.name}") != false
+        end
+        
+        def invoke_after_callbacks(record) #:nodoc:
+          # Start leaving the last state and start entering the next state
+          loopback? || record.send(:callback, "after_exit_#{from_state.name}") != false && record.send(:callback, "after_enter_#{to_state.name}") != false
+        end
       end
     end
   end

@@ -70,15 +70,16 @@ module PluginAWeek #:nodoc:
         
         # Adds the callbacks for before and after states are entered/exited
         def add_callbacks
-          [:before_enter, :after_enter, :before_exit, :after_exit].each do |callback|
+          [:before_enter, :after_enter, :before_exit, :after_exit].each do |type|
+            callback = "#{type}_#{name}"
             @owner_class.class_eval <<-end_eval
-              def self.#{callback}_#{name}(*callbacks, &block)
+              def self.#{callback}(*callbacks, &block)
                 callbacks << block if block_given?
-                write_inheritable_array(:#{callback}_#{name}, callbacks)
+                write_inheritable_array(:#{callback}, callbacks)
               end
             end_eval
             
-            @owner_class.send("#{callback}_#{name}", @options[callback]) if @options[callback]
+            @owner_class.send(callback, @options[type]) if @options[type]
           end
         end
         

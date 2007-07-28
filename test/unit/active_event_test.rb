@@ -1,80 +1,27 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class ActveEventTest < Test::Unit::TestCase
-  class ActiveState
-    attr_reader :record
-    
-    def initialize(record)
-      @record = record
-    end
-    
-    def respond_to?(symbol, include_priv = false) #:nodoc:
-      super || @record.respond_to?(symbol, include_priv)
-    end
-    
-    def hash #:nodoc:
-      @record.hash
-    end
-    
-    def ==(obj) #:nodoc:
-      @record == (obj.is_a?(State) ? obj : obj.record)
-    end
-    alias :eql? :==
-    
-    private
-    def method_missing(method, *args, &block) #:nodoc:
-      @record.send(method, *args, &block) if @record
-    end
-  end
-  
-  cattr_accessor :active_states
-  attr_accessor :state
-  
+class ActiveEventTest < Test::Unit::TestCase
   def setup
-    @@active_states = {
-      :off => ActiveState.new(states(:switch_off)),
-      :on => ActiveState.new(states(:switch_on))
+    Switch.active_states = {
+      :off => PluginAWeek::Has::States::ActiveState.new(Switch, states(:switch_off)),
+      :on => PluginAWeek::Has::States::ActiveState.new(Switch, states(:switch_on))
     }
     
-    event = Event.new(:name => 'execute')
-    event.id = 999
-    @event = PluginAWeek::Has::States::ActiveEvent.new(self.class, event)
-    @callbacks = []
-  end
-  
-  def after_execute
-    @callbacks << 'after_execute'
-    true
-  end
-  
-  def after_turn_on
-    @callbacks << 'after_turn_on'
-    true
-  end
-  
-  def return_false
-    false
-  end
-  
-  def callback(method)
-    @callbacks << method
-  end
-  
-  def update_attributes!(attrs)
-    @state_id = attrs[:state_id]
+    @original_instance_methods = Switch.instance_methods
+    @event = PluginAWeek::Has::States::ActiveEvent.new(Switch, events(:switch_turn_on))
   end
   
   def test_should_raise_exception_if_invalid_option_used_on_create
-    assert_raise(ArgumentError) {PluginAWeek::Has::States::ActiveEvent.new(self.class, Event.new, :invalid_option => true)}
+    assert_raise(ArgumentError) {PluginAWeek::Has::States::ActiveEvent.new(Switch, Event.new, :invalid_option => true)}
   end
   
   def test_should_set_owner_class_to_initialized_class
-    assert_equal self.class, @event.owner_class
+    assert_equal Switch, @event.owner_class
   end
   
   def test_should_allow_owner_class_to_be_modified
-    @event.owner_class = Event
-    assert_equal Event, @event.owner_class
+    @event.owner_class = self.class
+    assert_equal self.class, @event.owner_class
   end
   
   def test_should_have_no_transitions_by_default
@@ -82,7 +29,8 @@ class ActveEventTest < Test::Unit::TestCase
   end
   
   def test_should_not_add_after_callback_on_initialization
-    assert_equal [], @event.callbacks
+    expected_callbacks = {:before => [], :after => []}
+    assert_equal expected_callbacks, @event.callbacks
   end
   
   def test_should_be_able_to_read_event_being_represented
@@ -90,30 +38,32 @@ class ActveEventTest < Test::Unit::TestCase
   end
   
   def test_should_allow_custom_callbacks_in_addition_to_default
-    event = PluginAWeek::Has::States::ActiveEvent.new(self.class, Event.new(:id => 999, :name => 'execute'), :after => :return_false)
-    assert_equal [:return_false], event.callbacks
+    event = PluginAWeek::Has::States::ActiveEvent.new(Switch, events(:switch_turn_on), :after => :return_false)
+    expected_callbacks = {:before => [], :after => [:return_false]}
+    assert_equal expected_callbacks, event.callbacks
   end
   
   def test_should_create_event_action_method
-    assert self.class.instance_methods.include?('execute!')
+    assert Switch.instance_methods.include?('turn_on!')
   end
   
-  def test_should_create_event_callback_method
-    assert self.class.singleton_methods.include?('after_execute')
+  def test_should_create_event_callback_methods
+    assert Switch.singleton_methods.include?('before_turn_on')
+    assert Switch.singleton_methods.include?('after_turn_on')
   end
   
   def test_should_forward_missing_methods_to_record
-    assert_equal 999, @event.id
-    assert_equal 'execute', @event.name
-    assert_equal 'Execute', @event.human_name
-    assert_equal :execute, @event.to_sym
+    assert_equal 101, @event.id
+    assert_equal 'turn_on', @event.name
+    assert_equal 'Turn On', @event.human_name
+    assert_equal :turn_on, @event.to_sym
   end
   
   def test_should_not_cache_owner_class
     owner_class = @event.owner_class
-    @event.owner_class = Event
+    @event.owner_class = self.class
     assert_not_equal owner_class, @event.owner_class
-    assert_equal Event, @event.owner_class
+    assert_equal self.class, @event.owner_class
   end
   
   def test_should_raise_exception_if_transitioning_to_unknown_state
@@ -121,7 +71,7 @@ class ActveEventTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_transitioning_to_inactive_state
-    @@active_states.delete(:on)
+    Switch.active_states.delete(:on)
     assert_raise(PluginAWeek::Has::States::StateNotActive) {@event.transition_to :on}
   end
   
@@ -130,7 +80,7 @@ class ActveEventTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_transitioning_from_inactive_state
-    @@active_states.delete(:off)
+    Switch.active_states.delete(:off)
     assert_raise(PluginAWeek::Has::States::StateNotActive) {@event.transition_to :on, :from => :off}
   end
   
@@ -224,102 +174,124 @@ class ActveEventTest < Test::Unit::TestCase
   end
   
   def test_should_return_false_if_not_fired
-    assert !@event.fire(self)
+    switch = Switch.new
+    assert !@event.fire(switch)
   end
   
   def test_should_not_change_state_if_not_fired
-    self.state = states(:switch_on)
-    original_state = self.state
+    switch = Switch.new
+    switch.state = states(:switch_on)
+    original_state = switch.state
     
     @event.transition_to :on, :from => :off
-    @event.fire(self)
+    @event.fire(switch)
     
-    assert_not_nil self.state
-    assert_same original_state, self.state
+    assert_not_nil switch.state
+    assert_same original_state, switch.state
   end
   
   def test_should_not_record_state_change_if_not_fired
-    @event.fire(self)
+    switch = Switch.new
+    @event.fire(switch)
     
-    assert_nil @recorded_event
-    assert_nil @recorded_from_state
-    assert_nil @recorded_to_state
+    assert_nil switch.recorded_event
+    assert_nil switch.recorded_from_state
+    assert_nil switch.recorded_to_state
   end
   
   def test_should_not_invoke_callbacks_if_not_fired
-    @event.fire(self)
+    switch = Switch.new
+    @event.fire(switch)
     
-    assert @callbacks.empty?
+    assert switch.callbacks.empty?
   end
   
   def test_should_return_true_if_fired
-    self.state = states(:switch_off)
+    model = Switch.new
+    model.state = states(:switch_off)
     @event.transition_to :on, :from => :off
     
-    assert @event.fire(self)
+    assert @event.fire(model)
   end
   
   def test_should_change_state_if_fired
-    self.state = states(:switch_off)
-    original_state = self.state
+    model = Switch.new
+    model.state = states(:switch_off)
+    original_state = model.state
     
     @event.transition_to :on, :from => :off
-    @event.fire(self)
+    @event.fire(model)
     
-    assert_not_equal original_state.id, @state_id
-    assert_equal states(:switch_on).id, @state_id
+    assert_not_equal original_state.id, model.state_id
+    assert_equal states(:switch_on).id, model.state_id
   end
   
   def test_should_record_state_change_if_fired
-    self.state = states(:switch_off)
+    model = Switch.new
+    model.state = states(:switch_off)
     
     @event.transition_to :on, :from => :off
-    @event.fire(self)
+    @event.fire(model)
     
-    assert_equal @event.record, @recorded_event
-    assert_equal states(:switch_off), @recorded_from_state
-    assert_equal states(:switch_on), @recorded_to_state
+    assert_equal @event.record, model.recorded_event
+    assert_equal states(:switch_off), model.recorded_from_state
+    assert_equal states(:switch_on), model.recorded_to_state
   end
   
   def test_should_invoke_callbacks_if_fired
-    self.state = states(:switch_off)
+    model = Switch.new
+    model.state = states(:switch_off)
     
     @event.transition_to :on, :from => :off
-    @event.fire(self)
+    @event.fire(model)
     
-    expected_callbacks = %w(before_exit_off before_enter_on after_exit_off after_enter_on after_execute)
-    assert_equal expected_callbacks, @callbacks
+    expected_callbacks = %w(before_turn_on before_exit_off before_enter_on after_exit_off after_enter_on after_turn_on)
+    assert_equal expected_callbacks, model.callbacks
   end
   
   def test_should_invoke_custom_callbacks_if_fired
-    self.state = states(:switch_off)
+    model = Switch.new
+    model.state = states(:switch_off)
     
     @event.transition_to :on, :from => :off
-    @event.callbacks << :after_turn_on
-    @event.fire(self)
+    @event.callbacks[:before] << :turn_key
+    @event.callbacks[:after] << :remove_key
+    @event.fire(model)
     
-    expected_callbacks = %w(before_exit_off before_enter_on after_exit_off after_enter_on after_turn_on after_execute)
-    assert_equal expected_callbacks, @callbacks
+    expected_callbacks = %w(turn_key before_turn_on before_exit_off before_enter_on after_exit_off after_enter_on remove_key after_turn_on)
+    assert_equal expected_callbacks, model.callbacks
   end
   
-  def test_should_fail_if_callback_returns_false
-    self.state = states(:switch_off)
+  def test_should_fail_if_after_callback_returns_false
+    model = Switch.new
+    model.state = states(:switch_off)
     
     @event.transition_to :on, :from => :off
-    @event.callbacks << :after_turn_on
-    @event.callbacks << :return_false
+    @event.callbacks[:after] << :after_turn_on
+    @event.callbacks[:after] << :return_false
     
-    assert !@event.fire(self)
+    assert !@event.fire(model)
+  end
+  
+  def test_should_fail_if_before_callback_returns_false
+    model = Switch.new
+    model.state = states(:switch_off)
+    
+    @event.transition_to :on, :from => :off
+    @event.callbacks[:before] << :before_turn_on
+    @event.callbacks[:before] << :return_false
+    
+    assert !@event.fire(model)
+  end
+  
+  def teardown
+    (Switch.instance_methods - @original_instance_methods).each do |method|
+      Switch.send(:undef_method, method)
+    end
   end
   
   private
   def create_transition(from_state_name, to_state_name)
-    PluginAWeek::Has::States::StateTransition.new(@@active_states[from_state_name], @@active_states[to_state_name], {})
-  end
-  
-  def record_state_change(event, from_state, to_state)
-    @recorded_event = event.record if event
-    @recorded_from_state = from_state.record if from_state
-    @recorded_to_state = to_state.record if to_state
+    PluginAWeek::Has::States::StateTransition.new(Switch.active_states[from_state_name], Switch.active_states[to_state_name], {})
   end
 end

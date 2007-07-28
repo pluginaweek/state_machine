@@ -22,11 +22,11 @@ module PluginAWeek #:nodoc:
           options.assert_valid_keys(:after)
           
           @owner_class, @record, @options = owner_class, record, options
-          @callbacks = []
+          @callbacks = {:before => [], :after => []}
           @transitions = []
           
-          add_callbacks
           add_transition_action
+          add_callbacks
         end
         
         def respond_to?(symbol, include_priv = false) #:nodoc:
@@ -42,17 +42,13 @@ module PluginAWeek #:nodoc:
         # successful, then any parallel machines that have been configured
         # will have their events fired as well
         def fire(record, *args)
-          success = false
-          
           # Find a state that we can transition into
-          possible_transitions_from(record.state).each do |transition|
-            if success = transition.perform(record, *args)
-              record.send(:record_state_change, self, transition.from_state, transition.to_state)
-              break
-            end
+          possible_transitions_from(record.state).any? do |transition|
+            transition.can_perform_on?(record, *args) &&
+            invoke_callbacks(:before, record, args) &&
+            transition.perform(self, record, *args) &&
+            invoke_callbacks(:after, record, args)
           end
-          
-          success && invoke_callbacks(record, args)
         end
         
         # Creates a new transition to the specified state.
@@ -99,11 +95,6 @@ module PluginAWeek #:nodoc:
           self
         end
         
-        # Adds the callbacks for when the event is performed
-        def add_callbacks
-          @callbacks << @options[:after] if @options[:after]
-        end
-        
         # Add action for transitioning the model
         def add_transition_action
           @owner_class.class_eval <<-end_eval
@@ -117,19 +108,28 @@ module PluginAWeek #:nodoc:
               
               success
             end
-            
-            # Add callbacks
-            def self.after_#{name}(*callbacks, &block)
-              callbacks << block if block_given?
-              active_events[:#{name}].callbacks.concat(callbacks)
-            end
           end_eval
         end
         
+        # Adds the callbacks for when the event is performed
+        def add_callbacks
+          [:before, :after].each do |type|
+            callback = "#{type}_#{name}"
+            @owner_class.class_eval <<-end_eval
+              def self.#{callback}(*callbacks, &block)
+                callbacks << block if block_given?
+                active_events[:#{name}].callbacks[:#{type}].concat(callbacks)
+              end
+            end_eval
+            
+            @callbacks[type].concat(Array(@options[type])) if @options[type]
+          end
+        end
+        
         private
-        def invoke_callbacks(record, args) #:nodoc:
-          success = @callbacks.all? {|callback| record.eval_call(callback, *args)}
-          success && (!record.respond_to?("after_#{name}") || record.send("after_#{name}"))
+        def invoke_callbacks(type, record, args) #:nodoc:
+          success = @callbacks[type].all? {|callback| record.eval_call(callback, *args) != false}
+          success && (!record.respond_to?("#{type}_#{name}") || record.send("#{type}_#{name}")) != false
         end
       end
     end

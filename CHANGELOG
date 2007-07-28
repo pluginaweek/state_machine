@@ -1,5 +1,13 @@
 *SVN*
 
+* Add before_#{action} and #{action} callbacks when an event is performed
+
+* All state and event callbacks can now explicitly return false in order to cancel the action
+
+* Refactor ActiveState callback creation
+
+* Refactor unit tests so that they use mock classes instead of themselves
+
 * Allow force_reload option to be set in the state association
 
 * Don't save the entire model when updating the state_id
