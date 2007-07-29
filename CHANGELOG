@@ -1,5 +1,7 @@
 *SVN*
 
+* Fix error message when a given event can't be found in the database
+
 * Add before_#{action} and #{action} callbacks when an event is performed
 
 * All state and event callbacks can now explicitly return false in order to cancel the action

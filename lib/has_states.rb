@@ -294,7 +294,7 @@ module PluginAWeek #:nodoc:
           name = name.to_sym
           
           record = events.find_by_name(name.to_s, :readonly => true)
-          raise EventNotFound, "Couldn't find #{self} state with name=#{name.to_s.inspect}" unless record
+          raise EventNotFound, "Couldn't find #{self} event with name=#{name.to_s.inspect}" unless record
           
           active_events[name] ||= ActiveEvent.new(self, record, options)
           active_events[name].instance_eval(&block) if block
