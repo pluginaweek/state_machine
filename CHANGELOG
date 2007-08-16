@@ -1,5 +1,7 @@
 *SVN*
 
+* Convert dos newlines to unix newlines
+
 * Fix error message when a given event can't be found in the database
 
 * Add before_#{action} and #{action} callbacks when an event is performed
