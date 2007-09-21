@@ -51,11 +51,11 @@ class ActiveStateTest < Test::Unit::TestCase
   end
   
   def test_should_create_state_finders_for_each_active_state
-    assert Switch::StateExtension.instance_methods.include?('on')
+    assert Switch.singleton_methods.include?('on')
   end
   
   def test_should_create_state_counters_for_each_active_state
-    assert Switch::StateExtension.instance_methods.include?('on_count')
+    assert Switch.singleton_methods.include?('on_count')
   end
   
   private

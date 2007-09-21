@@ -1,7 +1,4 @@
 class Switch < ActiveRecord::Base
-  module StateExtension
-  end
-  
   cattr_accessor :active_states
   cattr_accessor :record_state_changes
   attr_accessor :state

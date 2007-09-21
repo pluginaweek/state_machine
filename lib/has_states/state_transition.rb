@@ -1,6 +1,6 @@
 module PluginAWeek #:nodoc:
   module Has #:nodoc:
-    module States #:nodoc:
+    module States
       # A transition indicates a state change and is described by a condition
       # that would need to be fulfilled to enable the transition.  Transitions
       # consist of:
@@ -18,7 +18,8 @@ module PluginAWeek #:nodoc:
           @guards = Array(options[:if])
         end
         
-        # Whether or not this is a loopback transition
+        # Whether or not this is a loopback transition (i.e. the from state is
+        # the same as the to state)
         def loopback?
           @loopback == true
         end

@@ -1,8 +1,13 @@
 == has_states
 
-has_states .
+has_states adds support for managing states, events, and transitions within a
+model.
 
 == Resources
+
+API
+
+* http://api.pluginaweek.org/has_states
 
 Wiki
 
@@ -24,18 +29,63 @@ Development
 
 
 
+=== Running migrations
+
+To migrate the tables required for has_states, you can either run the
+migration from the command line like so:
+
+  rake db:migrate:plugins PLUGIN=has_states
+
+or (more ideally) generate a migration file that will integrate into your main
+application's migration path:
+
+  ruby script/generate plugin_migration MigrateHasStatesToVersion3
+
+== Testing
+
+Before you can run any tests, the following plugin/gem must be installed:
+* dry_validity_assertions - http://wiki.pluginaweek.org/Dry_validity_assertions
+* plugin_test_helper - http://wiki.pluginaweek.org/Plugin_test_helper
+
+See the Dependencies section below on how to install all dependencies.
+
+== Tools
+
+Jean Bovet's Visual Automata Simulator is a great tool for "simulating,
+visualizing and transforming finite state automata and Turing Machines".  This
+tool can help in the creation of states and events for your models.  It is
+cross-platform, written in Java.
+
+Homepage: http://www.cs.usfca.edu/~jbovet/vas.html
+
 == Dependencies
 
-* class_associations
-* dry_transaction_rollbacks
-* eval_call
+This plugin depends on the presence of the following plugins:
+* class_associations - http://wiki.pluginaweek.org/Class_associations
+* dry_transaction_rollbacks - http://wiki.pluginaweek.org/Dry_transaction_callbacks
+* eval_call - http://wiki.pluginaweek.org/Eval_call
 
-For migrations:
-* plugin_migrations
+This plugin is also a plugin+.  That means that it contains a slice of an
+application, such as models and migrations.  To test or use a plugin+, you
+must have the following plugins/gems installed:
+* plugin_dependencies - http://wiki.pluginaweek.org/Plugin_dependencies
+* loaded_plugins - http://wiki.pluginaweek.org/Loaded_plugins
+* appable_plugins - http://wiki.pluginaweek.org/Appable_plugins
+* plugin_migrations - http://wiki.pluginaweek.org/Plugin_migrations
 
-For testing:
-* dry_validity_assertions
+Instead of installing each individual plugin+ feature, you can install them all
+at once using the plugins+ meta package, which contains all additional features:
+* plugin_plus - http://wiki.pluginaweek.org/Plugins_plus
 
-== References
+=== Installing
 
-http://www.cs.usfca.edu/~jbovet/vas.html
+You can install all dependencies by either:
+
+1. Using svn:externals to link to the PluginAWeek Subversion repository
+2. Using the Rails plugin installer:
+
+  ruby script/plugin install plugins_plus
+
+3. Installing them as gems:
+
+  gem install plugins_plus

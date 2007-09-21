@@ -1,5 +1,13 @@
 *SVN*
 
+*0.0.1* (September 22nd, 2007)
+
+* Move test fixtures out of the test application root directory
+
+* Improve documentation
+
+* Remove the StateExtension module in favor of adding singleton methods to the stateful class
+
 * Convert dos newlines to unix newlines
 
 * Fix error message when a given event can't be found in the database

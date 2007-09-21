@@ -48,10 +48,6 @@ class HasStatesTest < Test::Unit::TestCase
     assert !AutoShop.record_state_changes
   end
   
-  def test_should_create_state_extension
-    assert_not_nil Vehicle::StateExtension
-  end
-  
   def test_should_create_class_level_states_association
     expected = [
       :parked,
@@ -188,15 +184,6 @@ class HasStatesTest < Test::Unit::TestCase
     Car.active_states.each do |name, state|
       assert_equal Car, state.owner_class
     end
-  end
-  
-  def test_should_create_different_state_extension_for_subclasses
-    assert_not_equal Vehicle::StateExtension, Car::StateExtension
-    assert_not_equal Vehicle::StateExtension, Motorcycle::StateExtension
-  end
-  
-  def test_should_include_superclass_state_extension_methods_in_subclass_extension
-    assert (Vehicle::StateExtension.instance_methods - Car::StateExtension.instance_methods).empty?
   end
   
   def test_stringified_active_state_should_be_active

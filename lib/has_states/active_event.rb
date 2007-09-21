@@ -1,6 +1,6 @@
 module PluginAWeek #:nodoc:
   module Has #:nodoc:
-    module States #:nodoc:
+    module States
       # An active event is one which has transitions to active states in the
       # system
       class ActiveEvent
@@ -10,7 +10,7 @@ module PluginAWeek #:nodoc:
         # The possible transitions that can occur through this event
         attr_reader :transitions
         
-        # The class which this is an event for
+        # The class in which the event is validly active
         attr_accessor :owner_class
         
         # The event which is being represented
@@ -33,7 +33,8 @@ module PluginAWeek #:nodoc:
           super || @record.respond_to?(symbol, include_priv)
         end
         
-        # Gets all of the possible transitions for the record
+        # Gets all of the possible transitions that may be executed when transitioning
+        # from the given state
         def possible_transitions_from(state)
           transitions.select {|transition| transition.from_state == state}
         end
@@ -54,8 +55,8 @@ module PluginAWeek #:nodoc:
         # Creates a new transition to the specified state.
         # 
         # Configuration options:
-        # <tt>from</tt> - A state or array of states that can be transitioned to
-        # <tt>if</tt> - An optional condition that must be met for the transition to occur
+        # * +from+ - A state or array of states that can be transitioned to
+        # * +if+ - An optional condition that must be met for the transition to occur
         def transition_to(to_name, options = {})
           to_state = owner_class.active_states[to_name.to_sym]
           raise StateNotActive, "Couldn't find active #{owner_type} state with name=#{to_name.inspect}" unless to_state
@@ -82,7 +83,7 @@ module PluginAWeek #:nodoc:
         alias :eql? :==
         
         private
-        def method_missing(method, *args, &block) #:nodoc:
+        def method_missing(method, *args, &block)
           @record.send(method, *args, &block) if @record
         end
         
@@ -111,7 +112,7 @@ module PluginAWeek #:nodoc:
           end_eval
         end
         
-        # Adds the callbacks for when the event is performed
+        # Adds the before/after callbacks for when the event is performed
         def add_callbacks
           [:before, :after].each do |type|
             callback = "#{type}_#{name}"
@@ -126,8 +127,7 @@ module PluginAWeek #:nodoc:
           end
         end
         
-        private
-        def invoke_callbacks(type, record, args) #:nodoc:
+        def invoke_callbacks(type, record, args)
           success = @callbacks[type].all? {|callback| record.eval_call(callback, *args) != false}
           success && (!record.respond_to?("#{type}_#{name}") || record.send("#{type}_#{name}")) != false
         end

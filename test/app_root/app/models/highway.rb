@@ -1,4 +1,3 @@
 class Highway < ActiveRecord::Base
-  has_many  :vehicles,
-              :extend => Vehicle::StateExtension
+  has_many :vehicles
 end
