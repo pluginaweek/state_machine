@@ -84,19 +84,6 @@ Instead of installing each individual plugin+ feature, you can install them all
 at once using the plugins+[http://wiki.pluginaweek.org/Plugins_plus] meta package,
 which contains all additional features.
 
-=== Installing
-
-You can install all dependencies by either:
-
-1. Using svn:externals to link to the PluginAWeek Subversion repository
-2. Using the Rails plugin installer:
-
-  ruby script/plugin install plugins_plus
-
-3. Installing them as gems:
-
-  gem install plugins_plus
-
 == References
 
 * Scott Barron - acts_as_state_machine[http://elitists.textdriven.com/svn/plugins/acts_as_state_machine]
