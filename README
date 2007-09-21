@@ -27,7 +27,18 @@ Development
 
 == Description
 
+State machines make it dead-simple to manage the behavior of a model.  Too often,
+the status of a record is kept by creating multiple boolean columns in the table
+and deciding how to behave based on the values in those columns.  This can become
+cumbersome and difficult to maintain when the complexity of your models starts to
+increase.
 
++has_states+ simplifies this design by introducing the various parts of a state
+machine, including states, events, and transitions.  However, its api is designed
+to be similar to ActiveRecord in terms of validations and callbacks, making it
+so simple you don't even need to know what a state machine is :)
+
+== Usage
 
 === Running migrations
 
@@ -43,20 +54,16 @@ application's migration path:
 
 == Testing
 
-Before you can run any tests, the following plugin/gem must be installed:
-* dry_validity_assertions - http://wiki.pluginaweek.org/Dry_validity_assertions
-* plugin_test_helper - http://wiki.pluginaweek.org/Plugin_test_helper
-
-See the Dependencies section below on how to install all dependencies.
+Before you can run any tests, the following gems must be installed:
+* plugin_test_helper[http://wiki.pluginaweek.org/Plugin_test_helper]
+* dry_validity_assertions[http://wiki.pluginaweek.org/Dry_validity_assertions]
 
 == Tools
 
-Jean Bovet's Visual Automata Simulator is a great tool for "simulating,
-visualizing and transforming finite state automata and Turing Machines".  This
-tool can help in the creation of states and events for your models.  It is
-cross-platform, written in Java.
-
-Homepage: http://www.cs.usfca.edu/~jbovet/vas.html
+Jean Bovet - {Visual Automata Simulator}[http://www.cs.usfca.edu/~jbovet/vas.html].
+This is a great tool for "simulating, visualizing and transforming finite state
+automata and Turing Machines".  This tool can help in the creation of states and
+events for your models.  It is cross-platform, written in Java.
 
 == Dependencies
 
@@ -65,17 +72,17 @@ This plugin depends on the presence of the following plugins:
 * dry_transaction_rollbacks - http://wiki.pluginaweek.org/Dry_transaction_callbacks
 * eval_call - http://wiki.pluginaweek.org/Eval_call
 
-This plugin is also a plugin+.  That means that it contains a slice of an
+This plugin is also plugin+.  That means that it contains a slice of an
 application, such as models and migrations.  To test or use a plugin+, you
 must have the following plugins/gems installed:
-* plugin_dependencies - http://wiki.pluginaweek.org/Plugin_dependencies
-* loaded_plugins - http://wiki.pluginaweek.org/Loaded_plugins
-* appable_plugins - http://wiki.pluginaweek.org/Appable_plugins
-* plugin_migrations - http://wiki.pluginaweek.org/Plugin_migrations
+* plugin_dependencies[http://wiki.pluginaweek.org/Plugin_dependencies]
+* loaded_plugins[http://wiki.pluginaweek.org/Loaded_plugins]
+* appable_plugins[http://wiki.pluginaweek.org/Appable_plugins]
+* plugin_migrations[http://wiki.pluginaweek.org/Plugin_migrations]
 
 Instead of installing each individual plugin+ feature, you can install them all
-at once using the plugins+ meta package, which contains all additional features:
-* plugin_plus - http://wiki.pluginaweek.org/Plugins_plus
+at once using the plugins+[http://wiki.pluginaweek.org/Plugins_plus] meta package,
+which contains all additional features.
 
 === Installing
 
@@ -89,3 +96,7 @@ You can install all dependencies by either:
 3. Installing them as gems:
 
   gem install plugins_plus
+
+== References
+
+* Scott Barron - acts_as_state_machine[http://elitists.textdriven.com/svn/plugins/acts_as_state_machine]
