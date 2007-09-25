@@ -1,6 +1,6 @@
 == has_states
 
-has_states adds support for managing states, events, and transitions within a
++has_states+ adds support for managing states, events, and transitions within a
 model.
 
 == Resources
@@ -68,9 +68,10 @@ events for your models.  It is cross-platform, written in Java.
 == Dependencies
 
 This plugin depends on the presence of the following plugins:
-* class_associations - http://wiki.pluginaweek.org/Class_associations
-* dry_transaction_rollbacks - http://wiki.pluginaweek.org/Dry_transaction_callbacks
-* eval_call - http://wiki.pluginaweek.org/Eval_call
+* class_associations[http://wiki.pluginaweek.org/Class_associations]
+* custom_callbacks[http://wiki.pluginaweek.org/Custom_callbacks]
+* dry_transaction_rollbacks[http://wiki.pluginaweek.org/Dry_transaction_callbacks]
+* eval_call[http://wiki.pluginaweek.org/Eval_call]
 
 This plugin is also plugin+.  That means that it contains a slice of an
 application, such as models and migrations.  To test or use a plugin+, you

@@ -3,7 +3,7 @@ require 'config/boot'
 $:.unshift("#{RAILS_ROOT}/../../../../../rails/plugin_dependencies/lib")
 begin
   require 'plugin_dependencies'
-rescue Exception => ex
+rescue Exception => e
 end
 
 Rails::Initializer.run do |config|

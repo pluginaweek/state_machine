@@ -1,4 +1,5 @@
 require 'class_associations'
+require 'custom_callbacks'
 require 'dry_transaction_rollbacks' unless defined?(ActiveRecord::Rollback) # Supported on edge
 require 'eval_call'
 

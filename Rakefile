@@ -38,6 +38,9 @@ spec = Gem::Specification.new do |s|
   s.autorequire     = 'has_states'
   s.has_rdoc        = true
   s.test_files      = Dir['test/unit/**/*_test.rb']
+  s.add_dependency  'class_associations'
+  s.add_dependency  'custom_callbacks'
+  s.add_dependency  'eval_call'
   
   s.author          = 'Aaron Pfeifer, Neil Abraham'
   s.email           = 'info@pluginaweek.org'
