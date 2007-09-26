@@ -1,8 +1,8 @@
 *SVN*
 
-* Add dependency on custom_callbacks
+*0.0.1* (September 26th, 2007)
 
-*0.0.1* (September 22nd, 2007)
+* Add dependency on custom_callbacks
 
 * Move test fixtures out of the test application root directory
 
