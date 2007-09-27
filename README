@@ -5,25 +5,25 @@ model.
 
 == Resources
 
-API
+Announcement
 
-* http://api.pluginaweek.org/has_states
+* http://www.pluginaweek.org
 
 Wiki
 
 * http://wiki.pluginaweek.org/Has_states
 
-Announcement
+API
 
-* http://www.pluginaweek.org
-
-Source
-
-* http://svn.pluginaweek.org/trunk/plugins/active_record/has/has_states
+* http://api.pluginaweek.org/has_states
 
 Development
 
 * http://dev.pluginaweek.org/browser/trunk/plugins/active_record/has/has_states
+
+Source
+
+* http://svn.pluginaweek.org/trunk/plugins/active_record/has/has_states
 
 == Description
 
