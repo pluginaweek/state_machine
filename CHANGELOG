@@ -1,5 +1,23 @@
 *SVN*
 
+*0.1.0* (May 5th, 2008)
+
+* Completely rewritten from scratch
+
+* Renamed to state_machine
+
+* Removed database dependencies
+
+* Removed models in favor of an attribute-agnostic design
+
+* Use ActiveSupport::Callbacks instead of eval_call
+
+* Remove dry_transaction_rollbacks dependencies
+
+* Added functional tests
+
+* Updated documentation
+
 *0.0.1* (September 26th, 2007)
 
 * Add dependency on custom_callbacks

@@ -1,29 +1,24 @@
-== has_states
+== state_machine
 
-+has_states+ adds support for managing states, events, and transitions within a
-model.
++state_machine+ support for creating state machines for attributes within a model.
 
 == Resources
 
-Announcement
-
-* http://www.pluginaweek.org
-
 Wiki
 
-* http://wiki.pluginaweek.org/Has_states
+* http://wiki.pluginaweek.org/State_machine
 
 API
 
-* http://api.pluginaweek.org/has_states
+* http://api.pluginaweek.org/state_machine
 
 Development
 
-* http://dev.pluginaweek.org/browser/trunk/plugins/active_record/has/has_states
+* http://dev.pluginaweek.org/browser/trunk/state_machine
 
 Source
 
-* http://svn.pluginaweek.org/trunk/plugins/active_record/has/has_states
+* http://svn.pluginaweek.org/trunk/state_machine
 
 == Description
 
@@ -33,30 +28,53 @@ and deciding how to behave based on the values in those columns.  This can becom
 cumbersome and difficult to maintain when the complexity of your models starts to
 increase.
 
-+has_states+ simplifies this design by introducing the various parts of a state
++state_machine+ simplifies this design by introducing the various parts of a state
 machine, including states, events, and transitions.  However, its api is designed
 to be similar to ActiveRecord in terms of validations and callbacks, making it
 so simple you don't even need to know what a state machine is :)
 
 == Usage
 
-=== Running migrations
+=== Example
 
-To migrate the tables required for has_states, you can either run the
-migration from the command line like so:
-
-  rake db:migrate:plugins PLUGIN=has_states
-
-or (more ideally) generate a migration file that will integrate into your main
-application's migration path:
-
-  ruby script/generate plugin_migration has_states
-
-== Testing
-
-Before you can run any tests, the following gems must be installed:
-* plugin_test_helper[http://wiki.pluginaweek.org/Plugin_test_helper]
-* dry_validity_assertions[http://wiki.pluginaweek.org/Dry_validity_assertions]
+  class Vehicle < ActiveRecord::Base
+    state_machine :state, :initial => 'idling' do
+      before_exit   'parked', :put_on_seatbelt
+      after_enter   'parked', Proc.new {|vehicle| vehicle.update_attribute(:seatbelt_on, false)}
+      
+      event :park do
+        transition :to => 'parked', :from => %w(idling first_gear)
+      end
+      
+      event :ignite do
+        transition :to => 'stalled', :from => 'stalled'
+        transition :to => 'idling', :from => 'parked'
+      end
+      
+      event :idle do
+        transition :to => 'idling', :from => 'first_gear'
+      end
+      
+      event :shift_up do
+        transition :to => 'first_gear', :from => 'idling'
+        transition :to => 'second_gear', :from => 'first_gear'
+        transition :to => 'third_gear', :from => 'second_gear'
+      end
+      
+      event :shift_down do
+        transition :to => 'second_gear', :from => 'third_gear'
+        transition :to => 'first_gear', :from => 'second_gear'
+      end
+      
+      event :crash, :after => :tow! do
+        transition :to => 'stalled', :from => %w(first_gear second_gear third_gear), :unless => :auto_shop_busy?
+      end
+      
+      event :repair, :after => :fix! do
+        transition :to => 'parked', :from => 'stalled', :if => :auto_shop_busy?
+      end
+    end
+  end
 
 == Tools
 
@@ -67,23 +85,12 @@ events for your models.  It is cross-platform, written in Java.
 
 == Dependencies
 
-This plugin depends on the presence of the following plugins:
-* class_associations[http://wiki.pluginaweek.org/Class_associations]
-* custom_callbacks[http://wiki.pluginaweek.org/Custom_callbacks]
-* dry_transaction_rollbacks[http://wiki.pluginaweek.org/Dry_transaction_callbacks]
-* eval_call[http://wiki.pluginaweek.org/Eval_call]
+None.
 
-This plugin is also plugin+.  That means that it contains a slice of an
-application, such as models and migrations.  To test or use a plugin+, you
-must have the following plugins/gems installed:
-* plugin_dependencies[http://wiki.pluginaweek.org/Plugin_dependencies]
-* loaded_plugins[http://wiki.pluginaweek.org/Loaded_plugins]
-* appable_plugins[http://wiki.pluginaweek.org/Appable_plugins]
-* plugin_migrations[http://wiki.pluginaweek.org/Plugin_migrations]
+== Testing
 
-Instead of installing each individual plugin+ feature, you can install them all
-at once using the plugins+[http://wiki.pluginaweek.org/Plugins_plus] meta package,
-which contains all additional features.
+Before you can run any tests, the following gem must be installed:
+* plugin_test_helper[http://wiki.pluginaweek.org/Plugin_test_helper]
 
 == References
 

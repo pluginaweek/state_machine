@@ -3,25 +3,25 @@ require 'rake/rdoctask'
 require 'rake/gempackagetask'
 require 'rake/contrib/sshpublisher'
 
-PKG_NAME           = 'has_states'
-PKG_VERSION        = '0.0.1'
+PKG_NAME           = 'state_machine'
+PKG_VERSION        = '0.1.0'
 PKG_FILE_NAME      = "#{PKG_NAME}-#{PKG_VERSION}"
 RUBY_FORGE_PROJECT = 'pluginaweek'
 
 desc 'Default: run unit tests.'
 task :default => :test
 
-desc 'Test the has_states plugin.'
+desc 'Test the state_machine plugin.'
 Rake::TestTask.new(:test) do |t|
   t.libs << 'lib'
-  t.pattern = 'test/unit/**/*_test.rb'
+  t.pattern = 'test/**/*_test.rb'
   t.verbose = true
 end
 
-desc 'Generate documentation for the has_states plugin.'
+desc 'Generate documentation for the state_machine plugin.'
 Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_dir = 'rdoc'
-  rdoc.title    = 'HasStates'
+  rdoc.title    = 'StateMachine'
   rdoc.options << '--line-numbers' << '--inline-source'
   rdoc.rdoc_files.include('README')
   rdoc.rdoc_files.include('lib/**/*.rb')
@@ -31,18 +31,15 @@ spec = Gem::Specification.new do |s|
   s.name            = PKG_NAME
   s.version         = PKG_VERSION
   s.platform        = Gem::Platform::RUBY
-  s.summary         = 'Adds support for managing states, events, and transitions within a model'
+  s.summary         = 'Adds support for creating state machines for attributes within a model'
   
-  s.files           = FileList['{app,db,lib,test}/**/*'].to_a + %w(CHANGELOG init.rb MIT-LICENSE Rakefile README)
+  s.files           = FileList['{lib,test}/**/*'].to_a + %w(CHANGELOG init.rb MIT-LICENSE Rakefile README)
   s.require_path    = 'lib'
-  s.autorequire     = 'has_states'
+  s.autorequire     = 'state_machine'
   s.has_rdoc        = true
-  s.test_files      = Dir['test/unit/**/*_test.rb']
-  s.add_dependency  'class_associations', '>= 0.0.1'
-  s.add_dependency  'custom_callbacks', '>= 0.0.1'
-  s.add_dependency  'eval_call', '>= 0.0.1'
+  s.test_files      = Dir['test/**/*_test.rb']
   
-  s.author          = 'Aaron Pfeifer, Neil Abraham'
+  s.author          = 'Aaron Pfeifer'
   s.email           = 'info@pluginaweek.org'
   s.homepage        = 'http://www.pluginaweek.org'
 end

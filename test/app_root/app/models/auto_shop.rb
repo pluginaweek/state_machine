@@ -1,24 +1,34 @@
 class AutoShop < ActiveRecord::Base
-  has_states :initial => :available, :record_changes => false
-  
-  state :available,
-    :after_exit => :increment_customers
-  state :busy,
-    :after_exit => :decrement_customers
-  
-  event :tow_vehicle do
-    transition_to :busy, :from => :available
+  state_machine :state, :initial => 'available' do
+    after_exit 'available', :increment_customers
+    after_exit 'busy', :decrement_customers
+    
+    event :tow_vehicle do
+      transition :to => 'busy', :from => 'available'
+    end
+    
+    event :fix_vehicle do
+      transition :to => 'available', :from => 'busy'
+    end
   end
   
-  event :fix_vehicle do
-    transition_to :available, :from => :busy
+  # Is the Auto Shop available for new customers?
+  def available?
+    state == 'available'
   end
   
+  # Is the Auto Shop currently not taking new customers?
+  def busy?
+    state == 'busy'
+  end
+  
+  # Increments the number of customers in service
   def increment_customers
-    update_attribute(:num_customers, self.num_customers + 1)
+    update_attribute(:num_customers, num_customers + 1)
   end
   
+  # Decrements the number of customers in service
   def decrement_customers
-    update_attribute(:num_customers, self.num_customers - 1)
+    update_attribute(:num_customers, num_customers - 1)
   end
 end

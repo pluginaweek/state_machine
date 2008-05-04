@@ -1,19 +1,16 @@
 class CreateVehicles < ActiveRecord::Migration
   def self.up
     create_table :vehicles do |t|
-      t.column :highway_id, :integer, :null => false, :default => 1
-      t.column :auto_shop_id, :integer, :null => false, :default => 1
-      t.column :seatbelt_on, :boolean, :null => false, :default => true
-      t.column :insurance_premium, :integer, :null => false, :default => 50
-      t.column :type, :string
+      t.references :highway, :null => false
+      t.references :auto_shop, :null => false
+      t.boolean :seatbelt_on, :null => false
+      t.integer :insurance_premium, :null => false
+      t.string :state, :null => false
+      t.string :type
     end
-    
-    PluginAWeek::Has::States.migrate_up(:vehicles)
   end
   
   def self.down
-    PluginAWeek::Has::States.migrate_down(:vehicles)
-    
     drop_table :vehicles
   end
 end

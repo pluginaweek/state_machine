@@ -1,3 +1,3 @@
 class Motorcycle < Vehicle
-  self.initial_state = :idling
+  state_machine :state, :initial => 'idling'
 end

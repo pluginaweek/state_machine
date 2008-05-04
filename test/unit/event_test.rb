@@ -1,40 +1,234 @@
-require File.dirname(__FILE__) + '/../test_helper'
+require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class EventTest < Test::Unit::TestCase
-  fixtures :state_changes
-  
-  def test_should_be_valid
-    assert_valid events(:switch_turn_on)
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
   end
   
-  def test_should_require_name
-    assert_invalid events(:switch_turn_on), :name, nil
+  def test_should_have_a_machine
+    assert_equal @machine, @event.machine
   end
   
-  def test_should_require_unique_name
-    assert_invalid events(:switch_turn_on).clone, :name
+  def test_should_have_a_name
+    assert_equal 'turn_on', @event.name
   end
   
-  def test_should_have_state_changes_association
-    event = events(:project_design)
-    expected = [
-      state_changes(:rss_reader_design)
-    ]
+  def test_should_define_an_event_action_on_the_owner_class
+    switch = new_switch
+    assert switch.respond_to?(:turn_on!)
+  end
+  
+  def test_should_define_transition_callbacks
+    assert Switch.respond_to?(:transition_on_turn_on)
+  end
+  
+  def test_should_define_before_event_callbacks
+    assert Switch.respond_to?(:before_turn_on)
+  end
+  
+  def test_should_define_after_event_callbacks
+    assert Switch.respond_to?(:after_turn_on)
+  end
+end
+
+class EventWithInvalidOptionsTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+  end
+  
+  def test_should_raise_exception
+    assert_raise(ArgumentError) {PluginAWeek::StateMachine::Event.new(@machine, 'turn_on', :invalid => true)}
+  end
+end
+
+class EventWithTransitionsTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+  end
+  
+  def test_should_raise_exception_if_invalid_option_specified
+    assert_raise(ArgumentError) {@event.transition(:invalid => true)}
+  end
+  
+  def test_should_raise_exception_if_to_option_not_specified
+    assert_raise(ArgumentError) {@event.transition(:from => 'off')}
+  end
+  
+  def test_should_not_raise_exception_if_from_option_not_specified
+    assert_nothing_raised {@event.transition(:to => 'on')}
+  end
+  
+  def test_should_allow_transitioning_from_a_single_state
+    assert_equal [%w(off on)], @event.transition(:to => 'on', :from => 'off').map {|t| [t.from_state, t.to_state]}
+  end
+  
+  def test_should_allow_transitioning_from_multiple_states
+    assert_equal [%w(off on), %w(on on)], @event.transition(:to => 'on', :from => %w(off on)).map {|t| [t.from_state, t.to_state]}
+  end
+  
+  def teardown
+    Switch.class_eval do
+      @transition_on_turn_on_callbacks = nil
+    end
+  end
+end
+
+class EventAfterBeingFiredWithNoTransitionsTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @switch = create_switch(:state => 'off')
+  end
+  
+  def test_should_not_fire
+    assert !@event.fire!(@switch)
+  end
+  
+  def test_should_not_change_the_current_state
+    @event.fire!(@switch)
+    assert_equal 'off', @switch.state
+  end
+end
+
+class EventAfterBeingFiredWithTransitionsTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @event.transition :to => 'error', :from => 'on'
+    @switch = create_switch(:state => 'off')
+  end
+  
+  def test_should_not_fire_if_no_transitions_are_matched
+    assert !@event.fire!(@switch)
+    assert_equal 'off', @switch.state
+  end
+  
+  def test_should_fire_if_transition_is_matched
+    @event.transition :to => 'on', :from => 'off'
+    assert @event.fire!(@switch)
+    assert_equal 'on', @switch.state
+  end
+  
+  def teardown
+    Switch.class_eval do
+      @transition_on_turn_on_callbacks = nil
+    end
+  end
+end
+
+class EventAfterBeingFiredWithConditionalTransitionsTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @event.transition :to => 'if_not_evaluated', :from => 'off', :if => Proc.new {false}
+    @event.transition :to => 'unless_not_evaluated', :from => 'off', :unless => Proc.new {true}
+    @event.transition :to => 'no_record', :from => 'off', :if => Proc.new {|record, value| record.nil?}
+    @event.transition :to => 'no_arguments', :from => 'off', :if => Proc.new {|record, value| value.nil?}
     
-    assert_equal expected, event.state_changes
+    @switch = create_switch(:state => 'off')
   end
   
-  def test_should_use_name_as_default_human_name
-    event = Event.new(:name => 'test')
-    assert_equal 'Test', event.human_name
+  def test_should_not_fire_of_no_transitions_are_matched
+    assert !@event.fire!(@switch, 1)
+    assert_equal 'off', @switch.state
   end
   
-  def test_should_use_custom_human_name_if_specified
-    event = Event.new(:name => 'test', :human_name => 'Custom')
-    assert_equal 'Custom', event.human_name
+  def test_should_fire_if_transition_is_matched
+    @event.transition :to => 'on', :from => 'off', :if => Proc.new {|record, value| value == 1}
+    assert @event.fire!(@switch, 1)
+    assert_equal 'on', @switch.state
   end
   
-  def test_should_convert_to_symbol
-    assert_equal :turn_on, events(:switch_turn_on).to_sym
+  def teardown
+    Switch.class_eval do
+      @transition_on_turn_on_callbacks = nil
+    end
+  end
+end
+
+class EventWithinTransactionTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @event.transition :to => 'on', :from => 'off'
+    @switch = create_switch(:state => 'off')
+    
+    Switch.define_callbacks :after_enter_state_on
+  end
+  
+  def test_should_save_all_records_within_transaction_if_performed
+    Switch.after_enter_state_on Proc.new {|record| Switch.create(:state => 'pending'); true}
+    assert @event.fire!(@switch)
+    assert_equal 'on', @switch.state
+    assert_equal 'pending', Switch.find(:all).last.state
+  end
+  
+  uses_transaction :test_should_rollback_all_records_within_transaction_if_not_performed
+  def test_should_rollback_all_records_within_transaction_if_not_performed
+    Switch.after_enter_state_on Proc.new {|record| Switch.create(:state => 'pending'); false}
+    assert !@event.fire!(@switch)
+    assert_equal 1, Switch.count
+  ensure
+    Switch.destroy_all
+  end
+  
+  def teardown
+    Switch.class_eval do
+      @transition_on_turn_on_callbacks = nil
+      @after_enter_state_on_callbacks = nil
+    end
+  end
+end
+
+class EventWithCallbacksTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @event.transition :from => 'off', :to => 'on'
+    @record = create_switch(:state => 'off')
+    
+    Switch.define_callbacks :before_turn_on, :after_turn_on
+  end
+  
+  def test_should_not_perform_if_before_callback_fails
+    Switch.before_turn_on Proc.new {|record| false}
+    Switch.after_turn_on Proc.new {|record| record.callbacks << 'after'; true}
+    
+    assert !@event.fire!(@record)
+    assert_equal %w(), @record.callbacks
+  end
+  
+  def test_should_not_perform_if_after_callback_fails
+    Switch.before_turn_on Proc.new {|record| record.callbacks << 'before'; true}
+    Switch.after_turn_on Proc.new {|record| false}
+    
+    assert !@event.fire!(@record)
+    assert_equal %w(before), @record.callbacks
+  end
+  
+  def test_should_perform_if_all_callbacks_are_successful
+    Switch.before_turn_on Proc.new {|record| record.callbacks << 'before'; true}
+    Switch.after_turn_on Proc.new {|record| record.callbacks << 'after'; true}
+    
+    assert @event.fire!(@record)
+    assert_equal %w(before after), @record.callbacks
+  end
+  
+  def test_should_pass_additional_arguments_to_callbacks
+    Switch.before_turn_on Proc.new {|record, value| record.callbacks << "before-#{value}"; true}
+    Switch.after_turn_on Proc.new {|record, value| record.callbacks << "after-#{value}"; true}
+    
+    assert @event.fire!(@record, 'light')
+    assert_equal %w(before-light after-light), @record.callbacks
+  end
+  
+  def teardown
+    Switch.class_eval do
+      @before_turn_on_callbacks = nil
+      @after_turn_on_callbacks = nil
+      @transition_on_turn_on_callbacks = nil
+    end
   end
 end

@@ -1,1 +1,1 @@
-require 'has_states'
+require 'state_machine'
