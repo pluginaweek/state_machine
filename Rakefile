@@ -61,7 +61,7 @@ task :pdoc => [:rdoc] do
 end
 
 desc 'Publish the API docs and gem'
-task :publish => [:pdoc, :release]
+task :publish => [:pgem, :pdoc, :release]
 
 desc 'Publish the release files to RubyForge.'
 task :release => [:gem, :package] do
