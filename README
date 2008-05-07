@@ -1,6 +1,6 @@
 == state_machine
 
-+state_machine+ support for creating state machines for attributes within a model.
++state_machine+ adds support for creating state machines for attributes within a model.
 
 == Resources
 
