@@ -83,14 +83,18 @@ This is a great tool for "simulating, visualizing and transforming finite state
 automata and Turing Machines".  This tool can help in the creation of states and
 events for your models.  It is cross-platform, written in Java.
 
-== Dependencies
-
-None.
-
 == Testing
 
 Before you can run any tests, the following gem must be installed:
 * plugin_test_helper[http://wiki.pluginaweek.org/Plugin_test_helper]
+
+To run against a specific version of Rails:
+
+  rake test RAILS_FRAMEWORK_ROOT=/path/to/rails
+
+== Dependencies
+
+* Rails 2.1 or later
 
 == References
 
