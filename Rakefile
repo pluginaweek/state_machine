@@ -68,7 +68,7 @@ desc 'Publish the release files to RubyForge.'
 task :release => [:gem, :package] do
   require 'rubyforge'
   
-  ruby_forge = RubyForge.new
+  ruby_forge = RubyForge.new.configure
   ruby_forge.login
   
   %w( gem tgz zip ).each do |ext|
