@@ -3,11 +3,6 @@ require 'rake/rdoctask'
 require 'rake/gempackagetask'
 require 'rake/contrib/sshpublisher'
 
-PKG_NAME           = 'state_machine'
-PKG_VERSION        = '0.1.0'
-PKG_FILE_NAME      = "#{PKG_NAME}-#{PKG_VERSION}"
-RUBY_FORGE_PROJECT = 'pluginaweek'
-
 desc 'Default: run unit tests.'
 task :default => :test
 
@@ -29,20 +24,20 @@ Rake::RDocTask.new(:rdoc) do |rdoc|
 end
 
 spec = Gem::Specification.new do |s|
-  s.name            = PKG_NAME
-  s.version         = PKG_VERSION
-  s.platform        = Gem::Platform::RUBY
-  s.summary         = 'Adds support for creating state machines for attributes within a model'
+  s.name              = 'state_machine'
+  s.version           = '0.1.1'
+  s.platform          = Gem::Platform::RUBY
+  s.summary           = 'Adds support for creating state machines for attributes within a model'
   
-  s.files           = FileList['{lib,test}/**/*'].to_a + %w(CHANGELOG init.rb MIT-LICENSE Rakefile README)
-  s.require_path    = 'lib'
-  s.autorequire     = 'state_machine'
-  s.has_rdoc        = true
-  s.test_files      = Dir['test/**/*_test.rb']
+  s.files             = FileList['{lib,test}/**/*'].to_a - FileList['test/app_root/log/*'].to_a + %w(CHANGELOG init.rb MIT-LICENSE Rakefile README)
+  s.require_path      = 'lib'
+  s.has_rdoc          = true
+  s.test_files        = Dir['test/**/*_test.rb']
   
-  s.author          = 'Aaron Pfeifer'
-  s.email           = 'aaron@pluginaweek.org'
-  s.homepage        = 'http://www.pluginaweek.org'
+  s.author            = 'Aaron Pfeifer'
+  s.email             = 'aaron@pluginaweek.org'
+  s.homepage          = 'http://www.pluginaweek.org'
+  s.rubyforge_project = 'pluginaweek'
 end
   
 Rake::GemPackageTask.new(spec) do |p|
@@ -51,14 +46,14 @@ Rake::GemPackageTask.new(spec) do |p|
   p.need_zip = true
 end
 
-desc 'Publish the beta gem'
+desc 'Publish the beta gem.'
 task :pgem => [:package] do
-  Rake::SshFilePublisher.new('aaron@pluginaweek.org', '/home/aaron/gems.pluginaweek.org/public/gems', 'pkg', "#{PKG_FILE_NAME}.gem").upload
+  Rake::SshFilePublisher.new('aaron@pluginaweek.org', '/home/aaron/gems.pluginaweek.org/public/gems', 'pkg', "#{spec.name}-#{spec.version}.gem").upload
 end
 
-desc 'Publish the API documentation'
+desc 'Publish the API documentation.'
 task :pdoc => [:rdoc] do
-  Rake::SshDirPublisher.new('aaron@pluginaweek.org', "/home/aaron/api.pluginaweek.org/public/#{PKG_NAME}", 'rdoc').upload
+  Rake::SshDirPublisher.new('aaron@pluginaweek.org', "/home/aaron/api.pluginaweek.org/public/#{spec.name}", 'rdoc').upload
 end
 
 desc 'Publish the API docs and gem'
@@ -71,10 +66,10 @@ task :release => [:gem, :package] do
   ruby_forge = RubyForge.new.configure
   ruby_forge.login
   
-  %w( gem tgz zip ).each do |ext|
-    file = "pkg/#{PKG_FILE_NAME}.#{ext}"
+  %w(gem tgz zip).each do |ext|
+    file = "pkg/#{spec.name}-#{spec.version}.#{ext}"
     puts "Releasing #{File.basename(file)}..."
     
-    ruby_forge.add_release(RUBY_FORGE_PROJECT, PKG_NAME, PKG_VERSION, file)
+    ruby_forge.add_release(spec.rubyforge_project, spec.name, spec.version, file)
   end
 end

@@ -1,5 +1,9 @@
 *SVN*
 
+*0.1.1* (June 22nd, 2008)
+
+* Remove log files from gems
+
 *0.1.0* (May 5th, 2008)
 
 * Completely rewritten from scratch
