@@ -4,21 +4,21 @@
 
 == Resources
 
-Wiki
-
-* http://wiki.pluginaweek.org/State_machine
-
 API
 
 * http://api.pluginaweek.org/state_machine
 
+Bugs
+
+* http://pluginaweek.lighthouseapp.com/projects/13288-state_machine
+
 Development
 
-* http://dev.pluginaweek.org/browser/trunk/state_machine
+* http://github.com/pluginaweek/state_machine
 
 Source
 
-* http://svn.pluginaweek.org/trunk/state_machine
+* git://github.com/pluginaweek/state_machine.git
 
 == Description
 
@@ -86,7 +86,7 @@ events for your models.  It is cross-platform, written in Java.
 == Testing
 
 Before you can run any tests, the following gem must be installed:
-* plugin_test_helper[http://wiki.pluginaweek.org/Plugin_test_helper]
+* plugin_test_helper[http://github.com/pluginaweek/plugin_test_helper]
 
 To run against a specific version of Rails:
 
