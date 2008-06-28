@@ -1,26 +1,32 @@
 module Factory
-  # Build actions for the class
-  def self.build(klass, &block)
-    name = klass.to_s.underscore
-    define_method("#{name}_attributes", block)
+  # Build actions for the model
+  def self.build(model, &block)
+    name = model.to_s.underscore
     
-    module_eval <<-end_eval
-      def valid_#{name}_attributes(attributes = {})
-        #{name}_attributes(attributes)
-        attributes
-      end
-      
-      def new_#{name}(attributes = {})
-        #{klass}.new(valid_#{name}_attributes(attributes))
-      end
-      
-      def create_#{name}(*args)
-        record = new_#{name}(*args)
-        record.save!
-        record.reload
-        record
-      end
-    end_eval
+    define_method("#{name}_attributes", block)
+    define_method("valid_#{name}_attributes") {|*args| valid_attributes_for(model, *args)}
+    define_method("new_#{name}")              {|*args| new_record(model, *args)}
+    define_method("create_#{name}")           {|*args| create_record(model, *args)}
+  end
+  
+  # Get valid attributes for the model
+  def valid_attributes_for(model, attributes = {})
+    name = model.to_s.underscore
+    send("#{name}_attributes", attributes)
+    attributes
+  end
+  
+  # Build an unsaved record
+  def new_record(model, *args)
+    model.new(valid_attributes_for(model, *args))
+  end
+  
+  # Build and save/reload a record
+  def create_record(model, *args)
+    record = new_record(model, *args)
+    record.save!
+    record.reload
+    record
   end
   
   build AutoShop do |attributes|
