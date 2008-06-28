@@ -19,7 +19,7 @@ Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.title    = 'StateMachine'
   rdoc.template = '../rdoc_template.rb'
   rdoc.options << '--line-numbers' << '--inline-source'
-  rdoc.rdoc_files.include('README.rdoc')
+  rdoc.rdoc_files.include('CHANGELOG.rdoc', 'LICENSE', 'README.rdoc')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
 
@@ -29,7 +29,7 @@ spec = Gem::Specification.new do |s|
   s.platform          = Gem::Platform::RUBY
   s.summary           = 'Adds support for creating state machines for attributes within a model'
   
-  s.files             = FileList['{lib,test}/**/*'].to_a - FileList['test/app_root/log/*'].to_a + %w(CHANGELOG init.rb LICENSE Rakefile README.rdoc)
+  s.files             = FileList['{lib,test}/**/*'].to_a - FileList['test/app_root/log/*'].to_a + %w(CHANGELOG.rdoc init.rb LICENSE Rakefile README.rdoc)
   s.require_path      = 'lib'
   s.has_rdoc          = true
   s.test_files        = Dir['test/**/*_test.rb']
