@@ -28,6 +28,39 @@ class TransitionTest < Test::Unit::TestCase
     record = new_switch(:state => 'off')
     assert @transition.can_perform_on?(record)
   end
+  
+  def test_should_perform_for_valid_from_state
+    record = new_switch(:state => 'off')
+    assert @transition.perform(record)
+  end
+  
+  def test_should_not_raise_exception_if_not_valid_during_perform
+    record = new_switch(:state => 'off')
+    record.fail_validation = true
+    
+    assert !@transition.perform(record)
+  end
+  
+  def test_should_raise_exception_if_not_valid_during_perform!
+    record = new_switch(:state => 'off')
+    record.fail_validation = true
+    
+    assert_raise(ActiveRecord::RecordInvalid) {@transition.perform!(record)}
+  end
+  
+  def test_should_not_raise_exception_if_not_saved_during_perform
+    record = new_switch(:state => 'off')
+    record.fail_save = true
+    
+    assert !@transition.perform(record)
+  end
+  
+  def test_should_raise_exception_if_not_saved_during_perform!
+    record = new_switch(:state => 'off')
+    record.fail_save = true
+    
+    assert_raise(ActiveRecord::RecordNotSaved) {@transition.perform!(record)}
+  end
 end
 
 class TransitionWithoutFromStateTest < Test::Unit::TestCase
@@ -69,9 +102,19 @@ class TransitionWithLoopbackTest < Test::Unit::TestCase
     assert @transition.loopback?
   end
   
+  def test_should_not_be_able_to_perform_if_record_state_is_not_from_state
+    record = new_switch(:state => 'off')
+    assert !@transition.can_perform_on?(record)
+  end
+  
   def test_should_be_able_to_perform_if_record_is_in_from_state
     record = new_switch(:state => 'on')
     assert @transition.can_perform_on?(record)
+  end
+  
+  def test_should_perform_for_valid_from_state
+    record = new_switch(:state => 'on')
+    assert @transition.perform(record)
   end
 end
 
@@ -132,7 +175,13 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     Switch.after_enter_state_on Proc.new {|record| record.callbacks << 'after_enter'; true}
     
     assert !@transition.perform(@record)
-    assert_equal %w(), @record.callbacks
+    assert_equal [], @record.callbacks
+  end
+  
+  def test_should_raise_exception_if_before_exit_callback_fails_during_perform!
+    Switch.before_exit_state_off Proc.new {|record| false}
+    
+    assert_raise(PluginAWeek::StateMachine::InvalidTransition) {@transition.perform!(@record)}
   end
   
   def test_should_not_perform_if_before_enter_callback_fails
@@ -145,24 +194,49 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     assert_equal %w(before_exit), @record.callbacks
   end
   
-  def test_should_not_perform_if_after_exit_callback_fails
+  def test_should_raise_exception_if_after_enter_callback_fails_during_perform!
+    Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
+    Switch.before_enter_state_on Proc.new {|record| false}
+    
+    assert_raise(PluginAWeek::StateMachine::InvalidTransition) {@transition.perform!(@record)}
+  end
+  
+  def test_should_perform_if_after_exit_callback_fails
     Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
     Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
     Switch.after_exit_state_off Proc.new {|record| false}
     Switch.after_enter_state_on Proc.new {|record| record.callbacks << 'after_enter'; true}
     
-    assert !@transition.perform(@record)
-    assert_equal %w(before_exit before_enter), @record.callbacks
+    assert @transition.perform(@record)
+    assert_equal %w(before_exit before_enter after_enter), @record.callbacks
   end
   
-  def test_should_not_perform_if_after_enter_callback_fails
+  def test_should_not_raise_exception_if_after_exit_callback_fails_during_perform!
+    Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
+    Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
+    Switch.after_exit_state_off Proc.new {|record| false}
+    Switch.after_enter_state_on Proc.new {|record| record.callbacks << 'after_enter'; true}
+    
+    assert @transition.perform!(@record)
+  end
+  
+  def test_should_perform_if_after_enter_callback_fails
     Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
     Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
     Switch.after_exit_state_off Proc.new {|record| record.callbacks << 'after_exit'; true}
     Switch.after_enter_state_on Proc.new {|record| false}
     
-    assert !@transition.perform(@record)
+    assert @transition.perform(@record)
     assert_equal %w(before_exit before_enter after_exit), @record.callbacks
+  end
+  
+  def test_should_not_raise_exception_if_after_enter_callback_fails_during_perform!
+    Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
+    Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
+    Switch.after_exit_state_off Proc.new {|record| record.callbacks << 'after_exit'; true}
+    Switch.after_enter_state_on Proc.new {|record| false}
+    
+    assert @transition.perform!(@record)
   end
   
   def test_should_perform_if_all_callbacks_are_successful
@@ -173,6 +247,38 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     
     assert @transition.perform(@record)
     assert_equal %w(before_exit before_enter after_exit after_enter), @record.callbacks
+  end
+  
+  def test_should_stop_before_exit_callbacks_if_any_fail
+    Switch.before_exit_state_off Proc.new {|record| false}
+    Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
+    
+    assert !@transition.perform(@record)
+    assert_equal [], @record.callbacks
+  end
+  
+  def test_should_stop_before_enter_callbacks_if_any_fail
+    Switch.before_enter_state_on Proc.new {|record| false}
+    Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
+    
+    assert !@transition.perform(@record)
+    assert_equal [], @record.callbacks
+  end
+  
+  def test_should_stop_after_exit_callbacks_if_any_fail
+    Switch.after_exit_state_off Proc.new {|record| false}
+    Switch.after_exit_state_off Proc.new {|record| record.callbacks << 'after_exit'; true}
+    
+    assert @transition.perform(@record)
+    assert_equal [], @record.callbacks
+  end
+  
+  def test_should_stop_after_enter_callbacks_if_any_fail
+    Switch.after_enter_state_on Proc.new {|record| false}
+    Switch.after_enter_state_on Proc.new {|record| record.callbacks << 'after_enter'; true}
+    
+    assert @transition.perform(@record)
+    assert_equal [], @record.callbacks
   end
   
   def teardown
@@ -202,7 +308,7 @@ class TransitionWithoutFromStateAndCallbacksTest < Test::Unit::TestCase
     Switch.after_enter_state_on Proc.new {|record| record.callbacks << 'after_enter'; true}
     
     assert !@transition.perform(@record)
-    assert_equal %w(), @record.callbacks
+    assert_equal [], @record.callbacks
   end
   
   def test_should_not_perform_if_before_enter_callback_fails
@@ -215,23 +321,23 @@ class TransitionWithoutFromStateAndCallbacksTest < Test::Unit::TestCase
     assert_equal %w(before_exit), @record.callbacks
   end
   
-  def test_should_not_perform_if_after_exit_callback_fails
+  def test_should_perform_if_after_exit_callback_fails
     Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
     Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
     Switch.after_exit_state_off Proc.new {|record| false}
     Switch.after_enter_state_on Proc.new {|record| record.callbacks << 'after_enter'; true}
     
-    assert !@transition.perform(@record)
-    assert_equal %w(before_exit before_enter), @record.callbacks
+    assert @transition.perform(@record)
+    assert_equal %w(before_exit before_enter after_enter), @record.callbacks
   end
   
-  def test_should_not_perform_if_after_enter_callback_fails
+  def test_should_perform_if_after_enter_callback_fails
     Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
     Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
     Switch.after_exit_state_off Proc.new {|record| record.callbacks << 'after_exit'; true}
     Switch.after_enter_state_on Proc.new {|record| false}
     
-    assert !@transition.perform(@record)
+    assert @transition.perform(@record)
     assert_equal %w(before_exit before_enter after_exit), @record.callbacks
   end
   
@@ -243,6 +349,38 @@ class TransitionWithoutFromStateAndCallbacksTest < Test::Unit::TestCase
     
     assert @transition.perform(@record)
     assert_equal %w(before_exit before_enter after_exit after_enter), @record.callbacks
+  end
+  
+  def test_should_stop_before_exit_callbacks_if_any_fail
+    Switch.before_exit_state_off Proc.new {|record| false}
+    Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
+    
+    assert !@transition.perform(@record)
+    assert_equal [], @record.callbacks
+  end
+  
+  def test_should_stop_before_enter_callbacks_if_any_fail
+    Switch.before_enter_state_on Proc.new {|record| false}
+    Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
+    
+    assert !@transition.perform(@record)
+    assert_equal [], @record.callbacks
+  end
+  
+  def test_should_stop_after_exit_callbacks_if_any_fail
+    Switch.after_exit_state_off Proc.new {|record| false}
+    Switch.after_exit_state_off Proc.new {|record| record.callbacks << 'after_exit'; true}
+    
+    assert @transition.perform(@record)
+    assert_equal [], @record.callbacks
+  end
+  
+  def test_should_stop_after_enter_callbacks_if_any_fail
+    Switch.after_enter_state_on Proc.new {|record| false}
+    Switch.after_enter_state_on Proc.new {|record| record.callbacks << 'after_enter'; true}
+    
+    assert @transition.perform(@record)
+    assert_equal [], @record.callbacks
   end
   
   def teardown

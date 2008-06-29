@@ -77,7 +77,8 @@ module PluginAWeek #:nodoc:
       # 
       # The following instance methods are generated when a new event is defined
       # (the "park" event is used as an example):
-      # * <tt>park!(*args)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.  This takes an optional +args+ list which is passed to the event callbacks.
+      # * <tt>park(*args)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.  This takes an optional +args+ list which is passed to the event callbacks.
+      # * <tt>park!(*args)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.  This takes an optional +args+ list which is passed to the event callbacks.  If the transition cannot happen (for validation, database, etc. reasons), then an error will be raised
       # 
       # == Defining transitions
       # 
@@ -113,26 +114,25 @@ module PluginAWeek #:nodoc:
       end
       
       # Define state callbacks
-      %w(before_exit before_enter after_exit after_enter).each do |callback|
-        module_eval <<-end_eval
-          def #{callback}(state, callback)
-            callback_name = "#{callback}_\#{attribute}_\#{state}"
-            owner_class.define_callbacks(callback_name)
-            owner_class.send(callback_name, callback)
-          end
-        end_eval
+      %w(before_exit before_enter after_exit after_enter).each do |callback_type|
+        define_method(callback_type) {|state, callback| add_callback(callback_type, state, callback)}
       end
       
       private
+        # Adds the given callback to the callback chain during a state transition
+        def add_callback(type, state, callback)
+          callback_name = "#{type}_#{attribute}_#{state}"
+          owner_class.define_callbacks(callback_name)
+          owner_class.send(callback_name, callback)
+        end
+        
+        # Add named scopes for finding records with a particular value or values
+        # for the attribute
         def add_named_scopes
-          unless owner_class.respond_to?("with_#{attribute}")
-            # How do you alias named scopes? (doesn't work completely with a simple alias/alias_method)
-            %W(with_#{attribute} with_#{attribute.pluralize}).each do |scope_name|
-              owner_class.class_eval <<-end_eos
-                named_scope :#{scope_name}, Proc.new {|*values| {
-                  :conditions => {:#{attribute} => values.flatten}
-                }}
-              end_eos
+          [attribute, attribute.pluralize].each do |name|
+            unless owner_class.respond_to?("with_#{name}")
+              name = "with_#{name}"
+              owner_class.named_scope name, Proc.new {|*values| {:conditions => {attribute => values.flatten}}}
             end
           end
         end

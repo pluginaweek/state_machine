@@ -1,5 +1,9 @@
 module PluginAWeek #:nodoc:
   module StateMachine
+    # An invalid transition was attempted
+    class InvalidTransition < StandardError
+    end
+    
     # A transition indicates a state change and is described by a condition
     # that would need to be fulfilled to enable the transition.  Transitions
     # consist of:
@@ -37,19 +41,38 @@ module PluginAWeek #:nodoc:
         !from_state || from_state == record.send(machine.attribute)
       end
       
-      # Runs the actual transition and any actions associated with entering
+      # Runs the actual transition and any callbacks associated with entering
       # and exiting the states
       def perform(record, *args)
-        state = record.send(machine.attribute)
-        
-        invoke_before_callbacks(state, record) != false &&
-        update_state(state, record) &&
-        invoke_after_callbacks(state, record) != false
+        perform_with_optional_bang(record, false, *args)
+      end
+      
+      # Runs the actual transition and any callbacks associated with entering
+      # and exiting the states. Any errors during validation or saving will be
+      # raised.
+      def perform!(record, *args)
+        perform_with_optional_bang(record, true, *args) || raise(PluginAWeek::StateMachine::InvalidTransition)
       end
       
       private
-        def update_state(from_state, record)
-          loopback?(from_state) ? true : record.update_attribute(machine.attribute, to_state)
+        # Performs the transition
+        def perform_with_optional_bang(record, bang, *args)
+          state = record.send(machine.attribute)
+          
+          return false if invoke_before_callbacks(state, record) == false
+          result = update_state(state, bang, record)
+          invoke_after_callbacks(state, record)
+          result
+        end
+        
+        # Updates the record's attribute to the state represented by this transition
+        def update_state(from_state, bang, record)
+          if loopback?(from_state)
+            true
+          else
+            record.send("#{machine.attribute}=", to_state)
+            bang ? record.save! : record.save
+          end
         end
         
         def invoke_before_callbacks(from_state, record)
@@ -59,7 +82,12 @@ module PluginAWeek #:nodoc:
         
         def invoke_after_callbacks(from_state, record)
           # Start leaving the last state and start entering the next state
-          loopback?(from_state) || invoke_callbacks(:after_exit, from_state, record) && invoke_callbacks(:after_enter, to_state, record)
+          unless loopback?(from_state)
+            invoke_callbacks(:after_exit, from_state, record)
+            invoke_callbacks(:after_enter, to_state, record)
+          end
+          
+          true
         end
         
         def invoke_callbacks(type, state, record)

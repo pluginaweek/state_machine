@@ -67,6 +67,8 @@ module PluginAWeek #:nodoc:
         
         attribute_keys = (attributes || {}).keys.map!(&:to_s)
         
+        # Set the initial value of each state machine as long as the value wasn't
+        # included in the attribute hash passed in
         self.class.state_machines.each do |attribute, machine|
           unless attribute_keys.include?(attribute)
             send("#{attribute}=", machine.initial_state(self))
@@ -80,7 +82,7 @@ module PluginAWeek #:nodoc:
       def run_initial_state_machine_actions
         self.class.state_machines.each do |attribute, machine|
           callback = "after_enter_#{attribute}_#{self[attribute]}"
-          run_callbacks(callback) if self.class.respond_to?(callback)
+          run_callbacks(callback) if self[attribute] && self.class.respond_to?(callback)
         end
       end
     end

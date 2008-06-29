@@ -6,7 +6,7 @@ class VehicleTest < Test::Unit::TestCase
   end
   
   def test_should_not_allow_access_to_subclass_events
-    assert !@vehicle.respond_to?(:reverse!)
+    assert !@vehicle.respond_to?(:reverse)
   end
 end
 
@@ -24,39 +24,43 @@ class VehicleParkedTest < Test::Unit::TestCase
   end
   
   def test_should_not_allow_park
-    assert !@vehicle.park!
+    assert !@vehicle.park
   end
   
   def test_should_allow_ignite
-    assert @vehicle.ignite!
+    assert @vehicle.ignite
     assert_equal 'idling', @vehicle.state
   end
   
   def test_should_not_allow_idle
-    assert !@vehicle.idle!
+    assert !@vehicle.idle
   end
   
   def test_should_not_allow_shift_up
-    assert !@vehicle.shift_up!
+    assert !@vehicle.shift_up
   end
   
   def test_should_not_allow_shift_down
-    assert !@vehicle.shift_down!
+    assert !@vehicle.shift_down
   end
   
   def test_should_not_allow_crash
-    assert !@vehicle.crash!
+    assert !@vehicle.crash
   end
   
   def test_should_not_allow_repair
-    assert !@vehicle.repair!
+    assert !@vehicle.repair
+  end
+  
+  def test_should_raise_exception_if_repair_not_allowed!
+    assert_raise(PluginAWeek::StateMachine::InvalidTransition) {@vehicle.repair!}
   end
 end
 
 class VehicleIdlingTest < Test::Unit::TestCase
   def setup
     @vehicle = create_vehicle
-    @vehicle.ignite!
+    @vehicle.ignite
   end
   
   def test_should_be_in_idling_state
@@ -68,35 +72,35 @@ class VehicleIdlingTest < Test::Unit::TestCase
   end
   
   def test_should_allow_park
-    assert @vehicle.park!
+    assert @vehicle.park
   end
   
   def test_should_not_allow_idle
-    assert !@vehicle.idle!
+    assert !@vehicle.idle
   end
   
   def test_should_allow_shift_up
-    assert @vehicle.shift_up!
+    assert @vehicle.shift_up
   end
   
   def test_should_not_allow_shift_down
-    assert !@vehicle.shift_down!
+    assert !@vehicle.shift_down
   end
   
   def test_should_not_allow_crash
-    assert !@vehicle.crash!
+    assert !@vehicle.crash
   end
   
   def test_should_not_allow_repair
-    assert !@vehicle.repair!
+    assert !@vehicle.repair
   end
 end
 
 class VehicleFirstGearTest < Test::Unit::TestCase
   def setup
     @vehicle = create_vehicle
-    @vehicle.ignite!
-    @vehicle.shift_up!
+    @vehicle.ignite
+    @vehicle.shift_up
   end
   
   def test_should_be_in_first_gear_state
@@ -104,35 +108,35 @@ class VehicleFirstGearTest < Test::Unit::TestCase
   end
   
   def test_should_allow_park
-    assert @vehicle.park!
+    assert @vehicle.park
   end
   
   def test_should_allow_idle
-    assert @vehicle.idle!
+    assert @vehicle.idle
   end
   
   def test_should_allow_shift_up
-    assert @vehicle.shift_up!
+    assert @vehicle.shift_up
   end
   
   def test_should_not_allow_shift_down
-    assert !@vehicle.shift_down!
+    assert !@vehicle.shift_down
   end
   
   def test_should_allow_crash
-    assert @vehicle.crash!
+    assert @vehicle.crash
   end
   
   def test_should_not_allow_repair
-    assert !@vehicle.repair!
+    assert !@vehicle.repair
   end
 end
 
 class VehicleSecondGearTest < Test::Unit::TestCase
   def setup
     @vehicle = create_vehicle
-    @vehicle.ignite!
-    2.times {@vehicle.shift_up!}
+    @vehicle.ignite
+    2.times {@vehicle.shift_up}
   end
   
   def test_should_be_in_second_gear_state
@@ -140,35 +144,35 @@ class VehicleSecondGearTest < Test::Unit::TestCase
   end
   
   def test_should_not_allow_park
-    assert !@vehicle.park!
+    assert !@vehicle.park
   end
   
   def test_should_not_allow_idle
-    assert !@vehicle.idle!
+    assert !@vehicle.idle
   end
   
   def test_should_allow_shift_up
-    assert @vehicle.shift_up!
+    assert @vehicle.shift_up
   end
   
   def test_should_allow_shift_down
-    assert @vehicle.shift_down!
+    assert @vehicle.shift_down
   end
   
   def test_should_allow_crash
-    assert @vehicle.crash!
+    assert @vehicle.crash
   end
   
   def test_should_not_allow_repair
-    assert !@vehicle.repair!
+    assert !@vehicle.repair
   end
 end
 
 class VehicleThirdGearTest < Test::Unit::TestCase
   def setup
     @vehicle = create_vehicle
-    @vehicle.ignite!
-    3.times {@vehicle.shift_up!}
+    @vehicle.ignite
+    3.times {@vehicle.shift_up}
   end
   
   def test_should_be_in_third_gear_state
@@ -176,36 +180,36 @@ class VehicleThirdGearTest < Test::Unit::TestCase
   end
   
   def test_should_not_allow_park
-    assert !@vehicle.park!
+    assert !@vehicle.park
   end
   
   def test_should_not_allow_idle
-    assert !@vehicle.idle!
+    assert !@vehicle.idle
   end
   
   def test_should_not_allow_shift_up
-    assert !@vehicle.shift_up!
+    assert !@vehicle.shift_up
   end
   
   def test_should_allow_shift_down
-    assert @vehicle.shift_down!
+    assert @vehicle.shift_down
   end
   
   def test_should_allow_crash
-    assert @vehicle.crash!
+    assert @vehicle.crash
   end
   
   def test_should_not_allow_repair
-    assert !@vehicle.repair!
+    assert !@vehicle.repair
   end
 end
 
 class VehicleStalledTest < Test::Unit::TestCase
   def setup
     @vehicle = create_vehicle
-    @vehicle.ignite!
-    @vehicle.shift_up!
-    @vehicle.crash!
+    @vehicle.ignite
+    @vehicle.shift_up
+    @vehicle.crash
   end
   
   def test_should_be_in_stalled_state
@@ -222,11 +226,11 @@ class VehicleStalledTest < Test::Unit::TestCase
   end
   
   def test_should_not_allow_park
-    assert !@vehicle.park!
+    assert !@vehicle.park
   end
   
   def test_should_allow_ignite
-    assert @vehicle.ignite!
+    assert @vehicle.ignite
   end
   
   def test_should_not_change_state_when_ignited
@@ -234,38 +238,38 @@ class VehicleStalledTest < Test::Unit::TestCase
   end
   
   def test_should_not_allow_idle
-    assert !@vehicle.idle!
+    assert !@vehicle.idle
   end
   
   def test_should_now_allow_shift_up
-    assert !@vehicle.shift_up!
+    assert !@vehicle.shift_up
   end
   
   def test_should_not_allow_shift_down
-    assert !@vehicle.shift_down!
+    assert !@vehicle.shift_down
   end
   
   def test_should_not_allow_crash
-    assert !@vehicle.crash!
+    assert !@vehicle.crash
   end
   
   def test_should_allow_repair_if_auto_shop_is_busy
-    assert @vehicle.repair!
+    assert @vehicle.repair
   end
   
   def test_should_not_allow_repair_if_auto_shop_is_available
-    @vehicle.auto_shop.fix_vehicle!
-    assert !@vehicle.repair!
+    @vehicle.auto_shop.fix_vehicle
+    assert !@vehicle.repair
   end
 end
 
 class VehicleRepairedTest < Test::Unit::TestCase
   def setup
     @vehicle = create_vehicle
-    @vehicle.ignite!
-    @vehicle.shift_up!
-    @vehicle.crash!
-    @vehicle.repair!
+    @vehicle.ignite
+    @vehicle.shift_up
+    @vehicle.crash
+    @vehicle.repair
   end
   
   def test_should_be_in_parked_state
@@ -287,27 +291,27 @@ class MotorcycleTest < Test::Unit::TestCase
   end
   
   def test_should_allow_park
-    assert @motorcycle.park!
+    assert @motorcycle.park
   end
   
   def test_should_not_allow_ignite
-    assert !@motorcycle.ignite!
+    assert !@motorcycle.ignite
   end
   
   def test_should_allow_shift_up
-    assert @motorcycle.shift_up!
+    assert @motorcycle.shift_up
   end
   
   def test_should_not_allow_shift_down
-    assert !@motorcycle.shift_down!
+    assert !@motorcycle.shift_down
   end
   
   def test_should_not_allow_crash
-    assert !@motorcycle.crash!
+    assert !@motorcycle.crash
   end
   
   def test_should_not_allow_repair
-    assert !@motorcycle.repair!
+    assert !@motorcycle.repair
   end
 end
 
@@ -325,43 +329,43 @@ class CarTest < Test::Unit::TestCase
   end
   
   def test_should_not_allow_park
-    assert !@car.park!
+    assert !@car.park
   end
   
   def test_should_allow_ignite
-    assert @car.ignite!
+    assert @car.ignite
     assert_equal 'idling', @car.state
   end
   
   def test_should_not_allow_idle
-    assert !@car.idle!
+    assert !@car.idle
   end
   
   def test_should_not_allow_shift_up
-    assert !@car.shift_up!
+    assert !@car.shift_up
   end
   
   def test_should_not_allow_shift_down
-    assert !@car.shift_down!
+    assert !@car.shift_down
   end
   
   def test_should_not_allow_crash
-    assert !@car.crash!
+    assert !@car.crash
   end
   
   def test_should_not_allow_repair
-    assert !@car.repair!
+    assert !@car.repair
   end
   
   def test_should_allow_reverse
-    assert @car.reverse!
+    assert @car.reverse
   end
 end
 
 class CarBackingUpTest < Test::Unit::TestCase
   def setup
     @car = create_car
-    @car.reverse!
+    @car.reverse
   end
   
   def test_should_be_in_backing_up_state
@@ -369,35 +373,35 @@ class CarBackingUpTest < Test::Unit::TestCase
   end
   
   def test_should_allow_park
-    assert @car.park!
+    assert @car.park
   end
   
   def test_should_not_allow_ignite
-    assert !@car.ignite!
+    assert !@car.ignite
   end
   
   def test_should_allow_idle
-    assert @car.idle!
+    assert @car.idle
   end
   
   def test_should_allow_shift_up
-    assert @car.shift_up!
+    assert @car.shift_up
   end
   
   def test_should_not_allow_shift_down
-    assert !@car.shift_down!
+    assert !@car.shift_down
   end
   
   def test_should_not_allow_crash
-    assert !@car.crash!
+    assert !@car.crash
   end
   
   def test_should_not_allow_repair
-    assert !@car.repair!
+    assert !@car.repair
   end
   
   def test_should_not_allow_reverse
-    assert !@car.reverse!
+    assert !@car.reverse
   end
 end
 
@@ -411,18 +415,18 @@ class AutoShopAvailableTest < Test::Unit::TestCase
   end
   
   def test_should_allow_tow_vehicle
-    assert @auto_shop.tow_vehicle!
+    assert @auto_shop.tow_vehicle
   end
   
   def test_should_not_allow_fix_vehicle
-    assert !@auto_shop.fix_vehicle!
+    assert !@auto_shop.fix_vehicle
   end
 end
 
 class AutoShopBusyTest < Test::Unit::TestCase
   def setup
     @auto_shop = create_auto_shop
-    @auto_shop.tow_vehicle!
+    @auto_shop.tow_vehicle
   end
   
   def test_should_be_in_busy_state
@@ -434,10 +438,10 @@ class AutoShopBusyTest < Test::Unit::TestCase
   end
   
   def test_should_not_allow_tow_vehicle
-    assert !@auto_shop.tow_vehicle!
+    assert !@auto_shop.tow_vehicle
   end
   
   def test_should_allow_fix_vehicle
-    assert @auto_shop.fix_vehicle!
+    assert @auto_shop.fix_vehicle
   end
 end

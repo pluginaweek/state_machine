@@ -1,5 +1,12 @@
 == master
 
+== 0.2.0 / 2008-06-29
+
+* Add a non-bang version of events (e.g. park) that will return a boolean value for success
+* Raise an exception if the bang version of events are used (e.g. park!) and no transition is successful
+* Change callbacks to act a little more like ActiveRecord
+* Avoid using string evaluation for dynamic methods
+
 == 0.1.1 / 2008-06-22
 
 * Remove log files from gems

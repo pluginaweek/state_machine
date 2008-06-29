@@ -35,6 +35,23 @@ class StateMachineAfterInitializedTest < Test::Unit::TestCase
     assert_equal 'off', Switch.new.state
   end
   
+  def test_should_not_set_the_initial_state_if_specified
+    assert_equal 'on', Switch.new(:state => 'on').state
+  end
+  
+  def test_should_not_set_the_initial_state_if_specified_as_string
+    assert_equal 'on', Switch.new('state' => 'on').state
+  end
+  
+  def test_should_allow_evaluation_block_during_initialization
+    evaluated = false
+    Switch.new do
+      evaluated = true
+    end
+    
+    assert evaluated
+  end
+  
   def teardown
     Switch.write_inheritable_attribute(:state_machines, {})
   end
@@ -59,10 +76,10 @@ class StateMachineAfterCreatedTest < Test::Unit::TestCase
   def setup
     machine = Switch.state_machine(:state, :initial => 'off')
     
-    machine.before_exit 'off', Proc.new {|switch, value| switch.callbacks << 'before_exit'; true}
-    machine.before_enter 'off', Proc.new {|switch, value| switch.callbacks << 'before_enter'; true}
-    machine.after_exit 'off', Proc.new {|switch, value| switch.callbacks << 'after_exit'; true}
-    machine.after_enter 'off', Proc.new {|switch, value| switch.callbacks << 'after_enter'; true}
+    machine.before_exit 'off', Proc.new {|switch, value| switch.callbacks << 'before_exit'}
+    machine.before_enter 'off', Proc.new {|switch, value| switch.callbacks << 'before_enter'}
+    machine.after_exit 'off', Proc.new {|switch, value| switch.callbacks << 'after_exit'}
+    machine.after_enter 'off', Proc.new {|switch, value| switch.callbacks << 'after_enter'}
     
     @switch = create_switch
   end
@@ -76,6 +93,7 @@ class StateMachineAfterCreatedTest < Test::Unit::TestCase
     
     Switch.class_eval do
       @transition_on_turn_on_callbacks = nil
+      @transition_bang_on_turn_on_callbacks = nil
       @before_exit_state_off_callbacks = nil
       @before_enter_state_on_callbacks = nil
       @after_exit_state_off_callbacks = nil
