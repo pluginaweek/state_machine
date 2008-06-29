@@ -3,29 +3,9 @@ require 'rake/rdoctask'
 require 'rake/gempackagetask'
 require 'rake/contrib/sshpublisher'
 
-desc 'Default: run unit tests.'
-task :default => :test
-
-desc 'Test the state_machine plugin.'
-Rake::TestTask.new(:test) do |t|
-  t.libs << 'lib'
-  t.pattern = 'test/**/*_test.rb'
-  t.verbose = true
-end
-
-desc 'Generate documentation for the state_machine plugin.'
-Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_dir = 'rdoc'
-  rdoc.title    = 'StateMachine'
-  rdoc.template = '../rdoc_template.rb'
-  rdoc.options << '--line-numbers' << '--inline-source'
-  rdoc.rdoc_files.include('CHANGELOG.rdoc', 'LICENSE', 'README.rdoc')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-end
-
 spec = Gem::Specification.new do |s|
   s.name              = 'state_machine'
-  s.version           = '0.1.1'
+  s.version           = '0.2.0'
   s.platform          = Gem::Platform::RUBY
   s.summary           = 'Adds support for creating state machines for attributes within a model'
   
@@ -38,6 +18,39 @@ spec = Gem::Specification.new do |s|
   s.email             = 'aaron@pluginaweek.org'
   s.homepage          = 'http://www.pluginaweek.org'
   s.rubyforge_project = 'pluginaweek'
+end
+
+desc 'Default: run all tests.'
+task :default => :test
+
+desc "Test the #{spec.name} plugin."
+Rake::TestTask.new(:test) do |t|
+  t.libs << 'lib'
+  t.test_files = spec.test_files
+  t.verbose = true
+end
+
+begin
+  require 'rcov/rcovtask'
+  namespace :test do
+    desc "Test the #{spec.name} plugin with Rcov."
+    Rcov::RcovTask.new(:rcov) do |t|
+      t.libs << 'lib'
+      t.test_files = spec.test_files
+      t.rcov_opts << '--exclude="^(?!lib/)"'
+      t.verbose = true
+    end
+  end
+rescue LoadError
+end
+
+desc "Generate documentation for the #{spec.name} plugin."
+Rake::RDocTask.new(:rdoc) do |rdoc|
+  rdoc.rdoc_dir = 'rdoc'
+  rdoc.title    = spec.name
+  rdoc.template = '../rdoc_template.rb'
+  rdoc.options << '--line-numbers' << '--inline-source'
+  rdoc.rdoc_files.include('README.rdoc', 'CHANGELOG.rdoc', 'LICENSE', 'lib/**/*.rb')
 end
   
 Rake::GemPackageTask.new(spec) do |p|
