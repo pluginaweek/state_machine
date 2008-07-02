@@ -178,20 +178,49 @@ class EventAfterBeingFiredWithConditionalTransitionsTest < Test::Unit::TestCase
   def setup
     @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
     @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    
-    # Verify that the callbacks are being invoked correctly; should not affect
-    # callback chain in tests
-    @event.transition :to => 'if_not_evaluated', :from => 'off', :if => Proc.new {false}
-    @event.transition :to => 'unless_not_evaluated', :from => 'off', :unless => Proc.new {true}
-    @event.transition :to => 'no_record', :from => 'off', :if => Proc.new {|record, value| record.nil?}
-    @event.transition :to => 'no_arguments', :from => 'off', :if => Proc.new {|record, value| value.nil?}
-    
     @switch = create_switch(:state => 'off')
   end
   
-  def test_should_not_fire_if_no_transitions_are_matched
-    assert !@event.fire(@switch, 1)
-    assert_equal 'off', @switch.state
+  def test_should_fire_if_if_is_true
+    @event.transition :to => 'on', :from => 'off', :if => Proc.new {true}
+    assert @event.fire(@switch)
+  end
+  
+  def test_should_not_fire_if_if_is_false
+    @event.transition :to => 'on', :from => 'off', :if => Proc.new {false}
+    assert !@event.fire(@switch)
+  end
+  
+  def test_should_fire_if_unless_is_false
+    @event.transition :to => 'on', :from => 'off', :unless => Proc.new {false}
+    assert @event.fire(@switch)
+  end
+  
+  def test_should_not_fire_if_unless_is_true
+    @event.transition :to => 'on', :from => 'off', :unless => Proc.new {true}
+    assert !@event.fire(@switch)
+  end
+  
+  def test_should_pass_in_record_as_argument
+    @event.transition :to => 'on', :from => 'off', :if => Proc.new {|record, value| !record.nil?}
+    assert @event.fire(@switch)
+  end
+  
+  def test_should_pass_in_value_as_argument
+    @event.transition :to => 'on', :from => 'off', :if => Proc.new {|record, value| value == 1}
+    assert @event.fire(@switch, 1)
+  end
+  
+  def test_should_fire_if_method_evaluates_to_true
+    @switch.data = true
+    @event.transition :to => 'on', :from => 'off', :if => :data
+    assert @event.fire(@switch)
+  end
+  
+  def test_should_not_fire_if_method_evaluates_to_false
+    @switch.data = false
+    @event.transition :to => 'on', :from => 'off', :if => :data
+    assert !@event.fire(@switch)
   end
   
   def test_should_raise_exception_if_no_transitions_are_matched
@@ -199,15 +228,9 @@ class EventAfterBeingFiredWithConditionalTransitionsTest < Test::Unit::TestCase
     assert_equal 'off', @switch.state
   end
   
-  def test_should_fire_if_transition_is_matched
-    @event.transition :to => 'on', :from => 'off', :if => Proc.new {|record, value| value == 1}
-    assert @event.fire(@switch, 1)
-    assert_equal 'on', @switch.state
-  end
-  
   def test_should_not_raise_exception_if_transition_is_matched
-    @event.transition :to => 'on', :from => 'off', :if => Proc.new {|record, value| value == 1}
-    assert @event.fire!(@switch, 1)
+    @event.transition :to => 'on', :from => 'off', :if => Proc.new {true}
+    assert @event.fire!(@switch)
     assert_equal 'on', @switch.state
   end
   

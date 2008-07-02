@@ -13,6 +13,9 @@ class Switch < ActiveRecord::Base
   attr_accessor :fail_save
   before_save Proc.new {|switch| !switch.fail_save}
   
+  # Arbitrary data associated with the switch
+  attr_accessor :data
+  
   def initialize(attributes = nil)
     @callbacks = []
     super
