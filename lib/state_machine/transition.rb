@@ -7,15 +7,15 @@ module PluginAWeek #:nodoc:
     # A transition indicates a state change and is described by a condition
     # that would need to be fulfilled to enable the transition.  Transitions
     # consist of:
-    # * The starting state
+    # * The starting state(s)
     # * The ending state
     # * A guard to check if the transition is allowed
     class Transition
-      # The state from which the transition is being made
-      attr_reader :from_state
-      
       # The state to which the transition is being made
       attr_reader :to_state
+      
+      # The states from which the transition can be made
+      attr_reader :from_states
       
       # The event that caused the transition
       attr_reader :event
@@ -23,22 +23,21 @@ module PluginAWeek #:nodoc:
       delegate  :machine,
                   :to => :event
       
-      def initialize(event, from_state, to_state) #:nodoc:
+      def initialize(event, to_state, *from_states) #:nodoc:
         @event = event
-        @from_state = from_state
         @to_state = to_state
-        @loopback = from_state == to_state
+        @from_states = from_states
       end
       
       # Whether or not this is a loopback transition (i.e. from and to state are the same)
-      def loopback?(state = from_state)
-        state == to_state
+      def loopback?(from_state)
+        from_state == to_state
       end
       
       # Determines whether or not this transition can be performed on the given
       # states
       def can_perform_on?(record)
-        !from_state || from_state == record.send(machine.attribute)
+        from_states.empty? || from_states.include?(record.send(machine.attribute))
       end
       
       # Runs the actual transition and any callbacks associated with entering

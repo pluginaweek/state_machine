@@ -4,33 +4,38 @@ class TransitionTest < Test::Unit::TestCase
   def setup
     @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
     @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, 'off', 'on')
+    @transition = PluginAWeek::StateMachine::Transition.new(@event, 'on')
   end
   
-  def test_should_have_a_from_state
-    assert_equal 'off', @transition.from_state
+  def test_should_not_have_any_from_states
+    assert @transition.from_states.empty?
+  end
+  
+  def test_should_not_be_a_loopback_if_from_state_is_different
+    assert !@transition.loopback?('off')
   end
   
   def test_should_have_a_to_state
     assert_equal 'on', @transition.to_state
   end
   
-  def test_should_not_be_a_loopback
-    assert !@transition.loopback?
+  def test_should_be_loopback_if_from_state_is_same
+    assert @transition.loopback?('on')
   end
   
-  def test_should_not_be_able_to_perform_if_record_state_is_not_from_state
-    record = new_switch(:state => 'on')
-    assert !@transition.can_perform_on?(record)
-  end
-  
-  def test_should_be_able_to_perform_if_record_state_is_from_state
+  def test_should_be_able_to_perform_on_all_states
     record = new_switch(:state => 'off')
+    assert @transition.can_perform_on?(record)
+    
+    record = new_switch(:state => 'on')
     assert @transition.can_perform_on?(record)
   end
   
-  def test_should_perform_for_valid_from_state
+  def test_should_perform_for_all_states
     record = new_switch(:state => 'off')
+    assert @transition.perform(record)
+    
+    record = new_switch(:state => 'on')
     assert @transition.perform(record)
   end
   
@@ -63,26 +68,6 @@ class TransitionTest < Test::Unit::TestCase
   end
 end
 
-class TransitionWithoutFromStateTest < Test::Unit::TestCase
-  def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, nil, 'on')
-  end
-  
-  def test_should_not_have_a_from_state
-    assert_nil @transition.from_state
-  end
-  
-  def test_should_be_able_to_perform_on_all_states
-    record = new_switch(:state => 'off')
-    assert @transition.can_perform_on?(record)
-    
-    record = new_switch(:state => 'on')
-    assert @transition.can_perform_on?(record)
-  end
-end
-
 class TransitionWithLoopbackTest < Test::Unit::TestCase
   def setup
     @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
@@ -90,24 +75,7 @@ class TransitionWithLoopbackTest < Test::Unit::TestCase
     @transition = PluginAWeek::StateMachine::Transition.new(@event, 'on', 'on')
   end
   
-  def test_should_have_a_from_state
-    assert_equal 'on', @transition.from_state
-  end
-  
-  def test_should_have_a_to_state
-    assert_equal 'on', @transition.to_state
-  end
-  
-  def test_should_be_a_loopback
-    assert @transition.loopback?
-  end
-  
-  def test_should_not_be_able_to_perform_if_record_state_is_not_from_state
-    record = new_switch(:state => 'off')
-    assert !@transition.can_perform_on?(record)
-  end
-  
-  def test_should_be_able_to_perform_if_record_is_in_from_state
+  def test_should_be_able_to_perform
     record = new_switch(:state => 'on')
     assert @transition.can_perform_on?(record)
   end
@@ -118,11 +86,71 @@ class TransitionWithLoopbackTest < Test::Unit::TestCase
   end
 end
 
+class TransitionWithFromStateTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @transition = PluginAWeek::StateMachine::Transition.new(@event, 'on', 'off')
+  end
+  
+  def test_should_have_a_from_state
+    assert_equal ['off'], @transition.from_states
+  end
+  
+  def test_should_not_be_able_to_perform_if_record_state_is_not_from_state
+    record = new_switch(:state => 'on')
+    assert !@transition.can_perform_on?(record)
+  end
+  
+  def test_should_be_able_to_perform_if_record_state_is_from_state
+    record = new_switch(:state => 'off')
+    assert @transition.can_perform_on?(record)
+  end
+  
+  def test_should_perform_for_valid_from_state
+    record = new_switch(:state => 'off')
+    assert @transition.perform(record)
+  end
+end
+
+class TransitionWithMultipleFromStatesTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @transition = PluginAWeek::StateMachine::Transition.new(@event, 'on', 'off', 'on')
+  end
+  
+  def test_should_have_multiple_from_states
+    assert_equal ['off', 'on'], @transition.from_states
+  end
+  
+  def test_should_not_be_able_to_perform_if_record_state_is_not_from_state
+    record = new_switch(:state => 'unknown')
+    assert !@transition.can_perform_on?(record)
+  end
+  
+  def test_should_be_able_to_perform_if_record_state_is_any_from_state
+    record = new_switch(:state => 'off')
+    assert @transition.can_perform_on?(record)
+    
+    record = new_switch(:state => 'on')
+    assert @transition.can_perform_on?(record)
+  end
+  
+  def test_should_perform_for_any_valid_from_state
+    record = new_switch(:state => 'off')
+    assert @transition.perform(record)
+    
+    record = new_switch(:state => 'on')
+    assert @transition.can_perform_on?(record)
+  end
+end
+
 class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
   def setup
     @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
     @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, 'off', 'on')
+    @transition = PluginAWeek::StateMachine::Transition.new(@event, 'on', 'off')
     
     @record = create_switch(:state => 'off')
     @transition.perform(@record)
@@ -162,7 +190,7 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
   def setup
     @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
     @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, 'off', 'on')
+    @transition = PluginAWeek::StateMachine::Transition.new(@event, 'on', 'off')
     @record = create_switch(:state => 'off')
     
     Switch.define_callbacks :before_exit_state_off, :before_enter_state_on, :after_exit_state_off, :after_enter_state_on
@@ -295,7 +323,7 @@ class TransitionWithoutFromStateAndCallbacksTest < Test::Unit::TestCase
   def setup
     @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
     @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, nil, 'on')
+    @transition = PluginAWeek::StateMachine::Transition.new(@event, 'on')
     @record = create_switch(:state => 'off')
     
     Switch.define_callbacks :before_exit_state_off, :before_enter_state_on, :after_exit_state_off, :after_enter_state_on

@@ -31,12 +31,13 @@ module PluginAWeek #:nodoc:
       # 
       # Configuration options:
       # * +to+ - The state that being transitioned to
-      # * +from+ - A state or array of states that can be transitioned from
+      # * +from+ - A state or array of states that can be transitioned from. If not specified, then the transition can occur for *any* from state
       # * +if+ - Specifies a method, proc or string to call to determine if the validation should occur (e.g. :if => :moving?, or :if => Proc.new {|car| car.speed > 60}). The method, proc or string should return or evaluate to a true or false value.
       # * +unless+ - Specifies a method, proc or string to call to determine if the transition should not occur (e.g. :unless => :stopped?, or :unless => Proc.new {|car| car.speed <= 60}). The method, proc or string should return or evaluate to a true or false value.
       # 
       # == Examples
       # 
+      #   transition :to => 'parked'
       #   transition :to => 'parked', :from => 'first_gear'
       #   transition :to => 'parked', :from => %w(first_gear reverse)
       #   transition :to => 'parked', :from => 'first_gear', :if => :moving?
@@ -50,21 +51,19 @@ module PluginAWeek #:nodoc:
         to_state = options.delete(:to)
         from_states = Array(options.delete(:from))
         
-        from_states.collect do |from_state|
-          # Create the actual transition that will update records when performed
-          transition = Transition.new(self, from_state, to_state)
-          
-          # Add the callback to the model. If the callback fails, then the next
-          # available callback for the event will run until one is successful.
-          callback = Proc.new {|record, *args| try_transition(transition, false, record, *args)}
-          owner_class.send("transition_on_#{name}", callback, options)
-          
-          # Add the callback! to the model similar to above
-          callback = Proc.new {|record, *args| try_transition(transition, true, record, *args)}
-          owner_class.send("transition_bang_on_#{name}", callback, options)
-          
-          transition
-        end
+        # Create the actual transition that will update records when performed
+        transition = Transition.new(self, to_state, *from_states)
+        
+        # Add the callback to the model. If the callback fails, then the next
+        # available callback for the event will run until one is successful.
+        callback = Proc.new {|record, *args| try_transition(transition, false, record, *args)}
+        owner_class.send("transition_on_#{name}", callback, options)
+        
+        # Add the callback! to the model similar to above
+        callback = Proc.new {|record, *args| try_transition(transition, true, record, *args)}
+        owner_class.send("transition_bang_on_#{name}", callback, options)
+        
+        transition
       end
       
       # Attempts to perform one of the event's transitions for the given record

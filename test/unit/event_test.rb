@@ -69,12 +69,16 @@ class EventWithTransitionsTest < Test::Unit::TestCase
     assert_nothing_raised {@event.transition(:to => 'on')}
   end
   
+  def test_should_allow_transitioning_without_a_state
+    assert @event.transition(:to => 'on')
+  end
+  
   def test_should_allow_transitioning_from_a_single_state
-    assert_equal [%w(off on)], @event.transition(:to => 'on', :from => 'off').map {|t| [t.from_state, t.to_state]}
+    assert @event.transition(:to => 'on', :from => 'off')
   end
   
   def test_should_allow_transitioning_from_multiple_states
-    assert_equal [%w(off on), %w(on on)], @event.transition(:to => 'on', :from => %w(off on)).map {|t| [t.from_state, t.to_state]}
+    assert @event.transition(:to => 'on', :from => %w(off on))
   end
   
   def teardown
@@ -124,8 +128,20 @@ class EventAfterBeingFiredWithTransitionsTest < Test::Unit::TestCase
     assert_equal 'off', @switch.state
   end
   
-  def test_should_fire_if_transition_is_matched
+  def test_should_fire_if_transition_with_no_from_state_is_matched
+    @event.transition :to => 'on'
+    assert @event.fire(@switch)
+    assert_equal 'on', @switch.state
+  end
+  
+  def test_should_fire_if_transition_with_from_state_is_matched
     @event.transition :to => 'on', :from => 'off'
+    assert @event.fire(@switch)
+    assert_equal 'on', @switch.state
+  end
+  
+  def test_should_fire_if_transition_with_multiple_from_states_is_matched
+    @event.transition :to => 'on', :from => %w(off on)
     assert @event.fire(@switch)
     assert_equal 'on', @switch.state
   end

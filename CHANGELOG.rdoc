@@ -1,5 +1,8 @@
 == master
 
+* Allow creating transitions with no from state (effectively allowing the transition for *any* from state)
+* Reduce the number of objects created for each transition
+
 == 0.2.0 / 2008-06-29
 
 * Add a non-bang version of events (e.g. park) that will return a boolean value for success
