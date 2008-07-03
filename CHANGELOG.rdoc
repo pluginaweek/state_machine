@@ -1,5 +1,6 @@
 == master
 
+* Add :except_from option for transitions if you want to blacklist states
 * Add PluginAWeek::StateMachine::Machine#states
 * Add PluginAWeek::StateMachine::Event#transitions
 * Allow creating transitions with no from state (effectively allowing the transition for *any* from state)

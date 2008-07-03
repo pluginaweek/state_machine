@@ -23,10 +23,18 @@ module PluginAWeek #:nodoc:
       delegate  :machine,
                   :to => :event
       
-      def initialize(event, to_state, *from_states) #:nodoc:
+      def initialize(event, options) #:nodoc:
         @event = event
-        @to_state = to_state
-        @from_states = from_states
+        
+        options.assert_valid_keys(:to, :from, :except_from)
+        raise ArgumentError, ':to state must be specified' unless options.include?(:to)
+        
+        # Get the states involved in the transition
+        @to_state = options[:to]
+        @from_states = Array(options[:from] || options[:except_from])
+        
+        # Should we be matching the from states?
+        @require_match = !options[:from].nil?
       end
       
       # Whether or not this is a loopback transition (i.e. from and to state are the same)
@@ -37,7 +45,7 @@ module PluginAWeek #:nodoc:
       # Determines whether or not this transition can be performed on the given
       # states
       def can_perform_on?(record)
-        from_states.empty? || from_states.include?(record.send(machine.attribute))
+        from_states.empty? || from_states.include?(record.send(machine.attribute)) == @require_match
       end
       
       # Runs the actual transition and any callbacks associated with entering
