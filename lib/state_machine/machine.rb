@@ -15,6 +15,9 @@ module PluginAWeek #:nodoc:
       # The events that trigger transitions
       attr_reader :events
       
+      # A list of the states defined in the transitions of all of the events
+      attr_reader :states
+      
       # The attribute for which the state machine is being defined
       attr_accessor :attribute
       
@@ -44,6 +47,7 @@ module PluginAWeek #:nodoc:
         @attribute = attribute.to_s
         @initial_state = options[:initial]
         @events = {}
+        @states = []
         
         add_named_scopes
       end
@@ -110,6 +114,12 @@ module PluginAWeek #:nodoc:
         name = name.to_s
         event = events[name] = Event.new(self, name, options)
         event.instance_eval(&block)
+        
+        # Record the states
+        event.transitions.each do |transition|
+          @states |= ([transition.to_state] + transition.from_states)
+        end
+        
         event
       end
       

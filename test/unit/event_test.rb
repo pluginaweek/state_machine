@@ -14,6 +14,10 @@ class EventTest < Test::Unit::TestCase
     assert_equal 'turn_on', @event.name
   end
   
+  def test_should_not_have_any_transitions
+    assert @event.transitions.empty?
+  end
+  
   def test_should_define_an_event_action_on_the_owner_class
     switch = new_switch
     assert switch.respond_to?(:turn_on)
@@ -79,6 +83,11 @@ class EventWithTransitionsTest < Test::Unit::TestCase
   
   def test_should_allow_transitioning_from_multiple_states
     assert @event.transition(:to => 'on', :from => %w(off on))
+  end
+  
+  def test_should_have_transitions
+    @event.transition(:to => 'on')
+    assert @event.transitions.any?
   end
   
   def teardown

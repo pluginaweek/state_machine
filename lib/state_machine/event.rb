@@ -11,6 +11,9 @@ module PluginAWeek #:nodoc:
       # The name of the action that fires the event
       attr_reader :name
       
+      # The list of transitions that can be made for this event
+      attr_reader :transitions
+      
       delegate  :owner_class,
                   :to => :machine
       
@@ -21,6 +24,7 @@ module PluginAWeek #:nodoc:
         @machine = machine
         @name = name
         @options = options.stringify_keys
+        @transitions = []
         
         add_transition_actions
         add_transition_callbacks
@@ -63,6 +67,7 @@ module PluginAWeek #:nodoc:
         callback = Proc.new {|record, *args| try_transition(transition, true, record, *args)}
         owner_class.send("transition_bang_on_#{name}", callback, options)
         
+        transitions << transition
         transition
       end
       

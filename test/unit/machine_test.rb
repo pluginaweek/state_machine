@@ -20,6 +20,10 @@ class MachineByDefaultTest < Test::Unit::TestCase
   def test_should_not_have_any_events
     assert @machine.events.empty?
   end
+  
+  def test_should_not_have_any_states
+    assert @machine.states.empty?
+  end
 end
 
 class MachineWithInvalidOptionsTest < Test::Unit::TestCase
@@ -121,9 +125,27 @@ class MachineWithEventsTest < Test::Unit::TestCase
     assert responded
   end
   
-  def test_should_store_the_event
+  def test_should_have_events
     @machine.event(:turn_on) {}
-    assert_equal 1, @machine.events.size
+    assert_equal %w(turn_on), @machine.events.keys
+  end
+end
+
+class MachineWithEventsAndTransitionsTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
+    @machine.event(:turn_on) do
+      transition :to => 'on', :from => 'off'
+      transition :to => 'error', :from => 'unknown'
+    end
+  end
+  
+  def test_should_have_events
+    assert_equal %w(turn_on), @machine.events.keys
+  end
+  
+  def test_should_have_states
+    assert_equal %w(on off error unknown), @machine.states
   end
 end
 
