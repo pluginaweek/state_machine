@@ -2,3 +2,4 @@ coverage
 pkg
 rdoc
 test/app_root/log
+test/app_root/script
