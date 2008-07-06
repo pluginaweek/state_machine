@@ -123,8 +123,11 @@ module PluginAWeek #:nodoc:
       #     end
       #     
       #     state_machine :state do
-      #   event :park do
-      #     transition :to 
+      #       event :park do
+      #         transition :to => 'parked', :from => Car.safe_states
+      #       end
+      #     end
+      #   end 
       # 
       # == Example
       # 
