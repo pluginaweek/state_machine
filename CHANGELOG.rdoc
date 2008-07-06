@@ -1,5 +1,9 @@
 == master
 
+== 0.2.1 / 2008-07-05
+
+* Add more descriptive exceptions
+* Assume the default state attribute is "state" if one is not provided
 * Add :except_from option for transitions if you want to blacklist states
 * Add PluginAWeek::StateMachine::Machine#states
 * Add PluginAWeek::StateMachine::Event#transitions

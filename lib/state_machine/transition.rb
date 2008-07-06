@@ -23,6 +23,12 @@ module PluginAWeek #:nodoc:
       delegate  :machine,
                   :to => :event
       
+      # Creates a new transition within the context of the given event.
+      # 
+      # Configuration options:
+      # * +to+ - The state being transitioned to
+      # * +from+ - One or more states being transitioned from.  Default is nil (can transition from any state)
+      # * +except_from+ - One or more states that *can't* be transitioned from.
       def initialize(event, options) #:nodoc:
         @event = event
         
@@ -43,22 +49,28 @@ module PluginAWeek #:nodoc:
       end
       
       # Determines whether or not this transition can be performed on the given
-      # states
+      # record.  The transition can be performed if the record's state matches
+      # one of the states that are valid in this transition.
       def can_perform_on?(record)
         from_states.empty? || from_states.include?(record.send(machine.attribute)) == @require_match
       end
       
       # Runs the actual transition and any callbacks associated with entering
-      # and exiting the states
+      # and exiting the states.  Any additional arguments are passed to the
+      # callbacks.
+      # 
+      # *Note* that the caller should check <tt>can_perform_on?</tt> before calling
+      # perform.  This will *not* check whether transition should be performed.
       def perform(record, *args)
         perform_with_optional_bang(record, false, *args)
       end
       
       # Runs the actual transition and any callbacks associated with entering
       # and exiting the states. Any errors during validation or saving will be
-      # raised.
+      # raised.  If any +before+ callbacks fail, a PluginAWeek::StateMachine::InvalidTransition
+      # error will be raised.
       def perform!(record, *args)
-        perform_with_optional_bang(record, true, *args) || raise(PluginAWeek::StateMachine::InvalidTransition)
+        perform_with_optional_bang(record, true, *args) || raise(PluginAWeek::StateMachine::InvalidTransition, "Cannot transition via :#{event.name} from #{record.send(machine.attribute).inspect} to #{to_state.inspect}")
       end
       
       private

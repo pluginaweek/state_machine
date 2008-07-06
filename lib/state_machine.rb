@@ -12,29 +12,65 @@ module PluginAWeek #:nodoc:
     end
     
     module MacroMethods
-      # Creates a state machine for the given attribute.
+      # Creates a state machine for the given attribute.  The default attribute
+      # is "state".
       # 
       # Configuration options:
       # * +initial+ - The initial value of the attribute.  This can either be the actual value or a Proc for dynamic initial states.
       # 
-      # == Example
+      # This also requires a block which will be used to actually configure the
+      # events and transitions for the state machine.  *Note* that this block will
+      # be executed within the context of the state machine.  As a result, you will
+      # not be able to access any class methods on the model unless you refer to
+      # them directly (i.e. specifying the class name).
       # 
-      # With a static state:
+      # For examples on the types of configured state machines and blocks, see
+      # the section below.
+      # 
+      # == Examples
+      # 
+      # With the default attribute and no initial state:
       # 
       #   class Switch < ActiveRecord::Base
-      #     state_machine :state, :initial => 'off' do
+      #     state_machine do
+      #       event :park do
+      #         ...
+      #       end
+      #     end
+      #   end
+      # 
+      # The above example will define a state machine for the attribute "state"
+      # on the model.  Every switch will start with no initial state.
+      # 
+      # With a custom attribute:
+      # 
+      #   class Switch < ActiveRecord::Base
+      #     state_machine :status do
       #       ...
       #     end
       #   end
       # 
-      # With a dynamic state:
+      # With a static initial state:
       # 
       #   class Switch < ActiveRecord::Base
-      #     state_machine :state, :initial => Proc.new {|switch| (8..22).include?(Time.now.hour) ? 'on' : 'off'} do
+      #     state_machine :status, :initial => 'off' do
       #       ...
       #     end
       #   end
-      def state_machine(attribute, options = {}, &block)
+      # 
+      # With a dynamic initial state:
+      # 
+      #   class Switch < ActiveRecord::Base
+      #     state_machine :status, :initial => Proc.new {|switch| (8..22).include?(Time.now.hour) ? 'on' : 'off'} do
+      #       ...
+      #     end
+      #   end
+      # 
+      # == Events and Transitions
+      # 
+      # For more information about how to configure an event and its associated
+      # transitions, see PluginAWeek::StateMachine::Machine#event
+      def state_machine(*args, &block)
         unless included_modules.include?(PluginAWeek::StateMachine::InstanceMethods)
           write_inheritable_attribute :state_machines, {}
           class_inheritable_reader :state_machines
@@ -44,10 +80,12 @@ module PluginAWeek #:nodoc:
           include PluginAWeek::StateMachine::InstanceMethods
         end
         
+        options = args.extract_options!
+        attribute = args.any? ? args.first.to_s : 'state'
+        options[:initial] = state_machines[attribute].initial_state_without_processing if !options.include?(:initial) && state_machines[attribute]
+        
         # This will create a new machine for subclasses as well so that the owner_class and
         # initial state can be overridden
-        attribute = attribute.to_s
-        options[:initial] = state_machines[attribute].initial_state_without_processing if !options.include?(:initial) && state_machines[attribute]
         machine = state_machines[attribute] = PluginAWeek::StateMachine::Machine.new(self, attribute, options)
         machine.instance_eval(&block) if block
         machine

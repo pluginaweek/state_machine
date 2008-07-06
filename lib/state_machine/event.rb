@@ -17,7 +17,11 @@ module PluginAWeek #:nodoc:
       delegate  :owner_class,
                   :to => :machine
       
-      # Creates a new event with the given name
+      # Creates a new event within the context of the given machine.
+      # 
+      # Configuration options:
+      # * +before+ - Callbacks to invoke before the event is fired
+      # * +after+ - Callbacks to invoke after the event is fired
       def initialize(machine, name, options = {})
         options.assert_valid_keys(:before, :after)
         
@@ -68,19 +72,27 @@ module PluginAWeek #:nodoc:
         transition
       end
       
-      # Attempts to perform one of the event's transitions for the given record
+      # Attempts to perform one of the event's transitions for the given record.
+      # Any additional arguments will be passed to the event's callbacks.
       def fire(record, *args)
-        record.class.transaction {invoke_transition_callbacks(record, false, *args) || raise(ActiveRecord::Rollback)} || false
+        fire_with_optional_bang(record, false, *args) || false
       end
       
       # Attempts to perform one of the event's transitions for the given record.
       # If the transition cannot be made, then a PluginAWeek::StateMachine::InvalidTransition
       # error will be raised.
       def fire!(record, *args)
-        record.class.transaction {invoke_transition_callbacks(record, true, *args) || raise(ActiveRecord::Rollback)} || raise(PluginAWeek::StateMachine::InvalidTransition)
+        fire_with_optional_bang(record, true, *args) || raise(PluginAWeek::StateMachine::InvalidTransition, "Cannot transition via :#{name} from #{record.send(machine.attribute).inspect}")
       end
       
       private
+        # Fires the event
+        def fire_with_optional_bang(record, bang, *args)
+          record.class.transaction do
+            invoke_transition_callbacks(record, bang, *args) || raise(ActiveRecord::Rollback)
+          end
+        end
+        
         # Add the various instance methods that can transition the record using
         # the current event
         def add_transition_actions

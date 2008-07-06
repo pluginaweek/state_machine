@@ -37,12 +37,7 @@ module Factory
   end
   
   build Car do |attributes|
-    attributes[:highway] = create_highway unless attributes.include?(:highway)
-    attributes[:auto_shop] = create_auto_shop unless attributes.include?(:auto_shop)
-    attributes.reverse_merge!(
-      :seatbelt_on => false,
-      :insurance_premium => 50
-    )
+    valid_vehicle_attributes(attributes)
   end
   
   build Highway do |attributes|
@@ -62,6 +57,11 @@ module Factory
   end
   
   build Vehicle do |attributes|
-    valid_car_attributes(attributes)
+    attributes[:highway] = create_highway unless attributes.include?(:highway)
+    attributes[:auto_shop] = create_auto_shop unless attributes.include?(:auto_shop)
+    attributes.reverse_merge!(
+      :seatbelt_on => false,
+      :insurance_premium => 50
+    )
   end
 end

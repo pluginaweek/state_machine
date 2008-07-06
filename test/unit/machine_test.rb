@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class MachineByDefaultTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
+    @machine = PluginAWeek::StateMachine::Machine.new(Switch)
   end
   
   def test_should_have_an_attribute
