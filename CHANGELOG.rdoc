@@ -1,5 +1,6 @@
 == master
 
+* Ensure initial state callbacks are invoked in the proper order when an event is fired on a new record
 * Add before_loopback and after_loopback hooks
 
 == 0.2.1 / 2008-07-05

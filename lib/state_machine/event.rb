@@ -140,6 +140,12 @@ module PluginAWeek #:nodoc:
         # Otherwise, the default +perform+ will be invoked.
         def try_transition(transition, bang, record, *args)
           if transition.can_perform_on?(record)
+            # If the record hasn't been saved yet, then make sure we run any
+            # initial actions for the state it's currently in
+            record.run_initial_state_machine_actions if record.new_record?
+            
+            # Now that the state machine has been initialized properly, proceed
+            # normally to the callback chain
             return false if invoke_event_callbacks(:before, record, *args) == false
             result = bang ? transition.perform!(record, *args) : transition.perform(record, *args)
             invoke_event_callbacks(:after, record, *args)

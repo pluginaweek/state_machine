@@ -118,9 +118,14 @@ module PluginAWeek #:nodoc:
       
       # Records the transition for the record going into its initial state
       def run_initial_state_machine_actions
-        self.class.state_machines.each do |attribute, machine|
-          callback = "after_enter_#{attribute}_#{self[attribute]}"
-          run_callbacks(callback) if self[attribute] && self.class.respond_to?(callback)
+        # Make sure that these initial actions are only invoked once
+        unless @processed_initial_state_machin_actions
+          @processed_initial_state_machin_actions = true
+          
+          self.class.state_machines.each do |attribute, machine|
+            callback = "after_enter_#{attribute}_#{self[attribute]}"
+            run_callbacks(callback) if self[attribute] && self.class.respond_to?(callback)
+          end
         end
       end
     end

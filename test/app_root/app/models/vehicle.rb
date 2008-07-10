@@ -3,12 +3,17 @@ class Vehicle < ActiveRecord::Base
   belongs_to :highway
   
   attr_accessor :force_idle
+  attr_accessor :callbacks
   
   # Defines the state machine for the state of the vehicle
   state_machine :state, :initial => Proc.new {|vehicle| vehicle.force_idle ? 'idling' : 'parked'} do
     before_exit   'parked', :put_on_seatbelt
     after_enter   'parked', Proc.new {|vehicle| vehicle.update_attribute(:seatbelt_on, false)}
     before_enter  'stalled', :increase_insurance_premium
+    
+    # Callback tracking for initial state callbacks
+    after_enter   'parked', Proc.new {|vehicle| (vehicle.callbacks ||= []) << 'before_enter_parked'}
+    before_enter  'idling', Proc.new {|vehicle| (vehicle.callbacks ||= []) << 'before_enter_idling'}
     
     event :park do
       transition :to => 'parked', :from => %w(idling first_gear)

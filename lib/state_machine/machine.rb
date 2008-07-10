@@ -30,6 +30,20 @@ module PluginAWeek #:nodoc:
     # * (3) after_loopback (to/from state)
     # * (4) after (event)
     # 
+    # One last *important* note about callbacks is that the after_enter callback
+    # will be invoked for the initial state when a record is saved (assuming that
+    # the initial state is set).  So if an event is fired on an unsaved record,
+    # the callback order will be:
+    # 
+    # * (1) after_enter (initial state)
+    # * (2) before_exit (from/initial state)
+    # * (3) before_enter (to state)
+    # * (4) before (event)
+    # * (-) update state
+    # * (5) after_exit (from/initial state)
+    # * (6) after_enter (to state)
+    # * (7) after (event)
+    # 
     # == Cancelling callbacks
     # 
     # If a <tt>before_*</tt> callback returns +false+, all the later callbacks
