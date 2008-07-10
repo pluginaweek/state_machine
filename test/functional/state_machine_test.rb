@@ -2,11 +2,55 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class VehicleTest < Test::Unit::TestCase
   def setup
-    @vehicle = create_vehicle
+    @vehicle = new_vehicle
   end
   
   def test_should_not_allow_access_to_subclass_events
     assert !@vehicle.respond_to?(:reverse)
+  end
+end
+
+class VehicleUnsavedTest < Test::Unit::TestCase
+  def setup
+    @vehicle = new_vehicle
+  end
+  
+  def test_should_be_in_parked_state
+    assert_equal 'parked', @vehicle.state
+  end
+  
+  def test_should_not_allow_park
+    assert !@vehicle.park
+  end
+  
+  def test_should_allow_ignite
+    assert @vehicle.ignite
+    assert_equal 'idling', @vehicle.state
+  end
+  
+  def test_should_be_saved_after_successful_event
+    @vehicle.ignite
+    assert !@vehicle.new_record?
+  end
+  
+  def test_should_not_allow_idle
+    assert !@vehicle.idle
+  end
+  
+  def test_should_not_allow_shift_up
+    assert !@vehicle.shift_up
+  end
+  
+  def test_should_not_allow_shift_down
+    assert !@vehicle.shift_down
+  end
+  
+  def test_should_not_allow_crash
+    assert !@vehicle.crash
+  end
+  
+  def test_should_not_allow_repair
+    assert !@vehicle.repair
   end
 end
 

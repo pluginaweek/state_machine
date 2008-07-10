@@ -233,7 +233,7 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'off')
     @record = create_switch(:state => 'off')
     
-    Switch.define_callbacks :before_exit_state_off, :before_enter_state_on, :after_exit_state_off, :after_enter_state_on
+    Switch.define_callbacks :before_exit_state_off, :before_enter_state_on, :before_loopback_state_on, :after_exit_state_off, :after_enter_state_on, :after_loopback_state_on
   end
   
   def test_should_not_perform_if_before_exit_callback_fails
@@ -310,8 +310,10 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
   def test_should_perform_if_all_callbacks_are_successful
     Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
     Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
+    Switch.before_loopback_state_on Proc.new {|record| record.callbacks << 'before_loopback'; true}
     Switch.after_exit_state_off Proc.new {|record| record.callbacks << 'after_exit'; true}
     Switch.after_enter_state_on Proc.new {|record| record.callbacks << 'after_enter'; true}
+    Switch.after_loopback_state_on Proc.new {|record| record.callbacks << 'after_loopback'; true}
     
     assert @transition.perform(@record)
     assert_equal %w(before_exit before_enter after_exit after_enter), @record.callbacks
@@ -353,8 +355,10 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     Switch.class_eval do
       @before_exit_state_off_callbacks = nil
       @before_enter_state_on_callbacks = nil
+      @before_loopback_state_on_callbacks = nil
       @after_exit_state_off_callbacks = nil
       @after_enter_state_on_callbacks = nil
+      @after_loopback_state_on_callbacks = nil
     end
   end
 end
@@ -468,11 +472,13 @@ class TransitionWithLoopbackAndCallbacksTest < Test::Unit::TestCase
     @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'on')
     @record = create_switch(:state => 'on')
     
-    Switch.define_callbacks :before_exit_state_off, :before_enter_state_on, :after_exit_state_off, :after_enter_state_on
+    Switch.define_callbacks :before_exit_state_off, :before_enter_state_on, :before_loopback_state_on, :after_exit_state_off, :after_enter_state_on, :after_loopback_state_on
     Switch.before_exit_state_off Proc.new {|record| record.callbacks << 'before_exit'; true}
     Switch.before_enter_state_on Proc.new {|record| record.callbacks << 'before_enter'; true}
+    Switch.before_loopback_state_on Proc.new {|record| record.callbacks << 'before_loopback'; true}
     Switch.after_exit_state_off Proc.new {|record| record.callbacks << 'after_exit'; true}
     Switch.after_enter_state_on Proc.new {|record| record.callbacks << 'after_enter'; true}
+    Switch.after_loopback_state_on Proc.new {|record| record.callbacks << 'after_loopback'; true}
     
     assert @transition.perform(@record)
   end
@@ -485,6 +491,10 @@ class TransitionWithLoopbackAndCallbacksTest < Test::Unit::TestCase
     assert !@record.callbacks.include?('before_enter')
   end
   
+  def test_should_run_before_loopback_callbacks
+    assert @record.callbacks.include?('before_loopback')
+  end
+  
   def test_should_not_run_after_exit_callbacks
     assert !@record.callbacks.include?('after_exit')
   end
@@ -493,12 +503,18 @@ class TransitionWithLoopbackAndCallbacksTest < Test::Unit::TestCase
     assert !@record.callbacks.include?('after_enter')
   end
   
+  def test_should_run_after_loopback_callbacks
+    assert @record.callbacks.include?('after_loopback')
+  end
+  
   def teardown
     Switch.class_eval do
       @before_exit_state_off_callbacks = nil
       @before_enter_state_on_callbacks = nil
+      @before_loopback_state_on_callbacks = nil
       @after_exit_state_off_callbacks = nil
       @after_enter_state_on_callbacks = nil
+      @after_loopback_state_on_callbacks = nil
     end
   end
 end

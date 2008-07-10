@@ -21,6 +21,15 @@ module PluginAWeek #:nodoc:
     # * (5) after_enter (to state)
     # * (6) after (event)
     # 
+    # If the event causes a loopback (i.e. to and from state are the same), then
+    # the callback chain is slightly different:
+    # 
+    # * (1) before_loopback (to/from state)
+    # * (2) before (event)
+    # * (-) update state
+    # * (3) after_loopback (to/from state)
+    # * (4) after (event)
+    # 
     # == Cancelling callbacks
     # 
     # If a <tt>before_*</tt> callback returns +false+, all the later callbacks
@@ -153,7 +162,7 @@ module PluginAWeek #:nodoc:
       end
       
       # Define state callbacks
-      %w(before_exit before_enter after_exit after_enter).each do |callback_type|
+      %w(before_exit before_enter before_loopback after_exit after_enter after_loopback).each do |callback_type|
         define_method(callback_type) {|state, callback| add_callback(callback_type, state, callback)}
       end
       

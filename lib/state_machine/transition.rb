@@ -96,12 +96,18 @@ module PluginAWeek #:nodoc:
         
         def invoke_before_callbacks(from_state, record)
           # Start leaving the last state and start entering the next state
-          loopback?(from_state) || invoke_callbacks(:before_exit, from_state, record) && invoke_callbacks(:before_enter, to_state, record)
+          if loopback?(from_state)
+            invoke_callbacks(:before_loopback, from_state, record)
+          else
+            invoke_callbacks(:before_exit, from_state, record) && invoke_callbacks(:before_enter, to_state, record)
+          end
         end
         
         def invoke_after_callbacks(from_state, record)
           # Start leaving the last state and start entering the next state
-          unless loopback?(from_state)
+          if loopback?(from_state)
+            invoke_callbacks(:after_loopback, from_state, record)
+          else
             invoke_callbacks(:after_exit, from_state, record)
             invoke_callbacks(:after_enter, to_state, record)
           end

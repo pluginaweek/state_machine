@@ -1,5 +1,7 @@
 == master
 
+* Add before_loopback and after_loopback hooks
+
 == 0.2.1 / 2008-07-05
 
 * Add more descriptive exceptions
