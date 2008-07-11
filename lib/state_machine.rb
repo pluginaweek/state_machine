@@ -70,6 +70,25 @@ module PluginAWeek #:nodoc:
       # 
       # For more information about how to configure an event and its associated
       # transitions, see PluginAWeek::StateMachine::Machine#event
+      # 
+      # == Defining callbacks
+      # 
+      # Within the +state_machine+ block, you can also define callbacks for
+      # particular states.  These states are enumerated in the PluginAWeek::StateMachine::Machine
+      # documentation.  Below are examples of defining the various types of callbacks:
+      # 
+      #   class Switch < ActiveRecord::Base
+      #     state_machine do
+      #       before_exit :off, :alert_homeowner
+      #       before_enter :on, Proc.new {|switch| ...}
+      #       before_loopback :on, :display_warning
+      #       
+      #       after_exit  :off, :on, :play_sound
+      #       after_enter :off, :on, :play_sound
+      #       after_loopback :on, Proc.new {|switch| ...}
+      #       
+      #       ...
+      #     end
       def state_machine(*args, &block)
         unless included_modules.include?(PluginAWeek::StateMachine::InstanceMethods)
           write_inheritable_attribute :state_machines, {}
