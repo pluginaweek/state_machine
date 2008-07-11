@@ -85,13 +85,10 @@ module PluginAWeek #:nodoc:
         end
         
         # Updates the record's attribute to the state represented by this transition
+        # Even if the transition is a loopback, the record will still be saved
         def update_state(from_state, bang, record)
-          if loopback?(from_state)
-            true
-          else
-            record.send("#{machine.attribute}=", to_state)
-            bang ? record.save! : record.save
-          end
+          record.send("#{machine.attribute}=", to_state)
+          bang ? record.save! : record.save
         end
         
         def invoke_before_callbacks(from_state, record)

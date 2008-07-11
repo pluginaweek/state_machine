@@ -213,12 +213,17 @@ class TransitionWithLoopbackAfterBeingPerformedTest < Test::Unit::TestCase
     @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'on')
     
     @record = create_switch(:state => 'on')
+    @record.kind = 'light'
     @transition.perform(@record)
     @record.reload
   end
   
-  def test_should_not_update_the_attribute
+  def test_should_have_the_same_attribute
     assert_equal 'on', @record.state
+  end
+  
+  def test_should_save_the_record
+    assert_equal 'light', @record.kind
   end
   
   def test_should_still_be_able_to_perform_on_the_record

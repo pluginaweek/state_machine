@@ -1,7 +1,8 @@
 == master
 
+* Always save when an event is fired even if it results in a loopback [Jürgen Strobel]
 * Ensure initial state callbacks are invoked in the proper order when an event is fired on a new record
-* Add before_loopback and after_loopback hooks
+* Add before_loopback and after_loopback hooks [Jürgen Strobel]
 
 == 0.2.1 / 2008-07-05
 
