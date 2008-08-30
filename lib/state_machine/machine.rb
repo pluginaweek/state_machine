@@ -194,7 +194,7 @@ module PluginAWeek #:nodoc:
           [attribute, attribute.pluralize].each do |name|
             unless owner_class.respond_to?("with_#{name}")
               name = "with_#{name}"
-              owner_class.named_scope name, Proc.new {|*values| {:conditions => {attribute => values.flatten}}}
+              owner_class.named_scope name.to_sym, Proc.new {|*values| {:conditions => {attribute => values.flatten}}}
             end
           end
         end
