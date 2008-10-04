@@ -44,7 +44,7 @@ Below is an example of many of the features offered by this plugin, including
 * Conditional transitions
 
   class Vehicle < ActiveRecord::Base
-    state_machine :state, :initial => 'idling' do
+    state_machine :state, :initial => 'parked' do
       before_transition :from => %w(parked idling), :do => :put_on_seatbelt
       after_transition :to => 'parked', :do => lambda {|vehicle| vehicle.update_attribute(:seatbelt_on, false)}
       after_transition :on => 'crash', :do => :tow!
@@ -127,7 +127,7 @@ states can be transparently stored using record ids in the database like so:
   class Vehicle < ActiveRecord::Base
     belongs_to :state, :class_name => 'VehicleState'
     
-    state_machine :state, :initial => 'idling' do
+    state_machine :state, :initial => 'parked' do
       ...
       
       event :park do
