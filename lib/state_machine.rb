@@ -5,12 +5,6 @@ module PluginAWeek #:nodoc:
   # transitions.  This helper adds support for defining this type of
   # functionality within ActiveRecord models.
   module StateMachine
-    def self.included(base) #:nodoc:
-      base.class_eval do
-        extend PluginAWeek::StateMachine::MacroMethods
-      end
-    end
-    
     module MacroMethods
       # Creates a state machine for the given attribute.  The default attribute
       # is "state".
@@ -125,5 +119,5 @@ module PluginAWeek #:nodoc:
 end
 
 ActiveRecord::Base.class_eval do
-  include PluginAWeek::StateMachine
+  extend PluginAWeek::StateMachine::MacroMethods
 end
