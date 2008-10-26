@@ -1,5 +1,6 @@
 == master
 
+* Fix the initial state not getting set when the state attribute is mass-assigned but protected
 * Change how the base module is included to prevent namespacing conflicts
 
 == 0.3.0 / 2008-09-07

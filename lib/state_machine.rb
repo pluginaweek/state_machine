@@ -107,7 +107,7 @@ module PluginAWeek #:nodoc:
         
         # Set the initial value of each state machine as long as the value wasn't
         # included in the initial attributes
-        attributes = (attributes || {}).stringify_keys
+        attributes = remove_attributes_protected_from_mass_assignment((attributes || {}).stringify_keys)
         self.class.state_machines.each do |attribute, machine|
           send("#{attribute}=", machine.initial_state(self)) unless attributes.include?(attribute)
         end
