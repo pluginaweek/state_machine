@@ -403,8 +403,10 @@ module PluginAWeek #:nodoc:
         # for the attribute
         def add_named_scopes
           [attribute, attribute.pluralize].uniq.each do |name|
-            name = "with_#{name}"
-            owner_class.named_scope name.to_sym, lambda {|*values| {:conditions => {attribute => values.flatten}}} unless owner_class.respond_to?(name)
+            with_name = "with_#{name}"
+            without_name = "without_#{name}"
+            owner_class.named_scope with_name.to_sym, lambda {|*values| {:conditions => {attribute => values.flatten}}} unless owner_class.respond_to?(with_name)
+            owner_class.named_scope without_name.to_sym, lambda {|*values| {:conditions => ["#{attribute} NOT IN (?)", values.flatten]}} unless owner_class.respond_to?(without_name)
           end
         end
     end

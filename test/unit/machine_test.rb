@@ -60,11 +60,26 @@ class MachineTest < Test::Unit::TestCase
     assert_equal [on], Switch.with_state('on')
   end
   
+  def test_should_define_a_named_scope_for_excluding_the_attribute
+    on = create_switch(:state => 'on')
+    off = create_switch(:state => 'off')
+    
+    assert_equal [off], Switch.without_state('on')
+  end
+  
   def test_should_define_a_pluralized_named_scope_for_the_attribute
     on = create_switch(:state => 'on')
     off = create_switch(:state => 'off')
     
     assert_equal [on, off], Switch.with_states('on', 'off')
+  end
+  
+  def test_should_define_a_pluralized_named_scope_for_excluding_the_attribute
+    on = create_switch(:state => 'on')
+    off = create_switch(:state => 'off')
+    unsure = create_switch(:state => 'unsure')
+    
+    assert_equal [unsure], Switch.without_states('on', 'off')
   end
   
   def test_should_raise_exception_if_invalid_option_specified
@@ -145,6 +160,14 @@ class MachineWithConflictingNamedScopesTest < Test::Unit::TestCase
     def self.with_states
       :custom
     end
+    
+    def self.without_state
+      :custom
+    end
+    
+    def self.without_states
+      :custom
+    end
   end
   
   def setup
@@ -153,6 +176,14 @@ class MachineWithConflictingNamedScopesTest < Test::Unit::TestCase
   
   def test_should_not_define_a_named_scope_for_the_attribute
     assert_equal :custom, Switch.with_state
+  end
+  
+  def test_should_not_define_a_named_scope_for_excluding_the_attribute
+    assert_equal :custom, Switch.without_state
+  end
+  
+  def test_should_not_define_a_pluralized_named_scope_for_excluding_the_attribute
+    assert_equal :custom, Switch.without_states
   end
   
   def test_should_not_define_a_pluralized_named_scope_for_the_attribute
