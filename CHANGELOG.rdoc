@@ -1,5 +1,7 @@
 == master
 
+* Add without_#{attribute} named scopes (opposite of the existing with_#{attribute} named scopes)
+
 == 0.3.1 / 2008-10-26
 
 * Fix the initial state not getting set when the state attribute is mass-assigned but protected
