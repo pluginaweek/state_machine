@@ -1,6 +1,6 @@
 == master
 
-* Add without_#{attribute} named scopes (opposite of the existing with_#{attribute} named scopes)
+* Add without_#{attribute} named scopes (opposite of the existing with_#{attribute} named scopes) [Sean O'Brien]
 
 == 0.3.1 / 2008-10-26
 
