@@ -29,9 +29,9 @@ module PluginAWeek #:nodoc:
       def initialize(object, machine, event, from, to) #:nodoc:
         @object = object
         @machine = machine
-        @event = event.to_s
-        @from = from.to_s
-        @to = to.to_s
+        @event = event
+        @from = from
+        @to = to
       end
       
       # Gets the attribute which this transition's machine is defined for

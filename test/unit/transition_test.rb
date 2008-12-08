@@ -43,19 +43,19 @@ class TransitionWithSymbolicValuesTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = PluginAWeek::StateMachine::Machine.new(@klass)
     @object = @klass.new
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, :turn_on, :off, :on)
   end
   
-  def test_should_stringify_event
-    assert_equal 'turn_on', @transition.event
+  def test_should_not_stringify_event
+    assert_equal :turn_on, @transition.event
   end
   
-  def test_should_stringify_from_state
-    assert_equal 'off', @transition.from
+  def test_should_not_stringify_from_state
+    assert_equal :off, @transition.from
   end
   
-  def test_should_stringify_to_state
-    assert_equal 'on', @transition.to
+  def test_should_not_stringify_to_state
+    assert_equal :on, @transition.to
   end
 end
 
