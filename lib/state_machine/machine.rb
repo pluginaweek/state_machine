@@ -196,6 +196,7 @@ module PluginAWeek #:nodoc:
         # Set machine configuration
         @attribute = (args.first || 'state').to_s
         @events = {}
+        @other_states = []
         @callbacks = {:before => [], :after => []}
         @action = options[:action]
         
@@ -308,11 +309,45 @@ module PluginAWeek #:nodoc:
       def states
         @states ||=
           begin
-            states = []
+            states = @other_states.dup
             events.values.each {|event| states.concat(event.known_states)}
             callbacks.values.flatten.each {|callback| states.concat(callback.guard.known_states)}
             states
           end.uniq
+      end
+      
+      # Defines additional states that are possible in the state machine, but
+      # which are derived outside of any events/transitions or possibly
+      # dynamically via Proc.  This allows the creation of state conditionals
+      # which are not defined in the standard :to or :from structure.
+      # 
+      # == Example
+      # 
+      #   class Vehicle
+      #     state_machine :initial => 'parked' do
+      #       event :ignite do
+      #         transition :to => 'idling', :from => 'parked'
+      #       end
+      #        
+      #       other_states %w(stalled stopped)
+      #     end
+      #     
+      #     def stop
+      #       self.state = 'stopped'
+      #     end
+      #   end
+      # 
+      # In the above state machine, the known states would be:
+      # * +idling+
+      # * +parked+
+      # * +stalled+
+      # * +stopped+
+      # 
+      # Since +stalled+ and +stopped+ are not referenced in any transitions or
+      # callbacks, they are explicitly defined.
+      def other_states(*args)
+        @states = nil # Reset the cache
+        @other_states |= args
       end
       
       # Defines an event for the machine.

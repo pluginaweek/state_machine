@@ -793,6 +793,18 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithOtherStates < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine.other_states('on', 'off')
+  end
+  
+  def test_should_include_other_states_in_known_states
+    assert_equal %w(off on), @machine.states.sort
+  end
+end
+
 class MachineWithOwnerSubclassTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
