@@ -1,5 +1,7 @@
 == master
 
+* Add the ability to override the pluralized name of an attribute for creating scopes
+* Add the ability to halt callback chains by: throw :halt
 * Add support for dynamic to states in transitions (e.g. :to => lambda {Time.now})
 * Add support for using real blocks in before_transition/after_transition calls instead of using the :do option
 * Add DataMapper support
