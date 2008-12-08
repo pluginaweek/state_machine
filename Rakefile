@@ -7,7 +7,7 @@ spec = Gem::Specification.new do |s|
   s.name              = 'state_machine'
   s.version           = '0.3.1'
   s.platform          = Gem::Platform::RUBY
-  s.summary           = 'Adds support for creating state machines for attributes within a model'
+  s.summary           = 'Adds support for creating state machines for attributes on any Ruby class'
   
   s.files             = FileList['{lib,test}/**/*'] + %w(CHANGELOG.rdoc init.rb LICENSE Rakefile README.rdoc) - FileList['test/app_root/{log,log/*,script,script/*}']
   s.require_path      = 'lib'
