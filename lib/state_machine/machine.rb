@@ -321,9 +321,10 @@ module PluginAWeek #:nodoc:
       # 
       # The following instance methods are generated when a new event is defined
       # (the "park" event is used as an example):
+      # * <tt>can_park?</tt> - Checks whether the "park" event can be fired given the current state of the object.
+      # * <tt>next_park_transition</tt> -  Gets the next transition that would be performed if the "park" event were to be fired now on the object or nil if no transitions can be performed.
       # * <tt>park(run_action = true)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.
       # * <tt>park!(run_action = true)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.  If the transition fails, then a PluginAWeek::StateMachine::InvalidTransition error will be raised.
-      # * <tt>can_park?</tt> - Checks whether the "park" event can be fired given the current state of the object.
       # 
       # == Defining transitions
       # 

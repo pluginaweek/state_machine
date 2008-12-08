@@ -48,6 +48,10 @@ class EventByDefaultTest < Test::Unit::TestCase
     assert @object.respond_to?(:can_turn_on?)
   end
   
+  def test_should_define_an_event_transition_accessor_on_the_owner_class
+    assert @object.respond_to?(:next_turn_on_transition)
+  end
+  
   def test_should_define_an_event_action_on_the_owner_class
     assert @object.respond_to?(:turn_on)
   end

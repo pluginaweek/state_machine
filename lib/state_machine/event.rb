@@ -131,6 +131,11 @@ module PluginAWeek #:nodoc:
               self.class.state_machines[attribute].events[name].can_fire?(self)
             end
             
+            # Gets the next transition that would be performed if the event were to be fired now
+            define_method("next_#{name}_transition") do
+              self.class.state_machines[attribute].events[name].next_transition(self)
+            end
+            
             # Fires the event
             define_method(name) do |*args|
               self.class.state_machines[attribute].events[name].fire(self, *args)

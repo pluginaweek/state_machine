@@ -1,5 +1,6 @@
 == master
 
+* Add next_#{event}_transition for getting the next transition that would be performed if the event were invoked
 * Add the ability to override the pluralized name of an attribute for creating scopes
 * Add the ability to halt callback chains by: throw :halt
 * Add support for dynamic to states in transitions (e.g. :to => lambda {Time.now})

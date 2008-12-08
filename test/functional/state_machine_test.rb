@@ -184,12 +184,26 @@ class VehicleUnsavedTest < Test::Unit::TestCase
     assert !@vehicle.can_park?
   end
   
+  def test_should_not_have_a_next_transition_for_park
+    assert_nil @vehicle.next_park_transition
+  end
+  
   def test_should_not_allow_park
     assert !@vehicle.park
   end
   
   def test_should_be_able_to_ignite
     assert @vehicle.can_ignite?
+  end
+  
+  def test_should_have_a_next_transition_for_ignite
+    transition = @vehicle.next_ignite_transition
+    assert_not_nil transition
+    assert_equal 'parked', transition.from
+    assert_equal 'idling', transition.to
+    assert_equal 'ignite', transition.event
+    assert_equal 'state', transition.attribute
+    assert_equal @vehicle, transition.object
   end
   
   def test_should_allow_ignite
