@@ -1,5 +1,16 @@
 == master
 
+* Add support for dynamic to states in transitions
+* Add support for using real blocks in before_transition/after_transition calls instead of using the :do option
+* Add DataMapper support
+* DRY documentation
+* Include states referenced in transition callbacks in the list of a machine's known states
+* Only generate the known states for a machine on demand, rather than calculating beforehand
+* Add the ability to skip state change actions during a transition
+* Add the ability for the state change action (e.g. +save+ for ActiveRecord) to be configurable
+* Allow state machines to be defined on *any* Ruby class, not just ActiveRecord (removes all external dependencies)
+* Refactor transitions, guards, and callbacks for better organization/design
+* Use a class containing the transition result in callbacks, rather than an ordered list of each individual attribute
 * Add without_#{attribute} named scopes (opposite of the existing with_#{attribute} named scopes) [Sean O'Brien]
 
 == 0.3.1 / 2008-10-26

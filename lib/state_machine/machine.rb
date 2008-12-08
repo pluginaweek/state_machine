@@ -1,10 +1,18 @@
+require 'state_machine/extensions'
 require 'state_machine/event'
+require 'state_machine/callback'
+require 'state_machine/assertions'
+
+# Load each available integration
+Dir["#{File.dirname(__FILE__)}/integrations/*.rb"].sort.each do |path|
+  require "state_machine/integrations/#{File.basename(path)}"
+end
 
 module PluginAWeek #:nodoc:
   module StateMachine
     # Represents a state machine for a particular attribute.  State machines
-    # consist of events (a.k.a. actions) and a set of transitions that define
-    # how the state changes after a particular event is fired.
+    # consist of events and a set of transitions that define how the state
+    # changes after a particular event is fired.
     # 
     # A state machine may not necessarily know all of the possible states for
     # an object since they can be any arbitrary value.  As a result, anything
@@ -20,29 +28,43 @@ module PluginAWeek #:nodoc:
     # and PluginAWeek::StateMachine::Machine#after_transition for documentation
     # on how to define new callbacks.
     # 
-    # === Cancelling callbacks
+    # === Canceling callbacks
     # 
-    # If a +before+ callback returns +false+, all the later callbacks and
-    # associated transition are cancelled.  If an +after+ callback returns false,
-    # the later callbacks are cancelled, but the transition is still successful.
-    # This is the same behavior as exposed by ActiveRecord's callback support.
+    # Callbacks can be canceled by throwing :halt at any point during the
+    # callback.  For example,
+    # 
+    #   ...
+    #   throw :halt
+    #   ...
+    # 
+    # If a +before+ callback halts the chain, the associated transition and all
+    # later callbacks are canceled.  If an +after+ callback halts the chain,
+    # the later callbacks are canceled, but the transition is still successful.
     # 
     # *Note* that if a +before+ callback fails and the bang version of an event
-    # was invoked, an exception will be raised instead of returning false.
+    # was invoked, an exception will be raised instead of returning false.  For
+    # example,
+    # 
+    #   class Vehicle
+    #     state_machine, :initial => 'idling' do
+    #       before_transition :to => 'parked', :do => lambda {|vehicle| throw :halt}
+    #       ...
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new
+    #   vehicle.park        # => false
+    #   vehicle.park!       # => PluginAWeek::StateMachine::InvalidTransition: Cannot transition via :park from "idling"
     # 
     # == Observers
     # 
-    # ActiveRecord observers can also hook into state machines in addition to
-    # the conventional before_save, after_save, etc. behaviors.  The following
-    # types of behaviors can be observed:
-    # * events (e.g. before_park/after_park, before_ignite/after_ignite)
-    # * transitions (before_transition/after_transition)
+    # Observers, in the sense of external classes and *not* Ruby's Observable
+    # mechanism, can hook into state machines as well.  Such observers use the
+    # same callback api that's used internally.
     # 
-    # Each method takes a set of parameters that provides additional information
-    # about the transition that caused the observer to be notified.  Below are
-    # examples of defining observers for the following state machine:
+    # Below are examples of defining observers for the following state machine:
     # 
-    #   class Vehicle < ActiveRecord::Base
+    #   class Vehicle
     #     state_machine do
     #       event :park do
     #         transition :to => 'parked', :from => 'idling'
@@ -52,83 +74,147 @@ module PluginAWeek #:nodoc:
     #     ...
     #   end
     # 
-    # Event behaviors:
+    # Event/Transition behaviors:
     # 
-    #   class VehicleObserver < ActiveRecord::Observer
-    #     def before_park(vehicle, from_state, to_state)
-    #       logger.info "Vehicle #{vehicle.id} instructed to park... state is: #{from_state}, state will be: #{to_state}"
+    #   class VehicleObserver
+    #     def self.before_park(vehicle, transition)
+    #       logger.info "#{vehicle} instructed to park... state is: #{transition.from}, state will be: #{transition.to}"
     #     end
     #     
-    #     def after_park(vehicle, from_state, to_state)
-    #       logger.info "Vehicle #{vehicle.id} instructed to park... state was: #{from_state}, state is: #{to_state}"
+    #     def self.after_park(vehicle, transition, result)
+    #       logger.info "#{vehicle} instructed to park... state was: #{transition.from}, state is: #{transition.to}"
+    #     end
+    #     
+    #     def self.before_transition(vehicle, transition)
+    #       logger.info "#{vehicle} instructed to #{transition.event}... #{transition.attribute} is: #{transition.from}, #{transition.attribute} will be: #{transition.to}"
+    #     end
+    #     
+    #     def self.after_transition(vehicle, transition, result)
+    #       logger.info "#{vehicle} instructed to #{transition.event}... #{transition.attribute} was: #{transition.from}, #{transition.attribute} is: #{transition.to}"
     #     end
     #   end
-    # 
-    # Transition behaviors:
-    # 
-    #   class VehicleObserver < ActiveRecord::Observer
-    #     def before_transition(vehicle, attribute, event, from_state, to_state)
-    #       logger.info "Vehicle #{vehicle.id} instructed to #{event}... #{attribute} is: #{from_state}, #{attribute} will be: #{to_state}"
-    #     end
+    #   
+    #   Vehicle.state_machine do
+    #     before_transition :on => :park, :do => VehicleObserver.method(:before_park)
+    #     before_transition VehicleObserver.method(:before_transition)
     #     
-    #     def after_transition(vehicle, attribute, event, from_state, to_state)
-    #       logger.info "Vehicle #{vehicle.id} instructed to #{event}... #{attribute} was: #{from_state}, #{attribute} is: #{to_state}"
-    #     end
+    #     after_transition :on => :park, :do => VehicleObserver.method(:after_park)
+    #     after_transition VehicleObserver.method(:after_transition)
     #   end
     # 
     # One common callback is to record transitions for all models in the system
-    # for audit/debugging purposes.  Below is an example of an observer that can
-    # easily automate this process for all models:
+    # for auditing/debugging purposes.  Below is an example of an observer that
+    # can easily automate this process for all models:
     # 
-    #   class StateMachineObserver < ActiveRecord::Observer
-    #     observe Vehicle, Switch, AutoShop
-    #     
-    #     def before_transition(record, attribute, event, from_state, to_state)
-    #       transition = StateTransition.build(:record => record, :attribute => attribute, :event => event, :from_state => from_state, :to_state => to_state)
-    #       transition.save # Will cancel rollback/cancel transition if this fails
+    #   class StateMachineObserver
+    #     def self.before_transition(object, transition)
+    #       Audit.log_transition(object.attributes)
     #     end
     #   end
+    #   
+    #   [Vehicle, Switch, Project].each do |klass|
+    #     klass.state_machines.each do |machine|
+    #       machine.before_transition klass.method(:before_transition)
+    #     end
+    #   end
+    # 
+    # Additional observer-like behavior may be exposed by the various
+    # integrations available.  See below for more information.
+    # 
+    # == Integrations
+    # 
+    # By default, state machines are library-agnostic, meaning that they work
+    # on any Ruby class and have no external dependencies.  However, there are
+    # certain libraries which expose additional behavior that can be taken
+    # advantage of by state machines.
+    # 
+    # This library is built to work out of the box with a few popular Ruby
+    # libraries that allow for additional behavior to provide a cleaner and
+    # smoother experience.  This is especially the case for objects backed by a
+    # database that may allow for transactions, persistent storage,
+    # search/filters, callbacks, etc.
+    # 
+    # When a state machine is defined for classes using any of the above libraries,
+    # it will try to automatically determine the integration to use (Agnostic,
+    # ActiveRecord, or DataMapper) based on the class definition.  To see how
+    # each integration affects the machine's behavior, refer to all constants
+    # defined under the PluginAWeek::StateMachine::Integrations namespace.
     class Machine
-      # The class that the machine is defined for
+      include Assertions
+      
+      # The class that the machine is defined in
       attr_reader :owner_class
       
-      # The attribute for which the state machine is being defined
+      # The attribute for which the machine is being defined
       attr_reader :attribute
       
-      # The initial state that the machine will be in when a record is created
+      # The initial state that the machine will be in when an object is created
       attr_reader :initial_state
-      
-      # A list of the states defined in the transitions of all of the events
-      attr_reader :states
       
       # The events that trigger transitions
       attr_reader :events
       
+      # The callbacks to invoke before/after a transition is performed
+      attr_reader :callbacks
+      
+      # The action to invoke when an object transitions
+      attr_reader :action
+      
+      class << self
+        # Attempts to find or create a state machine for the given class.  For
+        # example,
+        # 
+        #   PluginAWeek::StateMachine::Machine.find_or_create(Switch)
+        #   PluginAWeek::StateMachine::Machine.find_or_create(Switch, :initial => 'off')
+        #   PluginAWeek::StateMachine::Machine.find_or_create(Switch, 'status')
+        #   PluginAWeek::StateMachine::Machine.find_or_create(Switch, 'status', :initial => 'off')
+        # 
+        # If a machine of the given name already exists in one of the class's
+        # superclasses, then a copy of that machine will be created and stored
+        # in the new owner class (the original will remain unchanged).
+        def find_or_create(owner_class, *args)
+          options = args.last.is_a?(Hash) ? args.pop : {}
+          attribute = args.any? ? args.first.to_s : 'state'
+          
+          # Attempts to find an existing machine
+          if owner_class.respond_to?(:state_machines) && machine = owner_class.state_machines[attribute]
+            machine = machine.within_context(owner_class, options) unless machine.owner_class == owner_class
+          else
+            # No existing machine: create a new one
+            machine = new(owner_class, attribute, options)
+          end
+          
+          machine
+        end
+      end
+      
       # Creates a new state machine for the given attribute
-      # 
-      # Configuration options:
-      # * +initial+ - The initial value to set the attribute to. This can be an actual value or a proc, which will be evaluated at runtime.
-      # 
-      # == Scopes
-      # 
-      # This will automatically create a named scope called with_#{attribute}
-      # that will find all records that have the attribute set to a given value.
-      # For example,
-      # 
-      #   Switch.with_state('on') # => Finds all switches where the state is on
-      #   Switch.with_states('on', 'off') # => Finds all switches where the state is either on or off
-      # 
-      # *Note* that if class methods already exist with those names (i.e. "with_state"
-      # or "with_states"), then a scope will not be defined for that name.
-      def initialize(owner_class, attribute = 'state', options = {})
-        set_context(owner_class, options)
+      def initialize(owner_class, *args)
+        options = args.last.is_a?(Hash) ? args.pop : {}
+        assert_valid_keys(options, :initial, :action, :plural, :integration)
         
-        @attribute = attribute.to_s
-        @states = []
+        # Set machine configuration
+        @attribute = (args.first || 'state').to_s
         @events = {}
+        @callbacks = {:before => [], :after => []}
+        @action = options[:action]
         
-        add_transition_callbacks
-        add_named_scopes
+        # Add class-/instance-level methods to the owner class for state initialization
+        owner_class.class_eval do
+          extend PluginAWeek::StateMachine::ClassMethods
+          include PluginAWeek::StateMachine::InstanceMethods
+        end unless owner_class.included_modules.include?(PluginAWeek::StateMachine::InstanceMethods)
+        
+        # Initialize the context of the machine
+        set_context(owner_class, :initial => options[:initial], :integration => options[:integration])
+        
+        # Set integration-specific configurations
+        @action ||= default_action unless options.include?(:action)
+        define_attribute_accessor
+        define_scopes(options[:plural])
+        
+        # Call after hook for integration-specific extensions
+        after_initialize
       end
       
       # Creates a copy of this machine in addition to copies of each associated
@@ -137,71 +223,107 @@ module PluginAWeek #:nodoc:
       def initialize_copy(orig) #:nodoc:
         super
         
-        @states = @states.dup
+        @states = nil
         @events = @events.inject({}) do |events, (name, event)|
           event = event.dup
           event.machine = self
           events[name] = event
           events
         end
+        @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup}
       end
       
       # Creates a copy of this machine within the context of the given class.
       # This should be used for inheritance support of state machines.
       def within_context(owner_class, options = {}) #:nodoc:
         machine = dup
-        machine.set_context(owner_class, options)
+        machine.set_context(owner_class, {:integration => @integration}.merge(options))
         machine
       end
       
       # Changes the context of this machine to the given class so that new
       # events and transitions are created in the proper context.
+      # 
+      # Configuration options:
+      # * +initial+ - The initial value to set the attribute to
+      # * +integration+ - The name of the integration for extending this machine with library-specific behavior
+      # 
+      # All other configuration options for the machine can only be set on
+      # creation.
       def set_context(owner_class, options = {}) #:nodoc:
-        options.assert_valid_keys(:initial)
+        assert_valid_keys(options, :initial, :integration)
         
         @owner_class = owner_class
         @initial_state = options[:initial] if options[:initial]
+        
+        # Find an integration that can be used for implementing various parts
+        # of the state machine that may behave differently in different libraries
+        if @integration = options[:integration] || PluginAWeek::StateMachine::Integrations.constants.find {|name| PluginAWeek::StateMachine::Integrations.const_get(name).matches?(owner_class)}
+          extend PluginAWeek::StateMachine::Integrations.const_get(@integration.to_s.gsub(/(?:^|_)(.)/) {$1.upcase})
+        end
+        
+        # Record this machine as matched to the attribute in the current owner
+        # class.  This will override any machines mapped to the same attribute
+        # in any superclasses.
+        owner_class.state_machines[attribute] = self
       end
       
-      # Gets the initial state of the machine for the given record. If a record
-      # is specified a and a dynamic initial state was configured for the machine,
-      # then that record will be passed into the proc to help determine the actual
-      # value of the initial state.
+      # Gets the initial state of the machine for the given object. If a dynamic
+      # initial state was configured for this machine, then the object will be
+      # passed into the proc to help determine the actual value of the initial
+      # state.
       # 
       # == Examples
       # 
-      # With normal initial state:
+      # With static initial state:
       # 
-      #   class Vehicle < ActiveRecord::Base
+      #   class Vehicle
       #     state_machine :initial => 'parked' do
       #       ...
       #     end
       #   end
       #   
-      #   Vehicle.state_machines['state'].initial_state(@vehicle)   # => "parked"
+      #   Vehicle.state_machines['state'].initial_state(vehicle)   # => "parked"
       # 
       # With dynamic initial state:
       # 
-      #   class Vehicle < ActiveRecord::Base
+      #   class Vehicle
       #     state_machine :initial => lambda {|vehicle| vehicle.force_idle ? 'idling' : 'parked'} do
       #       ...
       #     end
       #   end
       #   
-      #   Vehicle.state_machines['state'].initial_state(@vehicle)   # => "idling"
-      def initial_state(record)
-        @initial_state.is_a?(Proc) ? @initial_state.call(record) : @initial_state
+      #   Vehicle.state_machines['state'].initial_state(vehicle)   # => "idling"
+      def initial_state(object)
+        @initial_state.is_a?(Proc) ? @initial_state.call(object) : @initial_state
       end
       
-      # Defines an event of the system
+      # Gets a list of all of the states known to this state machine.  This will
+      # look in two places for state names:
+      # * Event transitions (:to, :from, :except_to, and :except_from options)
+      # * Transition callbacks (:to, :from, :except_to, and :except_from options)
+      # 
+      # Each of the above sources will be used to compile a union of the known
+      # states.
+      def states
+        @states ||=
+          begin
+            states = []
+            events.values.each {|event| states.concat(event.known_states)}
+            callbacks.values.flatten.each {|callback| states.concat(callback.guard.known_states)}
+            states
+          end.uniq
+      end
+      
+      # Defines an event for the machine.
       # 
       # == Instance methods
       # 
       # The following instance methods are generated when a new event is defined
       # (the "park" event is used as an example):
-      # * <tt>park</tt> - Fires the "park" event, transitioning from the current state to the next valid state.
-      # * <tt>park!</tt> - Fires the "park" event, transitioning from the current state to the next valid state.  If the transition cannot happen (for validation, database, etc. reasons), then an error will be raised.
-      # * <tt>can_park?</tt> - Checks whether the "park" event can be fired given the current state of the record.
+      # * <tt>park(run_action = true)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.
+      # * <tt>park!(run_action = true)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.  If the transition fails, then a PluginAWeek::StateMachine::InvalidTransition error will be raised.
+      # * <tt>can_park?</tt> - Checks whether the "park" event can be fired given the current state of the object.
       # 
       # == Defining transitions
       # 
@@ -223,12 +345,12 @@ module PluginAWeek #:nodoc:
       # object.  As a result, you will not be able to reference any class methods
       # on the model without referencing the class itself.  For example,
       # 
-      #   class Car < ActiveRecord::Base
+      #   class Vehicle
       #     def self.safe_states
       #       %w(parked idling stalled)
       #     end
       #     
-      #     state_machine :state do
+      #     state_machine do
       #       event :park do
       #         transition :to => 'parked', :from => Car.safe_states
       #       end
@@ -237,9 +359,9 @@ module PluginAWeek #:nodoc:
       # 
       # == Example
       # 
-      #   class Car < ActiveRecord::Base
-      #     state_machine(:state, :initial => 'parked') do
-      #       event :park, :after => :release_seatbelt do
+      #   class Vehicle
+      #     state_machine do
+      #       event :park do
       #         transition :to => 'parked', :from => %w(first_gear reverse)
       #       end
       #       ...
@@ -249,21 +371,13 @@ module PluginAWeek #:nodoc:
         name = name.to_s
         event = events[name] ||= Event.new(self, name)
         event.instance_eval(&block)
-        
-        # Record the states so that the machine can keep a list of all known
-        # states that have been defined
-        event.transitions.each do |transition|
-          @states |= [transition.options[:to]] + Array(transition.options[:from]) + Array(transition.options[:except_from])
-          @states.sort!
-        end
-        
         event
       end
       
-      # Creates a callback that will be invoked *before* a transition has been
-      # performed, so long as the given configuration options match the transition.
-      # Each part of the transition (to state, from state, and event) must match
-      # in order for the callback to get invoked.
+      # Creates a callback that will be invoked *before* a transition is
+      # performed so long as the given configuration options match the transition.
+      # Each part of the transition (event, to state, from state) must match in
+      # order for the callback to get invoked.
       # 
       # Configuration options:
       # * +to+ - One or more states being transitioned to.  If none are specified, then all states will match.
@@ -283,21 +397,48 @@ module PluginAWeek #:nodoc:
       # == The callback
       # 
       # When defining additional configuration options, callbacks must be defined
-      # in the :do option like so:
+      # in either the :do option or as a block.  For example,
       # 
-      #   class Vehicle < ActiveRecord::Base
+      #   class Vehicle
       #     state_machine do
       #       before_transition :to => 'parked', :do => :set_alarm
+      #       before_transition :to => 'parked' do |vehicle, transition|
+      #         vehicle.set_alarm
+      #       end
       #       ...
       #     end
       #   end
       # 
+      # === Accessing the transition
+      # 
+      # In addition to passing the object being transitioned, the actual
+      # transition describing the context (e.g. event, from state, to state)
+      # can be accessed as well.  This additional argument is only passed if the
+      # callback allows for it.
+      # 
+      # For example,
+      # 
+      #   class Vehicle
+      #     # Only specifies one parameter (the object being transitioned)
+      #     before_transition :to => 'parked', :do => lambda {|vehicle| vehicle.set_alarm}
+      #     
+      #     # Specifies 2 parameters (object being transitioned and actual transition)
+      #     before_transition :to => 'parked', :do => lambda {|vehicle, transition| vehicle.set_alarm(transition)}
+      #   end
+      # 
+      # *Note* that the object in the callback will only be passed in as an
+      # argument if callbacks are configured to *not* be bound to the object
+      # involved.  This is the default and may change on a per-integration basis.
+      # 
+      # See PluginAWeek::StateMachine::Transition for more information about the
+      # attributes available on the transition.
+      # 
       # == Examples
       # 
-      # Below is an example of a model with one state machine and various types
+      # Below is an example of a class with one state machine and various types
       # of +before+ transitions defined for it:
       # 
-      #   class Vehicle < ActiveRecord::Base
+      #   class Vehicle
       #     state_machine do
       #       # Before all transitions
       #       before_transition :update_dashboard
@@ -316,13 +457,13 @@ module PluginAWeek #:nodoc:
       # 
       # As can be seen, any number of transitions can be created using various
       # combinations of configuration options.
-      def before_transition(options = {})
-        add_transition_callback(:before, options)
+      def before_transition(options = {}, &block)
+        add_callback(:before, options.is_a?(Hash) ? options : {:do => options}, &block)
       end
       
-      # Creates a callback that will be invoked *after* a transition has been
+      # Creates a callback that will be invoked *after* a transition is
       # performed, so long as the given configuration options match the transition.
-      # Each part of the transition (to state, from state, and event) must match
+      # Each part of the transition (event, to state, from state) must match
       # in order for the callback to get invoked.
       # 
       # Configuration options:
@@ -343,21 +484,49 @@ module PluginAWeek #:nodoc:
       # == The callback
       # 
       # When defining additional configuration options, callbacks must be defined
-      # in the :do option like so:
+      # in either the :do option or as a block.  For example,
       # 
-      #   class Vehicle < ActiveRecord::Base
+      #   class Vehicle
       #     state_machine do
       #       after_transition :to => 'parked', :do => :set_alarm
+      #       after_transition :to => 'parked' do |vehicle, transition, result|
+      #         vehicle.set_alarm
+      #       end
       #       ...
       #     end
       #   end
+      # 
+      # === Accessing the transition / result
+      # 
+      # In addition to passing the object being transitioned, the actual
+      # transition describing the context (e.g. event, from state, to state) and
+      # the result from calling the object's action can be optionally passed as
+      # well.  These additional arguments are only passed if the callback allows
+      # for it.
+      # 
+      # For example,
+      # 
+      #   class Vehicle
+      #     # Only specifies one parameter (the object being transitioned)
+      #     after_transition :to => 'parked', :do => lambda {|vehicle| vehicle.set_alarm}
+      #     
+      #     # Specifies 3 parameters (object being transitioned, transition, and action result)
+      #     after_transition :to => 'parked', :do => lambda {|vehicle, transition, result| vehicle.set_alarm(transition) if result}
+      #   end
+      # 
+      # *Note* that the object in the callback will only be passed in as an
+      # argument if callbacks are configured to *not* be bound to the object
+      # involved.  This is the default and may change on a per-integration basis.
+      # 
+      # See PluginAWeek::StateMachine::Transition for more information about the
+      # attributes available on the transition.
       # 
       # == Examples
       # 
       # Below is an example of a model with one state machine and various types
       # of +after+ transitions defined for it:
       # 
-      #   class Vehicle < ActiveRecord::Base
+      #   class Vehicle
       #     state_machine do
       #       # After all transitions
       #       after_transition :update_dashboard
@@ -376,38 +545,72 @@ module PluginAWeek #:nodoc:
       # 
       # As can be seen, any number of transitions can be created using various
       # combinations of configuration options.
-      def after_transition(options = {})
-        add_transition_callback(:after, options)
+      def after_transition(options = {}, &block)
+        add_callback(:after, options.is_a?(Hash) ? options : {:do => options}, &block)
       end
       
-      private
-        # Adds the given callback to the callback chain during a state transition
-        def add_transition_callback(type, options)
-          options = {:do => options} unless options.is_a?(Hash)
-          options.assert_valid_keys(:to, :from, :on, :except_to, :except_from, :except_on, :do, :if, :unless)
-          
-          # The actual callback (defined in the :do option) must be defined
-          raise ArgumentError, ':do callback must be specified' unless options[:do]
-          
-          # Create the callback
-          owner_class.send("#{type}_transition_#{attribute}", options.delete(:do), options)
+      # Runs a transaction, rolling back any changes if the yielded block fails.
+      # 
+      # This is only applicable to integrations that involve databases.  By
+      # default, this will not run any transactions, since the changes aren't
+      # taking place within the context of a database.
+      def within_transaction(object)
+        yield
+      end
+      
+      protected
+        # Runs additional initialization hooks.  By default, this is a no-op.
+        def after_initialize
         end
         
-        # Add before/after callbacks for when the attribute transitions to a
-        # different value
-        def add_transition_callbacks
-          %w(before after).each {|type| owner_class.define_callbacks("#{type}_transition_#{attribute}") }
+        # Gets the default action that should be invoked when performing a
+        # transition on the attribute for this machine.  This may change
+        # depending on the configured integration for the owner class.
+        def default_action
         end
         
-        # Add named scopes for finding records with a particular value or values
-        # for the attribute
-        def add_named_scopes
-          [attribute, attribute.pluralize].uniq.each do |name|
-            with_name = "with_#{name}"
-            without_name = "without_#{name}"
-            owner_class.named_scope with_name.to_sym, lambda {|*values| {:conditions => {attribute => values.flatten}}} unless owner_class.respond_to?(with_name)
-            owner_class.named_scope without_name.to_sym, lambda {|*values| {:conditions => ["#{attribute} NOT IN (?)", values.flatten]}} unless owner_class.respond_to?(without_name)
+        # Adds reader/writer methods for accessing the attribute that this state
+        # machine is defined for.
+        def define_attribute_accessor
+          attribute = self.attribute
+          
+          owner_class.class_eval do
+            attr_reader attribute unless instance_methods.include?(attribute)
+            attr_writer attribute unless instance_methods.include?("#{attribute}=")
           end
+        end
+        
+        # Defines the with/without scope helpers for this attribute.  Both the
+        # singular and plural versions of the attribute are defined for each
+        # scope helper.  A custom plural can be specified if it cannot be
+        # automatically determined by either calling +pluralize+ on the attribute
+        # name or adding an "s" to the end of the name.
+        def define_scopes(custom_plural = nil)
+          plural = custom_plural || (attribute.respond_to?(:pluralize) ? attribute.pluralize : "#{attribute}s")
+          
+          [attribute, plural].uniq.each do |name|
+            define_with_scope("with_#{name}") unless owner_class.respond_to?("with_#{name}")
+            define_without_scope("without_#{name}") unless owner_class.respond_to?("without_#{name}")
+          end
+        end
+        
+        # Defines a scope for finding objects *with* a particular value or
+        # values for the attribute.
+        # 
+        # This is only applicable to specific integrations.
+        def define_with_scope(name)
+        end
+        
+        # Defines a scope for finding objects *without* a particular value or
+        # values for the attribute.
+        # 
+        # This is only applicable to specific integrations.
+        def define_without_scope(name)
+        end
+        
+        # Adds a new transition callback of the given type.
+        def add_callback(type, options, &block)
+          @callbacks[type] << Callback.new(options, &block)
         end
     end
   end

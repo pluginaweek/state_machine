@@ -2,7 +2,13 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class MachineByDefaultTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch)
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @object = @klass.new
+  end
+  
+  def test_should_have_an_owner_class
+    assert_equal @klass, @machine.owner_class
   end
   
   def test_should_have_an_attribute
@@ -10,92 +16,263 @@ class MachineByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_not_have_an_initial_state
-    assert_nil @machine.initial_state(new_switch)
-  end
-  
-  def test_should_have_an_owner_class
-    assert_equal Switch, @machine.owner_class
+    assert_nil @machine.initial_state(@object)
   end
   
   def test_should_not_have_any_events
     assert @machine.events.empty?
   end
   
+  def test_should_not_have_any_before_callbacks
+    assert @machine.callbacks[:before].empty?
+  end
+  
+  def test_should_not_have_any_after_callbacks
+    assert @machine.callbacks[:after].empty?
+  end
+  
+  def test_should_not_have_an_action
+    assert_nil @machine.action
+  end
+  
   def test_should_not_have_any_states
     assert @machine.states.empty?
   end
+  
+  def test_should_not_be_extended_by_the_active_record_integration
+    assert !(class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::ActiveRecord)
+  end
+  
+  def test_should_not_be_extended_by_the_datamapper_integration
+    assert !(class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::DataMapper)
+  end
+  
+  def test_should_define_a_reader_attribute_for_the_attribute
+    assert @object.respond_to?(:state)
+  end
+  
+  def test_should_define_a_writer_attribute_for_the_attribute
+    assert @object.respond_to?(:state=)
+  end
+  
+  def test_should_not_define_singular_with_scope
+    assert !@klass.respond_to?(:with_state)
+  end
+  
+  def test_should_not_define_singular_without_scope
+    assert !@klass.respond_to?(:without_state)
+  end
+  
+  def test_should_not_define_plural_with_scope
+    assert !@klass.respond_to?(:with_states)
+  end
+  
+  def test_should_not_define_plural_without_scope
+    assert !@klass.respond_to?(:without_states)
+  end
+  
+  def test_should_extend_owner_class_with_class_methods
+    assert (class << @klass; ancestors; end).include?(PluginAWeek::StateMachine::ClassMethods)
+  end
+  
+  def test_should_include_instance_methods_in_owner_class
+    assert @klass.included_modules.include?(PluginAWeek::StateMachine::InstanceMethods)
+  end
+  
+  def test_should_define_state_machines_reader
+    expected = {'state' => @machine}
+    assert_equal expected, @klass.state_machines
+  end
 end
 
-class MachineWithInitialStateTest < Test::Unit::TestCase
+class MachineWithCustomAttributeTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => 'off')
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, 'status')
+    @object = @klass.new
+  end
+  
+  def test_should_use_custom_attribute
+    assert_equal 'status', @machine.attribute
+  end
+  
+  def test_should_define_a_reader_attribute_for_the_attribute
+    assert @object.respond_to?(:status)
+  end
+  
+  def test_should_define_a_writer_attribute_for_the_attribute
+    assert @object.respond_to?(:status=)
+  end
+end
+
+class MachineWithStaticInitialStateTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @object = @klass.new
   end
   
   def test_should_have_an_initial_state
-    assert_equal 'off', @machine.initial_state(new_switch)
+    assert_equal 'off', @machine.initial_state(@object)
+  end
+  
+  def test_should_set_initial_state_on_created_object
+    assert_equal 'off', @object.state
   end
 end
 
 class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
   def setup
-    @initial_state = lambda {|switch| switch.initial_state}
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state', :initial => @initial_state)
+    @klass = Class.new do
+      attr_accessor :initial_state
+    end
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => lambda {|object| object.initial_state || 'default'})
+    @object = @klass.new
   end
   
   def test_should_use_the_record_for_determining_the_initial_state
-    assert_equal 'off', @machine.initial_state(new_switch(:initial_state => 'off'))
-    assert_equal 'on', @machine.initial_state(new_switch(:initial_state => 'on'))
+    @object.initial_state = 'off'
+    assert_equal 'off', @machine.initial_state(@object)
+    
+    @object.initial_state = 'on'
+    assert_equal 'on', @machine.initial_state(@object)
+  end
+  
+  def test_should_set_initial_state_on_created_object
+    assert_equal 'default', @object.state
+  end
+end
+
+class MachineWithCustomActionTest < Test::Unit::TestCase
+  def setup
+    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, :action => :save)
+  end
+  
+  def test_should_use_the_custom_action
+    assert_equal :save, @machine.action
+  end
+end
+
+class MachineWithNilActionTest < Test::Unit::TestCase
+  def setup
+    integration = Module.new do
+      def default_action
+        :save
+      end
+    end
+    PluginAWeek::StateMachine::Integrations.const_set('Custom', integration)
+    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, :action => nil, :integration => :custom)
+  end
+  
+  def test_should_have_a_nil_action
+    assert_nil @machine.action
+  end
+  
+  def teardown
+    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
+  end
+end
+
+class MachineWithCustomIntegrationTest < Test::Unit::TestCase
+  def setup
+    PluginAWeek::StateMachine::Integrations.const_set('Custom', Module.new)
+    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, :integration => :custom)
+  end
+  
+  def test_should_be_extended_by_the_integration
+    assert (class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::Custom)
+  end
+  
+  def teardown
+    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 
 class MachineTest < Test::Unit::TestCase
-  def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-  end
-  
-  def test_should_define_a_named_scope_for_the_attribute
-    on = create_switch(:state => 'on')
-    off = create_switch(:state => 'off')
-    
-    assert_equal [on], Switch.with_state('on')
-  end
-  
-  def test_should_define_a_named_scope_for_excluding_the_attribute
-    on = create_switch(:state => 'on')
-    off = create_switch(:state => 'off')
-    
-    assert_equal [off], Switch.without_state('on')
-  end
-  
-  def test_should_define_a_pluralized_named_scope_for_the_attribute
-    on = create_switch(:state => 'on')
-    off = create_switch(:state => 'off')
-    
-    assert_equal [on, off], Switch.with_states('on', 'off')
-  end
-  
-  def test_should_define_a_pluralized_named_scope_for_excluding_the_attribute
-    on = create_switch(:state => 'on')
-    off = create_switch(:state => 'off')
-    unsure = create_switch(:state => 'unsure')
-    
-    assert_equal [unsure], Switch.without_states('on', 'off')
-  end
-  
   def test_should_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) {PluginAWeek::StateMachine::Machine.new(Switch, 'state', :invalid => true)}
+    assert_raise(ArgumentError) {PluginAWeek::StateMachine::Machine.new(Class.new, :invalid => true)}
+  end
+end
+
+class MachineWithoutIntegrationTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @object = @klass.new
   end
   
-  def test_should_symbolize_attribute
-    machine = PluginAWeek::StateMachine::Machine.new(Switch, :state)
-    assert_equal 'state', machine.attribute
+  def test_transaction_should_yield
+    @yielded = false
+    @machine.within_transaction(@object) do
+      @yielded = true
+    end
+    
+    assert @yielded
+  end
+end
+
+class MachineWithIntegrationTest < Test::Unit::TestCase
+  def setup
+    @integration = Module.new do
+      class << self; attr_accessor :initialized, :with_scopes, :without_scopes; end
+      @initialized = false
+      @with_scopes = []
+      @without_scopes = []
+      
+      def after_initialize
+        PluginAWeek::StateMachine::Integrations::Custom.initialized = true
+      end
+      
+      def default_action
+        :save
+      end
+      
+      def define_with_scope(name)
+        PluginAWeek::StateMachine::Integrations::Custom.with_scopes << name
+      end
+      
+      def define_without_scope(name)
+        PluginAWeek::StateMachine::Integrations::Custom.without_scopes << name
+      end
+    end
+    
+    PluginAWeek::StateMachine::Integrations.const_set('Custom', @integration)
+    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, :integration => :custom)
+  end
+  
+  def test_should_call_after_initialize_hook
+    assert @integration.initialized
+  end
+  
+  def test_should_use_the_default_action
+    assert_equal :save, @machine.action
+  end
+  
+  def test_should_use_the_custom_action_if_specified
+    machine = PluginAWeek::StateMachine::Machine.new(Class.new, :integration => :custom, :action => :save!)
+    assert_equal :save!, machine.action
+  end
+  
+  def test_should_define_a_singular_and_plural_with_scope
+    assert_equal %w(with_state with_states), @integration.with_scopes
+  end
+  
+  def test_should_define_a_singular_and_plural_without_scope
+    assert_equal %w(without_state without_states), @integration.without_scopes
+  end
+  
+  def teardown
+    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 
 class MachineAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
+    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, 'state')
     @machine.event(:turn_on) {}
+    @machine.before_transition(lambda {})
+    @machine.after_transition(lambda {})
+    @machine.states # Caches the states variable
     
     @copied_machine = @machine.dup
   end
@@ -119,81 +296,171 @@ class MachineAfterBeingCopiedTest < Test::Unit::TestCase
   def test_should_not_update_machine_for_original_event
     assert_equal @machine, @machine.events['turn_on'].machine
   end
+  
+  def test_should_not_have_the_same_callbacks
+    assert_not_same @copied_machine.callbacks, @machine.callbacks
+  end
+  
+  def test_should_not_have_the_same_before_callbacks
+    assert_not_same @copied_machine.callbacks[:before], @machine.callbacks[:before]
+  end
+  
+  def test_should_not_have_the_same_after_callbacks
+    assert_not_same @copied_machine.callbacks[:after], @machine.callbacks[:after]
+  end
 end
 
 class MachineAfterChangingContextTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
+    @original_class = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@original_class, 'state')
+    
+    @new_class = Class.new(@original_class)
+    @new_machine = @machine.within_context(@new_class)
+    
+    @object = @new_class.new
   end
   
   def test_should_create_copy_of_machine
-    new_machine = @machine.within_context(ToggleSwitch)
-    assert_not_same @machine, new_machine
+    assert_not_same @machine, @new_machine
   end
   
-  def test_should_update_owner_clas
-    new_machine = @machine.within_context(ToggleSwitch)
-    assert_equal ToggleSwitch, new_machine.owner_class
+  def test_should_update_owner_class
+    assert_equal @new_class, @new_machine.owner_class
   end
   
-  def test_should_update_initial_state
-    new_machine = @machine.within_context(ToggleSwitch, :initial => 'off')
-    assert_equal 'off', new_machine.initial_state(new_switch)
+  def test_should_not_change_original_owner_class
+    assert_equal @original_class, @machine.owner_class
+  end
+  
+  def test_should_allow_changing_the_initial_state
+    new_machine = @machine.within_context(@new_class, :initial => 'off')
+    assert_equal 'off', new_machine.initial_state(@object)
+  end
+  
+  def test_should_not_change_original_initial_state_if_updated
+    new_machine = @machine.within_context(@new_class, :initial => 'off')
+    assert_nil @machine.initial_state(@object)
   end
   
   def test_should_not_update_initial_state_if_not_provided
-    new_machine = @machine.within_context(ToggleSwitch)
-    assert_nil new_machine.initial_state(new_switch)
+    assert_nil @new_machine.initial_state(@object)
+  end
+  
+  def test_should_allow_changing_the_integration
+    PluginAWeek::StateMachine::Integrations.const_set('Custom', Module.new)
+    new_machine = @machine.within_context(@new_class, :integration => :custom)
+    assert (class << new_machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::Custom)
+  end
+  
+  def test_should_not_change_original_integration_if_updated
+    PluginAWeek::StateMachine::Integrations.const_set('Custom', Module.new)
+    new_machine = @machine.within_context(@new_class, :integration => :custom)
+    assert !(class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::Custom)
+  end
+  
+  def test_should_change_the_associated_machine_in_the_new_class
+    assert_equal @new_machine, @new_class.state_machines['state']
+  end
+  
+  def test_should_not_change_the_associated_machine_in_the_original_class
+    assert_equal @machine, @original_class.state_machines['state']
   end
   
   def test_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) {@machine.within_context(ToggleSwitch, :invalid => true)}
+    assert_raise(ArgumentError) {@machine.within_context(@new_class, :invalid => true)}
+  end
+  
+  def teardown
+    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom') if PluginAWeek::StateMachine::Integrations.const_defined?('Custom')
   end
 end
 
-class MachineWithConflictingNamedScopesTest < Test::Unit::TestCase
-  class Switch < ActiveRecord::Base
-    def self.with_state
-      :custom
-    end
-    
-    def self.with_states
-      :custom
-    end
-    
-    def self.without_state
-      :custom
-    end
-    
-    def self.without_states
-      :custom
-    end
-  end
-  
+class MachineWithConflictingAttributeAccessorsTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
+    @klass = Class.new do
+      attr_accessor :status
+      
+      def state
+        status
+      end
+      
+      def state=(value)
+        self.status = value
+      end
+    end
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @object = @klass.new
   end
   
-  def test_should_not_define_a_named_scope_for_the_attribute
-    assert_equal :custom, Switch.with_state
+  def test_should_not_define_attribute_reader
+    @object.status = 'on'
+    assert_equal 'on', @object.state
   end
   
-  def test_should_not_define_a_named_scope_for_excluding_the_attribute
-    assert_equal :custom, Switch.without_state
+  def test_should_not_define_attribute_writer
+    @object.state = 'on'
+    assert_equal 'on', @object.status
+  end
+end
+
+class MachineWithConflictingScopesTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def self.with_state
+        :with_state
+      end
+      
+      def self.with_states
+        :with_states
+      end
+      
+      def self.without_state
+        :without_state
+      end
+      
+      def self.without_states
+        :without_states
+      end
+    end
+    
+    integration = Module.new do
+      def define_with_scope(name)
+        raise ArgumentError, 'should not define a with scope'
+      end
+      
+      def define_without_scope(name)
+        raise ArgumentError, 'should not define a without scope'
+      end
+    end
+    PluginAWeek::StateMachine::Integrations.const_set('Custom', integration)
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :integration => :custom)
   end
   
-  def test_should_not_define_a_pluralized_named_scope_for_excluding_the_attribute
-    assert_equal :custom, Switch.without_states
+  def test_should_not_define_singular_with_scope
+    assert_equal :with_state, @klass.with_state
   end
   
-  def test_should_not_define_a_pluralized_named_scope_for_the_attribute
-    assert_equal :custom, Switch.with_states
+  def test_should_not_define_plural_with_scope
+    assert_equal :with_states, @klass.with_states
+  end
+  
+  def test_should_not_define_singular_without_scope
+    assert_equal :without_state, @klass.without_state
+  end
+  
+  def test_should_not_define_plural_without_scope
+    assert_equal :without_states, @klass.without_states
+  end
+  
+  def teardown
+    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 
 class MachineWithEventsTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
+    @machine = PluginAWeek::StateMachine::Machine.new(Class.new)
   end
   
   def test_should_create_event_with_given_name
@@ -216,9 +483,185 @@ class MachineWithEventsTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithConflictingPredefinedInitializeTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      attr_reader :initialized
+      attr_reader :block_given
+      
+      def initialize
+        @initialized = true
+        @block_given = block_given?
+      end
+    end
+    
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @object = @klass.new {}
+  end
+  
+  def test_should_not_override_existing_method
+    assert @object.initialized
+  end
+  
+  def test_should_still_initialize_state
+    assert_equal 'off', @object.state
+  end
+  
+  def test_should_preserve_block
+    assert @object.block_given
+  end
+end
+
+class MachineWithConflictingPostdefinedInitializeTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @klass.class_eval do
+      attr_reader :initialized
+      attr_reader :block_given
+      
+      def initialize
+        @initialized = true
+        @block_given = block_given?
+      end
+    end
+    
+    @object = @klass.new {}
+  end
+  
+  def test_should_not_override_existing_method
+    assert @object.initialized
+  end
+  
+  def test_should_still_initialize_state
+    assert_equal 'off', @object.state
+  end
+  
+  def test_should_preserve_block
+    assert @object.block_given
+  end
+end
+
+class MachineWithConflictingSuperclassInitializeTest < Test::Unit::TestCase
+  def setup
+    @superclass = Class.new do
+      attr_reader :initialized
+      attr_reader :block_given
+      
+      def initialize
+        @initialized = true
+        @block_given = block_given?
+      end
+    end
+    @klass = Class.new(@superclass)
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @object = @klass.new {}
+  end
+  
+  def test_should_not_override_existing_method
+    assert @object.initialized
+  end
+  
+  def test_should_still_initialize_state
+    assert_equal 'off', @object.state
+  end
+  
+  def test_should_preserve_block
+    assert @object.block_given
+  end
+end
+
+class MachineWithConflictingPredefinedAndSuperclassInitializeTest < Test::Unit::TestCase
+  def setup
+    @superclass = Class.new do
+      attr_reader :base_initialized
+      
+      def initialize
+        @base_initialized = true
+      end
+    end
+    @klass = Class.new(@superclass) do
+      attr_reader :initialized
+      
+      def initialize
+        super
+        @initialized = true
+      end
+    end
+    
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @object = @klass.new
+  end
+  
+  def test_should_not_override_base_method
+    assert @object.base_initialized
+  end
+  
+  def test_should_not_override_existing_method
+    assert @object.initialized
+  end
+  
+  def test_should_still_initialize_state
+    assert_equal 'off', @object.state
+  end
+end
+
+class MachineWithConflictingPostdefinedAndSuperclassInitializeTest < Test::Unit::TestCase
+  def setup
+    @superclass = Class.new do
+      attr_reader :base_initialized
+      
+      def initialize
+        @base_initialized = true
+      end
+    end
+    @klass = Class.new(@superclass)    
+    
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @klass.class_eval do
+      attr_reader :initialized
+      
+      def initialize
+        super
+        @initialized = true
+      end
+    end
+    
+    @object = @klass.new
+  end
+  
+  def test_should_not_override_base_method
+    assert @object.base_initialized
+  end
+  
+  def test_should_not_override_existing_method
+    assert @object.initialized
+  end
+  
+  def test_should_still_initialize_state
+    assert_equal 'off', @object.state
+  end
+end
+
+class MachineWithExistingAttributeValue < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def initialize
+        @state = 'on'
+      end
+    end
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @object = @klass.new
+  end
+  
+  def test_should_not_set_the_initial_state
+    assert_equal 'on', @object.state
+  end
+end
+
 class MachineWithExistingEventTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
+    @machine = PluginAWeek::StateMachine::Machine.new(Class.new)
     @event = @machine.event(:turn_on) {}
     @same_event = @machine.event(:turn_on) {}
   end
@@ -228,9 +671,9 @@ class MachineWithExistingEventTest < Test::Unit::TestCase
   end
 end
 
-class MachineWithEventsAndTransitionsTest < Test::Unit::TestCase
+class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
+    @machine = PluginAWeek::StateMachine::Machine.new(Class.new)
     @machine.event(:turn_on) do
       transition :to => 'on', :from => 'off'
       transition :to => 'error', :from => 'unknown'
@@ -242,7 +685,7 @@ class MachineWithEventsAndTransitionsTest < Test::Unit::TestCase
   end
   
   def test_should_track_states_defined_in_event_transitions
-    assert_equal %w(error off on unknown), @machine.states
+    assert_equal %w(error off on unknown), @machine.states.sort
   end
   
   def test_should_not_duplicate_states_defined_in_multiple_event_transitions
@@ -250,18 +693,24 @@ class MachineWithEventsAndTransitionsTest < Test::Unit::TestCase
       transition :to => 'off', :from => 'on'
     end
     
-    assert_equal %w(error off on unknown), @machine.states
+    assert_equal %w(error off on unknown), @machine.states.sort
   end
 end
 
 class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
+    @klass = Class.new do
+      attr_accessor :callbacks
+    end
+    
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
     @event = @machine.event :turn_on do
       transition :to => 'on', :from => 'off'
     end
     
-    @switch = create_switch(:state => 'off')
+    @object = @klass.new
+    @object.state = 'off'
+    @object.callbacks = []
   end
   
   def test_should_raise_exception_if_invalid_option_specified
@@ -273,65 +722,199 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   end
   
   def test_should_invoke_callbacks_during_transition
-    @machine.before_transition lambda {|switch| switch.callbacks << 'before'}
-    @machine.after_transition lambda {|switch| switch.callbacks << 'after'}
+    @machine.before_transition lambda {|object| object.callbacks << 'before'}
+    @machine.after_transition lambda {|object| object.callbacks << 'after'}
     
-    @event.fire(@switch)
-    assert_equal %w(before after), @switch.callbacks
+    @event.fire(@object)
+    assert_equal %w(before after), @object.callbacks
   end
   
-  def test_should_support_from_query
-    @machine.before_transition :from => 'off', :do => lambda {|switch| switch.callbacks << 'off'}
-    @machine.before_transition :from => 'on', :do => lambda {|switch| switch.callbacks << 'on'}
+  def test_should_support_from_requirement
+    @machine.before_transition :from => 'off', :do => lambda {|object| object.callbacks << 'off'}
+    @machine.before_transition :from => 'on', :do => lambda {|object| object.callbacks << 'on'}
     
-    @event.fire(@switch)
-    assert_equal %w(off), @switch.callbacks
+    @event.fire(@object)
+    assert_equal %w(off), @object.callbacks
   end
   
-  def test_should_support_except_from_query
-    @machine.before_transition :except_from => 'off', :do => lambda {|switch| switch.callbacks << 'off'}
-    @machine.before_transition :except_from => 'on', :do => lambda {|switch| switch.callbacks << 'on'}
+  def test_should_support_except_from_requirement
+    @machine.before_transition :except_from => 'off', :do => lambda {|object| object.callbacks << 'off'}
+    @machine.before_transition :except_from => 'on', :do => lambda {|object| object.callbacks << 'on'}
     
-    @event.fire(@switch)
-    assert_equal %w(on), @switch.callbacks
+    @event.fire(@object)
+    assert_equal %w(on), @object.callbacks
   end
   
-  def test_should_support_to_query
-    @machine.before_transition :to => 'off', :do => lambda {|switch| switch.callbacks << 'off'}
-    @machine.before_transition :to => 'on', :do => lambda {|switch| switch.callbacks << 'on'}
+  def test_should_support_to_requirement
+    @machine.before_transition :to => 'off', :do => lambda {|object| object.callbacks << 'off'}
+    @machine.before_transition :to => 'on', :do => lambda {|object| object.callbacks << 'on'}
     
-    @event.fire(@switch)
-    assert_equal %w(on), @switch.callbacks
+    @event.fire(@object)
+    assert_equal %w(on), @object.callbacks
   end
   
-  def test_should_support_except_to_query
-    @machine.before_transition :except_to => 'off', :do => lambda {|switch| switch.callbacks << 'off'}
-    @machine.before_transition :except_to => 'on', :do => lambda {|switch| switch.callbacks << 'on'}
+  def test_should_support_except_to_requirement
+    @machine.before_transition :except_to => 'off', :do => lambda {|object| object.callbacks << 'off'}
+    @machine.before_transition :except_to => 'on', :do => lambda {|object| object.callbacks << 'on'}
     
-    @event.fire(@switch)
-    assert_equal %w(off), @switch.callbacks
+    @event.fire(@object)
+    assert_equal %w(off), @object.callbacks
   end
   
-  def test_should_support_on_query
-    @machine.before_transition :on => 'turn_off', :do => lambda {|switch| switch.callbacks << 'turn_off'}
-    @machine.before_transition :on => 'turn_on', :do => lambda {|switch| switch.callbacks << 'turn_on'}
+  def test_should_support_on_requirement
+    @machine.before_transition :on => 'turn_off', :do => lambda {|object| object.callbacks << 'turn_off'}
+    @machine.before_transition :on => 'turn_on', :do => lambda {|object| object.callbacks << 'turn_on'}
     
-    @event.fire(@switch)
-    assert_equal %w(turn_on), @switch.callbacks
+    @event.fire(@object)
+    assert_equal %w(turn_on), @object.callbacks
   end
   
-  def test_should_support_except_on_query
-    @machine.before_transition :except_on => 'turn_off', :do => lambda {|switch| switch.callbacks << 'turn_off'}
-    @machine.before_transition :except_on => 'turn_on', :do => lambda {|switch| switch.callbacks << 'turn_on'}
+  def test_should_support_except_on_requirement
+    @machine.before_transition :except_on => 'turn_off', :do => lambda {|object| object.callbacks << 'turn_off'}
+    @machine.before_transition :except_on => 'turn_on', :do => lambda {|object| object.callbacks << 'turn_on'}
     
-    @event.fire(@switch)
-    assert_equal %w(turn_off), @switch.callbacks
+    @event.fire(@object)
+    assert_equal %w(turn_off), @object.callbacks
+  end
+  
+  def test_should_track_states_defined_in_transition_callbacks
+    @machine.before_transition :from => 'off', :to => 'on', :do => lambda {}
+    @machine.after_transition :from => 'unknown', :to => 'error', :do => lambda {}
+    
+    assert_equal %w(error off on unknown), @machine.states.sort
+  end
+  
+  def test_should_not_duplicate_states_defined_in_multiple_event_transitions
+    @machine.before_transition :from => 'off', :to => 'on', :do => lambda {}
+    @machine.after_transition :from => 'unknown', :to => 'error', :do => lambda {}
+    @machine.after_transition :from => 'off', :to => 'on', :do => lambda {}
+    
+    assert_equal %w(error off on unknown), @machine.states.sort
+  end
+end
+
+class MachineWithOwnerSubclassTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @subclass = Class.new(@klass)
+  end
+  
+  def test_should_have_a_different_collection_of_state_machines
+    assert_not_same @klass.state_machines, @subclass.state_machines
+  end
+  
+  def test_should_have_the_same_attribute_associated_state_machines
+    assert_equal @klass.state_machines, @subclass.state_machines
+  end
+end
+
+class MachineWithExistingMachinesOnOwnerClassTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @second_machine = PluginAWeek::StateMachine::Machine.new(@klass, 'status')
+  end
+  
+  def test_should_track_each_state_machine
+    expected = {'state' => @machine, 'status' => @second_machine}
+    assert_equal expected, @klass.state_machines
+  end
+end
+
+class MachineFinderWithoutExistingMachineTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.find_or_create(@klass)
+  end
+  
+  def test_should_create_a_new_machine
+    assert_not_nil @machine
+  end
+  
+  def test_should_use_default_state
+    assert_equal 'state', @machine.attribute
+  end
+end
+
+class MachineFinderWithExistingOnSameClassTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @existing_machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = PluginAWeek::StateMachine::Machine.find_or_create(@klass)
+  end
+  
+  def test_should_not_create_a_new_machine
+    assert_same @machine, @existing_machine
+  end
+end
+
+class MachineFinderWithExistingMachineOnSuperclassTest < Test::Unit::TestCase
+  def setup
+    integration = Module.new do
+      def self.matches?(klass)
+        false
+      end
+    end
+    PluginAWeek::StateMachine::Integrations.const_set('Custom', integration)
+    
+    @base_class = Class.new
+    @base_machine = PluginAWeek::StateMachine::Machine.new(@base_class, 'status', :action => :save, :integration => :custom)
+    @base_machine.event(:turn_on) {}
+    @base_machine.before_transition(lambda {})
+    @base_machine.after_transition(lambda {})
+    
+    @klass = Class.new(@base_class)
+    @machine = PluginAWeek::StateMachine::Machine.find_or_create(@klass, 'status')
+  end
+  
+  def test_should_create_a_new_machine
+    assert_not_nil @machine
+    assert_not_same @machine, @base_machine
+  end
+  
+  def test_should_copy_the_base_attribute
+    assert_equal 'status', @machine.attribute
+  end
+  
+  def test_should_copy_the_base_configuration
+    assert_equal :save, @machine.action
+  end
+  
+  def test_should_copy_events
+    # Can't assert equal arrays since their machines change
+    assert_equal 1, @machine.events.size
+  end
+  
+  def test_should_copy_before_callbacks
+    assert_equal @base_machine.callbacks[:before], @machine.callbacks[:before]
+  end
+  
+  def test_should_copy_after_transitions
+    assert_equal @base_machine.callbacks[:after], @machine.callbacks[:after]
+  end
+  
+  def test_should_use_the_same_integration
+    assert (class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::Custom)
   end
   
   def teardown
-    Switch.class_eval do
-      @before_transition_state_callbacks = nil
-      @after_transition_state_callbacks = nil
-    end
+    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
+  end
+end
+
+class MachineFinderCustomOptionsTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.find_or_create(@klass, 'status', :initial => 'off')
+    @object = @klass.new
+  end
+  
+  def test_should_use_custom_attribute
+    assert_equal 'status', @machine.attribute
+  end
+  
+  def test_should_set_custom_initial_state
+    assert_equal 'off', @machine.initial_state(@object)
   end
 end

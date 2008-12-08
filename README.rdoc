@@ -1,7 +1,7 @@
 == state_machine
 
-+state_machine+ adds support for creating state machines for attributes within
-a model.
++state_machine+ adds support for creating state machines for attributes on any
+Ruby class.
 
 == Resources
 
@@ -23,14 +23,13 @@ Source
 
 == Description
 
-State machines make it dead-simple to manage the behavior of a model.  Too often,
-the status of a record is kept by creating multiple boolean columns in the table
-and deciding how to behave based on the values in those columns.  This can become
-cumbersome and difficult to maintain when the complexity of your models starts to
-increase.
+State machines make it dead-simple to manage the behavior of a class.  Too often,
+the status of an object is kept by creating multiple boolean attributes and
+deciding how to behave based on the values.  This can become cumbersome and
+difficult to maintain when the complexity of your class starts to increase.
 
 +state_machine+ simplifies this design by introducing the various parts of a real
-state machine, including states, events, and transitions.  However, the api is
+state machine, including states, events and transitions.  However, the api is
 designed to be similar to ActiveRecord in terms of validations and callbacks,
 making it so simple you don't even need to know what a state machine is :)
 
@@ -43,12 +42,16 @@ Below is an example of many of the features offered by this plugin, including
 * Transition callbacks
 * Conditional transitions
 
-  class Vehicle < ActiveRecord::Base
+  class Vehicle
+    attr_accessor :seatbelt_on
+    
     state_machine :state, :initial => 'parked' do
       before_transition :from => %w(parked idling), :do => :put_on_seatbelt
-      after_transition :to => 'parked', :do => lambda {|vehicle| vehicle.update_attribute(:seatbelt_on, false)}
-      after_transition :on => 'crash', :do => :tow!
-      after_transition :on => 'repair', :do => :fix!
+      after_transition :on => 'crash', :do => :tow
+      after_transition :on => 'repair', :do => :fix
+      after_transition :to => 'parked' do |vehicle, transition|
+        vehicle.seatbelt_on = false
+      end
       
       event :park do
         transition :to => 'parked', :from => %w(idling first_gear)
@@ -83,44 +86,102 @@ Below is an example of many of the features offered by this plugin, including
       end
     end
     
-    def tow!
-      # do something here
+    def initialize
+      @seatbelt_on = false
     end
     
-    def fix!
-      # do something here
+    def put_on_seatbelt
+      @seatbelt_on = true
     end
     
     def auto_shop_busy?
       false
     end
+    
+    def tow
+      # tow the vehicle
+    end
+    
+    def fix
+      # get the vehicle fixed by a mechanic
+    end
   end
 
-Using the above model as an example, you can interact with the state machine
+Using the above class as an example, you can interact with the state machine
 like so:
 
-  vehicle = Vehicle.create  # => #<Vehicle id: 1, seatbelt_on: false, state: "parked">
+  vehicle = Vehicle.new     # => #<Vehicle:0xb7cf4eac @state="parked", @seatbelt_on=false>
   vehicle.ignite            # => true
-  vehicle                   # => #<Vehicle id: 1, seatbelt_on: true, state: "idling">
+  vehicle                   # => #<Vehicle:0xb7cf4eac @state="idling", @seatbelt_on=true>
   vehicle.shift_up          # => true
-  vehicle                   # => #<Vehicle id: 1, seatbelt_on: true, state: "first_gear">
+  vehicle                   # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
   vehicle.shift_up          # => true
-  vehicle                   # => #<Vehicle id: 1, seatbelt_on: true, state: "second_gear">
+  vehicle                   # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
   
   # The bang (!) operator can raise exceptions if the event fails
   vehicle.park!             # => PluginAWeek::StateMachine::InvalidTransition: Cannot transition via :park from "second_gear"
 
-=== With enumerations
+== Integrations
+
+In addition to being able to define state machines on all Ruby classes, a set of
+out-of-the-box integrations are available for some of the more popular Ruby
+libraries.  These integrations add library-specific behavior, allowing for state
+machines to work more tightly with the conventions defined by those libraries.
+
+The integrations currently available include:
+* ActiveRecord models
+* DataMapper resources
+
+A brief overview of these integrations is described below.
+
+=== ActiveRecord
+
+The ActiveRecord integration adds support for database transactions, automatically
+saving the record, named scopes, and observers.  For example,
+
+  class Vehicle < ActiveRecord::Base
+    state_machine :initial => 'parked' do
+      before_transition :to => 'idling', :do => :put_on_seatbelt
+      after_transition :to => 'parked' do |vehicle, transition|
+        vehicle.seatbelt = 'off'
+      end
+      
+      event :ignite do
+        transition :to => 'idling', :from => 'parked'
+      end
+    end
+    
+    def put_on_seatbelt
+      ...
+    end
+  end
+  
+  class VehicleObserver < ActiveRecord::Observer
+    # Callback for :ignite event *before* the transition is performed
+    def before_ignite(vehicle, transition)
+      # log message
+    end
+    
+    # Generic transition callback *before* the transition is performed
+    def after_transition(vehicle, transition)
+      Audit.log(vehicle, transition)
+    end
+  end
+
+For more information about the various behaviors added for ActiveRecord state
+machines, see PluginAWeek::StateMachine::Integrations::ActiveRecord.
+
+==== With enumerations
 
 Using the acts_as_enumeration[http://github.com/pluginaweek/acts_as_enumeration] plugin
-states can be transparently stored using record ids in the database like so:
+with an ActiveRecord integration, states can be transparently stored using
+record ids in the database like so:
 
   class VehicleState < ActiveRecord::Base
     acts_as_enumeration
     
     create :id => 1, :name => 'parked'
     create :id => 2, :name => 'idling'
-    create :id => 3, :name => 'first_gear'
     ...
   end
   
@@ -133,28 +194,68 @@ states can be transparently stored using record ids in the database like so:
       event :park do
         transition :to => 'parked', :from => %w(idling first_gear)
       end
-      
-      event :ignite do
-        transition :to => 'stalled', :from => 'stalled'
-        transition :to => 'idling', :from => 'parked'
-      end
     end
     
     ...
   end
 
-Notice in the above example, the state machine definition remains *exactly* the
-same.  However, when interacting with the records, the actual state will be
-stored using the identifiers defined for the enumeration:
+Notice that the state machine definition remains *exactly* the same.  However,
+when interacting with the records, the actual state will be stored using the
+identifiers defined for the enumeration:
 
   vehicle = Vehicle.create  # => #<Vehicle id: 1, seatbelt_on: false, state_id: 1>
   vehicle.ignite            # => true
   vehicle                   # => #<Vehicle id: 1, seatbelt_on: true, state_id: 2>
-  vehicle.shift_up          # => true
-  vehicle                   # => #<Vehicle id: 1, seatbelt_on: true, state_id: 3>
 
 This allows states to take on more complex functionality other than just being
 a string value.
+
+=== DataMapper
+
+Like the ActiveRecord integration, the DataMapper integration adds support for
+database transactions, automatically saving the record, named scopes, Extlib-like
+callbacks, and observers.  For example,
+
+  class Vehicle
+    include DataMapper::Resource
+    
+    property :id, Serial
+    property :state, String
+    
+    state_machine :initial => 'parked' do
+      before_transition :to => 'idling', :do => :put_on_seatbelt
+      after_transition :to => 'parked' do |transition|
+        self.seatbelt = 'off' # self is the record
+      end
+      
+      event :ignite do
+        transition :to => 'idling', :from => 'parked'
+      end
+    end
+    
+    def put_on_seatbelt
+      ...
+    end
+  end
+  
+  class VehicleObserver
+    include DataMapper::Observer
+    
+    observe Vehicle
+    
+    # Callback for :ignite event *before* the transition is performed
+    before_transition :on => :ignite do |transition|
+      # log message (self is the record)
+    end
+    
+    # Generic transition callback *before* the transition is performed
+    after_transition do |transition, saved|
+      Audit.log(self, transition) if saved # self is the record
+    end
+  end
+
+For more information about the various behaviors added for DataMapper state
+machines, see PluginAWeek::StateMachine::Integrations::DataMapper.
 
 == Tools
 
@@ -165,16 +266,17 @@ events for your models.  It is cross-platform, written in Java.
 
 == Testing
 
-Before you can run any tests, the following gem must be installed:
-* plugin_test_helper[http://github.com/pluginaweek/plugin_test_helper]
+To run the entire test suite (will test ActiveRecord and DataMapper integrations if available):
 
-To run against a specific version of Rails:
-
-  rake test RAILS_FRAMEWORK_ROOT=/path/to/rails
+  rake test
 
 == Dependencies
 
-* Rails 2.1 or later
+By default, there are no dependencies.  If using specific integrations, those
+dependencies are listed below.
+
+* ActiveRecord[http://rubyonrails.org] integration: 2.1.0 or later
+* DataMapper[http://datamapper.org] integration: 0.9.0 or later
 
 == References
 

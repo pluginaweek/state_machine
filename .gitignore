@@ -1,5 +1,5 @@
 coverage
 pkg
 rdoc
-test/app_root/log
-test/app_root/script
+test/active_record.log
+test/data_mapper.log

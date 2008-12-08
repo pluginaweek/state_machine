@@ -2,632 +2,406 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class TransitionTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on')
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @object = @klass.new
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+  end
+  
+  def test_should_have_an_object
+    assert_equal @object, @transition.object
+  end
+  
+  def test_should_have_a_machine
+    assert_equal @machine, @transition.machine
   end
   
   def test_should_have_an_event
-    assert_not_nil @transition.event
+    assert_equal 'turn_on', @transition.event
   end
   
-  def test_should_have_options
-    assert_not_nil @transition.options
+  def test_should_have_a_from_state
+    assert_equal 'off', @transition.from
   end
   
-  def test_should_match_any_from_state
-    assert @transition.matches?('off')
-    assert @transition.matches?('on')
+  def test_should_have_a_to_state
+    assert_equal 'on', @transition.to
   end
   
-  def test_should_match_empty_query
-    assert @transition.matches?('off', {})
+  def test_should_have_an_attribute
+    assert_equal 'state', @transition.attribute
   end
   
-  def test_should_match_if_from_state_included
-    assert @transition.matches?('off', :from => 'off')
-  end
-  
-  def test_should_not_match_if_from_state_not_included
-    assert !@transition.matches?('off', :from => 'on')
-  end
-  
-  def test_should_allow_matching_of_multiple_from_states
-    assert @transition.matches?('off', :from => %w(on off))
-  end
-  
-  def test_should_match_if_except_from_state_not_included
-    assert @transition.matches?('off', :except_from => 'on')
-  end
-  
-  def test_should_not_match_if_except_from_state_included
-    assert !@transition.matches?('off', :except_from => 'off')
-  end
-  
-  def test_should_allow_matching_of_multiple_except_from_states
-    assert @transition.matches?('off', :except_from => %w(on maybe))
-  end
-  
-  def test_should_match_if_to_state_included
-    assert @transition.matches?('off', :to => 'on')
-  end
-  
-  def test_should_not_match_if_to_state_not_included
-    assert !@transition.matches?('off', :to => 'off')
-  end
-  
-  def test_should_allow_matching_of_multiple_to_states
-    assert @transition.matches?('off', :to => %w(on off))
-  end
-  
-  def test_should_match_if_except_to_state_not_included
-    assert @transition.matches?('off', :except_to => 'off')
-  end
-  
-  def test_should_not_match_if_except_to_state_included
-    assert !@transition.matches?('off', :except_to => 'on')
-  end
-  
-  def test_should_allow_matching_of_multiple_except_to_states
-    assert @transition.matches?('off', :except_to => %w(off maybe))
-  end
-  
-  def test_should_match_if_on_event_included
-    assert @transition.matches?('off', :on => 'turn_on')
-  end
-  
-  def test_should_not_match_if_on_event_not_included
-    assert !@transition.matches?('off', :on => 'turn_off')
-  end
-  
-  def test_should_allow_matching_of_multiple_on_events
-    assert @transition.matches?('off', :on => %w(turn_off turn_on))
-  end
-  
-  def test_should_match_if_except_on_event_not_included
-    assert @transition.matches?('off', :except_on => 'turn_off')
-  end
-  
-  def test_should_not_match_if_except_on_event_included
-    assert !@transition.matches?('off', :except_on => 'turn_on')
-  end
-  
-  def test_should_allow_matching_of_multiple_except_on_events
-    assert @transition.matches?('off', :except_on => %w(turn_off not_sure))
-  end
-  
-  def test_should_match_if_from_state_and_to_state_match
-    assert @transition.matches?('off', :from => 'off', :to => 'on')
-  end
-  
-  def test_should_not_match_if_from_state_matches_but_not_to_state
-    assert !@transition.matches?('off', :from => 'off', :to => 'off')
-  end
-  
-  def test_should_not_match_if_to_state_matches_but_not_from_state
-    assert !@transition.matches?('off', :from => 'on', :to => 'on')
-  end
-  
-  def test_should_match_if_from_state_to_state_and_on_event_match
-    assert @transition.matches?('off', :from => 'off', :to => 'on', :on => 'turn_on')
-  end
-  
-  def test_should_not_match_if_from_state_and_to_state_match_but_not_on_event
-    assert !@transition.matches?('off', :from => 'off', :to => 'on', :on => 'turn_off')
-  end
-  
-  def test_should_be_able_to_perform_on_all_states
-    record = new_switch(:state => 'off')
-    assert @transition.can_perform?(record)
-    
-    record = new_switch(:state => 'on')
-    assert @transition.can_perform?(record)
-  end
-  
-  def test_should_perform_for_all_states
-    record = new_switch(:state => 'off')
-    assert @transition.perform(record)
-    
-    record = new_switch(:state => 'on')
-    assert @transition.perform(record)
-  end
-  
-  def test_should_not_raise_exception_if_not_valid_during_perform
-    record = new_switch(:state => 'off')
-    record.fail_validation = true
-    
-    assert !@transition.perform(record)
-  end
-  
-  def test_should_raise_exception_if_not_valid_during_perform!
-    record = new_switch(:state => 'off')
-    record.fail_validation = true
-    
-    assert_raise(ActiveRecord::RecordInvalid) {@transition.perform!(record)}
-  end
-  
-  def test_should_not_raise_exception_if_not_saved_during_perform
-    record = new_switch(:state => 'off')
-    record.fail_save = true
-    
-    assert !@transition.perform(record)
-  end
-  
-  def test_should_raise_exception_if_not_saved_during_perform!
-    record = new_switch(:state => 'off')
-    record.fail_save = true
-    
-    assert_raise(ActiveRecord::RecordNotSaved) {@transition.perform!(record)}
-  end
-  
-  def test_should_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) {PluginAWeek::StateMachine::Transition.new(@event, :invalid => true)}
-  end
-  
-  def test_should_raise_exception_if_to_option_not_specified
-    assert_raise(ArgumentError) {PluginAWeek::StateMachine::Transition.new(@event, :from => 'off')}
+  def test_should_generate_attributes
+    expected = {:object => @object, :attribute => 'state', :event => 'turn_on', :from => 'off', :to => 'on'}
+    assert_equal expected, @transition.attributes
   end
 end
 
-class TransitionWithConditionalTest < Test::Unit::TestCase
+class TransitionWithSymbolicValuesTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @switch = create_switch(:state => 'off')
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @object = @klass.new
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
   end
   
-  def test_should_be_able_to_perform_if_if_is_true
-    transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :if => lambda {true})
-    assert transition.can_perform?(@switch)
+  def test_should_stringify_event
+    assert_equal 'turn_on', @transition.event
   end
   
-  def test_should_not_be_able_to_perform_if_if_is_false
-    transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :if => lambda {false})
-    assert !transition.can_perform?(@switch)
+  def test_should_stringify_from_state
+    assert_equal 'off', @transition.from
   end
   
-  def test_should_be_able_to_perform_if_unless_is_false
-    transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :unless => lambda {false})
-    assert transition.can_perform?(@switch)
-  end
-  
-  def test_should_not_be_able_to_perform_if_unless_is_true
-    transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :unless => lambda {true})
-    assert !transition.can_perform?(@switch)
-  end
-  
-  def test_should_pass_in_record_as_argument
-    transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :if => lambda {|record| !record.nil?})
-    assert transition.can_perform?(@switch)
-  end
-  
-  def test_should_be_able_to_perform_if_method_evaluates_to_true
-    @switch.data = true
-    transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :if => :data)
-    assert transition.can_perform?(@switch)
-  end
-  
-  def test_should_not_be_able_to_perform_if_method_evaluates_to_false
-    @switch.data = false
-    transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :if => :data)
-    assert !transition.can_perform?(@switch)
-  end
-end
-
-class TransitionWithLoopbackTest < Test::Unit::TestCase
-  def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'on')
-  end
-  
-  def test_should_be_able_to_perform
-    record = new_switch(:state => 'on')
-    assert @transition.can_perform?(record)
-  end
-  
-  def test_should_perform_for_valid_from_state
-    record = new_switch(:state => 'on')
-    assert @transition.perform(record)
-  end
-end
-
-class TransitionWithFromStateTest < Test::Unit::TestCase
-  def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'off')
-  end
-  
-  def test_should_not_be_able_to_perform_if_record_state_is_not_from_state
-    record = new_switch(:state => 'on')
-    assert !@transition.can_perform?(record)
-  end
-  
-  def test_should_be_able_to_perform_if_record_state_is_from_state
-    record = new_switch(:state => 'off')
-    assert @transition.can_perform?(record)
-  end
-  
-  def test_should_perform_for_valid_from_state
-    record = new_switch(:state => 'off')
-    assert @transition.perform(record)
-  end
-end
-
-class TransitionWithMultipleFromStatesTest < Test::Unit::TestCase
-  def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => %w(off on))
-  end
-  
-  def test_should_not_be_able_to_perform_if_record_state_is_not_from_state
-    record = new_switch(:state => 'unknown')
-    assert !@transition.can_perform?(record)
-  end
-  
-  def test_should_be_able_to_perform_if_record_state_is_any_from_state
-    record = new_switch(:state => 'off')
-    assert @transition.can_perform?(record)
-    
-    record = new_switch(:state => 'on')
-    assert @transition.can_perform?(record)
-  end
-  
-  def test_should_perform_for_any_valid_from_state
-    record = new_switch(:state => 'off')
-    assert @transition.perform(record)
-    
-    record = new_switch(:state => 'on')
-    assert @transition.perform(record)
-  end
-end
-
-class TransitionWithMismatchedFromStatesRequiredTest < Test::Unit::TestCase
-  def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :except_from => 'on')
-  end
-  
-  def test_should_be_able_to_perform_if_record_state_is_not_from_state
-    record = new_switch(:state => 'off')
-    assert @transition.can_perform?(record)
-  end
-  
-  def test_should_not_be_able_to_perform_if_record_state_is_from_state
-    record = new_switch(:state => 'on')
-    assert !@transition.can_perform?(record)
-  end
-  
-  def test_should_perform_for_valid_from_state
-    record = new_switch(:state => 'off')
-    assert @transition.perform(record)
-  end
-  
-  def test_should_not_perform_for_invalid_from_state
-    record = new_switch(:state => 'on')
-    assert !@transition.can_perform?(record)
+  def test_should_stringify_to_state
+    assert_equal 'on', @transition.to
   end
 end
 
 class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'off')
+    @klass = Class.new do
+      attr_reader :saved, :save_state
+      
+      def save
+        @save_state = state
+        @saved = true
+      end
+    end
     
-    @record = create_switch(:state => 'off')
-    @transition.perform(@record)
-    @record.reload
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    @object = @klass.new
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @result = @transition.perform
   end
   
-  def test_should_update_the_state_to_the_to_state
-    assert_equal 'on', @record.state
+  def test_should_be_successful
+    assert_equal true, @result
   end
   
-  def test_should_no_longer_be_able_to_perform_on_the_record
-    assert !@transition.can_perform?(@record)
+  def test_should_the_current_state
+    assert_equal 'on', @object.state
+  end
+  
+  def test_should_run_the_action
+    assert @object.saved
+  end
+  
+  def test_should_run_the_action_after_saving_the_state
+    assert_equal 'on', @object.save_state
   end
 end
 
-class TransitionWithLoopbackAfterBeingPerformedTest < Test::Unit::TestCase
+class TransitionWithoutRunningActionTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'on')
+    @klass = Class.new do
+      attr_reader :saved
+      
+      def save
+        @saved = true
+      end
+    end
     
-    @record = create_switch(:state => 'on')
-    @record.kind = 'light'
-    @transition.perform(@record)
-    @record.reload
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @object = @klass.new
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @result = @transition.perform(false)
   end
   
-  def test_should_have_the_same_attribute
-    assert_equal 'on', @record.state
+  def test_should_be_successful
+    assert_equal true, @result
   end
   
-  def test_should_save_the_record
-    assert_equal 'light', @record.kind
+  def test_should_the_current_state
+    assert_equal 'on', @object.state
   end
   
-  def test_should_still_be_able_to_perform_on_the_record
-    assert @transition.can_perform?(@record)
+  def test_should_not_run_the_action
+    assert !@object.saved
   end
 end
 
 class TransitionWithCallbacksTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'off')
-    @record = create_switch(:state => 'off')
-    
-    Switch.define_callbacks :before_transition_state, :after_transition_state
-  end
-  
-  def test_should_include_record_in_callback
-    Switch.before_transition_state lambda {|record| record == @record}
-    
-    assert @transition.perform(@record)
-  end
-  
-  def test_should_not_perform_if_before_callback_fails
-    Switch.before_transition_state lambda {|record| false}
-    Switch.after_transition_state lambda {|record| record.callbacks << 'after'; true}
-    
-    assert !@transition.perform(@record)
-    assert_equal [], @record.callbacks
-  end
-  
-  def test_should_raise_exception_if_before_callback_fails_during_perform!
-    Switch.before_transition_state lambda {|record| false}
-    
-    assert_raise(PluginAWeek::StateMachine::InvalidTransition) {@transition.perform!(@record)}
-  end
-  
-  def test_should_perform_if_after_callback_fails
-    Switch.before_transition_state lambda {|record| record.callbacks << 'before'; true}
-    Switch.after_transition_state lambda {|record| false}
-    
-    assert @transition.perform(@record)
-    assert_equal %w(before), @record.callbacks
-  end
-  
-  def test_should_not_raise_exception_if_after_callback_fails_during_perform!
-    Switch.before_transition_state lambda {|record| record.callbacks << 'before'; true}
-    Switch.after_transition_state lambda {|record| false}
-    
-    assert @transition.perform!(@record)
-  end
-  
-  def test_should_perform_if_all_callbacks_are_successful
-    Switch.before_transition_state lambda {|record| record.callbacks << 'before'; true}
-    Switch.after_transition_state lambda {|record| record.callbacks << 'after'; true}
-    
-    assert @transition.perform(@record)
-    assert_equal %w(before after), @record.callbacks
-  end
-  
-  def test_should_stop_before_callbacks_if_any_fail
-    Switch.before_transition_state lambda {|record| false}
-    Switch.before_transition_state lambda {|record| record.callbacks << 'before_2'; true}
-    
-    assert !@transition.perform(@record)
-    assert_equal [], @record.callbacks
-  end
-  
-  def test_should_stop_after_callbacks_if_any_fail
-    Switch.after_transition_state lambda {|record| false}
-    Switch.after_transition_state lambda {|record| record.callbacks << 'after_2'; true}
-    
-    assert @transition.perform(@record)
-    assert_equal [], @record.callbacks
-  end
-  
-  def teardown
-    Switch.class_eval do
-      @before_transition_state_callbacks = nil
-      @after_transition_state_callbacks = nil
+    @klass = Class.new do
+      attr_reader :saved, :save_state
+      
+      def save
+        @save_state = state
+        @saved = true
+      end
     end
+    
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @object = @klass.new
+    @object.state = 'off'
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+  end
+  
+  def test_should_run_before_callbacks_before_changing_the_state
+    @machine.before_transition(lambda {|object| @state = object.state})
+    @transition.perform
+    
+    assert_equal 'off', @state
+  end
+  
+  def test_should_run_after_callbacks_after_running_the_action
+    @machine.after_transition(lambda {|object| @state = object.state})
+    @transition.perform
+    
+    assert_equal 'on', @state
+  end
+  
+  def test_should_run_before_callbacks_in_the_order_they_were_defined
+    @callbacks = []
+    @machine.before_transition(lambda {@callbacks << 1})
+    @machine.before_transition(lambda {@callbacks << 2})
+    @transition.perform
+    
+    assert_equal [1, 2], @callbacks
+  end
+  
+  def test_should_run_after_callbacks_in_the_order_they_were_defined
+    @callbacks = []
+    @machine.after_transition(lambda {@callbacks << 1})
+    @machine.after_transition(lambda {@callbacks << 2})
+    @transition.perform
+    
+    assert_equal [1, 2], @callbacks
+  end
+  
+  def test_should_only_run_before_callbacks_that_match_transition_context
+    @count = 0
+    callback = lambda {@count += 1}
+    
+    @machine.before_transition :from => 'off', :to => 'on', :on => 'turn_off', :do => callback
+    @machine.before_transition :from => 'off', :to => 'off', :on => 'turn_off', :do => callback
+    @machine.before_transition :from => 'off', :to => 'on', :on => 'turn_on', :do => callback
+    @machine.before_transition :from => 'on', :to => 'on', :on => 'turn_off', :do => callback
+    @transition.perform
+    
+    assert_equal 1, @count
+  end
+  
+  def test_should_only_run_after_callbacks_that_match_transition_context
+    @count = 0
+    callback = lambda {@count += 1}
+    
+    @machine.after_transition :from => 'off', :to => 'on', :on => 'turn_off', :do => callback
+    @machine.after_transition :from => 'off', :to => 'off', :on => 'turn_off', :do => callback
+    @machine.after_transition :from => 'off', :to => 'on', :on => 'turn_on', :do => callback
+    @machine.after_transition :from => 'on', :to => 'on', :on => 'turn_off', :do => callback
+    @transition.perform
+    
+    assert_equal 1, @count
+  end
+  
+  def test_should_pass_transition_to_before_callbacks
+    @machine.before_transition(lambda {|*args| @args = args})
+    @transition.perform
+    
+    assert_equal [@object, @transition], @args
+  end
+  
+  def test_should_pass_transition_and_action_result_to_after_callbacks
+    @machine.after_transition(lambda {|*args| @args = args})
+    @transition.perform
+    
+    assert_equal [@object, @transition, true], @args
   end
 end
 
-class TransitionWithCallbackConditionalsTest < Test::Unit::TestCase
+class TransitionHaltedDuringBeforeCallbacksTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'off')
-    @record = create_switch(:state => 'off')
-    @invoked = false
-    
-    Switch.define_callbacks :before_transition_state, :after_transition_state
-  end
-  
-  def test_should_invoke_callback_if_if_is_true
-    Switch.before_transition_state lambda {|record| @invoked = true}, :if => lambda {true}
-    @transition.perform(@record)
-    assert @invoked
-  end
-  
-  def test_should_not_invoke_callback_if_if_is_false
-    Switch.before_transition_state lambda {|record| @invoked = true}, :if => lambda {false}
-    @transition.perform(@record)
-    assert !@invoked
-  end
-  
-  def test_should_invoke_callback_if_unless_is_false
-    Switch.before_transition_state lambda {|record| @invoked = true}, :unless => lambda {false}
-    @transition.perform(@record)
-    assert @invoked
-  end
-  
-  def test_should_not_invoke_callback_if_unless_is_true
-    Switch.before_transition_state lambda {|record| @invoked = true}, :unless => lambda {true}
-    @transition.perform(@record)
-    assert !@invoked
-  end
-  
-  def teardown
-    Switch.class_eval do
-      @before_transition_state_callbacks = nil
-      @after_transition_state_callbacks = nil
+    @klass = Class.new do
+      class << self; attr_accessor :cancelled_transaction; end
+      attr_reader :saved
+      
+      def save
+        @saved = true
+      end
     end
+    @before_count = 0
+    @after_count = 0
+    
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    class << @machine
+      def within_transaction(object)
+        owner_class.cancelled_transaction = yield == false
+      end
+    end
+    @machine.before_transition lambda {@before_count += 1; throw :halt}
+    @machine.before_transition lambda {@before_count += 1}
+    @machine.after_transition lambda {@after_count += 1}
+    @object = @klass.new
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @result = @transition.perform
+  end
+  
+  def test_should_not_be_successful
+    assert !@result
+  end
+  
+  def test_should_not_change_current_state
+    assert_nil @object.state
+  end
+  
+  def test_should_not_run_action
+    assert !@object.saved
+  end
+  
+  def test_should_not_run_further_before_callbacks
+    assert_equal 1, @before_count
+  end
+  
+  def test_should_not_run_after_callbacks
+    assert_equal 0, @after_count
+  end
+  
+  def test_should_cancel_the_transaction
+    assert @klass.cancelled_transaction
   end
 end
 
-class TransitionWithCallbackQueryTest < Test::Unit::TestCase
+class TransitionHaltedDuringActionTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'off')
-    @record = create_switch(:state => 'off')
-    
-    Switch.define_callbacks :before_transition_state, :after_transition_state
-  end
-  
-  def test_should_invoke_callback_if_from_state_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :from => 'off'
-    @transition.perform(@record)
-    assert @invoked
-  end
-  
-  def test_should_not_invoke_callback_if_from_state_not_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :from => 'on'
-    @transition.perform(@record)
-    assert !@invoked
-  end
-  
-  def test_should_invoke_callback_if_except_from_state_not_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :except_from => 'on'
-    @transition.perform(@record)
-    assert @invoked
-  end
-  
-  def test_should_not_invoke_callback_if_except_from_state_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :except_from => 'off'
-    @transition.perform(@record)
-    assert !@invoked
-  end
-  
-  def test_should_invoke_callback_if_to_state_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :to => 'on'
-    @transition.perform(@record)
-    assert @invoked
-  end
-  
-  def test_should_not_invoke_callback_if_to_state_not_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :to => 'off'
-    @transition.perform(@record)
-    assert !@invoked
-  end
-  
-  def test_should_invoke_callback_if_except_to_state_not_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :except_to => 'off'
-    @transition.perform(@record)
-    assert @invoked
-  end
-  
-  def test_should_not_invoke_callback_if_except_to_state_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :except_to => 'on'
-    @transition.perform(@record)
-    assert !@invoked
-  end
-  
-  def test_should_invoke_callback_if_on_event_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :on => 'turn_on'
-    @transition.perform(@record)
-    assert @invoked
-  end
-  
-  def test_should_not_invoke_callback_if_on_event_not_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :on => 'turn_off'
-    @transition.perform(@record)
-    assert !@invoked
-  end
-  
-  def test_should_invoke_callback_if_except_on_event_not_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :except_on => 'turn_off'
-    @transition.perform(@record)
-    assert @invoked
-  end
-  
-  def test_should_not_invoke_callback_if_except_on_event_included
-    Switch.before_transition_state lambda {|record| @invoked = true}, :except_on => 'turn_on'
-    @transition.perform(@record)
-    assert !@invoked
-  end
-  
-  def test_should_skip_callbacks_that_do_not_match
-    Switch.before_transition_state lambda {|record| false}, :from => 'on'
-    Switch.before_transition_state lambda {|record| @invoked = true}, :from => 'off'
-    @transition.perform(@record)
-    assert @invoked
-  end
-  
-  def teardown
-    Switch.class_eval do
-      @before_transition_state_callbacks = nil
-      @after_transition_state_callbacks = nil
+    @klass = Class.new do
+      class << self; attr_accessor :cancelled_transaction; end
+      attr_reader :saved
+      
+      def save
+        throw :halt
+      end
     end
+    @before_count = 0
+    @after_count = 0
+    
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    class << @machine
+      def within_transaction(object)
+        owner_class.cancelled_transaction = yield == false
+      end
+    end
+    @machine.before_transition lambda {@before_count += 1}
+    @machine.after_transition lambda {@after_count += 1}
+    @object = @klass.new
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @result = @transition.perform
+  end
+  
+  def test_should_not_be_successful
+    assert !@result
+  end
+  
+  def test_should_change_current_state
+    assert_equal 'on', @object.state
+  end
+  
+  def test_should_run_before_callbacks
+    assert_equal 1, @before_count
+  end
+  
+  def test_should_not_run_after_callbacks
+    assert_equal 0, @after_count
+  end
+  
+  def test_should_cancel_the_transaction
+    assert @klass.cancelled_transaction
   end
 end
 
-class TransitionWithObserversTest < Test::Unit::TestCase
+class TransitionHaltedAfterCallbackTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Switch, 'state')
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
-    @transition = PluginAWeek::StateMachine::Transition.new(@event, :to => 'on', :from => 'off')
-    @record = create_switch(:state => 'off')
-    
-    Switch.define_callbacks :before_transition_state, :after_transition_state
-    SwitchObserver.notifications = []
-  end
-  
-  def test_should_notify_all_callbacks_if_successful
-    @transition.perform(@record)
-    
-    expected = [
-      ['before_turn_on', @record, 'off', 'on'],
-      ['before_transition', @record, 'state', 'turn_on', 'off', 'on'],
-      ['after_turn_on', @record, 'off', 'on'],
-      ['after_transition', @record, 'state', 'turn_on', 'off', 'on']
-    ]
-    
-    assert_equal expected, SwitchObserver.notifications
-  end
-  
-  def test_should_notify_before_callbacks_if_before_callback_fails
-    Switch.before_transition_state lambda {|record| false}
-    @transition.perform(@record)
-    
-    expected = [
-      ['before_turn_on', @record, 'off', 'on'],
-      ['before_transition', @record, 'state', 'turn_on', 'off', 'on']
-    ]
-    
-    assert_equal expected, SwitchObserver.notifications
-  end
-  
-  def test_should_notify_before_and_after_callbacks_if_after_callback_fails
-    Switch.after_transition_state lambda {|record| false}
-    @transition.perform(@record)
-    
-    expected = [
-      ['before_turn_on', @record, 'off', 'on'],
-      ['before_transition', @record, 'state', 'turn_on', 'off', 'on'],
-      ['after_turn_on', @record, 'off', 'on'],
-      ['after_transition', @record, 'state', 'turn_on', 'off', 'on']
-    ]
-    
-    assert_equal expected, SwitchObserver.notifications
-  end
-  
-  def teardown
-    Switch.class_eval do
-      @before_transition_state_callbacks = nil
-      @after_transition_state_callbacks = nil
+    @klass = Class.new do
+      class << self; attr_accessor :cancelled_transaction; end
+      attr_reader :saved
+      
+      def save
+        @saved = true
+      end
     end
+    @before_count = 0
+    @after_count = 0
+    
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    class << @machine
+      def within_transaction(object)
+        owner_class.cancelled_transaction = yield == false
+      end
+    end
+    @machine.before_transition lambda {@before_count += 1}
+    @machine.after_transition lambda {@after_count += 1; throw :halt}
+    @machine.after_transition lambda {@after_count += 1}
+    @object = @klass.new
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @result = @transition.perform
+  end
+  
+  def test_should_be_successful
+    assert @result
+  end
+  
+  def test_should_change_current_state
+    assert_equal 'on', @object.state
+  end
+  
+  def test_should_run_before_callbacks
+    assert_equal 1, @before_count
+  end
+  
+  def test_should_not_run_further_after_callbacks
+    assert_equal 1, @after_count
+  end
+  
+  def test_should_not_cancel_the_transaction
+    assert !@klass.cancelled_transaction
+  end
+end
+
+class TransitionWithFailedActionTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      class << self; attr_accessor :cancelled_transaction; end
+      attr_reader :saved
+      
+      def save
+        false
+      end
+    end
+    @before_count = 0
+    @after_count = 0
+    
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    class << @machine
+      def within_transaction(object)
+        owner_class.cancelled_transaction = yield == false
+      end
+    end
+    @machine.before_transition lambda {@before_count += 1}
+    @machine.after_transition lambda {@after_count += 1}
+    @object = @klass.new
+    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @result = @transition.perform
+  end
+  
+  def test_should_not_be_successful
+    assert !@result
+  end
+  
+  def test_should_change_current_state
+    assert_equal 'on', @object.state
+  end
+  
+  def test_should_run_before_callbacks
+    assert_equal 1, @before_count
+  end
+  
+  def test_should_run_after_callbacks
+    assert_equal 1, @after_count
+  end
+  
+  def test_should_cancel_the_transaction
+    assert @klass.cancelled_transaction
   end
 end
