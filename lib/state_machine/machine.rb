@@ -309,10 +309,11 @@ module PluginAWeek #:nodoc:
       def states
         @states ||=
           begin
-            states = @other_states.dup
+            states = []
+            states << @initial_state if @initial_state && !@initial_state.is_a?(Proc)
             events.values.each {|event| states.concat(event.known_states)}
             callbacks.values.flatten.each {|callback| states.concat(callback.guard.known_states)}
-            states
+            states.concat(@other_states)
           end.uniq
       end
       

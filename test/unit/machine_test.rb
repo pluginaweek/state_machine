@@ -119,6 +119,10 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
   def test_should_set_initial_state_on_created_object
     assert_equal 'off', @object.state
   end
+  
+  def test_should_be_included_in_known_states
+    assert_equal %w(off), @machine.states
+  end
 end
 
 class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
@@ -140,6 +144,10 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
   
   def test_should_set_initial_state_on_created_object
     assert_equal 'default', @object.state
+  end
+  
+  def test_should_not_be_included_in_known_states
+    assert_equal [], @machine.states
   end
 end
 
