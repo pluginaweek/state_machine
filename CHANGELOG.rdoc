@@ -1,5 +1,6 @@
 == master
 
+* Add rake tasks for generating graphviz files for state machines [Nate Murray]
 * Fix initial state not being included in list of known states
 * Add other_states directive for defining additional states not referenced in transitions or callbacks [Pete Forde]
 * Add next_#{event}_transition for getting the next transition that would be performed if the event were invoked

@@ -938,3 +938,85 @@ class MachineFinderCustomOptionsTest < Test::Unit::TestCase
     assert_equal 'off', @machine.initial_state(@object)
   end
 end
+
+begin
+  # Load library
+  require 'rubygems'
+  require 'graphviz'
+  
+  class MachineDrawingTest < Test::Unit::TestCase
+    def setup
+      @klass = Class.new do
+        def self.name; 'Vehicle'; end
+      end
+      @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+      @machine.event :ignite do
+        transition :from => 'parked', :to => 'idling'
+      end
+    end
+    
+    def test_should_raise_exception_if_invalid_option_specified
+      assert_raise(ArgumentError) {@machine.draw(:invalid => true)}
+    end
+    
+    def test_should_save_file_with_class_name_by_default
+      @machine.draw
+      assert File.exist?('./Vehicle_state.png')
+    ensure
+      FileUtils.rm('./Vehicle_state.png')
+    end
+    
+    def test_should_allow_base_name_to_be_customized
+      @machine.draw(:name => 'machine')
+      assert File.exist?('./machine.png')
+    ensure
+      FileUtils.rm('./machine.png')
+    end
+    
+    def test_should_allow_format_to_be_customized
+      @machine.draw(:format => 'jpg')
+      assert File.exist?('./Vehicle_state.jpg')
+    ensure
+      FileUtils.rm('./Vehicle_state.jpg')
+    end
+    
+    def test_should_allow_path_to_be_customized
+      @machine.draw(:path => "#{File.dirname(__FILE__)}/")
+      assert File.exist?("#{File.dirname(__FILE__)}/Vehicle_state.png")
+    ensure
+      FileUtils.rm("#{File.dirname(__FILE__)}/Vehicle_state.png")
+    end
+  end
+  
+  class MachineClassDrawingTest < Test::Unit::TestCase
+    def setup
+      @klass = Class.new do
+        def self.name; 'Vehicle'; end
+      end
+      @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+      @machine.event :ignite do
+        transition :from => 'parked', :to => 'idling'
+      end
+    end
+    
+    def test_should_raise_exception_if_no_class_names_specified
+      assert_raise(ArgumentError) {PluginAWeek::StateMachine::Machine.draw(nil)}
+    end
+    
+    def test_should_load_files
+      PluginAWeek::StateMachine::Machine.draw('Switch', :file => "#{File.dirname(__FILE__)}/../classes/switch.rb")
+      assert defined?(::Switch)
+    ensure
+      FileUtils.rm('./Switch_state.png')
+    end
+    
+    def test_should_allow_path_and_format_to_be_customized
+      PluginAWeek::StateMachine::Machine.draw('Switch', :file => "#{File.dirname(__FILE__)}/../classes/switch.rb", :path => "#{File.dirname(__FILE__)}/", :format => 'jpg')
+      assert File.exist?("#{File.dirname(__FILE__)}/Switch_state.jpg")
+    ensure
+      FileUtils.rm("#{File.dirname(__FILE__)}/Switch_state.jpg")
+    end
+  end
+rescue LoadError
+  $stderr.puts 'Skipping GraphViz tests. `gem install ruby-graphviz` and try again.'
+end

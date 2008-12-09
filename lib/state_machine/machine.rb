@@ -186,6 +186,36 @@ module PluginAWeek #:nodoc:
           
           machine
         end
+        
+        # Draws the state machines defined in the given classes using GraphViz.
+        # The given classes must be a comma-delimited string of class names.
+        # 
+        # Configuration options:
+        # * +file+ - A comma-delimited string of files to load that contain the state machine definitions to draw
+        # * +path+ - The path to write the graph file to
+        # * +format+ - The image format to generate the graph in
+        # * +font+ - The name of the font to draw state names in
+        def draw(class_names, options = {})
+          raise ArgumentError, 'At least one class must be specified' unless class_names && class_names.split(',').any?
+          
+          # Load any files
+          if files = options.delete(:file)
+            files.split(',').each {|file| require file}
+          end
+          
+          class_names.split(',').each do |class_name|
+            # Navigate through the namespace structure to get to the class
+            klass = Object
+            class_name.split('::').each do |name|
+              klass = klass.const_defined?(name) ? klass.const_get(name) : klass.const_missing(name)
+            end
+            
+            # Draw each of the class's state machines
+            klass.state_machines.values.each do |machine|
+              machine.draw(options)
+            end
+          end
+        end
       end
       
       # Creates a new state machine for the given attribute
@@ -593,6 +623,62 @@ module PluginAWeek #:nodoc:
       # taking place within the context of a database.
       def within_transaction(object)
         yield
+      end
+      
+      # Draws a directed graph of the machine for visualizing the various events,
+      # states, and their transitions.
+      # 
+      # This requires both the Ruby graphviz gem and the graphviz library be
+      # installed on the system.
+      # 
+      # Configuration options:
+      # * +name+ - The name of the file to write to (without the file extension).  Default is "#{owner_class.name}_#{attribute}"
+      # * +path+ - The path to write the graph file to.  Default is the current directory (".").
+      # * +format+ - The image format to generate the graph in.  Default is "png'.
+      # * +font+ - The name of the font to draw state names in.  Default is "Arial'.
+      def draw(options = {})
+        options = {
+          :name => "#{owner_class.name}_#{attribute}",
+          :path => '.',
+          :format => 'png',
+          :font => 'Arial'
+        }.merge(options)
+        assert_valid_keys(options, :name, :font, :path, :format)
+        
+        begin
+          # Load the graphviz library
+          require 'rubygems'
+          require 'graphviz'
+          
+          graph = GraphViz.new('G', :output => options[:format], :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}"))
+          
+          # Add nodes
+          states.each do |state|
+            shape = state == @initial_state ? 'doublecircle' : 'circle'
+            graph.add_node(state, :width => '1', :height => '1', :fixedsize => 'true', :shape => shape, :fontname => options[:font])
+          end
+          
+          # Add edges
+          events.values.each do |event|
+            event.guards.each do |guard|
+              # From states: :from, everything but :except states, or all states
+              from_states = Array(guard.requirements[:from]) || guard.requirements[:except_from] && (states - Array(guard.requirements[:except_from])) || states
+              to_state = guard.requirements[:to]
+              
+              from_states.each do |from_state|
+                graph.add_edge(from_state, to_state || from_state, :label => event.name, :fontname => options[:font])
+              end
+            end
+          end
+          
+          # Generate the graph
+          graph.output
+          
+          true
+        rescue LoadError
+          $stderr.puts 'Cannot draw the machine. `gem install ruby-graphviz` and try again.'
+          false
+        end
       end
       
       protected

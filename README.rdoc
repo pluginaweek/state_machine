@@ -259,6 +259,60 @@ machines, see PluginAWeek::StateMachine::Integrations::DataMapper.
 
 == Tools
 
+=== Generating graphs
+
+This library comes with built-in support for generating di-graphs based on the
+events, states, and transitions defined for a state machine using GraphViz[http://www.graphviz.org].
+This requires that both the <tt>ruby-graphviz</tt> gem and graphviz library be
+installed on the system.
+
+==== Examples
+
+To generate a graph for a specific file / class:
+
+  rake state_machine:draw FILE=vehicle.rb CLASS=Vehicle
+
+To save files to a specific path:
+
+  rake state_machine:draw FILE=vehicle.rb CLASS=Vehicle TARGET=files
+
+To customize the image format:
+
+  rake state_machine:draw FILE=vehicle.rb CLASS=Vehicle FORMAT=jpg
+
+To generate multiple state machine graphs:
+
+  rake state_machine:draw FILE=vehicle.rb,car.rb CLASS=Vehicle,Car
+
+*Note* that this will generate a different file for every state machine defined
+in the class.  The generates files will an output filename of the format #{class_name}_#{attribute}.#{format}.
+
+For examples of actual images generated using this task, see those under the
+test/examples folder.
+
+==== Ruby on Rails Integration
+
+There is a special integration Rake task for generating state machines for
+classes used in a Ruby on Rails application.  This task will load the application
+environment, meaning that it's unnecessary to specify the actual file to load.
+
+For example,
+
+  rake state_machine:draw:rails CLASS=Vehicle
+
+==== Merb Integration
+
+Like Ruby on Rails, there is a special integration Rake task for generating
+state machines for classes used in a Merb application.  This task will load the
+application environment, meaning that it's unnecessary to specify the actual
+files to load.
+
+For example,
+
+  rake state_machine:draw:merb CLASS=Vehicle
+
+=== Interactive graphs
+
 Jean Bovet - {Visual Automata Simulator}[http://www.cs.usfca.edu/~jbovet/vas.html].
 This is a great tool for "simulating, visualizing and transforming finite state
 automata and Turing Machines".  This tool can help in the creation of states and
