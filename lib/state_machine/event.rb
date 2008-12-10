@@ -142,8 +142,8 @@ module PluginAWeek #:nodoc:
             end
             
             # Fires the event, raising an exception if it fails to transition
-            define_method("#{name}!") do
-              send(name) || raise(PluginAWeek::StateMachine::InvalidTransition, "Cannot transition via :#{name} from #{send(attribute).inspect}")
+            define_method("#{name}!") do |*args|
+              send(name, *args) || raise(PluginAWeek::StateMachine::InvalidTransition, "Cannot transition via :#{name} from #{send(attribute).inspect}")
             end
           end
         end

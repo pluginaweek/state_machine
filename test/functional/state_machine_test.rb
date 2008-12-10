@@ -211,6 +211,20 @@ class VehicleUnsavedTest < Test::Unit::TestCase
     assert_equal 'idling', @vehicle.state
   end
   
+  def test_should_allow_ignite_with_skipped_action
+    assert @vehicle.ignite(false)
+    assert @vehicle.new_record?
+  end
+  
+  def test_should_allow_ignite_bang
+    assert @vehicle.ignite!
+  end
+  
+  def test_should_allow_ignite_bang_with_skipped_action
+    assert @vehicle.ignite!(false)
+    assert @vehicle.new_record?
+  end
+  
   def test_should_be_saved_after_successful_event
     @vehicle.ignite
     assert !@vehicle.new_record?
