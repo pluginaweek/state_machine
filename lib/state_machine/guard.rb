@@ -29,7 +29,7 @@ module PluginAWeek #:nodoc:
       # * +except_to+
       # * +except_from+
       # 
-      # Each state defined for this requirements is considered *known*.
+      # Each state defined for these requirements is considered *known*.
       def known_states
         @known_states ||= [:to, :from, :except_to, :except_from].inject([]) {|states, option| states |= Array(requirements[option])}
       end
@@ -97,6 +97,7 @@ module PluginAWeek #:nodoc:
         # == Examples
         # 
         #   find_match(nil, %w(parked idling), nil)             # => true
+        #   find_match('parked', nil, nil)                      # => true
         #   find_match('parked', %w(parked idling), nil)        # => true
         #   find_match('first_gear', %w(parked idling, nil)     # => false
         #   find_match('parked', nil, %w(parked idling))        # => false
