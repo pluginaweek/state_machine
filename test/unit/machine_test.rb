@@ -651,6 +651,31 @@ class MachineWithConflictingPostdefinedAndSuperclassInitializeTest < Test::Unit:
   end
 end
 
+class MachineWithConflictingMethodAddedTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      class << self
+        attr_reader :called_method_added
+        
+        def method_added(method)
+          super
+          @called_method_added = true
+        end
+      end
+    end
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @object = @klass.new
+  end
+  
+  def test_should_not_override_existing_method
+    assert @klass.called_method_added
+  end
+  
+  def test_should_still_initialize_state
+    assert_equal 'off', @object.state
+  end
+end
+
 class MachineWithExistingAttributeValue < Test::Unit::TestCase
   def setup
     @klass = Class.new do

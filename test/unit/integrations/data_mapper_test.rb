@@ -134,6 +134,50 @@ begin
         
         assert_equal 1, @resource.count
       end
+      
+      def test_should_not_override_the_column_reader
+        record = @resource.new
+        record.attribute_set(:state, 'off')
+        assert_equal 'off', record.state
+      end
+      
+      def test_should_not_override_the_column_writer
+        record = @resource.new
+        record.state = 'off'
+        assert_equal 'off', record.attribute_get(:state)
+      end
+    end
+    
+    class MachineWithInitialStateTest < BaseTestCase
+      def setup
+        @resource = new_resource
+        @machine = PluginAWeek::StateMachine::Machine.new(@resource, :initial => 'off')
+        @record = @resource.new
+      end
+      
+      def test_should_set_initial_state_on_created_object
+        assert_equal 'off', @record.state
+      end
+    end
+    
+    class MachineWithNonColumnStateAttributeTest < BaseTestCase
+      def setup
+        @resource = new_resource
+        @machine = PluginAWeek::StateMachine::Machine.new(@resource, :status, :initial => 'off')
+        @record = @resource.new
+      end
+      
+      def test_should_define_a_reader_attribute_for_the_attribute
+        assert @record.respond_to?(:status)
+      end
+      
+      def test_should_define_a_writer_attribute_for_the_attribute
+        assert @record.respond_to?(:status=)
+      end
+      
+      def test_should_set_initial_state_on_created_object
+        assert_equal 'off', @record.status
+      end
     end
     
     class MachineWithCallbacksTest < BaseTestCase

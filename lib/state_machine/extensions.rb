@@ -4,6 +4,12 @@ module PluginAWeek #:nodoc:
       def self.extended(base) #:nodoc:
         base.class_eval do
           @state_machines = {}
+          
+          # method_added may get defined by the class, so instead it's chained
+          class << self
+            alias_method :method_added_without_state_machine, :method_added
+            alias_method :method_added, :method_added_with_state_machine
+          end
         end
       end
       
@@ -20,8 +26,8 @@ module PluginAWeek #:nodoc:
       #       ...
       #     end
       #   end
-      def method_added(method) #:nodoc:
-        super
+      def method_added_with_state_machine(method) #:nodoc:
+        method_added_without_state_machine(method)
         
         # Aliasing the +initialize+ method also invokes +method_added+, so
         # alias processing is tracked to prevent an infinite loop
