@@ -364,6 +364,11 @@ class GuardWithDifferentRequirementsTest < Test::Unit::TestCase
   def test_should_include_all_known_states
     assert_equal %w(off on), @guard.known_states.sort
   end
+  
+  def test_should_not_duplicate_known_statse
+    guard = PluginAWeek::StateMachine::Guard.new(:except_from => 'on', :to => 'on', :on => 'turn_on')
+    assert_equal %w(on), guard.known_states
+  end
 end
 
 class GuardWithIfConditionalTest < Test::Unit::TestCase

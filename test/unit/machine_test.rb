@@ -804,7 +804,7 @@ end
 class MachineWithOtherStates < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'on')
     @machine.other_states('on', 'off')
   end
   

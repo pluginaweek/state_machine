@@ -31,7 +31,7 @@ module PluginAWeek #:nodoc:
       # 
       # Each state defined for this requirements is considered *known*.
       def known_states
-        @known_states ||= [:to, :from, :except_to, :except_from].inject([]) {|states, option| states.concat(Array(requirements[option]))}.uniq
+        @known_states ||= [:to, :from, :except_to, :except_from].inject([]) {|states, option| states |= Array(requirements[option])}
       end
       
       # Determines whether the given object / query matches the requirements

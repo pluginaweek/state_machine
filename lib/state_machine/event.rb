@@ -40,7 +40,7 @@ module PluginAWeek #:nodoc:
       # Gets a list of all of the states known to this event.  This will look at
       # each guard's known states are compile a union of those states.
       def known_states
-        @known_states ||= guards.inject([]) {|states, guard| states.concat(guard.known_states)}.uniq
+        @known_states ||= guards.inject([]) {|states, guard| states |= guard.known_states}
       end
       
       # Creates a new transition that will be evaluated when the event is fired.

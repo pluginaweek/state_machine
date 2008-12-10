@@ -341,10 +341,10 @@ module PluginAWeek #:nodoc:
           begin
             states = []
             states << @initial_state if @initial_state && !@initial_state.is_a?(Proc)
-            events.values.each {|event| states.concat(event.known_states)}
-            callbacks.values.flatten.each {|callback| states.concat(callback.guard.known_states)}
-            states.concat(@other_states)
-          end.uniq
+            events.values.each {|event| states |= event.known_states}
+            callbacks.values.flatten.each {|callback| states |= callback.guard.known_states}
+            states |= @other_states
+          end
       end
       
       # Defines additional states that are possible in the state machine, but
