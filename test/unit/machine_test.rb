@@ -107,17 +107,33 @@ end
 
 class MachineWithStaticInitialStateTest < Test::Unit::TestCase
   def setup
-    @klass = Class.new
+    @klass = Class.new do
+      def initialize(attributes = {})
+        attributes.each {|attr, value| send("#{attr}=", value)}
+      end
+    end
+    
     @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
-    @object = @klass.new
   end
   
   def test_should_have_an_initial_state
-    assert_equal 'off', @machine.initial_state(@object)
+    object = @klass.new
+    assert_equal 'off', @machine.initial_state(object)
   end
   
-  def test_should_set_initial_state_on_created_object
-    assert_equal 'off', @object.state
+  def test_should_set_initial_state_if_existing_is_nil
+    object = @klass.new(:state => nil)
+    assert_equal 'off', object.state
+  end
+  
+  def test_should_set_initial_state_if_existing_is_empty
+    object = @klass.new(:state => '')
+    assert_equal 'off', object.state
+  end
+  
+  def test_should_not_set_initial_state_if_existing_is_not_empty
+    object = @klass.new(:state => 'on')
+    assert_equal 'on', object.state
   end
   
   def test_should_be_included_in_known_states
