@@ -192,6 +192,7 @@ module PluginAWeek #:nodoc:
           # the reader/writer methods for the attribute are available
           def define_attribute_accessor
             owner_class.define_attribute_methods
+            super
           end
           
           # Defines a scope for finding records *with* a particular value or
