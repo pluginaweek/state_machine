@@ -832,13 +832,19 @@ end
 class MachineWithExistingMachinesOnOwnerClassTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @second_machine = PluginAWeek::StateMachine::Machine.new(@klass, 'status')
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @second_machine = PluginAWeek::StateMachine::Machine.new(@klass, 'status', :initial => 'active')
+    @object = @klass.new
   end
   
   def test_should_track_each_state_machine
     expected = {'state' => @machine, 'status' => @second_machine}
     assert_equal expected, @klass.state_machines
+  end
+  
+  def test_should_initialize_state_for_both_machines
+    assert_equal 'off', @object.state
+    assert_equal 'active', @object.status
   end
 end
 
