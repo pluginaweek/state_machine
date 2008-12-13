@@ -1,5 +1,6 @@
 == master
 
+* Fix ActiveRecord state machines trying to query the database on unmigrated models
 * Fix initial states not getting set when the current value is an empty string [Aaron Gibralter]
 * Add rake tasks for generating graphviz files for state machines [Nate Murray]
 * Fix initial state not being included in list of known states

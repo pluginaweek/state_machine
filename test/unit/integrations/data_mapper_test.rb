@@ -18,7 +18,7 @@ begin
       
       protected
         # Creates a new DataMapper resource (and the associated table)
-        def new_resource(&block)
+        def new_resource(auto_migrate = true, &block)
           resource = Class.new do
             include DataMapper::Resource
             
@@ -28,7 +28,7 @@ begin
             property :id, Integer, :serial => true
             property :state, String
             
-            auto_migrate!
+            auto_migrate! if auto_migrate
           end
           resource.class_eval(&block) if block_given?
           resource
@@ -145,6 +145,16 @@ begin
         record = @resource.new
         record.state = 'off'
         assert_equal 'off', record.attribute_get(:state)
+      end
+    end
+    
+    class MachineUnmigratedTest < BaseTestCase
+      def setup
+        @resource = new_resource(false)
+      end
+      
+      def test_should_allow_machine_creation
+        assert_nothing_raised { PluginAWeek::StateMachine::Machine.new(@resource) }
       end
     end
     

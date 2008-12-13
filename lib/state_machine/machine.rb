@@ -219,7 +219,7 @@ module PluginAWeek #:nodoc:
       end
       
       # Creates a new state machine for the given attribute
-      def initialize(owner_class, *args)
+      def initialize(owner_class, *args, &block)
         options = args.last.is_a?(Hash) ? args.pop : {}
         assert_valid_keys(options, :initial, :action, :plural, :integration)
         
@@ -237,7 +237,7 @@ module PluginAWeek #:nodoc:
         end unless owner_class.included_modules.include?(PluginAWeek::StateMachine::InstanceMethods)
         
         # Initialize the context of the machine
-        set_context(owner_class, :initial => options[:initial], :integration => options[:integration])
+        set_context(owner_class, :initial => options[:initial], :integration => options[:integration], &block)
         
         # Set integration-specific configurations
         @action ||= default_action unless options.include?(:action)

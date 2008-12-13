@@ -26,9 +26,9 @@ begin
   # Add model/observer creation helpers
   ActiveRecord::TestCase.class_eval do
     # Creates a new ActiveRecord model (and the associated table)
-    def new_model(&block)
+    def new_model(create_table = true, &block)
       model = Class.new(ActiveRecord::Base) do
-        connection.create_table(:foo, :force => true) {|t| t.string(:state)}
+        connection.create_table(:foo, :force => true) {|t| t.string(:state)} if create_table
         set_table_name('foo')
         
         def self.name; 'ActiveRecordTest::Foo'; end
@@ -162,6 +162,19 @@ begin
         record = @model.new
         record.state = 'off'
         assert_equal 'off', record[:state]
+      end
+    end
+    
+    class MachineUnmigratedTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model(false)
+        
+        # Drop the table so that it definitely doesn't exist
+        @model.connection.drop_table(:foo) if @model.connection.table_exists?(:foo)
+      end
+      
+      def test_should_allow_machine_creation
+        assert_nothing_raised { PluginAWeek::StateMachine::Machine.new(@model) }
       end
     end
     
