@@ -93,7 +93,7 @@ module PluginAWeek #:nodoc:
       #       alias_method :with_state, :with_states
       #       
       #       def without_states(*values)
-      #         all(:state.not => values
+      #         all(:state.not => values)
       #       end
       #       alias_method :without_state, :without_states
       #     end
@@ -160,7 +160,7 @@ module PluginAWeek #:nodoc:
         # Runs a new database transaction, rolling back any changes if the
         # yielded block fails (i.e. returns false).
         def within_transaction(object)
-          object.class.transaction {|t| t.rollback if yield == false}
+          object.class.transaction {|t| t.rollback unless yield}
         end
         
         protected
@@ -191,7 +191,8 @@ module PluginAWeek #:nodoc:
           # it's configured to bind to the object as this is the convention for
           # DataMapper/Extlib callbacks
           def add_callback(type, options, &block)
-            @callbacks[type] << Callback.new(options.merge(:bind_to_object => true), &block)
+            options[:bind_to_object] = true
+            super
           end
       end
     end
