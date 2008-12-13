@@ -176,8 +176,6 @@ module PluginAWeek #:nodoc:
           # Adds the default callbacks for notifying ActiveRecord observers
           # before/after a transition has been performed.
           def after_initialize
-            @terminator = lambda {|result| result == false}
-            
             # Observer callbacks never halt the chain; result is ignored
             callbacks[:before] << Callback.new {|object, transition| notify(:before, object, transition)}
             callbacks[:after] << Callback.new {|object, transition, result| notify(:after, object, transition)}
@@ -213,7 +211,7 @@ module PluginAWeek #:nodoc:
           # before the default Observer callbacks that were created after
           # initialization.
           def add_callback(type, options, &block)
-            options[:terminator] = @terminator
+            options[:terminator] = @terminator ||= lambda {|result| result == false}
             @callbacks[type].insert(-2, Callback.new(options, &block))
           end
           
