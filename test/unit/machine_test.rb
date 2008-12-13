@@ -534,6 +534,10 @@ class MachineWithConflictingPredefinedInitializeTest < Test::Unit::TestCase
   def test_should_preserve_block
     assert @object.block_given
   end
+  
+  def test_should_not_include_initialize_in_instance_methods
+    assert !@klass.instance_methods(false).include?('initialize')
+  end
 end
 
 class MachineWithConflictingPostdefinedInitializeTest < Test::Unit::TestCase
@@ -564,6 +568,10 @@ class MachineWithConflictingPostdefinedInitializeTest < Test::Unit::TestCase
   def test_should_preserve_block
     assert @object.block_given
   end
+  
+  def test_should_not_include_initialize_in_instance_methods
+    assert !@klass.instance_methods(false).include?('initialize')
+  end
 end
 
 class MachineWithConflictingSuperclassInitializeTest < Test::Unit::TestCase
@@ -592,6 +600,10 @@ class MachineWithConflictingSuperclassInitializeTest < Test::Unit::TestCase
   
   def test_should_preserve_block
     assert @object.block_given
+  end
+  
+  def test_should_not_include_initialize_in_instance_methods
+    assert !@klass.instance_methods(false).include?('initialize')
   end
 end
 
@@ -627,6 +639,10 @@ class MachineWithConflictingPredefinedAndSuperclassInitializeTest < Test::Unit::
   
   def test_should_still_initialize_state
     assert_equal 'off', @object.state
+  end
+  
+  def test_should_not_include_initialize_in_instance_methods
+    assert !@klass.instance_methods(false).include?('initialize')
   end
 end
 
@@ -664,6 +680,10 @@ class MachineWithConflictingPostdefinedAndSuperclassInitializeTest < Test::Unit:
   
   def test_should_still_initialize_state
     assert_equal 'off', @object.state
+  end
+  
+  def test_should_not_include_initialize_in_instance_methods
+    assert !@klass.instance_methods(false).include?('initialize')
   end
 end
 

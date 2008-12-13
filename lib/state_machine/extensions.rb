@@ -33,8 +33,11 @@ module PluginAWeek #:nodoc:
         # alias processing is tracked to prevent an infinite loop
         if !@skip_initialize_hook && [:initialize, :initialize_with_state_machine].include?(method)
           @skip_initialize_hook = true
+          
+          # +define_method+ is used to prevent it from showing up in #instance_methods
           alias_method :initialize_without_state_machine, :initialize
-          alias_method :initialize, :initialize_with_state_machine
+          define_method(:initialize) {|*args, &block| initialize_with_state_machine(*args, &block) }
+          
           @skip_initialize_hook = false
         end
       end
