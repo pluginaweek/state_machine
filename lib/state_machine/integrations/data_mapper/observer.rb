@@ -2,7 +2,7 @@ module PluginAWeek #:nodoc:
   module StateMachine
     module Integrations #:nodoc:
       module DataMapper
-        # Adds support for create before/after transition callbacks within a
+        # Adds support for creating before/after transition callbacks within a
         # DataMapper observer.  These callbacks behave very similarly to
         # before/after hooks during save/update/destroy/etc., but with the
         # following modifications:

@@ -31,7 +31,7 @@ module PluginAWeek #:nodoc:
       # is the +save+ action.  This will cause the resource to save the changes
       # made to the state machine's attribute.  *Note* that if any other changes
       # were made to the resource prior to transition, then those changes will
-      # be made as well.
+      # be saved as well.
       # 
       # For example,
       # 
@@ -88,12 +88,12 @@ module PluginAWeek #:nodoc:
       #     
       #     class << self
       #       def with_states(*values)
-      #         all(:state => values)
+      #         all(:state => values.flatten)
       #       end
       #       alias_method :with_state, :with_states
       #       
       #       def without_states(*values)
-      #         all(:state.not => values)
+      #         all(:state.not => values.flatten)
       #       end
       #       alias_method :without_state, :without_states
       #     end
@@ -102,7 +102,7 @@ module PluginAWeek #:nodoc:
       # Because of the way scopes work in DataMapper, they can be chained like
       # so:
       # 
-      #   Vehicle.with_state('parked').with_state('idling').all(:order => [:id.desc])
+      #   Vehicle.with_state('parked').all(:order => [:id.desc])
       # 
       # == Callbacks / Observers
       # 
