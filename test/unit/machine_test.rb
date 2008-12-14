@@ -768,6 +768,15 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
     
     assert_equal %w(error off on unknown), @machine.states.sort
   end
+  
+  def test_should_track_state_from_new_events
+    @machine.states
+    @machine.event :turn_off do
+      transition :to => 'maybe'
+    end
+    
+    assert_equal %w(error maybe off on unknown), @machine.states.sort
+  end
 end
 
 class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
@@ -1056,6 +1065,44 @@ begin
       assert File.exist?("#{File.dirname(__FILE__)}/Vehicle_state.png")
     ensure
       FileUtils.rm("#{File.dirname(__FILE__)}/Vehicle_state.png")
+    end
+  end
+  
+  class MachineDrawingWithIntegerStatesTest < Test::Unit::TestCase
+    def setup
+      @klass = Class.new do
+        def self.name; 'Vehicle'; end
+      end
+      @machine = PluginAWeek::StateMachine::Machine.new(@klass, :state_id)
+      @machine.event :ignite do
+        transition :from => 2, :to => 1
+      end
+      @machine.draw
+    end
+    
+    def test_should_draw_machine
+      assert File.exist?('./Vehicle_state_id.png')
+    ensure
+      FileUtils.rm('./Vehicle_state_id.png')
+    end
+  end
+  
+  class MachineDrawingWithTimeStatesTest < Test::Unit::TestCase
+    def setup
+      @klass = Class.new do
+        def self.name; 'Vehicle'; end
+      end
+      @machine = PluginAWeek::StateMachine::Machine.new(@klass, :activated_at)
+      @machine.event :activate do
+        transition :from => nil, :to => lambda {Time.now}
+      end
+      @machine.draw
+    end
+    
+    def test_should_draw_machine
+      assert File.exist?('./Vehicle_activated_at.png')
+    ensure
+      FileUtils.rm('./Vehicle_activated_at.png')
     end
   end
   

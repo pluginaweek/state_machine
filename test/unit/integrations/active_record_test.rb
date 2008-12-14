@@ -281,6 +281,12 @@ begin
         @transition.perform
         assert_equal self, context
       end
+      
+      def test_should_include_transition_states_in_known_states
+        @machine.before_transition :to => 'error', :do => lambda {}
+        
+        assert_equal %w(error), @machine.states.sort
+      end
     end
     
     class MachineWithFailedBeforeCallbacksTest < ActiveRecord::TestCase

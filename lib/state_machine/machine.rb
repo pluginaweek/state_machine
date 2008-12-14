@@ -18,7 +18,47 @@ module PluginAWeek #:nodoc:
     # an object since they can be any arbitrary value.  As a result, anything
     # that relies on a list of all possible states should keep in mind that if
     # a state has not been referenced *anywhere* in the state machine definition,
-    # then it will *not* be a known state.
+    # then it will *not* be a known state unless the +other_states+ is used.
+    # 
+    # == State values
+    # 
+    # While string are the most common object type used for setting values on
+    # the state of the machine, there are no restrictions on what can be used.
+    # This means that symbols, integers, dates/times, etc. can all be used.
+    # 
+    # With string states:
+    # 
+    #   class Vehicle
+    #     state_machine :initial => 'parked' do
+    #       event :ignite do
+    #         transition :to => 'idling', :from => 'parked'
+    #       end
+    #     end
+    #   end
+    # 
+    # With symbolic states:
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       event :ignite do
+    #         transition :to => :idling, :from => :parked
+    #       end
+    #     end
+    #   end
+    # 
+    # With time states:
+    # 
+    #   class Switch
+    #     state_machine :activated_at
+    #       event :activate do
+    #         transition :to => lambda {Time.now}
+    #       end
+    #       
+    #       event :deactivate do
+    #         transition :to => nil
+    #       end
+    #     end
+    #   end
     # 
     # == Callbacks
     # 
@@ -46,8 +86,8 @@ module PluginAWeek #:nodoc:
     # example,
     # 
     #   class Vehicle
-    #     state_machine, :initial => 'idling' do
-    #       before_transition :to => 'parked', :do => lambda {|vehicle| throw :halt}
+    #     state_machine, :initial => 'parked' do
+    #       before_transition :to => 'idling', :do => lambda {|vehicle| throw :halt}
     #       ...
     #     end
     #   end
@@ -66,8 +106,8 @@ module PluginAWeek #:nodoc:
     # 
     #   class Vehicle
     #     state_machine do
-    #       event :park do
-    #         transition :to => 'parked', :from => 'idling'
+    #       event :ignite do
+    #         transition :to => 'idling', :from => 'parked'
     #       end
     #       ...
     #     end
@@ -154,6 +194,14 @@ module PluginAWeek #:nodoc:
       # The events that trigger transitions
       attr_reader :events
       
+      # A list of all of the states known to this state machine.  This will pull
+      # state names from the following sources:
+      # * Initial state
+      # * Event transitions (:to, :from, :except_to, and :except_from options)
+      # * Transition callbacks (:to, :from, :except_to, and :except_from options)
+      # * Unreferenced states (using +other_states+ helper)
+      attr_reader :states
+      
       # The callbacks to invoke before/after a transition is performed
       attr_reader :callbacks
       
@@ -226,7 +274,7 @@ module PluginAWeek #:nodoc:
         # Set machine configuration
         @attribute = (args.first || 'state').to_s
         @events = {}
-        @other_states = []
+        @states = []
         @callbacks = {:before => [], :after => []}
         @action = options[:action]
         
@@ -254,13 +302,13 @@ module PluginAWeek #:nodoc:
       def initialize_copy(orig) #:nodoc:
         super
         
-        @states = nil
         @events = @events.inject({}) do |events, (name, event)|
           event = event.dup
           event.machine = self
           events[name] = event
           events
         end
+        @states = @states.dup
         @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup}
       end
       
@@ -285,7 +333,10 @@ module PluginAWeek #:nodoc:
         assert_valid_keys(options, :initial, :integration)
         
         @owner_class = owner_class
-        @initial_state = options[:initial] if options[:initial]
+        if options[:initial]
+          @initial_state = options[:initial]
+          add_states([@initial_state]) unless @initial_state.is_a?(Proc)
+        end
         
         # Find an integration that can be used for implementing various parts
         # of the state machine that may behave differently in different libraries
@@ -329,24 +380,6 @@ module PluginAWeek #:nodoc:
         @initial_state.is_a?(Proc) ? @initial_state.call(object) : @initial_state
       end
       
-      # Gets a list of all of the states known to this state machine.  This will
-      # look in two places for state names:
-      # * Event transitions (:to, :from, :except_to, and :except_from options)
-      # * Transition callbacks (:to, :from, :except_to, and :except_from options)
-      # 
-      # Each of the above sources will be used to compile a union of the known
-      # states.
-      def states
-        @states ||=
-          begin
-            states = []
-            states << @initial_state if @initial_state && !@initial_state.is_a?(Proc)
-            events.values.each {|event| states |= event.known_states}
-            callbacks.values.flatten.each {|callback| states |= callback.guard.known_states}
-            states |= @other_states
-          end
-      end
-      
       # Defines additional states that are possible in the state machine, but
       # which are derived outside of any events/transitions or possibly
       # dynamically via Proc.  This allows the creation of state conditionals
@@ -377,8 +410,7 @@ module PluginAWeek #:nodoc:
       # Since +stalled+ and +stopped+ are not referenced in any transitions or
       # callbacks, they are explicitly defined.
       def other_states(*args)
-        @states = nil # Reset the cache
-        @other_states |= args
+        add_states(args.flatten)
       end
       
       # Defines an event for the machine.
@@ -438,6 +470,8 @@ module PluginAWeek #:nodoc:
         name = name.to_s
         event = events[name] ||= Event.new(self, name)
         event.instance_eval(&block)
+        add_states(event.known_states)
+        
         event
       end
       
@@ -655,6 +689,7 @@ module PluginAWeek #:nodoc:
           # Add nodes
           states.each do |state|
             shape = state == @initial_state ? 'doublecircle' : 'circle'
+            state = state.is_a?(Proc) ? 'lambda' : state.to_s
             graph.add_node(state, :width => '1', :height => '1', :fixedsize => 'true', :shape => shape, :fontname => options[:font])
           end
           
@@ -664,8 +699,10 @@ module PluginAWeek #:nodoc:
               # From states: :from, everything but :except states, or all states
               from_states = Array(guard.requirements[:from]) || guard.requirements[:except_from] && (states - Array(guard.requirements[:except_from])) || states
               to_state = guard.requirements[:to]
+              to_state = to_state.is_a?(Proc) ? 'lambda' : to_state.to_s if to_state
               
               from_states.each do |from_state|
+                from_state = from_state.to_s
                 graph.add_edge(from_state, to_state || from_state, :label => event.name, :fontname => options[:font])
               end
             end
@@ -733,7 +770,15 @@ module PluginAWeek #:nodoc:
         
         # Adds a new transition callback of the given type.
         def add_callback(type, options, &block)
-          @callbacks[type] << Callback.new(options, &block)
+          @callbacks[type] << callback = Callback.new(options, &block)
+          add_states(callback.known_states)
+          callback
+        end
+        
+        # Tracks the given set of states in the list of all known states for
+        # this machine
+        def add_states(states)
+          @states |= states
         end
     end
   end

@@ -25,7 +25,7 @@ module PluginAWeek #:nodoc:
       # is the +save+ action.  This will cause the record to save the changes
       # made to the state machine's attribute.  *Note* that if any other changes
       # were made to the record prior to transition, then those changes will
-      # be made as well.
+      # be saved as well.
       # 
       # For example,
       # 
@@ -71,17 +71,17 @@ module PluginAWeek #:nodoc:
       # definitions:
       # 
       #   class Vehicle < ActiveRecord::Base
-      #     named_scope :with_states, lambda {|*values| {:conditions => {:state => values}}}
+      #     named_scope :with_states, lambda {|*values| {:conditions => {:state => values.flatten}}}
       #     # with_states also aliased to with_state
       #     
-      #     named_scope :without_states, lambda {|*values| {:conditions => ['state NOT IN (?)', values]}}
+      #     named_scope :without_states, lambda {|*values| {:conditions => ['state NOT IN (?)', values.flatten]}}
       #     # without_states also aliased to without_state
       #   end
       # 
       # Because of the way named scopes work in ActiveRecord, they can be
       # chained like so:
       # 
-      #   Vehicle.with_state('parked').with_state('idling').all(:order => 'id DESC')
+      #   Vehicle.with_state('parked').all(:order => 'id DESC')
       # 
       # == Callbacks
       # 
@@ -117,7 +117,7 @@ module PluginAWeek #:nodoc:
       # == Observers
       # 
       # In addition to support for ActiveRecord-like hooks, there is additional
-      # support for ActiveRecord observers.  Because of the that ActiveRecord
+      # support for ActiveRecord observers.  Because of the way ActiveRecord
       # observers are designed, there is less flexibility around the specific
       # transitions that can be hooked in.  As a result, observers can only
       # hook into before/after callbacks for events and generic transitions
@@ -212,7 +212,10 @@ module PluginAWeek #:nodoc:
           # initialization.
           def add_callback(type, options, &block)
             options[:terminator] = @terminator ||= lambda {|result| result == false}
-            @callbacks[type].insert(-2, Callback.new(options, &block))
+            @callbacks[type].insert(-2, callback = Callback.new(options, &block))
+            add_states(callback.known_states)
+            
+            callback
           end
           
         private

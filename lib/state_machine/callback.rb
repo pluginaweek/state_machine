@@ -121,6 +121,12 @@ module PluginAWeek #:nodoc:
         @guard = Guard.new(options)
       end
       
+      # Gets a list of the states known to this callback by looking at the
+      # guard's requirements
+      def known_states
+        guard.known_states
+      end
+      
       # Runs the callback as long as the transition context matches the guard
       # requirements configured for this callback.
       def call(object, context = {}, *args)

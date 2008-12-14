@@ -20,11 +20,16 @@ module PluginAWeek #:nodoc:
       # objects to when fired
       attr_reader :guards
       
+      # A list of all of the states known to this event using the configured
+      # guards/transitions as the source.
+      attr_reader :known_states
+      
       # Creates a new event within the context of the given machine
       def initialize(machine, name) #:nodoc:
         @machine = machine
         @name = name
         @guards = []
+        @known_states = []
         
         add_actions
       end
@@ -34,13 +39,7 @@ module PluginAWeek #:nodoc:
       def initialize_copy(orig) #:nodoc:
         super
         @guards = @guards.dup
-        @known_states = nil
-      end
-      
-      # Gets a list of all of the states known to this event.  This will look at
-      # each guard's known states are compile a union of those states.
-      def known_states
-        @known_states ||= guards.inject([]) {|states, guard| states |= guard.known_states}
+        @known_states = @known_states.dup
       end
       
       # Creates a new transition that will be evaluated when the event is fired.
@@ -83,6 +82,7 @@ module PluginAWeek #:nodoc:
         assert_valid_keys(options, :to, :from, :except_from, :if, :unless)
         
         guards << guard = Guard.new(options)
+        @known_states |= guard.known_states
         guard
       end
       

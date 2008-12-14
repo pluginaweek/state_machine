@@ -37,6 +37,10 @@ class CallbackByDefaultTest < Test::Unit::TestCase
   def test_should_not_bind_to_the_object
     assert_equal [self, @object], @callback.call(@object)
   end
+  
+  def test_should_not_have_any_known_states
+    assert_equal [], @callback.known_states
+  end
 end
 
 class CallbackWithOnlyMethodTest < Test::Unit::TestCase
@@ -74,6 +78,10 @@ class CallbackWithRequirementsTest < Test::Unit::TestCase
   
   def test_should_call_if_all_requirements_met
     assert @callback.call(@object, :from => 'off', :to => 'on', :on => 'turn_on')
+  end
+  
+  def test_should_include_in_known_states
+    assert_equal %w(off on), @callback.known_states.sort
   end
 end
 

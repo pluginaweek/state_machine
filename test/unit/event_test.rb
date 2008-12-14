@@ -168,6 +168,13 @@ class EventWithTransitionsTest < Test::Unit::TestCase
   def test_should_include_all_transition_states_in_known_states
     assert_equal %w(maybe off on), @event.known_states.sort
   end
+  
+  def test_should_include_new_transition_states_after_calling_known_states
+    @event.known_states
+    @event.transition(:to => 'error')
+    
+    assert_equal %w(error maybe off on), @event.known_states.sort
+  end
 end
 
 class EventWithoutMatchingTransitionsTest < Test::Unit::TestCase

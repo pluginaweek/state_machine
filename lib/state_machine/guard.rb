@@ -15,23 +15,20 @@ module PluginAWeek #:nodoc:
       # guard to match
       attr_reader :requirements
       
+      # A list of all of the states known to this guard.  This will pull state
+      # names from the following requirements:
+      # * +to+
+      # * +from+
+      # * +except_to+
+      # * +except_from+
+      attr_reader :known_states
+      
       # Creates a new guard with the given requirements
       def initialize(requirements = {}) #:nodoc:
         assert_valid_keys(requirements, :to, :from, :on, :except_to, :except_from, :except_on, :if, :unless)
         
         @requirements = requirements
-      end
-      
-      # Gets a list of all of the states known to this guard.  This will look at
-      # the following requirements:
-      # * +to+
-      # * +from+
-      # * +except_to+
-      # * +except_from+
-      # 
-      # Each state defined for these requirements is considered *known*.
-      def known_states
-        @known_states ||= [:to, :from, :except_to, :except_from].inject([]) {|states, option| states |= Array(requirements[option])}
+        @known_states = [:to, :from, :except_to, :except_from].inject([]) {|states, option| states |= Array(requirements[option])}
       end
       
       # Determines whether the given object / query matches the requirements
