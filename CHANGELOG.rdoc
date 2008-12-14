@@ -1,5 +1,6 @@
 == master
 
+* Add Sequel support
 * Fix aliasing :initialize on ActiveRecord models causing warnings when the environment is reloaded
 * Fix ActiveRecord state machines trying to query the database on unmigrated models
 * Fix initial states not getting set when the current value is an empty string [Aaron Gibralter]

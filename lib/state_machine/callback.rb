@@ -18,9 +18,9 @@ module PluginAWeek #:nodoc:
         # setting this configuration to +true+ or +false+.  The default value
         # is +false+.
         # 
-        # *Note* that the DataMapper integration automatically configures this
-        # value on a per-callback basis, so it does not have to be enabled
-        # application-wide.
+        # *Note* that the DataMapper and Sequel integrations automatically
+        # configure this value on a per-callback basis, so it does not have to
+        # be enabled application-wide.
         # 
         # == Examples
         # 

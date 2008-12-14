@@ -136,9 +136,9 @@ module PluginAWeek #:nodoc:
     # 
     # When a state machine is defined for classes using any of the above libraries,
     # it will try to automatically determine the integration to use (Agnostic,
-    # ActiveRecord, or DataMapper) based on the class definition.  To see how
-    # each integration affects the machine's behavior, refer to all constants
-    # defined under the PluginAWeek::StateMachine::Integrations namespace.
+    # ActiveRecord, DataMapper, or Sequel) based on the class definition.  To
+    # see how each integration affects the machine's behavior, refer to all
+    # constants defined under the PluginAWeek::StateMachine::Integrations namespace.
     class Machine
       include Assertions
       

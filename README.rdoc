@@ -29,9 +29,22 @@ deciding how to behave based on the values.  This can become cumbersome and
 difficult to maintain when the complexity of your class starts to increase.
 
 +state_machine+ simplifies this design by introducing the various parts of a real
-state machine, including states, events and transitions.  However, the api is
-designed to be similar to ActiveRecord in terms of validations and callbacks,
-making it so simple you don't even need to know what a state machine is :)
+state machine, including states, events, transitions, and callbacks.  However,
+the api is designed to be so simple you don't even need to know what a
+state machine is :)
+
+Some brief, high-level features include:
+* Defining state machines on any Ruby class
+* Multiple state machines on a single class
+* before/after transition hooks with explicit transition requirements
+* ActiveRecord integration
+* DataMapper integration
+* Sequel integration
+* States of any data type
+* GraphViz visualization creator
+
+Examples of the usage patterns for some of the above features are shown below.
+You can find more detailed documentation in the actual API.
 
 == Usage
 
@@ -110,13 +123,15 @@ Below is an example of many of the features offered by this plugin, including
 Using the above class as an example, you can interact with the state machine
 like so:
 
-  vehicle = Vehicle.new     # => #<Vehicle:0xb7cf4eac @state="parked", @seatbelt_on=false>
-  vehicle.ignite            # => true
-  vehicle                   # => #<Vehicle:0xb7cf4eac @state="idling", @seatbelt_on=true>
-  vehicle.shift_up          # => true
-  vehicle                   # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
-  vehicle.shift_up          # => true
-  vehicle                   # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
+  vehicle = Vehicle.new           # => #<Vehicle:0xb7cf4eac @state="parked", @seatbelt_on=false>
+  vehicle.can_ignite?             # => true
+  vehicle.next_ignite_transition  # => #<PluginAWeek::StateMachine::Transitionn:0xb7c34cec ...>
+  vehicle.ignite                  # => true
+  vehicle                         # => #<Vehicle:0xb7cf4eac @state="idling", @seatbelt_on=true>
+  vehicle.shift_up                # => true
+  vehicle                         # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
+  vehicle.shift_up                # => true
+  vehicle                         # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
   
   # The bang (!) operator can raise exceptions if the event fails
   vehicle.park!             # => PluginAWeek::StateMachine::InvalidTransition: Cannot transition via :park from "second_gear"
@@ -131,6 +146,7 @@ machines to work more tightly with the conventions defined by those libraries.
 The integrations currently available include:
 * ActiveRecord models
 * DataMapper resources
+* Sequel models
 
 A brief overview of these integrations is described below.
 
@@ -257,6 +273,32 @@ callbacks, and observers.  For example,
 For more information about the various behaviors added for DataMapper state
 machines, see PluginAWeek::StateMachine::Integrations::DataMapper.
 
+=== Sequel
+
+Like the ActiveRecord integration, the Sequel integration adds support for
+database transactions, automatically saving the record, named scopes, and
+callbacks.  For example,
+
+  class Vehicle < Sequel::Model
+    state_machine :initial => 'parked' do
+      before_transition :to => 'idling', :do => :put_on_seatbelt
+      after_transition :to => 'parked' do |transition|
+        self.seatbelt = 'off' # self is the record
+      end
+      
+      event :ignite do
+        transition :to => 'idling', :from => 'parked'
+      end
+    end
+    
+    def put_on_seatbelt
+      ...
+    end
+  end
+
+For more information about the various behaviors added for Sequel state
+machines, see PluginAWeek::StateMachine::Integrations::Sequel.
+
 == Tools
 
 === Generating graphs
@@ -320,7 +362,8 @@ events for your models.  It is cross-platform, written in Java.
 
 == Testing
 
-To run the entire test suite (will test ActiveRecord and DataMapper integrations if available):
+To run the entire test suite (will test ActiveRecord DataMapper, and Sequel
+integrations if available):
 
   rake test
 
@@ -331,6 +374,7 @@ dependencies are listed below.
 
 * ActiveRecord[http://rubyonrails.org] integration: 2.1.0 or later
 * DataMapper[http://datamapper.org] integration: 0.9.0 or later
+* Sequel[http://sequel.rubyforge.org] integration: 2.8.0 or later
 
 == References
 
