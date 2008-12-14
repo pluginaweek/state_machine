@@ -432,6 +432,35 @@ class MachineWithConflictingAttributeAccessorsTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithConflictingPrivateAttributeAccessorsTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      attr_accessor :status
+      
+      private
+        def state
+          status
+        end
+        
+        def state=(value)
+          self.status = value
+        end
+    end
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @object = @klass.new
+  end
+  
+  def test_should_not_define_attribute_reader
+    @object.status = 'on'
+    assert_equal 'on', @object.send(:state)
+  end
+  
+  def test_should_not_define_attribute_writer
+    @object.send(:state=, 'on')
+    assert_equal 'on', @object.status
+  end
+end
+
 class MachineWithConflictingScopesTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do

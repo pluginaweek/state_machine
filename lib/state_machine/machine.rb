@@ -735,8 +735,8 @@ module PluginAWeek #:nodoc:
           attribute = self.attribute
           
           owner_class.class_eval do
-            attr_reader attribute unless instance_methods.include?(attribute)
-            attr_writer attribute unless instance_methods.include?("#{attribute}=")
+            attr_reader attribute unless method_defined?(attribute) || private_method_defined?(attribute)
+            attr_writer attribute unless method_defined?("#{attribute}=") || private_method_defined?("#{attribute}=")
           end
         end
         
