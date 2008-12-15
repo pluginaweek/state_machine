@@ -35,7 +35,11 @@ module StateMachine
         
         # +define_method+ is used to prevent it from showing up in #instance_methods
         alias_method :initialize_without_state_machine, :initialize
-        define_method(:initialize) {|*args, &block| initialize_with_state_machine(*args, &block) }
+        class_eval <<-end_eval, __FILE__, __LINE__
+          def initialize(*args, &block)
+            initialize_with_state_machine(*args, &block)
+          end
+        end_eval
         
         @skip_initialize_hook = false
       end
