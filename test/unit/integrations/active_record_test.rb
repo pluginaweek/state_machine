@@ -56,18 +56,18 @@ begin
   module ActiveRecordTest
     class IntegrationTest < ActiveRecord::TestCase
       def test_should_match_if_class_inherits_from_active_record
-        assert PluginAWeek::StateMachine::Integrations::ActiveRecord.matches?(new_model)
+        assert StateMachine::Integrations::ActiveRecord.matches?(new_model)
       end
       
       def test_should_not_match_if_class_does_not_inherit_from_active_record
-        assert !PluginAWeek::StateMachine::Integrations::ActiveRecord.matches?(Class.new)
+        assert !StateMachine::Integrations::ActiveRecord.matches?(Class.new)
       end
     end
     
     class MachineByDefaultTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = PluginAWeek::StateMachine::Machine.new(@model)
+        @machine = StateMachine::Machine.new(@model)
       end
       
       def test_should_use_save_as_action
@@ -86,7 +86,7 @@ begin
     class MachineTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = PluginAWeek::StateMachine::Machine.new(@model)
+        @machine = StateMachine::Machine.new(@model)
       end
       
       def test_should_create_singular_with_scope
@@ -174,14 +174,14 @@ begin
       end
       
       def test_should_allow_machine_creation
-        assert_nothing_raised { PluginAWeek::StateMachine::Machine.new(@model) }
+        assert_nothing_raised { StateMachine::Machine.new(@model) }
       end
     end
     
     class MachineWithInitialStateTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = PluginAWeek::StateMachine::Machine.new(@model, :initial => 'off')
+        @machine = StateMachine::Machine.new(@model, :initial => 'off')
         @record = @model.new
       end
       
@@ -193,7 +193,7 @@ begin
     class MachineWithNonColumnStateAttributeTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = PluginAWeek::StateMachine::Machine.new(@model, :status, :initial => 'off')
+        @machine = StateMachine::Machine.new(@model, :status, :initial => 'off')
         @record = @model.new
       end
       
@@ -213,9 +213,9 @@ begin
     class MachineWithCallbacksTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = PluginAWeek::StateMachine::Machine.new(@model)
+        @machine = StateMachine::Machine.new(@model)
         @record = @model.new(:state => 'off')
-        @transition = PluginAWeek::StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
       end
       
       def test_should_run_before_callbacks
@@ -294,11 +294,11 @@ begin
         @before_count = 0
         
         @model = new_model
-        @machine = PluginAWeek::StateMachine::Machine.new(@model)
+        @machine = StateMachine::Machine.new(@model)
         @machine.before_transition(lambda {@before_count += 1; false})
         @machine.before_transition(lambda {@before_count += 1})
         @record = @model.new(:state => 'off')
-        @transition = PluginAWeek::StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
         @result = @transition.perform
       end
       
@@ -325,9 +325,9 @@ begin
           validates_inclusion_of :state, :in => %w(maybe)
         end
         
-        @machine = PluginAWeek::StateMachine::Machine.new(@model)
+        @machine = StateMachine::Machine.new(@model)
         @record = @model.new(:state => 'off')
-        @transition = PluginAWeek::StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
         @result = @transition.perform
       end
       
@@ -349,11 +349,11 @@ begin
         @after_count = 0
         
         @model = new_model
-        @machine = PluginAWeek::StateMachine::Machine.new(@model)
+        @machine = StateMachine::Machine.new(@model)
         @machine.after_transition(lambda {@after_count += 1; false})
         @machine.after_transition(lambda {@after_count += 1})
         @record = @model.new(:state => 'off')
-        @transition = PluginAWeek::StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
         @result = @transition.perform
       end
       
@@ -377,9 +377,9 @@ begin
     class MachineWithObserversTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = PluginAWeek::StateMachine::Machine.new(@model)
+        @machine = StateMachine::Machine.new(@model)
         @record = @model.new(:state => 'off')
-        @transition = PluginAWeek::StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
       end
       
       def test_should_call_before_event_method
@@ -462,9 +462,9 @@ begin
     class MachineWithMixedCallbacksTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = PluginAWeek::StateMachine::Machine.new(@model)
+        @machine = StateMachine::Machine.new(@model)
         @record = @model.new(:state => 'off')
-        @transition = PluginAWeek::StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
         
         @notifications = []
         

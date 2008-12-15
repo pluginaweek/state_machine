@@ -2,11 +2,11 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class GuardTest < Test::Unit::TestCase
   def setup
-    @guard = PluginAWeek::StateMachine::Guard.new(:to => 'on', :from => 'off')
+    @guard = StateMachine::Guard.new(:to => 'on', :from => 'off')
   end
   
   def test_should_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) { PluginAWeek::StateMachine::Guard.new(:invalid => true) }
+    assert_raise(ArgumentError) { StateMachine::Guard.new(:invalid => true) }
   end
   
   def test_should_have_requirements
@@ -18,7 +18,7 @@ end
 class GuardWithNoRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new
+    @guard = StateMachine::Guard.new
   end
   
   def test_should_match_nil_query
@@ -37,7 +37,7 @@ end
 class GuardWithToRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:to => 'on')
+    @guard = StateMachine::Guard.new(:to => 'on')
   end
   
   def test_should_match_if_included
@@ -64,7 +64,7 @@ end
 class GuardWithMultipleToRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:to => %w(on off))
+    @guard = StateMachine::Guard.new(:to => %w(on off))
   end
   
   def test_should_match_if_included
@@ -83,7 +83,7 @@ end
 class GuardWithFromRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:from => 'on')
+    @guard = StateMachine::Guard.new(:from => 'on')
   end
   
   def test_should_match_if_included
@@ -110,7 +110,7 @@ end
 class GuardWithMultipleFromRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:from => %w(on off))
+    @guard = StateMachine::Guard.new(:from => %w(on off))
   end
   
   def test_should_match_if_included
@@ -129,7 +129,7 @@ end
 class GuardWithOnRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:on => 'turn_on')
+    @guard = StateMachine::Guard.new(:on => 'turn_on')
   end
   
   def test_should_match_if_included
@@ -156,7 +156,7 @@ end
 class GuardWithMultipleOnRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:on => %w(turn_on turn_off))
+    @guard = StateMachine::Guard.new(:on => %w(turn_on turn_off))
   end
   
   def test_should_match_if_included
@@ -171,7 +171,7 @@ end
 class GuardWithExceptToRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:except_to => 'off')
+    @guard = StateMachine::Guard.new(:except_to => 'off')
   end
   
   def test_should_match_if_not_included
@@ -198,7 +198,7 @@ end
 class GuardWithMultipleExceptToRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:except_to => %w(on off))
+    @guard = StateMachine::Guard.new(:except_to => %w(on off))
   end
   
   def test_should_match_if_not_included
@@ -217,7 +217,7 @@ end
 class GuardWithExceptFromRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:except_from => 'off')
+    @guard = StateMachine::Guard.new(:except_from => 'off')
   end
   
   def test_should_match_if_not_included
@@ -244,7 +244,7 @@ end
 class GuardWithMultipleExceptFromRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:except_from => %w(on off))
+    @guard = StateMachine::Guard.new(:except_from => %w(on off))
   end
   
   def test_should_match_if_not_included
@@ -263,7 +263,7 @@ end
 class GuardWithExceptOnRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:except_on => 'turn_off')
+    @guard = StateMachine::Guard.new(:except_on => 'turn_off')
   end
   
   def test_should_match_if_not_included
@@ -290,7 +290,7 @@ end
 class GuardWithMultipleExceptOnRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:except_on => %w(turn_on turn_off))
+    @guard = StateMachine::Guard.new(:except_on => %w(turn_on turn_off))
   end
   
   def test_should_match_if_not_included
@@ -305,7 +305,7 @@ end
 class GuardWithConflictingToRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:to => 'on', :except_to => 'on')
+    @guard = StateMachine::Guard.new(:to => 'on', :except_to => 'on')
   end
   
   def test_should_ignore_except_requirement
@@ -316,7 +316,7 @@ end
 class GuardWithConflictingFromRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:from => 'on', :except_from => 'on')
+    @guard = StateMachine::Guard.new(:from => 'on', :except_from => 'on')
   end
   
   def test_should_ignore_except_requirement
@@ -327,7 +327,7 @@ end
 class GuardWithConflictingOnRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:on => 'turn_on', :except_on => 'turn_on')
+    @guard = StateMachine::Guard.new(:on => 'turn_on', :except_on => 'turn_on')
   end
   
   def test_should_ignore_except_requirement
@@ -338,7 +338,7 @@ end
 class GuardWithDifferentRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @guard = PluginAWeek::StateMachine::Guard.new(:from => 'off', :to => 'on', :on => 'turn_on')
+    @guard = StateMachine::Guard.new(:from => 'off', :to => 'on', :on => 'turn_on')
   end
   
   def test_should_match_empty_query
@@ -366,7 +366,7 @@ class GuardWithDifferentRequirementsTest < Test::Unit::TestCase
   end
   
   def test_should_not_duplicate_known_statse
-    guard = PluginAWeek::StateMachine::Guard.new(:except_from => 'on', :to => 'on', :on => 'turn_on')
+    guard = StateMachine::Guard.new(:except_from => 'on', :to => 'on', :on => 'turn_on')
     assert_equal %w(on), guard.known_states
   end
 end
@@ -377,12 +377,12 @@ class GuardWithIfConditionalTest < Test::Unit::TestCase
   end
   
   def test_should_match_if_true
-    guard = PluginAWeek::StateMachine::Guard.new(:if => lambda {true})
+    guard = StateMachine::Guard.new(:if => lambda {true})
     assert guard.matches?(@object)
   end
   
   def test_should_not_match_if_false
-    guard = PluginAWeek::StateMachine::Guard.new(:if => lambda {false})
+    guard = StateMachine::Guard.new(:if => lambda {false})
     assert !guard.matches?(@object)
   end
 end
@@ -393,12 +393,12 @@ class GuardWithUnlessConditionalTest < Test::Unit::TestCase
   end
   
   def test_should_match_if_false
-    guard = PluginAWeek::StateMachine::Guard.new(:unless => lambda {false})
+    guard = StateMachine::Guard.new(:unless => lambda {false})
     assert guard.matches?(@object)
   end
   
   def test_should_not_match_if_true
-    guard = PluginAWeek::StateMachine::Guard.new(:unless => lambda {true})
+    guard = StateMachine::Guard.new(:unless => lambda {true})
     assert !guard.matches?(@object)
   end
 end
@@ -409,12 +409,12 @@ class GuardWithConflictingConditionalsTest < Test::Unit::TestCase
   end
   
   def test_should_match_if_true
-    guard = PluginAWeek::StateMachine::Guard.new(:if => lambda {true}, :unless => lambda {true})
+    guard = StateMachine::Guard.new(:if => lambda {true}, :unless => lambda {true})
     assert guard.matches?(@object)
   end
   
   def test_should_not_match_if_false
-    guard = PluginAWeek::StateMachine::Guard.new(:if => lambda {false}, :unless => lambda {false})
+    guard = StateMachine::Guard.new(:if => lambda {false}, :unless => lambda {false})
     assert !guard.matches?(@object)
   end
 end

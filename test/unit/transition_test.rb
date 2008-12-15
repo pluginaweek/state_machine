@@ -3,9 +3,9 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class TransitionTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @object = @klass.new
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
   end
   
   def test_should_have_an_object
@@ -41,9 +41,9 @@ end
 class TransitionWithSymbolicValuesTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @object = @klass.new
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, :turn_on, :off, :on)
+    @transition = StateMachine::Transition.new(@object, @machine, :turn_on, :off, :on)
   end
   
   def test_should_not_stringify_event
@@ -70,9 +70,9 @@ class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
       end
     end
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
     @object = @klass.new
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
     @result = @transition.perform
   end
   
@@ -103,9 +103,9 @@ class TransitionWithoutRunningActionTest < Test::Unit::TestCase
       end
     end
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @object = @klass.new
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
     @result = @transition.perform(false)
   end
   
@@ -133,10 +133,10 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
       end
     end
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @object = @klass.new
     @object.state = 'off'
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
   end
   
   def test_should_run_before_callbacks_before_changing_the_state
@@ -225,7 +225,7 @@ class TransitionHaltedDuringBeforeCallbacksTest < Test::Unit::TestCase
     @before_count = 0
     @after_count = 0
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
     class << @machine
       def within_transaction(object)
         owner_class.cancelled_transaction = yield == false
@@ -235,7 +235,7 @@ class TransitionHaltedDuringBeforeCallbacksTest < Test::Unit::TestCase
     @machine.before_transition lambda {@before_count += 1}
     @machine.after_transition lambda {@after_count += 1}
     @object = @klass.new
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
     @result = @transition.perform
   end
   
@@ -277,7 +277,7 @@ class TransitionHaltedDuringActionTest < Test::Unit::TestCase
     @before_count = 0
     @after_count = 0
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
     class << @machine
       def within_transaction(object)
         owner_class.cancelled_transaction = yield == false
@@ -286,7 +286,7 @@ class TransitionHaltedDuringActionTest < Test::Unit::TestCase
     @machine.before_transition lambda {@before_count += 1}
     @machine.after_transition lambda {@after_count += 1}
     @object = @klass.new
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
     @result = @transition.perform
   end
   
@@ -324,7 +324,7 @@ class TransitionHaltedAfterCallbackTest < Test::Unit::TestCase
     @before_count = 0
     @after_count = 0
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
     class << @machine
       def within_transaction(object)
         owner_class.cancelled_transaction = yield == false
@@ -334,7 +334,7 @@ class TransitionHaltedAfterCallbackTest < Test::Unit::TestCase
     @machine.after_transition lambda {@after_count += 1; throw :halt}
     @machine.after_transition lambda {@after_count += 1}
     @object = @klass.new
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
     @result = @transition.perform
   end
   
@@ -372,7 +372,7 @@ class TransitionWithFailedActionTest < Test::Unit::TestCase
     @before_count = 0
     @after_count = 0
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :action => :save)
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
     class << @machine
       def within_transaction(object)
         owner_class.cancelled_transaction = yield == false
@@ -381,7 +381,7 @@ class TransitionWithFailedActionTest < Test::Unit::TestCase
     @machine.before_transition lambda {@before_count += 1}
     @machine.after_transition lambda {@after_count += 1}
     @object = @klass.new
-    @transition = PluginAWeek::StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
     @result = @transition.perform
   end
   

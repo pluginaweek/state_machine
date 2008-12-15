@@ -1,5 +1,6 @@
 == master
 
+* Remove the PluginAWeek namespace
 * Add generic attribute predicate (e.g. "#{attribute}?(state_name)") and state predicates (e.g. "#{state}?")
 * Add Sequel support
 * Fix aliasing :initialize on ActiveRecord models causing warnings when the environment is reloaded

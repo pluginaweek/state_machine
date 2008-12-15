@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class EvalHelperTest < Test::Unit::TestCase
-  include PluginAWeek::StateMachine::EvalHelpers
+  include StateMachine::EvalHelpers
   
   def setup
     @object = Object.new
@@ -13,7 +13,7 @@ class EvalHelperTest < Test::Unit::TestCase
 end
 
 class EvalHelpersSymbolTest < Test::Unit::TestCase
-  include PluginAWeek::StateMachine::EvalHelpers
+  include StateMachine::EvalHelpers
   
   def setup
     class << (@object = Object.new)
@@ -29,7 +29,7 @@ class EvalHelpersSymbolTest < Test::Unit::TestCase
 end
 
 class EvalHelperSymbolWithArgumentsTest < Test::Unit::TestCase
-  include PluginAWeek::StateMachine::EvalHelpers
+  include StateMachine::EvalHelpers
   
   def setup
     class << (@object = Object.new)
@@ -45,7 +45,7 @@ class EvalHelperSymbolWithArgumentsTest < Test::Unit::TestCase
 end
 
 class EvalHelperStringTest < Test::Unit::TestCase
-  include PluginAWeek::StateMachine::EvalHelpers
+  include StateMachine::EvalHelpers
   
   def setup
     @object = Object.new
@@ -66,7 +66,7 @@ class EvalHelperStringTest < Test::Unit::TestCase
 end
 
 class EvalHelperProcTest < Test::Unit::TestCase
-  include PluginAWeek::StateMachine::EvalHelpers
+  include StateMachine::EvalHelpers
   
   def setup
     @object = Object.new
@@ -79,7 +79,7 @@ class EvalHelperProcTest < Test::Unit::TestCase
 end
 
 class EvalHelperProcWithArgumentsTest < Test::Unit::TestCase
-  include PluginAWeek::StateMachine::EvalHelpers
+  include StateMachine::EvalHelpers
   
   def setup
     @object = Object.new

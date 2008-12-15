@@ -2,20 +2,20 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class EventTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(Class.new)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
   end
   
   def test_should_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) {PluginAWeek::StateMachine::Event.new(@machine, 'turn_on', :invalid => true)}
+    assert_raise(ArgumentError) {StateMachine::Event.new(@machine, 'turn_on', :invalid => true)}
   end
 end
 
 class EventByDefaultTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
     
     @object = @klass.new
   end
@@ -63,8 +63,8 @@ end
 
 class EventTransitionsTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(Class.new)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
   end
   
   def test_should_raise_exception_if_invalid_option_specified
@@ -115,8 +115,8 @@ end
 
 class EventAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(Class.new)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
     @event.known_states # Call so that it's cached
     @copied_event = @event.dup
   end
@@ -133,8 +133,8 @@ end
 class EventWithoutTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
     @object = @klass.new
   end
   
@@ -159,8 +159,8 @@ end
 class EventWithTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
     @event.transition(:to => 'on', :from => 'off')
     @event.transition(:to => 'on', :except_from => 'maybe')
   end
@@ -180,8 +180,8 @@ end
 class EventWithoutMatchingTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
     @event.transition(:to => 'on', :from => 'off')
     
     @object = @klass.new
@@ -209,8 +209,8 @@ end
 class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
     @event.transition(:to => 'on', :from => 'off', :if => lambda {false})
     
     @object = @klass.new
@@ -238,8 +238,8 @@ end
 class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
     @event.transition(:to => 'on', :from => 'off')
     
     @object = @klass.new
@@ -271,8 +271,8 @@ end
 class EventWithTransitionWithoutToStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_off')
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_off')
     @event.transition(:from => 'off')
     
     @object = @klass.new
@@ -304,8 +304,8 @@ end
 class EventWithTransitionWithDynamicToStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
     @event.transition(:to => lambda {'on'}, :from => 'off')
     
     @object = @klass.new
@@ -337,8 +337,8 @@ end
 class EventWithMultipleTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @event = PluginAWeek::StateMachine::Event.new(@machine, 'turn_on')
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_on')
     @event.transition(:to => 'on', :from => 'on')
     @event.transition(:to => 'on', :from => 'off') # This one should get used
     

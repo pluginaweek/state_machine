@@ -101,7 +101,7 @@ namespace :state_machine do
     options[:format] = ENV['FORMAT'] if ENV['FORMAT']
     options[:font] = ENV['FONT'] if ENV['FONT']
     
-    PluginAWeek::StateMachine::Machine.draw(ENV['CLASS'], options)
+    StateMachine::Machine.draw(ENV['CLASS'], options)
   end
   
   namespace :draw do

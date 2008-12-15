@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class MachineByDefaultTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @object = @klass.new
   end
   
@@ -40,15 +40,15 @@ class MachineByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_not_be_extended_by_the_active_record_integration
-    assert !(class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::ActiveRecord)
+    assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::ActiveRecord)
   end
   
   def test_should_not_be_extended_by_the_datamapper_integration
-    assert !(class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::DataMapper)
+    assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::DataMapper)
   end
   
   def test_should_not_be_extended_by_the_sequel_integration
-    assert !(class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::Sequel)
+    assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::Sequel)
   end
   
   def test_should_define_a_reader_attribute_for_the_attribute
@@ -80,11 +80,11 @@ class MachineByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_extend_owner_class_with_class_methods
-    assert (class << @klass; ancestors; end).include?(PluginAWeek::StateMachine::ClassMethods)
+    assert (class << @klass; ancestors; end).include?(StateMachine::ClassMethods)
   end
   
   def test_should_include_instance_methods_in_owner_class
-    assert @klass.included_modules.include?(PluginAWeek::StateMachine::InstanceMethods)
+    assert @klass.included_modules.include?(StateMachine::InstanceMethods)
   end
   
   def test_should_define_state_machines_reader
@@ -96,7 +96,7 @@ end
 class MachineWithCustomAttributeTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, 'status')
+    @machine = StateMachine::Machine.new(@klass, 'status')
     @object = @klass.new
   end
   
@@ -125,7 +125,7 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
       end
     end
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
   end
   
   def test_should_have_an_initial_state
@@ -158,7 +158,7 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
     @klass = Class.new do
       attr_accessor :initial_state
     end
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => lambda {|object| object.initial_state || 'default'})
+    @machine = StateMachine::Machine.new(@klass, :initial => lambda {|object| object.initial_state || 'default'})
     @object = @klass.new
   end
   
@@ -181,7 +181,7 @@ end
 
 class MachineWithCustomActionTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, :action => :save)
+    @machine = StateMachine::Machine.new(Class.new, :action => :save)
   end
   
   def test_should_use_the_custom_action
@@ -196,8 +196,8 @@ class MachineWithNilActionTest < Test::Unit::TestCase
         :save
       end
     end
-    PluginAWeek::StateMachine::Integrations.const_set('Custom', integration)
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, :action => nil, :integration => :custom)
+    StateMachine::Integrations.const_set('Custom', integration)
+    @machine = StateMachine::Machine.new(Class.new, :action => nil, :integration => :custom)
   end
   
   def test_should_have_a_nil_action
@@ -205,35 +205,35 @@ class MachineWithNilActionTest < Test::Unit::TestCase
   end
   
   def teardown
-    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
+    StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 
 class MachineWithCustomIntegrationTest < Test::Unit::TestCase
   def setup
-    PluginAWeek::StateMachine::Integrations.const_set('Custom', Module.new)
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, :integration => :custom)
+    StateMachine::Integrations.const_set('Custom', Module.new)
+    @machine = StateMachine::Machine.new(Class.new, :integration => :custom)
   end
   
   def test_should_be_extended_by_the_integration
-    assert (class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::Custom)
+    assert (class << @machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
   
   def teardown
-    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
+    StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 
 class MachineTest < Test::Unit::TestCase
   def test_should_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) {PluginAWeek::StateMachine::Machine.new(Class.new, :invalid => true)}
+    assert_raise(ArgumentError) {StateMachine::Machine.new(Class.new, :invalid => true)}
   end
 end
 
 class MachineWithoutIntegrationTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @object = @klass.new
   end
   
@@ -256,7 +256,7 @@ class MachineWithIntegrationTest < Test::Unit::TestCase
       @without_scopes = []
       
       def after_initialize
-        PluginAWeek::StateMachine::Integrations::Custom.initialized = true
+        StateMachine::Integrations::Custom.initialized = true
       end
       
       def default_action
@@ -264,16 +264,16 @@ class MachineWithIntegrationTest < Test::Unit::TestCase
       end
       
       def define_with_scope(name)
-        PluginAWeek::StateMachine::Integrations::Custom.with_scopes << name
+        StateMachine::Integrations::Custom.with_scopes << name
       end
       
       def define_without_scope(name)
-        PluginAWeek::StateMachine::Integrations::Custom.without_scopes << name
+        StateMachine::Integrations::Custom.without_scopes << name
       end
     end
     
-    PluginAWeek::StateMachine::Integrations.const_set('Custom', @integration)
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, :integration => :custom)
+    StateMachine::Integrations.const_set('Custom', @integration)
+    @machine = StateMachine::Machine.new(Class.new, :integration => :custom)
   end
   
   def test_should_call_after_initialize_hook
@@ -285,7 +285,7 @@ class MachineWithIntegrationTest < Test::Unit::TestCase
   end
   
   def test_should_use_the_custom_action_if_specified
-    machine = PluginAWeek::StateMachine::Machine.new(Class.new, :integration => :custom, :action => :save!)
+    machine = StateMachine::Machine.new(Class.new, :integration => :custom, :action => :save!)
     assert_equal :save!, machine.action
   end
   
@@ -298,13 +298,13 @@ class MachineWithIntegrationTest < Test::Unit::TestCase
   end
   
   def teardown
-    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
+    StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 
 class MachineAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new, 'state')
+    @machine = StateMachine::Machine.new(Class.new, 'state')
     @machine.event(:turn_on) {}
     @machine.before_transition(lambda {})
     @machine.after_transition(lambda {})
@@ -349,7 +349,7 @@ end
 class MachineAfterChangingContextTest < Test::Unit::TestCase
   def setup
     @original_class = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@original_class, 'state')
+    @machine = StateMachine::Machine.new(@original_class, 'state')
     
     @new_class = Class.new(@original_class)
     @new_machine = @machine.within_context(@new_class)
@@ -384,15 +384,15 @@ class MachineAfterChangingContextTest < Test::Unit::TestCase
   end
   
   def test_should_allow_changing_the_integration
-    PluginAWeek::StateMachine::Integrations.const_set('Custom', Module.new)
+    StateMachine::Integrations.const_set('Custom', Module.new)
     new_machine = @machine.within_context(@new_class, :integration => :custom)
-    assert (class << new_machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::Custom)
+    assert (class << new_machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
   
   def test_should_not_change_original_integration_if_updated
-    PluginAWeek::StateMachine::Integrations.const_set('Custom', Module.new)
+    StateMachine::Integrations.const_set('Custom', Module.new)
     new_machine = @machine.within_context(@new_class, :integration => :custom)
-    assert !(class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::Custom)
+    assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
   
   def test_should_change_the_associated_machine_in_the_new_class
@@ -408,7 +408,7 @@ class MachineAfterChangingContextTest < Test::Unit::TestCase
   end
   
   def teardown
-    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom') if PluginAWeek::StateMachine::Integrations.const_defined?('Custom')
+    StateMachine::Integrations.send(:remove_const, 'Custom') if StateMachine::Integrations.const_defined?('Custom')
   end
 end
 
@@ -429,7 +429,7 @@ class MachineWithConflictingAttributeAccessorsTest < Test::Unit::TestCase
         true
       end
     end
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @object = @klass.new
   end
   
@@ -466,7 +466,7 @@ class MachineWithConflictingPrivateAttributeAccessorsTest < Test::Unit::TestCase
           true
         end
     end
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @object = @klass.new
   end
   
@@ -496,7 +496,7 @@ class MachineWithConflictingStatePredicatesTest < Test::Unit::TestCase
         true
       end
     end
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @machine.before_transition :to => 'on', :from => 'off', :do => lambda {}
     @object = @klass.new
   end
@@ -536,8 +536,8 @@ class MachineWithConflictingScopesTest < Test::Unit::TestCase
         raise ArgumentError, 'should not define a without scope'
       end
     end
-    PluginAWeek::StateMachine::Integrations.const_set('Custom', integration)
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :integration => :custom)
+    StateMachine::Integrations.const_set('Custom', integration)
+    @machine = StateMachine::Machine.new(@klass, :integration => :custom)
   end
   
   def test_should_not_define_singular_with_scope
@@ -557,13 +557,13 @@ class MachineWithConflictingScopesTest < Test::Unit::TestCase
   end
   
   def teardown
-    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
+    StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 
 class MachineWithEventsTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new)
+    @machine = StateMachine::Machine.new(Class.new)
   end
   
   def test_should_create_event_with_given_name
@@ -598,7 +598,7 @@ class MachineWithConflictingPredefinedInitializeTest < Test::Unit::TestCase
       end
     end
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
     @object = @klass.new {}
   end
   
@@ -622,7 +622,7 @@ end
 class MachineWithConflictingPostdefinedInitializeTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
     @klass.class_eval do
       attr_reader :initialized
       attr_reader :block_given
@@ -665,7 +665,7 @@ class MachineWithConflictingSuperclassInitializeTest < Test::Unit::TestCase
       end
     end
     @klass = Class.new(@superclass)
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
     @object = @klass.new {}
   end
   
@@ -704,7 +704,7 @@ class MachineWithConflictingPredefinedAndSuperclassInitializeTest < Test::Unit::
       end
     end
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
     @object = @klass.new
   end
   
@@ -736,7 +736,7 @@ class MachineWithConflictingPostdefinedAndSuperclassInitializeTest < Test::Unit:
     end
     @klass = Class.new(@superclass)    
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
     @klass.class_eval do
       attr_reader :initialized
       
@@ -778,7 +778,7 @@ class MachineWithConflictingMethodAddedTest < Test::Unit::TestCase
         end
       end
     end
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
     @object = @klass.new
   end
   
@@ -798,7 +798,7 @@ class MachineWithExistingAttributeValue < Test::Unit::TestCase
         @state = 'on'
       end
     end
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
     @object = @klass.new
   end
   
@@ -809,7 +809,7 @@ end
 
 class MachineWithExistingEventTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new)
+    @machine = StateMachine::Machine.new(Class.new)
     @event = @machine.event(:turn_on) {}
     @same_event = @machine.event(:turn_on) {}
   end
@@ -822,7 +822,7 @@ end
 class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @machine.event(:turn_on) do
       transition :to => 'on', :from => 'off'
       transition :to => 'error', :from => 'unknown'
@@ -864,7 +864,7 @@ end
 class MachineWithSymbolStatesTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @machine.event(:turn_on) do
       transition :to => :on, :from => :off
     end
@@ -880,7 +880,7 @@ end
 class MachineWithNumericStatesTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @machine.event(:turn_on) do
       transition :to => 1, :from => 2
     end
@@ -899,7 +899,7 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
       attr_accessor :callbacks
     end
     
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @event = @machine.event :turn_on do
       transition :to => 'on', :from => 'off'
     end
@@ -996,7 +996,7 @@ end
 class MachineWithOtherStates < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'on')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'on')
     @machine.other_states('on', 'off')
   end
   
@@ -1014,7 +1014,7 @@ end
 class MachineWithOwnerSubclassTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass)
     @subclass = Class.new(@klass)
   end
   
@@ -1030,8 +1030,8 @@ end
 class MachineWithExistingMachinesOnOwnerClassTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.new(@klass, :initial => 'off')
-    @second_machine = PluginAWeek::StateMachine::Machine.new(@klass, 'status', :initial => 'active')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
+    @second_machine = StateMachine::Machine.new(@klass, 'status', :initial => 'active')
     @object = @klass.new
   end
   
@@ -1049,7 +1049,7 @@ end
 class MachineFinderWithoutExistingMachineTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.find_or_create(@klass)
+    @machine = StateMachine::Machine.find_or_create(@klass)
   end
   
   def test_should_create_a_new_machine
@@ -1064,8 +1064,8 @@ end
 class MachineFinderWithExistingOnSameClassTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @existing_machine = PluginAWeek::StateMachine::Machine.new(@klass)
-    @machine = PluginAWeek::StateMachine::Machine.find_or_create(@klass)
+    @existing_machine = StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.find_or_create(@klass)
   end
   
   def test_should_not_create_a_new_machine
@@ -1080,16 +1080,16 @@ class MachineFinderWithExistingMachineOnSuperclassTest < Test::Unit::TestCase
         false
       end
     end
-    PluginAWeek::StateMachine::Integrations.const_set('Custom', integration)
+    StateMachine::Integrations.const_set('Custom', integration)
     
     @base_class = Class.new
-    @base_machine = PluginAWeek::StateMachine::Machine.new(@base_class, 'status', :action => :save, :integration => :custom)
+    @base_machine = StateMachine::Machine.new(@base_class, 'status', :action => :save, :integration => :custom)
     @base_machine.event(:turn_on) {}
     @base_machine.before_transition(lambda {})
     @base_machine.after_transition(lambda {})
     
     @klass = Class.new(@base_class)
-    @machine = PluginAWeek::StateMachine::Machine.find_or_create(@klass, 'status')
+    @machine = StateMachine::Machine.find_or_create(@klass, 'status')
   end
   
   def test_should_create_a_new_machine
@@ -1119,18 +1119,18 @@ class MachineFinderWithExistingMachineOnSuperclassTest < Test::Unit::TestCase
   end
   
   def test_should_use_the_same_integration
-    assert (class << @machine; ancestors; end).include?(PluginAWeek::StateMachine::Integrations::Custom)
+    assert (class << @machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
   
   def teardown
-    PluginAWeek::StateMachine::Integrations.send(:remove_const, 'Custom')
+    StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 
 class MachineFinderCustomOptionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = PluginAWeek::StateMachine::Machine.find_or_create(@klass, 'status', :initial => 'off')
+    @machine = StateMachine::Machine.find_or_create(@klass, 'status', :initial => 'off')
     @object = @klass.new
   end
   
@@ -1153,7 +1153,7 @@ begin
       @klass = Class.new do
         def self.name; 'Vehicle'; end
       end
-      @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+      @machine = StateMachine::Machine.new(@klass)
       @machine.event :ignite do
         transition :from => 'parked', :to => 'idling'
       end
@@ -1197,7 +1197,7 @@ begin
       @klass = Class.new do
         def self.name; 'Vehicle'; end
       end
-      @machine = PluginAWeek::StateMachine::Machine.new(@klass, :state_id)
+      @machine = StateMachine::Machine.new(@klass, :state_id)
       @machine.event :ignite do
         transition :from => 2, :to => 1
       end
@@ -1216,7 +1216,7 @@ begin
       @klass = Class.new do
         def self.name; 'Vehicle'; end
       end
-      @machine = PluginAWeek::StateMachine::Machine.new(@klass, :activated_at)
+      @machine = StateMachine::Machine.new(@klass, :activated_at)
       @machine.event :activate do
         transition :from => nil, :to => lambda {Time.now}
       end
@@ -1235,25 +1235,25 @@ begin
       @klass = Class.new do
         def self.name; 'Vehicle'; end
       end
-      @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+      @machine = StateMachine::Machine.new(@klass)
       @machine.event :ignite do
         transition :from => 'parked', :to => 'idling'
       end
     end
     
     def test_should_raise_exception_if_no_class_names_specified
-      assert_raise(ArgumentError) {PluginAWeek::StateMachine::Machine.draw(nil)}
+      assert_raise(ArgumentError) {StateMachine::Machine.draw(nil)}
     end
     
     def test_should_load_files
-      PluginAWeek::StateMachine::Machine.draw('Switch', :file => "#{File.dirname(__FILE__)}/../classes/switch.rb")
+      StateMachine::Machine.draw('Switch', :file => "#{File.dirname(__FILE__)}/../classes/switch.rb")
       assert defined?(::Switch)
     ensure
       FileUtils.rm('./Switch_state.png')
     end
     
     def test_should_allow_path_and_format_to_be_customized
-      PluginAWeek::StateMachine::Machine.draw('Switch', :file => "#{File.dirname(__FILE__)}/../classes/switch.rb", :path => "#{File.dirname(__FILE__)}/", :format => 'jpg')
+      StateMachine::Machine.draw('Switch', :file => "#{File.dirname(__FILE__)}/../classes/switch.rb", :path => "#{File.dirname(__FILE__)}/", :format => 'jpg')
       assert File.exist?("#{File.dirname(__FILE__)}/Switch_state.jpg")
     ensure
       FileUtils.rm("#{File.dirname(__FILE__)}/Switch_state.jpg")

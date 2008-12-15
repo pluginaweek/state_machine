@@ -47,18 +47,18 @@ begin
     
     class IntegrationTest < BaseTestCase
       def test_should_match_if_class_inherits_from_active_record
-        assert PluginAWeek::StateMachine::Integrations::DataMapper.matches?(new_resource)
+        assert StateMachine::Integrations::DataMapper.matches?(new_resource)
       end
       
       def test_should_not_match_if_class_does_not_inherit_from_active_record
-        assert !PluginAWeek::StateMachine::Integrations::DataMapper.matches?(Class.new)
+        assert !StateMachine::Integrations::DataMapper.matches?(Class.new)
       end
     end
     
     class MachineByDefaultTest < BaseTestCase
       def setup
         @resource = new_resource
-        @machine = PluginAWeek::StateMachine::Machine.new(@resource)
+        @machine = StateMachine::Machine.new(@resource)
       end
       
       def test_should_use_save_as_action
@@ -69,7 +69,7 @@ begin
     class MachineTest < BaseTestCase
       def setup
         @resource = new_resource
-        @machine = PluginAWeek::StateMachine::Machine.new(@resource)
+        @machine = StateMachine::Machine.new(@resource)
       end
       
       def test_should_create_singular_with_scope
@@ -154,14 +154,14 @@ begin
       end
       
       def test_should_allow_machine_creation
-        assert_nothing_raised { PluginAWeek::StateMachine::Machine.new(@resource) }
+        assert_nothing_raised { StateMachine::Machine.new(@resource) }
       end
     end
     
     class MachineWithInitialStateTest < BaseTestCase
       def setup
         @resource = new_resource
-        @machine = PluginAWeek::StateMachine::Machine.new(@resource, :initial => 'off')
+        @machine = StateMachine::Machine.new(@resource, :initial => 'off')
         @record = @resource.new
       end
       
@@ -173,7 +173,7 @@ begin
     class MachineWithNonColumnStateAttributeTest < BaseTestCase
       def setup
         @resource = new_resource
-        @machine = PluginAWeek::StateMachine::Machine.new(@resource, :status, :initial => 'off')
+        @machine = StateMachine::Machine.new(@resource, :status, :initial => 'off')
         @record = @resource.new
       end
       
@@ -193,9 +193,9 @@ begin
     class MachineWithCallbacksTest < BaseTestCase
       def setup
         @resource = new_resource
-        @machine = PluginAWeek::StateMachine::Machine.new(@resource)
+        @machine = StateMachine::Machine.new(@resource)
         @record = @resource.new(:state => 'off')
-        @transition = PluginAWeek::StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
       end
       
       def test_should_run_before_callbacks
@@ -258,9 +258,9 @@ begin
     class MachineWithObserversTest < BaseTestCase
       def setup
         @resource = new_resource
-        @machine = PluginAWeek::StateMachine::Machine.new(@resource)
+        @machine = StateMachine::Machine.new(@resource)
         @record = @resource.new(:state => 'off')
-        @transition = PluginAWeek::StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
       end
       
       def test_should_call_before_transition_callback_if_requirements_match
@@ -290,7 +290,7 @@ begin
       end
       
       def test_should_allow_targeting_specific_machine
-        @second_machine = PluginAWeek::StateMachine::Machine.new(@resource, :status)
+        @second_machine = StateMachine::Machine.new(@resource, :status)
         
         called_state = false
         called_status = false
@@ -367,9 +367,9 @@ begin
     class MachineWithMixedCallbacksTest < BaseTestCase
       def setup
         @resource = new_resource
-        @machine = PluginAWeek::StateMachine::Machine.new(@resource)
+        @machine = StateMachine::Machine.new(@resource)
         @record = @resource.new(:state => 'off')
-        @transition = PluginAWeek::StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
         
         @notifications = notifications = []
         

@@ -127,7 +127,7 @@ like so:
   vehicle = Vehicle.new           # => #<Vehicle:0xb7cf4eac @state="parked", @seatbelt_on=false>
   vehicle.parked?                 # => true
   vehicle.can_ignite?             # => true
-  vehicle.next_ignite_transition  # => #<PluginAWeek::StateMachine::Transition:0xb7c34cec ...>
+  vehicle.next_ignite_transition  # => #<StateMachine::Transition:0xb7c34cec ...>
   vehicle.ignite                  # => true
   vehicle.parked?                 # => false
   vehicle.idling?                 # => true
@@ -138,7 +138,7 @@ like so:
   vehicle                         # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
   
   # The bang (!) operator can raise exceptions if the event fails
-  vehicle.park!                   # => PluginAWeek::StateMachine::InvalidTransition: Cannot transition via :park from "second_gear"
+  vehicle.park!                   # => StateMachine::InvalidTransition: Cannot transition via :park from "second_gear"
   
   # Generic state predicates can raise exceptions if the value does not exist
   vehicle.state?('parked')        # => true
@@ -193,7 +193,7 @@ saving the record, named scopes, and observers.  For example,
   end
 
 For more information about the various behaviors added for ActiveRecord state
-machines, see PluginAWeek::StateMachine::Integrations::ActiveRecord.
+machines, see StateMachine::Integrations::ActiveRecord.
 
 ==== With enumerations
 
@@ -279,7 +279,7 @@ callbacks, and observers.  For example,
   end
 
 For more information about the various behaviors added for DataMapper state
-machines, see PluginAWeek::StateMachine::Integrations::DataMapper.
+machines, see StateMachine::Integrations::DataMapper.
 
 === Sequel
 
@@ -305,7 +305,7 @@ callbacks.  For example,
   end
 
 For more information about the various behaviors added for Sequel state
-machines, see PluginAWeek::StateMachine::Integrations::Sequel.
+machines, see StateMachine::Integrations::Sequel.
 
 == Tools
 

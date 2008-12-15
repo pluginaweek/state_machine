@@ -319,7 +319,7 @@ class VehicleParkedTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_repair_not_allowed!
-    assert_raise(PluginAWeek::StateMachine::InvalidTransition) {@vehicle.repair!}
+    assert_raise(StateMachine::InvalidTransition) {@vehicle.repair!}
   end
 end
 
