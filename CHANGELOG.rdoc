@@ -1,5 +1,7 @@
 == master
 
+== 0.4.0 / 2008-12-14
+
 * Remove the PluginAWeek namespace
 * Add generic attribute predicate (e.g. "#{attribute}?(state_name)") and state predicates (e.g. "#{state}?")
 * Add Sequel support
