@@ -41,6 +41,7 @@ Some brief, high-level features include:
 * DataMapper integration
 * Sequel integration
 * States of any data type
+* State predicates
 * GraphViz visualization creator
 
 Examples of the usage patterns for some of the above features are shown below.
@@ -124,9 +125,12 @@ Using the above class as an example, you can interact with the state machine
 like so:
 
   vehicle = Vehicle.new           # => #<Vehicle:0xb7cf4eac @state="parked", @seatbelt_on=false>
+  vehicle.parked?                 # => true
   vehicle.can_ignite?             # => true
-  vehicle.next_ignite_transition  # => #<PluginAWeek::StateMachine::Transitionn:0xb7c34cec ...>
+  vehicle.next_ignite_transition  # => #<PluginAWeek::StateMachine::Transition:0xb7c34cec ...>
   vehicle.ignite                  # => true
+  vehicle.parked?                 # => false
+  vehicle.idling?                 # => true
   vehicle                         # => #<Vehicle:0xb7cf4eac @state="idling", @seatbelt_on=true>
   vehicle.shift_up                # => true
   vehicle                         # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
@@ -134,7 +138,11 @@ like so:
   vehicle                         # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
   
   # The bang (!) operator can raise exceptions if the event fails
-  vehicle.park!             # => PluginAWeek::StateMachine::InvalidTransition: Cannot transition via :park from "second_gear"
+  vehicle.park!                   # => PluginAWeek::StateMachine::InvalidTransition: Cannot transition via :park from "second_gear"
+  
+  # Generic state predicates can raise exceptions if the value does not exist
+  vehicle.state?('parked')        # => true
+  vehicle.state?('invalid')       # => ArgumentError: "parked" is not a known state value
 
 == Integrations
 
@@ -362,7 +370,7 @@ events for your models.  It is cross-platform, written in Java.
 
 == Testing
 
-To run the entire test suite (will test ActiveRecord DataMapper, and Sequel
+To run the entire test suite (will test ActiveRecord, DataMapper, and Sequel
 integrations if available):
 
   rake test

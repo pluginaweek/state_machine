@@ -180,6 +180,31 @@ class VehicleUnsavedTest < Test::Unit::TestCase
     assert_equal 'parked', @vehicle.state
   end
   
+  def test_should_raise_exception_if_checking_invalid_state
+    assert_raise(ArgumentError) { @vehicle.state?('invalid') }
+  end
+  
+  def test_should_be_parked
+    assert @vehicle.parked?
+    assert @vehicle.state?('parked')
+  end
+  
+  def test_should_not_be_idling
+    assert !@vehicle.idling?
+  end
+  
+  def test_should_not_be_first_gear
+    assert !@vehicle.first_gear?
+  end
+  
+  def test_should_not_be_second_gear
+    assert !@vehicle.second_gear?
+  end
+  
+  def test_should_not_be_stalled
+    assert !@vehicle.stalled?
+  end
+  
   def test_should_not_be_able_to_park
     assert !@vehicle.can_park?
   end
@@ -308,6 +333,10 @@ class VehicleIdlingTest < Test::Unit::TestCase
     assert_equal 'idling', @vehicle.state
   end
   
+  def test_should_be_idling
+    assert @vehicle.idling?
+  end
+  
   def test_should_have_seatbelt_on
     assert @vehicle.seatbelt_on
   end
@@ -348,6 +377,10 @@ class VehicleFirstGearTest < Test::Unit::TestCase
     assert_equal 'first_gear', @vehicle.state
   end
   
+  def test_should_be_first_gear
+    assert @vehicle.first_gear?
+  end
+  
   def test_should_allow_park
     assert @vehicle.park
   end
@@ -382,6 +415,10 @@ class VehicleSecondGearTest < Test::Unit::TestCase
   
   def test_should_be_in_second_gear_state
     assert_equal 'second_gear', @vehicle.state
+  end
+  
+  def test_should_be_second_gear
+    assert @vehicle.second_gear?
   end
   
   def test_should_not_allow_park
@@ -420,6 +457,10 @@ class VehicleThirdGearTest < Test::Unit::TestCase
     assert_equal 'third_gear', @vehicle.state
   end
   
+  def test_should_be_third_gear
+    assert @vehicle.third_gear?
+  end
+  
   def test_should_not_allow_park
     assert !@vehicle.park
   end
@@ -455,6 +496,10 @@ class VehicleStalledTest < Test::Unit::TestCase
   
   def test_should_be_in_stalled_state
     assert_equal 'stalled', @vehicle.state
+  end
+  
+  def test_should_be_stalled
+    assert @vehicle.stalled?
   end
   
   def test_should_be_towed

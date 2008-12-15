@@ -67,8 +67,12 @@ module PluginAWeek #:nodoc:
       # 
       # The attribute for each machine stores the value for the current state
       # of the machine.  In order to access this value and modify it during
-      # transitions, a reader/writer must be available.  If these methods are
-      # not already defined, then they will be automatically generated.
+      # transitions, a reader/writer must be available.  The following methods
+      # will be automatically generated if they are not already defined
+      # (assuming the attribute is called "state"):
+      # * <tt>state</tt> - Gets the current value for the attribute
+      # * <tt>state=(value)</tt> - Sets the current value for the attribute
+      # * <tt>state?(value)</tt> - Checks the given value against the current value.  If the value is not a known state, then an ArgumentError is raised.
       # 
       # For example, the following machine definition will not generate any
       # accessor methods since the class has already defined an attribute
@@ -91,6 +95,33 @@ module PluginAWeek #:nodoc:
       #       ...
       #     end
       #   end
+      # 
+      # == States
+      # 
+      # All of the valid states for the machine are automatically tracked based
+      # on the events, transitions, and callbacks defined for the machine.  If
+      # there are additional states that are never referenced, these should be
+      # explicitly added using the PluginAWeek::StateMachine::Machine#other_states
+      # helper.
+      # 
+      # For each state tracked, a predicate method for that state is generated
+      # on the class.  For example,
+      # 
+      #   class Vehicle
+      #     state_machine :initial => 'parked' do
+      #       event :ignite do
+      #         transition :to => 'idling'
+      #       end
+      #     end
+      #   end
+      # 
+      # ...will generated the following instance methods (assuming they're not
+      # already defined in the class):
+      # * <tt>parked?</tt>
+      # * <tt>idling?</tt>
+      # 
+      # Each predicate method will return true if it matches the object's
+      # current state.  Otherwise, it will return false.
       # 
       # == Events and Transitions
       # 

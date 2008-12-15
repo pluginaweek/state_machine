@@ -737,6 +737,13 @@ module PluginAWeek #:nodoc:
           owner_class.class_eval do
             attr_reader attribute unless method_defined?(attribute) || private_method_defined?(attribute)
             attr_writer attribute unless method_defined?("#{attribute}=") || private_method_defined?("#{attribute}=")
+            
+            # Checks whether the current state is a given value.  If the value
+            # is not a known state, then an ArgumentError is raised.
+            define_method("#{attribute}?") do |state|
+              raise ArgumentError, "#{state.inspect} is not a known #{attribute} value" unless self.class.state_machines[attribute].states.include?(state)
+              send(attribute) == state
+            end unless method_defined?("#{attribute}?") || private_method_defined?("#{attribute}?")
           end
         end
         
@@ -778,7 +785,23 @@ module PluginAWeek #:nodoc:
         # Tracks the given set of states in the list of all known states for
         # this machine
         def add_states(states)
-          @states |= states
+          new_states = states - @states
+          @states += new_states
+          
+          # Add state predicates
+          attribute = self.attribute
+          new_states.each do |state|
+            if state.is_a?(String) || state.is_a?(Symbol)
+              name = "#{state}?"
+              
+              owner_class.class_eval do
+                # Checks whether the current state is equal to the given value
+                define_method(name) do
+                  self.send(attribute) == state
+                end unless method_defined?(name) || private_method_defined?(name)
+              end
+            end
+          end
         end
     end
   end

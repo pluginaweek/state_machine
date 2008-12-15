@@ -59,6 +59,10 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert @object.respond_to?(:state=)
   end
   
+  def test_should_define_a_predicate_for_the_attribute
+    assert @object.respond_to?(:state?)
+  end
+  
   def test_should_not_define_singular_with_scope
     assert !@klass.respond_to?(:with_state)
   end
@@ -106,6 +110,10 @@ class MachineWithCustomAttributeTest < Test::Unit::TestCase
   
   def test_should_define_a_writer_attribute_for_the_attribute
     assert @object.respond_to?(:status=)
+  end
+  
+  def test_should_define_a_predicate_for_the_attribute
+    assert @object.respond_to?(:status?)
   end
 end
 
@@ -416,6 +424,10 @@ class MachineWithConflictingAttributeAccessorsTest < Test::Unit::TestCase
       def state=(value)
         self.status = value
       end
+      
+      def state?
+        true
+      end
     end
     @machine = PluginAWeek::StateMachine::Machine.new(@klass)
     @object = @klass.new
@@ -429,6 +441,10 @@ class MachineWithConflictingAttributeAccessorsTest < Test::Unit::TestCase
   def test_should_not_define_attribute_writer
     @object.state = 'on'
     assert_equal 'on', @object.status
+  end
+  
+  def test_should_not_define_attribute_predicate
+    assert @object.state?
   end
 end
 
@@ -445,6 +461,10 @@ class MachineWithConflictingPrivateAttributeAccessorsTest < Test::Unit::TestCase
         def state=(value)
           self.status = value
         end
+        
+        def state?
+          true
+        end
     end
     @machine = PluginAWeek::StateMachine::Machine.new(@klass)
     @object = @klass.new
@@ -458,6 +478,32 @@ class MachineWithConflictingPrivateAttributeAccessorsTest < Test::Unit::TestCase
   def test_should_not_define_attribute_writer
     @object.send(:state=, 'on')
     assert_equal 'on', @object.status
+  end
+  
+  def test_should_not_define_attribute_predicate
+    assert @object.send(:state?)
+  end
+end
+
+class MachineWithConflictingStatePredicatesTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def on?
+        true
+      end
+      
+      def off?
+        true
+      end
+    end
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine.before_transition :to => 'on', :from => 'off', :do => lambda {}
+    @object = @klass.new
+  end
+  
+  def test_should_not_define_state_predicates
+    assert @object.on?
+    assert @object.off?
   end
 end
 
@@ -775,7 +821,8 @@ end
 
 class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
   def setup
-    @machine = PluginAWeek::StateMachine::Machine.new(Class.new)
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
     @machine.event(:turn_on) do
       transition :to => 'on', :from => 'off'
       transition :to => 'error', :from => 'unknown'
@@ -805,6 +852,44 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
     end
     
     assert_equal %w(error maybe off on unknown), @machine.states.sort
+  end
+  
+  def test_should_define_predicates_for_each_state
+    object = @klass.new
+    
+    [:on?, :off?, :error?, :unknown?].each {|predicate| assert object.respond_to?(predicate)}
+  end
+end
+
+class MachineWithSymbolStatesTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine.event(:turn_on) do
+      transition :to => :on, :from => :off
+    end
+  end
+  
+  def test_should_define_predicates_for_each_state
+    object = @klass.new
+    
+    [:on?, :off?].each {|predicate| assert object.respond_to?(predicate)}
+  end
+end
+
+class MachineWithNumericStatesTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = PluginAWeek::StateMachine::Machine.new(@klass)
+    @machine.event(:turn_on) do
+      transition :to => 1, :from => 2
+    end
+  end
+  
+  def test_should_not_define_predicates_for_each_state
+    object = @klass.new
+    
+    ['1?', '2?'].each {|predicate| assert !object.respond_to?(predicate)}
   end
 end
 
@@ -902,6 +987,10 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
     
     assert_equal %w(error off on unknown), @machine.states.sort
   end
+  
+  def test_should_define_predicates_for_each_state
+    [:on?, :off?].each {|predicate| assert @object.respond_to?(predicate)}
+  end
 end
 
 class MachineWithOtherStates < Test::Unit::TestCase
@@ -913,6 +1002,12 @@ class MachineWithOtherStates < Test::Unit::TestCase
   
   def test_should_include_other_states_in_known_states
     assert_equal %w(off on), @machine.states.sort
+  end
+  
+  def test_should_define_predicates_for_each_state
+    object = @klass.new
+    
+    [:on?, :off?].each {|predicate| assert object.respond_to?(predicate)}
   end
 end
 

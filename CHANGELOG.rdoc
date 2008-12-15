@@ -1,5 +1,6 @@
 == master
 
+* Add generic attribute predicate (e.g. "#{attribute}?(state_name)") and state predicates (e.g. "#{state}?")
 * Add Sequel support
 * Fix aliasing :initialize on ActiveRecord models causing warnings when the environment is reloaded
 * Fix ActiveRecord state machines trying to query the database on unmigrated models
