@@ -114,7 +114,7 @@ module StateMachine
     #     end
     #   end
     # 
-    # ...will generated the following instance methods (assuming they're not
+    # ...will generate the following instance methods (assuming they're not
     # already defined in the class):
     # * <tt>parked?</tt>
     # * <tt>idling?</tt>
