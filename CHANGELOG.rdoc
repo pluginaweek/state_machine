@@ -1,5 +1,6 @@
 == master
 
+* Include user-friendly conditions in GraphViz output
 * Fix attribute predicates not working on attributes that represent columns in ActiveRecord
 
 == 0.4.0 / 2008-12-14

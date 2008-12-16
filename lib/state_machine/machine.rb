@@ -700,9 +700,17 @@ module StateMachine
             to_state = guard.requirements[:to]
             to_state = to_state.is_a?(Proc) ? 'lambda' : to_state.to_s if to_state
             
+            # Generate label based on event / conditions
+            label = event.name
+            [:if, :unless].detect do |option|
+              if condition = guard.requirements[option]
+                label = "#{label} #{option} #{condition.is_a?(Proc) ? '*' : condition}"
+              end
+            end
+            
             from_states.each do |from_state|
               from_state = from_state.to_s
-              graph.add_edge(from_state, to_state || from_state, :label => event.name, :fontname => options[:font])
+              graph.add_edge(from_state, to_state || from_state, :label => label, :fontname => options[:font])
             end
           end
         end
