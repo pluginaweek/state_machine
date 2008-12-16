@@ -704,7 +704,6 @@ module StateMachine
         
         # Tracks unique identifiers for dynamic states (via lambda blocks)
         dynamic_states = {}
-        dynamic_id = 0
         
         # Add nodes
         states.each do |state|
@@ -712,7 +711,7 @@ module StateMachine
           
           # Use GraphViz-friendly name/label for dynamic/nil states
           if state.is_a?(Proc)
-            name = "lambda#{dynamic_id += 1}"
+            name = "lambda#{dynamic_states.keys.length}"
             label = '*'
             dynamic_states[state] = name
           else
