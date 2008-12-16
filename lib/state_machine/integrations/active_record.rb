@@ -188,7 +188,29 @@ module StateMachine
         # Forces all attribute methods to be generated for the model so that
         # the reader/writer methods for the attribute are available
         def define_attribute_accessor
-          owner_class.define_attribute_methods if owner_class.table_exists?
+          if owner_class.table_exists?
+            owner_class.define_attribute_methods
+            
+            # Support attribute predicate for ActiveRecord columns
+            if owner_class.column_names.include?(attribute)
+              attribute = self.attribute
+              
+              owner_class.class_eval do
+                define_method("#{attribute}?") do |*args|
+                  if args.empty?
+                    # No arguments: querying for presence of the attribute
+                    super
+                  else
+                    # Arguments: querying for the attribute's current value
+                    state = args.first
+                    raise ArgumentError, "#{state.inspect} is not a known #{attribute} value" unless self.class.state_machines[attribute].states.include?(state)
+                    send(attribute) == state
+                  end
+                end
+              end
+            end
+          end
+          
           super
         end
         

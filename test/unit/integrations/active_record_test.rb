@@ -190,10 +190,43 @@ begin
       end
     end
     
+    class MachineWithColumnStateAttributeTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model, :initial => 'off')
+        @machine.other_states('on')
+        @record = @model.new
+      end
+      
+      def test_should_have_an_attribute_predicate
+        assert @record.respond_to?(:state?)
+      end
+      
+      def test_should_test_for_existence_on_predicate_without_parameters
+        assert @record.state?
+        
+        @record.state = nil
+        assert !@record.state?
+      end
+      
+      def test_should_return_false_for_predicate_if_does_not_match_current_value
+        assert !@record.state?('on')
+      end
+      
+      def test_should_return_true_for_predicate_if_matches_current_value
+        assert @record.state?('off')
+      end
+      
+      def test_should_raise_exception_for_predicate_if_invalid_state_specified
+        assert_raise(ArgumentError) { @record.state?('invalid') }
+      end
+    end
+    
     class MachineWithNonColumnStateAttributeTest < ActiveRecord::TestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model, :status, :initial => 'off')
+        @machine.other_states('on')
         @record = @model.new
       end
       
@@ -203,6 +236,29 @@ begin
       
       def test_should_define_a_writer_attribute_for_the_attribute
         assert @record.respond_to?(:status=)
+      end
+      
+      def test_should_define_an_attribute_predicate
+        assert @record.respond_to?(:status?)
+      end
+      
+      def test_should_raise_exception_on_predicate_without_parameters
+        old_verbose, $VERBOSE = $VERBOSE, nil
+        assert_raise(ArgumentError) { @record.status? }
+      ensure
+        $VERBOSE = old_verbose
+      end
+      
+      def test_should_return_false_for_predicate_if_does_not_match_current_value
+        assert !@record.status?('on')
+      end
+      
+      def test_should_return_true_for_predicate_if_matches_current_value
+        assert @record.status?('off')
+      end
+      
+      def test_should_raise_exception_for_predicate_if_invalid_state_specified
+        assert_raise(ArgumentError) { @record.status?('invalid') }
       end
       
       def test_should_set_initial_state_on_created_object

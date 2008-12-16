@@ -1,5 +1,7 @@
 == master
 
+* Fix attribute predicates not working on attributes that represent columns in ActiveRecord
+
 == 0.4.0 / 2008-12-14
 
 * Remove the PluginAWeek namespace
