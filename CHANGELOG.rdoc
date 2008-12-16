@@ -1,5 +1,7 @@
 == master
 
+== 0.4.1 / 2008-12-16
+
 * Fix nil states not being handled properly in guards, known states, or visualizations
 * Fix the same node being used for different dynamic states in GraphViz output
 * Always include initial state in the list of known states even if it's dynamic
