@@ -335,10 +335,11 @@ To generate multiple state machine graphs:
   rake state_machine:draw FILE=vehicle.rb,car.rb CLASS=Vehicle,Car
 
 *Note* that this will generate a different file for every state machine defined
-in the class.  The generates files will an output filename of the format #{class_name}_#{attribute}.#{format}.
+in the class.  The generated files will use an output filename of the format
+#{class_name}_#{attribute}.#{format}.
 
 For examples of actual images generated using this task, see those under the
-test/examples folder.
+examples folder.
 
 ==== Ruby on Rails Integration
 
@@ -371,7 +372,7 @@ events for your models.  It is cross-platform, written in Java.
 == Testing
 
 To run the entire test suite (will test ActiveRecord, DataMapper, and Sequel
-integrations if available):
+integrations if the proper dependencies are available):
 
   rake test
 
@@ -386,5 +387,4 @@ dependencies are listed below.
 
 == References
 
-* Scott Barron - acts_as_state_machine[http://elitists.textdriven.com/svn/plugins/acts_as_state_machine]
 * acts_as_enumeration[http://github.com/pluginaweek/acts_as_enumeration]
