@@ -33,7 +33,8 @@ module StateMachine
       if !@skip_initialize_hook && [:initialize, :initialize_with_state_machine].include?(method)
         @skip_initialize_hook = true
         
-        # +define_method+ is used to prevent it from showing up in #instance_methods
+        # Re-defining +initialize+ instead of alias chaining is done in order to
+        # prevent +initialize+ from showing up in #instance_methods
         alias_method :initialize_without_state_machine, :initialize
         class_eval <<-end_eval, __FILE__, __LINE__
           def initialize(*args, &block)
