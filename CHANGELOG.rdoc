@@ -1,6 +1,10 @@
 == master
 
-* Include user-friendly conditions in GraphViz output
+* Fix nil states not being handled properly in guards, known states, or visualizations
+* Fix the same node being used for different dynamic states in GraphViz output
+* Always include initial state in the list of known states even if it's dynamic
+* Use consistent naming scheme for dynamic states in GraphViz output
+* Allow blocks to be directly passed into machine class
 * Fix attribute predicates not working on attributes that represent columns in ActiveRecord
 
 == 0.4.0 / 2008-12-14

@@ -10,7 +10,7 @@ class GuardTest < Test::Unit::TestCase
   end
   
   def test_should_have_requirements
-    expected = {:to => 'on', :from => 'off'}
+    expected = {:to => %w(on), :from => %w(off)}
     assert_equal expected, @guard.requirements
   end
 end
@@ -40,12 +40,20 @@ class GuardWithToRequirementTest < Test::Unit::TestCase
     @guard = StateMachine::Guard.new(:to => 'on')
   end
   
+  def test_should_match_if_not_specified
+    assert @guard.matches?(@object, :from => 'off')
+  end
+  
   def test_should_match_if_included
     assert @guard.matches?(@object, :to => 'on')
   end
   
   def test_should_not_match_if_not_included
     assert !@guard.matches?(@object, :to => 'off')
+  end
+  
+  def test_should_not_match_if_nil
+    assert !@guard.matches?(@object, :to => nil)
   end
   
   def test_should_ignore_from
@@ -86,12 +94,20 @@ class GuardWithFromRequirementTest < Test::Unit::TestCase
     @guard = StateMachine::Guard.new(:from => 'on')
   end
   
+  def test_should_match_if_not_specified
+    assert @guard.matches?(@object, :to => 'off')
+  end
+  
   def test_should_match_if_included
     assert @guard.matches?(@object, :from => 'on')
   end
   
   def test_should_not_match_if_not_included
     assert !@guard.matches?(@object, :from => 'off')
+  end
+  
+  def test_should_not_match_if_nil
+    assert !@guard.matches?(@object, :from => nil)
   end
   
   def test_should_ignore_to
@@ -132,12 +148,20 @@ class GuardWithOnRequirementTest < Test::Unit::TestCase
     @guard = StateMachine::Guard.new(:on => 'turn_on')
   end
   
+  def test_should_match_if_not_specified
+    assert @guard.matches?(@object, :from => 'off')
+  end
+  
   def test_should_match_if_included
     assert @guard.matches?(@object, :on => 'turn_on')
   end
   
   def test_should_not_match_if_not_included
     assert !@guard.matches?(@object, :on => 'turn_off')
+  end
+  
+  def test_should_not_match_if_nil
+    assert !@guard.matches?(@object, :on => nil)
   end
   
   def test_should_ignore_to
@@ -180,6 +204,10 @@ class GuardWithExceptToRequirementTest < Test::Unit::TestCase
   
   def test_should_not_match_if_included
     assert !@guard.matches?(@object, :to => 'off')
+  end
+  
+  def test_should_match_if_nil
+    assert @guard.matches?(@object, :to => nil)
   end
   
   def test_should_ignore_from
@@ -228,6 +256,10 @@ class GuardWithExceptFromRequirementTest < Test::Unit::TestCase
     assert !@guard.matches?(@object, :from => 'off')
   end
   
+  def test_should_match_if_nil
+    assert @guard.matches?(@object, :from => nil)
+  end
+  
   def test_should_ignore_to
     assert @guard.matches?(@object, :from => 'on', :to => 'off')
   end
@@ -272,6 +304,10 @@ class GuardWithExceptOnRequirementTest < Test::Unit::TestCase
   
   def test_should_not_match_if_included
     assert !@guard.matches?(@object, :on => 'turn_off')
+  end
+  
+  def test_should_match_if_nil
+    assert @guard.matches?(@object, :on => nil)
   end
   
   def test_should_ignore_to
@@ -368,6 +404,33 @@ class GuardWithDifferentRequirementsTest < Test::Unit::TestCase
   def test_should_not_duplicate_known_statse
     guard = StateMachine::Guard.new(:except_from => 'on', :to => 'on', :on => 'turn_on')
     assert_equal %w(on), guard.known_states
+  end
+end
+
+class GuardWithNilRequirementsTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+    @guard = StateMachine::Guard.new(:from => nil, :to => nil)
+  end
+  
+  def test_should_match_empty_query
+    assert @guard.matches?(@object)
+  end
+  
+  def test_should_match_if_all_requirements_match
+    assert @guard.matches?(@object, :from => nil, :to => nil)
+  end
+  
+  def test_should_not_match_if_from_not_included
+    assert !@guard.matches?(@object, :from => 'off')
+  end
+  
+  def test_should_not_match_if_to_not_included
+    assert !@guard.matches?(@object, :to => 'on')
+  end
+  
+  def test_should_include_all_known_states
+    assert_equal [nil], @guard.known_states
   end
 end
 

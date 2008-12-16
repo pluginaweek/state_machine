@@ -20,7 +20,7 @@ module StateMachine
     attr_reader :guards
     
     # A list of all of the states known to this event using the configured
-    # guards/transitions as the source.
+    # guards/transitions as the source
     attr_reader :known_states
     
     # Creates a new event within the context of the given machine
@@ -45,7 +45,7 @@ module StateMachine
     # 
     # Configuration options:
     # * +to+ - The state that being transitioned to.  If not specified, then the transition will not change the state.
-    # * +from+ - A state or array of states that can be transitioned from. If not specified, then the transition can occur for *any* from state
+    # * +from+ - A state or array of states that can be transitioned from. If not specified, then the transition can occur for *any* from state.
     # * +except_from+ - A state or array of states that *cannot* be transitioned from.
     # * +if+ - Specifies a method, proc or string to call to determine if the transition should occur (e.g. :if => :moving?, or :if => Proc.new {|car| car.speed > 60}). The method, proc or string should return or evaluate to a true or false value.
     # * +unless+ - Specifies a method, proc or string to call to determine if the transition should not occur (e.g. :unless => :stopped?, or :unless => Proc.new {|car| car.speed <= 60}). The method, proc or string should return or evaluate to a true or false value.
@@ -68,8 +68,10 @@ module StateMachine
     # 
     # == Examples
     # 
+    #   transition :from => nil, :to => 'parked'
     #   transition :from => %w(first_gear reverse)
     #   transition :except_from => 'parked'
+    #   transition :to => nil
     #   transition :to => 'parked'
     #   transition :to => lambda {Time.now}
     #   transition :to => 'parked', :from => 'first_gear'
@@ -100,7 +102,7 @@ module StateMachine
       
       if guard = guards.find {|guard| guard.matches?(object, :from => from)}
         # Guard allows for the transition to occur
-        to = guard.requirements[:to] || from
+        to = guard.requirements[:to] ? guard.requirements[:to].first : from
         to = to.call if to.is_a?(Proc)
         Transition.new(object, machine, name, from, to)
       end

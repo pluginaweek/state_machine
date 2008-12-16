@@ -35,8 +35,8 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert_nil @machine.action
   end
   
-  def test_should_not_have_any_states
-    assert @machine.states.empty?
+  def test_should_have_a_nil_state
+    assert_equal [nil], @machine.states
   end
   
   def test_should_not_be_extended_by_the_active_record_integration
@@ -158,7 +158,8 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
     @klass = Class.new do
       attr_accessor :initial_state
     end
-    @machine = StateMachine::Machine.new(@klass, :initial => lambda {|object| object.initial_state || 'default'})
+    @initial_state = lambda {|object| object.initial_state || 'default'}
+    @machine = StateMachine::Machine.new(@klass, :initial => @initial_state)
     @object = @klass.new
   end
   
@@ -174,8 +175,8 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
     assert_equal 'default', @object.state
   end
   
-  def test_should_not_be_included_in_known_states
-    assert_equal [], @machine.states
+  def test_should_be_included_in_known_states
+    assert_equal [@initial_state], @machine.states
   end
 end
 
@@ -227,6 +228,15 @@ end
 class MachineTest < Test::Unit::TestCase
   def test_should_raise_exception_if_invalid_option_specified
     assert_raise(ArgumentError) {StateMachine::Machine.new(Class.new, :invalid => true)}
+  end
+  
+  def test_should_evaluate_a_block_during_initialization
+    called = true
+    StateMachine::Machine.new(Class.new) do
+      called = respond_to?(:event)
+    end
+    
+    assert called
   end
 end
 
@@ -822,7 +832,7 @@ end
 class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
     @machine.event(:turn_on) do
       transition :to => 'on', :from => 'off'
       transition :to => 'error', :from => 'unknown'
@@ -893,19 +903,34 @@ class MachineWithNumericStatesTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithNilStatesTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.event(:turn_on) do
+      transition :to => 'on', :from => nil
+    end
+  end
+  
+  def test_should_not_redefine_nil_predicate
+    object = @klass.new
+    assert !object.nil?
+    assert !object.respond_to?('?')
+  end
+end
+
 class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do
       attr_accessor :callbacks
     end
     
-    @machine = StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
     @event = @machine.event :turn_on do
       transition :to => 'on', :from => 'off'
     end
     
     @object = @klass.new
-    @object.state = 'off'
     @object.callbacks = []
   end
   
@@ -1052,6 +1077,15 @@ class MachineFinderWithoutExistingMachineTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.find_or_create(@klass)
   end
   
+  def test_should_accept_a_block
+    called = false
+    StateMachine::Machine.find_or_create(Class.new) do
+      called = respond_to?(:event)
+    end
+    
+    assert called
+  end
+  
   def test_should_create_a_new_machine
     assert_not_nil @machine
   end
@@ -1066,6 +1100,15 @@ class MachineFinderWithExistingOnSameClassTest < Test::Unit::TestCase
     @klass = Class.new
     @existing_machine = StateMachine::Machine.new(@klass)
     @machine = StateMachine::Machine.find_or_create(@klass)
+  end
+  
+  def test_should_accept_a_block
+    called = false
+    StateMachine::Machine.find_or_create(@klass) do
+      called = respond_to?(:event)
+    end
+    
+    assert called
   end
   
   def test_should_not_create_a_new_machine
@@ -1090,6 +1133,15 @@ class MachineFinderWithExistingMachineOnSuperclassTest < Test::Unit::TestCase
     
     @klass = Class.new(@base_class)
     @machine = StateMachine::Machine.find_or_create(@klass, 'status')
+  end
+  
+  def test_should_accept_a_block
+    called = false
+    StateMachine::Machine.find_or_create(Class.new(@base_class)) do
+      called = respond_to?(:event)
+    end
+    
+    assert called
   end
   
   def test_should_create_a_new_machine
@@ -1211,14 +1263,33 @@ begin
     end
   end
   
-  class MachineDrawingWithTimeStatesTest < Test::Unit::TestCase
+  class MachineDrawingWithNilStatesTest < Test::Unit::TestCase
     def setup
       @klass = Class.new do
         def self.name; 'Vehicle'; end
       end
-      @machine = StateMachine::Machine.new(@klass, :activated_at)
+      @machine = StateMachine::Machine.new(@klass, :activated_at, :initial => 'inactive')
       @machine.event :activate do
-        transition :from => nil, :to => lambda {Time.now}
+        transition :from => nil, :to => 'active'
+      end
+      @machine.draw
+    end
+    
+    def test_should_draw_machine
+      assert File.exist?('./Vehicle_activated_at.png')
+    ensure
+      FileUtils.rm('./Vehicle_activated_at.png')
+    end
+  end
+  
+  class MachineDrawingWithDynamicStatesTest < Test::Unit::TestCase
+    def setup
+      @klass = Class.new do
+        def self.name; 'Vehicle'; end
+      end
+      @machine = StateMachine::Machine.new(@klass, :activated_at, :initial => 'inactive')
+      @machine.event :activate do
+        transition :from => 'inactive', :to => lambda {Time.now}
       end
       @machine.draw
     end

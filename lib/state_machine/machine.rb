@@ -17,11 +17,11 @@ module StateMachine
   # an object since they can be any arbitrary value.  As a result, anything
   # that relies on a list of all possible states should keep in mind that if
   # a state has not been referenced *anywhere* in the state machine definition,
-  # then it will *not* be a known state unless the +other_states+ is used.
+  # then it will *not* be a known state unless the +other_states+ helper is used.
   # 
   # == State values
   # 
-  # While string are the most common object type used for setting values on
+  # While strings are the most common object type used for setting values on
   # the state of the machine, there are no restrictions on what can be used.
   # This means that symbols, integers, dates/times, etc. can all be used.
   # 
@@ -49,6 +49,8 @@ module StateMachine
   # 
   #   class Switch
   #     state_machine :activated_at
+  #       before_transition :to => nil, :do => lambda {...}
+  #       
   #       event :activate do
   #         transition :to => lambda {Time.now}
   #       end
@@ -219,16 +221,19 @@ module StateMachine
       # If a machine of the given name already exists in one of the class's
       # superclasses, then a copy of that machine will be created and stored
       # in the new owner class (the original will remain unchanged).
-      def find_or_create(owner_class, *args)
+      def find_or_create(owner_class, *args, &block)
         options = args.last.is_a?(Hash) ? args.pop : {}
-        attribute = args.any? ? args.first.to_s : 'state'
+        attribute = (args.first || 'state').to_s
         
         # Attempts to find an existing machine
         if owner_class.respond_to?(:state_machines) && machine = owner_class.state_machines[attribute]
           machine = machine.within_context(owner_class, options) unless machine.owner_class == owner_class
+          
+          # Evaluate caller block for DSL
+          machine.instance_eval(&block) if block_given?
         else
           # No existing machine: create a new one
-          machine = new(owner_class, attribute, options)
+          machine = new(owner_class, attribute, options, &block)
         end
         
         machine
@@ -283,7 +288,7 @@ module StateMachine
         include StateMachine::InstanceMethods
       end unless owner_class.included_modules.include?(StateMachine::InstanceMethods)
       
-      # Initialize the context of the machine
+      # Initialize the class context of the machine
       set_context(owner_class, :initial => options[:initial], :integration => options[:integration], &block)
       
       # Set integration-specific configurations
@@ -293,6 +298,9 @@ module StateMachine
       
       # Call after hook for integration-specific extensions
       after_initialize
+      
+      # Evaluate caller block for DSL
+      instance_eval(&block) if block_given?
     end
     
     # Creates a copy of this machine in addition to copies of each associated
@@ -313,7 +321,7 @@ module StateMachine
     
     # Creates a copy of this machine within the context of the given class.
     # This should be used for inheritance support of state machines.
-    def within_context(owner_class, options = {}) #:nodoc:
+    def within_context(owner_class, options = {}, &block) #:nodoc:
       machine = dup
       machine.set_context(owner_class, {:integration => @integration}.merge(options))
       machine
@@ -332,10 +340,8 @@ module StateMachine
       assert_valid_keys(options, :initial, :integration)
       
       @owner_class = owner_class
-      if options[:initial]
-        @initial_state = options[:initial]
-        add_states([@initial_state]) unless @initial_state.is_a?(Proc)
-      end
+      @initial_state = options[:initial] if options[:initial]
+      add_states([@initial_state])
       
       # Find an integration that can be used for implementing various parts
       # of the state machine that may behave differently in different libraries
@@ -351,12 +357,12 @@ module StateMachine
     
     # Gets the initial state of the machine for the given object. If a dynamic
     # initial state was configured for this machine, then the object will be
-    # passed into the proc to help determine the actual value of the initial
-    # state.
+    # passed into the lambda block to help determine the actual value of the
+    # initial state.
     # 
     # == Examples
     # 
-    # With static initial state:
+    # With a static initial state:
     # 
     #   class Vehicle
     #     state_machine :initial => 'parked' do
@@ -364,25 +370,36 @@ module StateMachine
     #     end
     #   end
     #   
+    #   vehicle = Vehicle.new
     #   Vehicle.state_machines['state'].initial_state(vehicle)   # => "parked"
     # 
-    # With dynamic initial state:
+    # With a dynamic initial state:
     # 
     #   class Vehicle
+    #     attr_accessor :force_idle
+    #     
     #     state_machine :initial => lambda {|vehicle| vehicle.force_idle ? 'idling' : 'parked'} do
     #       ...
     #     end
     #   end
     #   
+    #   vehicle = Vehicle.new
+    #   
+    #   vehicle.force_idle = true
     #   Vehicle.state_machines['state'].initial_state(vehicle)   # => "idling"
+    #   
+    #   vehicle.force_idle = false
+    #   Vehicle.state_machines['state'].initial_state(vehicle)   # => "parked"
     def initial_state(object)
       @initial_state.is_a?(Proc) ? @initial_state.call(object) : @initial_state
     end
     
     # Defines additional states that are possible in the state machine, but
     # which are derived outside of any events/transitions or possibly
-    # dynamically via Proc.  This allows the creation of state conditionals
-    # which are not defined in the standard :to or :from structure.
+    # dynamically via a lambda block.  This allows the given states to be:
+    # * Queried via instance-level predicates
+    # * Included in GraphViz visualizations
+    # * Used in :except_from and :except_to transition/callback conditionals
     # 
     # == Example
     # 
@@ -450,7 +467,7 @@ module StateMachine
     #     
     #     state_machine do
     #       event :park do
-    #         transition :to => 'parked', :from => Car.safe_states
+    #         transition :to => 'parked', :from => Vehicle.safe_states
     #       end
     #     end
     #   end 
@@ -685,32 +702,49 @@ module StateMachine
         
         graph = GraphViz.new('G', :output => options[:format], :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}"))
         
+        # Tracks unique identifiers for dynamic states (via lambda blocks)
+        dynamic_states = {}
+        dynamic_id = 0
+        
         # Add nodes
         states.each do |state|
           shape = state == @initial_state ? 'doublecircle' : 'circle'
-          state = state.is_a?(Proc) ? 'lambda' : state.to_s
-          graph.add_node(state, :width => '1', :height => '1', :fixedsize => 'true', :shape => shape, :fontname => options[:font])
+          
+          # Use GraphViz-friendly name/label for dynamic/nil states
+          if state.is_a?(Proc)
+            name = "lambda#{dynamic_id += 1}"
+            label = '*'
+            dynamic_states[state] = name
+          else
+            name = label = state.nil? ? 'nil' : state.to_s
+          end
+          
+          graph.add_node(name, :label => label, :width => '1', :height => '1', :fixedsize => 'true', :shape => shape, :fontname => options[:font])
         end
         
         # Add edges
         events.values.each do |event|
           event.guards.each do |guard|
             # From states: :from, everything but :except states, or all states
-            from_states = Array(guard.requirements[:from]) || guard.requirements[:except_from] && (states - Array(guard.requirements[:except_from])) || states
-            to_state = guard.requirements[:to]
-            to_state = to_state.is_a?(Proc) ? 'lambda' : to_state.to_s if to_state
-            
-            # Generate label based on event / conditions
-            label = event.name
-            [:if, :unless].detect do |option|
-              if condition = guard.requirements[option]
-                label = "#{label} #{option} #{condition.is_a?(Proc) ? '*' : condition}"
-              end
+            from_states = guard.requirements[:from] || guard.requirements[:except_from] && (states - guard.requirements[:except_from]) || states
+            if to_state = guard.requirements[:to]
+              to_state = to_state.first
+              
+              # Convert to GraphViz-friendly name
+              to_state = case to_state
+                when Proc; dynamic_states[to_state]
+                when nil; 'nil'
+                else; to_state.to_s; end
             end
             
             from_states.each do |from_state|
-              from_state = from_state.to_s
-              graph.add_edge(from_state, to_state || from_state, :label => label, :fontname => options[:font])
+              # Convert to GraphViz-friendly name
+              from_state = case from_state
+                when Proc; dynamic_states[from_state]
+                when nil; 'nil'
+                else; from_state.to_s; end
+              
+              graph.add_edge(from_state, to_state || from_state, :label => event.name, :fontname => options[:font])
             end
           end
         end
@@ -736,8 +770,8 @@ module StateMachine
       def default_action
       end
       
-      # Adds reader/writer methods for accessing the attribute that this state
-      # machine is defined for.
+      # Adds reader/writer/prediate methods for accessing the attribute that
+      # this state machine is defined for.
       def define_attribute_accessor
         attribute = self.attribute
         
@@ -798,7 +832,7 @@ module StateMachine
         # Add state predicates
         attribute = self.attribute
         new_states.each do |state|
-          if state.is_a?(String) || state.is_a?(Symbol)
+          if state && (state.is_a?(String) || state.is_a?(Symbol))
             name = "#{state}?"
             
             owner_class.class_eval do

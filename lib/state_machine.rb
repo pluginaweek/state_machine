@@ -156,9 +156,7 @@ module StateMachine
     # integrations and the individual integration docs for information about
     # the actual scopes that are generated.
     def state_machine(*args, &block)
-      machine = StateMachine::Machine.find_or_create(self, *args)
-      machine.instance_eval(&block) if block
-      machine
+      StateMachine::Machine.find_or_create(self, *args, &block)
     end
   end
 end

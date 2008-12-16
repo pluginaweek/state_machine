@@ -269,7 +269,7 @@ begin
     class MachineWithCallbacksTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = StateMachine::Machine.new(@model)
+        @machine = StateMachine::Machine.new(@model, :initial => 'off')
         @record = @model.new(:state => 'off')
         @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
       end
@@ -341,7 +341,7 @@ begin
       def test_should_include_transition_states_in_known_states
         @machine.before_transition :to => 'error', :do => lambda {}
         
-        assert_equal %w(error), @machine.states.sort
+        assert_equal %w(error off), @machine.states.sort
       end
     end
     

@@ -27,7 +27,17 @@ module StateMachine
       assert_valid_keys(requirements, :to, :from, :on, :except_to, :except_from, :except_on, :if, :unless)
       
       @requirements = requirements
-      @known_states = [:to, :from, :except_to, :except_from].inject([]) {|states, option| states |= Array(requirements[option])}
+      @known_states = []
+      
+      # Normalize the requirements and track known states
+      [:to, :from, :on, :except_to, :except_from, :except_on].each do |option|
+        if @requirements.include?(option)
+          values = @requirements[option]
+          
+          @requirements[option] = values = [values] unless values.is_a?(Array)
+          @known_states |= values if [:to, :from, :except_to, :except_from].include?(option)
+        end
+      end
     end
     
     # Determines whether the given object / query matches the requirements
@@ -45,10 +55,11 @@ module StateMachine
     # 
     # == Examples
     # 
-    #   guard = StateMachine::Guard.new(:on => 'ignite', :from => 'parked', :to => 'idling')
+    #   guard = StateMachine::Guard.new(:on => 'ignite', :from => [nil, 'parked'], :to => 'idling')
     #   
     #   # Successful
     #   guard.matches?(object, :on => 'ignite')                                      # => true
+    #   guard.matches?(object, :from => nil)                                         # => true
     #   guard.matches?(object, :from => 'parked')                                    # => true
     #   guard.matches?(object, :to => 'idling')                                      # => true
     #   guard.matches?(object, :from => 'parked', :to => 'idling')                   # => true
@@ -67,10 +78,9 @@ module StateMachine
     protected
       # Verify that the from state, to state, and event match the query
       def matches_query?(object, query)
-        (!query || query.empty?) ||
-        find_match(query[:from], requirements[:from], requirements[:except_from]) &&
-        find_match(query[:to], requirements[:to], requirements[:except_to]) &&
-        find_match(query[:on], requirements[:on], requirements[:except_on])
+        (!query || query.empty?) || [:from, :to, :on].all? do |option|
+          !query.include?(option) || find_match(query[option], requirements[option], requirements[:"except_#{option}"])
+        end
       end
       
       # Verify that the conditionals for this guard evaluate to true for the
@@ -87,26 +97,23 @@ module StateMachine
       
       # Attempts to find the given value in either a whitelist of values or
       # a blacklist of values.  The whitelist will always be used first if it
-      # is specified.  If neither lists are specified or the value is blank,
-      # then this will always find a match and return true.
+      # is specified.  If neither lists are specified, then this will always
+      # find a match and return true.
       # 
       # == Examples
       # 
-      #   find_match(nil, %w(parked idling), nil)             # => true
+      #   find_match(nil, %w(parked idling), nil)             # => false
+      #   find_match(nil, [nil], nil)                         # => true
       #   find_match('parked', nil, nil)                      # => true
       #   find_match('parked', %w(parked idling), nil)        # => true
       #   find_match('first_gear', %w(parked idling, nil)     # => false
       #   find_match('parked', nil, %w(parked idling))        # => false
       #   find_match('first_gear', nil, %w(parked idling))    # => true
       def find_match(value, whitelist, blacklist)
-        if value
-          if whitelist
-            Array(whitelist).include?(value)
-          elsif blacklist
-            !Array(blacklist).include?(value)
-          else
-            true
-          end
+        if whitelist
+          whitelist.include?(value)
+        elsif blacklist
+          !blacklist.include?(value)
         else
           true
         end

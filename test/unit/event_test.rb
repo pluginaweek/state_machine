@@ -301,6 +301,39 @@ class EventWithTransitionWithoutToStateTest < Test::Unit::TestCase
   end
 end
 
+class EventWithTransitionWithNilToStateTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, 'turn_off')
+    @event.transition(:from => 'off', :to => nil)
+    
+    @object = @klass.new
+    @object.state = 'off'
+  end
+  
+  def test_should_be_able_to_fire
+    assert @event.can_fire?(@object)
+  end
+  
+  def test_should_have_a_next_transition
+    transition = @event.next_transition(@object)
+    assert_not_nil transition
+    assert_equal 'off', transition.from
+    assert_equal nil, transition.to
+    assert_equal 'turn_off', transition.event
+  end
+  
+  def test_should_fire
+    assert @event.fire(@object)
+  end
+  
+  def test_should_not_change_the_current_state
+    @event.fire(@object)
+    assert_equal nil, @object.state
+  end
+end
+
 class EventWithTransitionWithDynamicToStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
