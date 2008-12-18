@@ -12,7 +12,7 @@ module StateMachine
     # * +initial+ - The initial value to set the attribute to. This can be a static value or a dynamic proc which will be evaluated at runtime.  Default is nil.
     # * +action+ - The action to invoke when an object transitions.  Default is nil unless otherwise specified by the configured integration.
     # * +plural+ - The pluralized name of the attribute.  By default, this will attempt to call +pluralize+ on the attribute, otherwise an "s" is appended.
-    # * +namespace+ - The name to use for namespace all generated instance methods (e.g. "email" => "active_email", "deactivate_email", etc.).  Default is no namespace.
+    # * +namespace+ - The name to use for namespace all generated instance methods (e.g. "email" => "activate_email", "deactivate_email", etc.).  Default is no namespace.
     # * +integration+ - The name of the integration to use for adding library-specific behavior to the machine.  Built-in integrations include :data_mapper and :active_record.  By default, this is determined automatically.
     # 
     # This also requires a block which will be used to actually configure the
