@@ -148,6 +148,7 @@ module StateMachine
       # when the callback is invoked
       def bound_method(block)
         # Generate a thread-safe unbound method that can be used on any object
+        # This is essentially a workaround for not having Ruby 1.9's instance_exec
         unbound_method = Object.class_eval do
           time = Time.now
           method_name = "__bind_#{time.to_i}_#{time.usec}"
