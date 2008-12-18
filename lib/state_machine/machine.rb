@@ -183,32 +183,6 @@ module StateMachine
   class Machine
     include Assertions
     
-    # The class that the machine is defined in
-    attr_reader :owner_class
-    
-    # The attribute for which the machine is being defined
-    attr_reader :attribute
-    
-    # The initial state that the machine will be in when an object is created
-    attr_reader :initial_state
-    
-    # The events that trigger transitions
-    attr_reader :events
-    
-    # A list of all of the states known to this state machine.  This will pull
-    # state names from the following sources:
-    # * Initial state
-    # * Event transitions (:to, :from, :except_to, and :except_from options)
-    # * Transition callbacks (:to, :from, :except_to, and :except_from options)
-    # * Unreferenced states (using +other_states+ helper)
-    attr_reader :states
-    
-    # The callbacks to invoke before/after a transition is performed
-    attr_reader :callbacks
-    
-    # The action to invoke when an object transitions
-    attr_reader :action
-    
     class << self
       # Attempts to find or create a state machine for the given class.  For
       # example,
@@ -270,10 +244,41 @@ module StateMachine
       end
     end
     
+    # The class that the machine is defined in
+    attr_reader :owner_class
+    
+    # The attribute for which the machine is being defined
+    attr_reader :attribute
+    
+    # The initial state that the machine will be in when an object is created
+    attr_reader :initial_state
+    
+    # The events that trigger transitions
+    attr_reader :events
+    
+    # A list of all of the states known to this state machine.  This will pull
+    # state names from the following sources:
+    # * Initial state
+    # * Event transitions (:to, :from, :except_to, and :except_from options)
+    # * Transition callbacks (:to, :from, :except_to, and :except_from options)
+    # * Unreferenced states (using +other_states+ helper)
+    attr_reader :states
+    
+    # The callbacks to invoke before/after a transition is performed
+    attr_reader :callbacks
+    
+    # The action to invoke when an object transitions
+    attr_reader :action
+    
+    # An identifier that forces all methods (including state predicates and
+    # event methods) to be generated with the value prefixed or suffixed,
+    # depending on the context.
+    attr_reader :namespace
+    
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :initial, :action, :plural, :integration)
+      assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration)
       
       # Set machine configuration
       @attribute = (args.first || 'state').to_s
@@ -281,6 +286,7 @@ module StateMachine
       @states = []
       @callbacks = {:before => [], :after => []}
       @action = options[:action]
+      @namespace = options[:namespace]
       
       # Add class-/instance-level methods to the owner class for state initialization
       owner_class.class_eval do
@@ -439,6 +445,12 @@ module StateMachine
     # * <tt>next_park_transition</tt> -  Gets the next transition that would be performed if the "park" event were to be fired now on the object or nil if no transitions can be performed.
     # * <tt>park(run_action = true)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.
     # * <tt>park!(run_action = true)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.  If the transition fails, then a StateMachine::InvalidTransition error will be raised.
+    # 
+    # With a namespace of "car", the above names map to the following methods:
+    # * <tt>can_park_car?</tt>
+    # * <tt>next_park_car_transition</tt>
+    # * <tt>park_car</tt>
+    # * <tt>park_car!</tt>
     # 
     # == Defining transitions
     # 
@@ -833,6 +845,7 @@ module StateMachine
         new_states.each do |state|
           if state && (state.is_a?(String) || state.is_a?(Symbol))
             name = "#{state}?"
+            name = "#{namespace}_#{name}" if namespace
             
             owner_class.class_eval do
               # Checks whether the current state is equal to the given value

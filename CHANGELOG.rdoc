@@ -1,5 +1,7 @@
 == master
 
+* Add :namespace option for generated state predicates / event methods
+
 == 0.4.1 / 2008-12-16
 
 * Fix nil states not being handled properly in guards, known states, or visualizations

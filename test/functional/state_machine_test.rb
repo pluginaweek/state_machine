@@ -102,6 +102,16 @@ class Vehicle
     end
   end
   
+  state_machine :insurance_state, :initial => 'inactive', :namespace => 'insurance' do
+    event :buy do
+      transition :to => 'active', :from => 'inactive'
+    end
+    
+    event :cancel do
+      transition :to => 'inactive', :from => 'active'
+    end
+  end
+  
   def save
     @saved = true
   end
@@ -273,6 +283,30 @@ class VehicleUnsavedTest < Test::Unit::TestCase
   
   def test_should_not_allow_repair
     assert !@vehicle.repair
+  end
+  
+  def test_should_be_insurance_inactive
+    assert @vehicle.insurance_inactive?
+  end
+  
+  def test_should_be_able_to_buy
+    assert @vehicle.can_buy_insurance?
+  end
+  
+  def test_should_allow_buying_insurance
+    assert @vehicle.buy_insurance
+  end
+  
+  def test_should_not_be_insurance_active
+    assert !@vehicle.insurance_active?
+  end
+  
+  def test_should_not_be_able_to_cancel
+    assert !@vehicle.can_cancel_insurance?
+  end
+  
+  def test_should_not_allow_cancelling_insurance
+    assert !@vehicle.cancel_insurance
   end
 end
 

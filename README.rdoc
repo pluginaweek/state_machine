@@ -36,6 +36,7 @@ state machine is :)
 Some brief, high-level features include:
 * Defining state machines on any Ruby class
 * Multiple state machines on a single class
+* Namespaced state machines
 * before/after transition hooks with explicit transition requirements
 * ActiveRecord integration
 * DataMapper integration
@@ -100,6 +101,16 @@ Below is an example of many of the features offered by this plugin, including
       end
     end
     
+    state_machine :hood_state, :initial => 'closed', :namespace => 'hood' do
+      event :open do
+        transition :to => 'opened', :from => 'closed'
+      end
+      
+      event :close do
+        transition :to => 'closed', :from => 'opened'
+      end
+    end
+    
     def initialize
       @seatbelt_on = false
     end
@@ -143,6 +154,14 @@ like so:
   # Generic state predicates can raise exceptions if the value does not exist
   vehicle.state?('parked')        # => true
   vehicle.state?('invalid')       # => ArgumentError: "parked" is not a known state value
+  
+  # Namespaced machines have uniquely-generated methods
+  vehicle.can_open_hood?          # => true
+  vehicle.open_hood               # => true
+  vehicle.can_close_hood?         # => true
+  
+  vehicle.hood_opened?            # => true
+  vehicle.hood_closed?            # => false
 
 == Integrations
 

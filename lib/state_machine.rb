@@ -12,6 +12,7 @@ module StateMachine
     # * +initial+ - The initial value to set the attribute to. This can be a static value or a dynamic proc which will be evaluated at runtime.  Default is nil.
     # * +action+ - The action to invoke when an object transitions.  Default is nil unless otherwise specified by the configured integration.
     # * +plural+ - The pluralized name of the attribute.  By default, this will attempt to call +pluralize+ on the attribute, otherwise an "s" is appended.
+    # * +namespace+ - The name to use for namespace all generated instance methods (e.g. "email" => "active_email", "deactivate_email", etc.).  Default is no namespace.
     # * +integration+ - The name of the integration to use for adding library-specific behavior to the machine.  Built-in integrations include :data_mapper and :active_record.  By default, this is determined automatically.
     # 
     # This also requires a block which will be used to actually configure the
@@ -122,6 +123,11 @@ module StateMachine
     # Each predicate method will return true if it matches the object's
     # current state.  Otherwise, it will return false.
     # 
+    # When a namespace is configured for a state machine, then the name will be
+    # prepended to each state predicate like so:
+    # * <tt>car_parked?</tt>
+    # * <tt>car_idling?</tt>
+    # 
     # == Events and Transitions
     # 
     # For more information about how to configure an event and its associated
@@ -133,6 +139,61 @@ module StateMachine
     # particular states.  For more information about defining these callbacks,
     # see StateMachine::Machine#before_transition and
     # StateMachine::Machine#after_transition.
+    # 
+    # == Namespaces
+    # 
+    # When a namespace is configured for a state machine, the name provided will
+    # be used in generating the instance methods for interacting with
+    # events/states in the machine.  This is particularly useful when a class
+    # has multiple state machines and it would be difficult to differentiate
+    # between the various states / events.
+    # 
+    # For example,
+    # 
+    #   class Vehicle
+    #     state_machine :heater_state, :initial => 'off' :namespace => 'heater' do
+    #       event :turn_on do
+    #         transition :to => 'on', :from => 'off'
+    #       end
+    #       
+    #       event :turn_off do
+    #         transition :to => 'off', :from => 'on'
+    #       end
+    #     end
+    #     
+    #     state_machine :hood_state, :initial => 'closed', :namespace => 'hood' do
+    #       event :open do
+    #         transition :to => 'opened', :from => 'closed'
+    #       end
+    #       
+    #       event :close do
+    #         transition :to => 'closed', :from => 'opened'
+    #       end
+    #     end
+    #   end
+    # 
+    # The above class defines to state machines: +heater_state+ and +hood_state+.
+    # For the +heater_state+ machine, the following methods are generated since
+    # it's namespaced by "heater":
+    # * <tt>can_turn_on_heater?</tt>
+    # * <tt>turn_on_heater</tt>
+    # * ...
+    # * <tt>can_turn_off_heater?</tt>
+    # * <tt>turn_off_heater</tt>
+    # * ..
+    # * <tt>heater_off?</tt>
+    # * <tt>heater_on?</tt>
+    # 
+    # As shown, each method is unique to the state machine so that the states
+    # and events don't conflict.  The same goes for the +hood_state+ machine:
+    # * <tt>can_open_hood?</tt>
+    # * <tt>open_hood</tt>
+    # * ...
+    # * <tt>can_close_hood?</tt>
+    # * <tt>close_hood</tt>
+    # * ..
+    # * <tt>hood_open?</tt>
+    # * <tt>hood_closed?</tt>
     # 
     # == Scopes
     # 

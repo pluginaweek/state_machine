@@ -1071,6 +1071,52 @@ class MachineWithExistingMachinesOnOwnerClassTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithNamespaceTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :namespace => 'switch', :initial => 'off') do
+      event :turn_on do
+        transition :to => 'on', :from => 'off'
+      end
+      
+      event :turn_off do
+        transition :to => 'off', :from => 'on'
+      end
+    end
+    @object = @klass.new
+  end
+  
+  def test_should_namespace_state_predicates
+    [:switch_off?, :switch_on?].each do |name|
+      assert @object.respond_to?(name)
+    end
+  end
+  
+  def test_should_namespace_event_checks
+    [:can_turn_on_switch?, :can_turn_off_switch?].each do |name|
+      assert @object.respond_to?(name)
+    end
+  end
+  
+  def test_should_namespace_event_transition_readers
+    [:next_turn_on_switch_transition, :next_turn_off_switch_transition].each do |name|
+      assert @object.respond_to?(name)
+    end
+  end
+  
+  def test_should_namespace_events
+    [:turn_on_switch, :turn_off_switch].each do |name|
+      assert @object.respond_to?(name)
+    end
+  end
+  
+  def test_should_namespace_bang_events
+    [:turn_on_switch!, :turn_off_switch!].each do |name|
+      assert @object.respond_to?(name)
+    end
+  end
+end
+
 class MachineFinderWithoutExistingMachineTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
