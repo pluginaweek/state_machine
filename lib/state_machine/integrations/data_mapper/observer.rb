@@ -55,10 +55,17 @@ module StateMachine
         #       # log message
         #     end
         #     
+        #     # Target all state machines
         #     before_transition :to => 'idling', :from => 'parked', :on => 'ignite' do
         #       # put on seatbelt
         #     end
         #     
+        #     # Target a specific state machine
+        #     before_transition :state, :to => 'idling' do
+        #       # put on seatbelt
+        #     end
+        #     
+        #     # Target all state machines without requirements
         #     before_transition do |transition|
         #       # log message
         #     end
@@ -104,10 +111,17 @@ module StateMachine
         #       # log message
         #     end
         #     
+        #     # Target all state machines
         #     after_transition :to => 'idling', :from => 'parked', :on => 'ignite' do
         #       # put on seatbelt
         #     end
         #     
+        #     # Target a specific state machine
+        #     after_transition :state, :to => 'idling' do
+        #       # put on seatbelt
+        #     end
+        #     
+        #     # Target all state machines without requirements
         #     after_transition do |transition, saved|
         #       if saved
         #         # log message
