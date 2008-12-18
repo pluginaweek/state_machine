@@ -172,7 +172,7 @@ module StateMachine
     #     end
     #   end
     # 
-    # The above class defines to state machines: +heater_state+ and +hood_state+.
+    # The above class defines two state machines: +heater_state+ and +hood_state+.
     # For the +heater_state+ machine, the following methods are generated since
     # it's namespaced by "heater":
     # * <tt>can_turn_on_heater?</tt>
