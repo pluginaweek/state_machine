@@ -145,7 +145,7 @@ module StateMachine
           
           # Fires the event, raising an exception if it fails to transition
           define_method("#{qualified_name}!") do |*args|
-            send(name, *args) || raise(StateMachine::InvalidTransition, "Cannot transition via :#{name} from #{send(attribute).inspect}")
+            send(qualified_name, *args) || raise(StateMachine::InvalidTransition, "Cannot transition #{attribute} via :#{name} from #{send(attribute).inspect}")
           end
         end
       end

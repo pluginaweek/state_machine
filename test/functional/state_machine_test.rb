@@ -297,6 +297,15 @@ class VehicleUnsavedTest < Test::Unit::TestCase
     assert @vehicle.buy_insurance
   end
   
+  def test_should_allow_buying_insurance_bang
+    assert @vehicle.buy_insurance!
+  end
+  
+  def test_should_allow_ignite_buying_insurance_with_skipped_action
+    assert @vehicle.buy_insurance!(false)
+    assert @vehicle.new_record?
+  end
+  
   def test_should_not_be_insurance_active
     assert !@vehicle.insurance_active?
   end
