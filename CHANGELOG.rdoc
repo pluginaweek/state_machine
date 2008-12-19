@@ -1,5 +1,6 @@
 == master
 
+* Simplify initialize hooks, requiring super to be called instead
 * Add :namespace option for generated state predicates / event methods
 
 == 0.4.1 / 2008-12-16

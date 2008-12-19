@@ -122,6 +122,7 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
     @klass = Class.new do
       def initialize(attributes = {})
         attributes.each {|attr, value| send("#{attr}=", value)}
+        super()
       end
     end
     
@@ -605,6 +606,7 @@ class MachineWithConflictingPredefinedInitializeTest < Test::Unit::TestCase
       def initialize
         @initialized = true
         @block_given = block_given?
+        super()
       end
     end
     
@@ -640,6 +642,7 @@ class MachineWithConflictingPostdefinedInitializeTest < Test::Unit::TestCase
       def initialize
         @initialized = true
         @block_given = block_given?
+        super()
       end
     end
     
@@ -773,6 +776,23 @@ class MachineWithConflictingPostdefinedAndSuperclassInitializeTest < Test::Unit:
   
   def test_should_not_include_initialize_in_instance_methods
     assert !@klass.instance_methods(false).include?('initialize')
+  end
+end
+
+class MachineWithCustomStateMachineInitializationTest < Test::Unit::TestCase
+  def setup
+    @superclass = Class.new do
+      def initialize
+        initialize_state_machines
+      end
+    end
+    @klass = Class.new(@superclass)
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
+    @object = @klass.new {}
+  end
+  
+  def test_should_still_initialize_state
+    assert_equal 'off', @object.state
   end
 end
 

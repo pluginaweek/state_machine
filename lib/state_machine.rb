@@ -96,6 +96,82 @@ module StateMachine
     #     end
     #   end
     # 
+    # == Attribute initialization
+    # 
+    # For most classes, the initial values for state machine attributes are
+    # automatically assigned when a new object is created.  However, this
+    # behavior will *not* work if the class defines an +initialize+ method
+    # without properly calling +super+.
+    # 
+    # For example,
+    # 
+    #   class Vehicle
+    #     state_machine :state, :initial => 'parked' do
+    #       ...
+    #     end
+    #   end
+    #   
+    #   v = Vehicle.new   # => #<Vehicle:0xb7c8dbf8 @state="parked">
+    #   v.state           # => "parked"
+    # 
+    # In the above example, no +initialize+ method is defined.  As a result,
+    # the default behavior of initializing the state machine attributes is used.
+    # 
+    # In the following example, a custom +initialize+ method is defined:
+    # 
+    #   class Vehicle
+    #     state_machine :state, :initial => 'parked' do
+    #       ...
+    #     end
+    #     
+    #     def initialize
+    #     end
+    #   end
+    #   
+    #   v = Vehicle.new   # => #<Vehicle:0xb7c77678>
+    #   v.state           # => nil
+    # 
+    # Since the +initialize+ method is defined, the state machine attributes
+    # never get initialized.  In order to ensure that all initialization hooks
+    # are called, the custom method *must* call +super+ without any arguments
+    # like so:
+    # 
+    #   class Vehicle
+    #     state_machine :state, :initial => 'parked' do
+    #       ...
+    #     end
+    #     
+    #     def initialize(attributes = {})
+    #       ...
+    #       super()
+    #     end
+    #   end
+    #   
+    #   v = Vehicle.new   # => #<Vehicle:0xb7c464b0 @state="parked">
+    #   v.state           # => "parked"
+    # 
+    # Because of the way the inclusion of modules works in Ruby, calling <tt>super()</tt>
+    # will not only call the superclass's +initialize+, but also +initialize+ on
+    # all included modules.  This allows the original state machine hook to get
+    # called properly.
+    # 
+    # If you want to avoid calling the superclass's constructor, but still want
+    # to initialize the state machine attributes:
+    # 
+    #   class Vehicle
+    #     state_machine :state, :initial => 'parked' do
+    #       ...
+    #     end
+    #     
+    #     def initialize(attributes = {})
+    #       ...
+    #       initialize_state_machines
+    #     end
+    #   end
+    #   
+    #   v = Vehicle.new   # => #<Vehicle:0xb7c464b0 @state="parked">
+    #   v.state           # => "parked"
+    # 
     # == States
     # 
     # All of the valid states for the machine are automatically tracked based

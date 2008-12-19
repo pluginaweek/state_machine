@@ -52,10 +52,12 @@ You can find more detailed documentation in the actual API.
 
 === Example
 
-Below is an example of many of the features offered by this plugin, including
+Below is an example of many of the features offered by this plugin, including:
 * Initial states
 * Transition callbacks
 * Conditional transitions
+
+Class definition:
 
   class Vehicle
     attr_accessor :seatbelt_on
@@ -113,6 +115,7 @@ Below is an example of many of the features offered by this plugin, including
     
     def initialize
       @seatbelt_on = false
+      super() # NOTE: This *must* be called, otherwise states won't get initialized
     end
     
     def put_on_seatbelt
@@ -162,6 +165,10 @@ like so:
   
   vehicle.hood_opened?            # => true
   vehicle.hood_closed?            # => false
+
+*Note* the comment made on the +initialize+ method in the class.  In order for
+state machine attributes to be properly initialized, <tt>super()</tt> must be called.
+See StateMachine::MacroMethods for more information about this.
 
 == Integrations
 

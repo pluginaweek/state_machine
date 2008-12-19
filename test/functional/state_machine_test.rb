@@ -5,6 +5,7 @@ class AutoShop
   
   def initialize
     @num_customers = 0
+    super()
   end
   
   state_machine :initial => 'available' do
@@ -55,6 +56,7 @@ class Vehicle
     }.merge(attributes)
     
     attributes.each {|attr, value| send("#{attr}=", value)}
+    super()
   end
   
   # Defines the state machine for the state of the vehicled
