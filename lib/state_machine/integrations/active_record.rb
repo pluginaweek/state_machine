@@ -249,7 +249,8 @@ module StateMachine
         # This will always return true regardless of the results of the
         # callbacks.
         def notify(type, object, transition)
-          ["#{type}_#{transition.event}", "#{type}_transition"].each do |method|
+          qualified_event = namespace ? "#{transition.event}_#{namespace}" : transition.event
+          ["#{type}_#{qualified_event}", "#{type}_transition"].each do |method|
             object.class.class_eval do
               @observer_peers.dup.each do |observer|
                 observer.send(method, object, transition) if observer.respond_to?(method)

@@ -515,6 +515,39 @@ begin
       end
     end
     
+    class MachineWithNamespacedObserversTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model, :namespace => 'switch')
+        @record = @model.new(:state => 'off')
+        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+      end
+      
+      def test_should_call_namespaced_before_event_method
+        observer = new_observer(@model) do
+          def before_turn_on_switch(*args)
+            notifications << args
+          end
+        end
+        instance = observer.instance
+        
+        @transition.perform
+        assert_equal [[@record, @transition]], instance.notifications
+      end
+      
+      def test_should_call_namespaced_after_event_method
+        observer = new_observer(@model) do
+          def after_turn_on_switch(*args)
+            notifications << args
+          end
+        end
+        instance = observer.instance
+        
+        @transition.perform
+        assert_equal [[@record, @transition]], instance.notifications
+      end
+    end
+    
     class MachineWithMixedCallbacksTest < ActiveRecord::TestCase
       def setup
         @model = new_model
