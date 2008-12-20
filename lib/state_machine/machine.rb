@@ -11,7 +11,7 @@ end
 
 module StateMachine
   # Represents a state machine for a particular attribute.  State machines
-  # consist of events and a set of transitions that define how the state
+  # consist of states, events and a set of transitions that define how the state
   # changes after a particular event is fired.
   # 
   # A state machine may not necessarily know all of the possible states for
@@ -96,7 +96,7 @@ module StateMachine
   #   
   #   vehicle = Vehicle.new
   #   vehicle.park        # => false
-  #   vehicle.park!       # => StateMachine::InvalidTransition: Cannot transition via :park from "idling"
+  #   vehicle.park!       # => StateMachine::InvalidTransition: Cannot transition state via :park from "idling"
   # 
   # == Observers
   # 
@@ -108,8 +108,8 @@ module StateMachine
   # 
   #   class Vehicle
   #     state_machine do
-  #       event :ignite do
-  #         transition :to => 'idling', :from => 'parked'
+  #       event :park do
+  #         transition :to => 'parked', :from => 'idling'
   #       end
   #       ...
   #     end
@@ -256,12 +256,13 @@ module StateMachine
     
     # The events that trigger transitions
     # 
-    # Maps name => StateMachine::Event
+    # Maps "name" => StateMachine::Event
     attr_reader :events
     
     # A list of all of the states known to this state machine.  This will pull
     # state values from the following sources:
     # * Initial state
+    # * State behaviors
     # * Event transitions (:to, :from, :except_to, and :except_from options)
     # * Transition callbacks (:to, :from, :except_to, and :except_from options)
     # * Unreferenced states (using +other_states+ helper)
