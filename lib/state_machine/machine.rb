@@ -493,8 +493,8 @@ module StateMachine
     # Using the example from before:
     # 
     #   vehicle = Vehicle.new
-    #   vehicle.state = "reverse"
-    #   vehicle.speed               # => NoMethodError: undefined method 'speed' for #<Vehicle:0xb7d296ac> in state "reverse"
+    #   vehicle.state = "backing_up"
+    #   vehicle.speed               # => NoMethodError: undefined method 'speed' for #<Vehicle:0xb7d296ac> in state "backing_up"
     def state(*values, &block)
       states = add_states(values)
       states.each {|state| state.context(&block)} if block_given?
@@ -590,7 +590,7 @@ module StateMachine
     #   class Vehicle
     #     state_machine do
     #       event :park do
-    #         transition :to => 'parked', :from => %w(first_gear reverse)
+    #         transition :to => 'parked', :from => %w(first_gear backing_up)
     #       end
     #       ...
     #     end
