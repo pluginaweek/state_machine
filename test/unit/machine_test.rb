@@ -582,8 +582,12 @@ class MachineWithEventsTest < Test::Unit::TestCase
   end
   
   def test_should_have_events
-    @machine.event(:turn_on) {}
+    @machine.event(:turn_on)
     assert_equal %w(turn_on), @machine.events.keys
+  end
+  
+  def test_should_return_the_created_event
+    assert_instance_of StateMachine::Event, @machine.event(:turn_on)
   end
 end
 
@@ -830,8 +834,8 @@ end
 class MachineWithExistingEventTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @event = @machine.event(:turn_on) {}
-    @same_event = @machine.event(:turn_on) {}
+    @event = @machine.event(:turn_on)
+    @same_event = @machine.event(:turn_on)
   end
   
   def test_should_not_create_new_event
@@ -876,6 +880,34 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
     end
     
     assert_equal %w(error maybe off on unknown), @machine.states.keys.sort
+  end
+end
+
+class MachineWithMultipleEventsTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine.event(:turn_on, :activate) do
+      transition :to => 'on', :from => 'off'
+    end
+  end
+  
+  def test_should_have_events
+    assert_equal %w(activate turn_on), @machine.events.keys.sort
+  end
+  
+  def test_should_define_transitions_for_each_event
+    [:turn_on, :activate].each {|event| assert_equal 1, @machine.event(event).guards.size}
+  end
+  
+  def test_should_transition_the_same_for_each_event
+    object = @klass.new
+    object.turn_on
+    assert_equal 'on', object.state
+    
+    object = @klass.new
+    object.activate
+    assert_equal 'on', object.state
   end
 end
 

@@ -488,7 +488,7 @@ module StateMachine
     # 
     # If a specific behavior has not been defined for a state, then a
     # NoMethodError exception will be raised, indicating that that method would
-    # not normally exist for an object with that behavior.
+    # not normally exist for an object with that state.
     # 
     # Using the example from before:
     # 
@@ -536,7 +536,8 @@ module StateMachine
       add_states(args.flatten)
     end
     
-    # Defines an event for the machine.
+    # Defines one or more events for the machine and the transitions that can
+    # be performed when those events are run.
     # 
     # == Instance methods
     # 
@@ -558,8 +559,8 @@ module StateMachine
     # +event+ requires a block which allows you to define the possible
     # transitions that can happen as a result of that event.  For example,
     # 
-    #   event :park do
-    #     transition :to => 'parked', :from => 'idle'
+    #   event :park, :stop do
+    #     transition :to => 'parked', :from => 'idling'
     #   end
     #   
     #   event :first_gear do
@@ -589,22 +590,34 @@ module StateMachine
     # 
     #   class Vehicle
     #     state_machine do
-    #       event :park do
-    #         transition :to => 'parked', :from => %w(first_gear backing_up)
+    #       # The park, stop, and halt events will all share the given transitions
+    #       event :park, :stop, :halt do
+    #         transition :to => 'parked', :from => %w(idling backing_up)
     #       end
-    #       ...
+    #       
+    #       event :stop do
+    #         transition :to => 'idling', :from => 'first_gear'
+    #       end
+    #       
+    #       event :ignite do
+    #         transition :to => 'idling', :from => 'parked'
+    #       end
     #     end
     #   end
-    def event(name, &block)
-      name = name.to_s
-      event = events[name] ||= Event.new(self, name)
-      
-      if block_given?
-        event.instance_eval(&block)
-        add_states(event.known_states)
+    def event(*names, &block)
+      events = names.collect do |name|
+        name = name.to_s
+        event = self.events[name] ||= Event.new(self, name)
+        
+        if block_given?
+          event.instance_eval(&block)
+          add_states(event.known_states)
+        end
+        
+        event
       end
       
-      event
+      events.length == 1 ? events.first : events
     end
     
     # Creates a callback that will be invoked *before* a transition is

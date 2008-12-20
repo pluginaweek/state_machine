@@ -1,5 +1,6 @@
 == master
 
+* Add support for sharing transitions across multiple events
 * Add support for state-driven behavior
 * Simplify initialize hooks, requiring super to be called instead
 * Add :namespace option for generated state predicates / event methods
