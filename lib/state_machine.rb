@@ -180,8 +180,8 @@ module StateMachine
     # explicitly added using the StateMachine::Machine#other_states
     # helper.
     # 
-    # For each state tracked, a predicate method for that state is generated
-    # on the class.  For example,
+    # When using String or Symbol-based states, a predicate method for that
+    # state is generated on the class.  For example,
     # 
     #   class Vehicle
     #     state_machine :initial => 'parked' do
