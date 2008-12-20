@@ -58,8 +58,8 @@ module StateMachine
     # An optional block for determining whether to cancel the callback chain
     # based on the return value of the callback.  By default, the callback
     # chain never cancels based on the return value (i.e. there is no implicit
-    # terminator).  Certain integrations, such as ActiveRecord, change this
-    # default value.
+    # terminator).  Certain integrations, such as ActiveRecord and Sequel,
+    # change this default value.
     # 
     # == Examples
     # 

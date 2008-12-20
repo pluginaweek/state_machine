@@ -44,7 +44,7 @@ module StateMachine
     # Creates a new transition that will be evaluated when the event is fired.
     # 
     # Configuration options:
-    # * +to+ - The state that being transitioned to.  If not specified, then the transition will not change the state.
+    # * +to+ - The state that's being transitioned to.  If not specified, then the transition will not change the state.
     # * +from+ - A state or array of states that can be transitioned from. If not specified, then the transition can occur for *any* from state.
     # * +except_from+ - A state or array of states that *cannot* be transitioned from.
     # * +if+ - Specifies a method, proc or string to call to determine if the transition should occur (e.g. :if => :moving?, or :if => Proc.new {|car| car.speed > 60}). The method, proc or string should return or evaluate to a true or false value.

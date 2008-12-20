@@ -887,7 +887,7 @@ class MachineWithMultipleEventsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :initial => 'off')
-    @machine.event(:turn_on, :activate) do
+    @result = @machine.event(:turn_on, :activate) do
       transition :to => 'on', :from => 'off'
     end
   end
@@ -908,6 +908,11 @@ class MachineWithMultipleEventsTest < Test::Unit::TestCase
     object = @klass.new
     object.activate
     assert_equal 'on', object.state
+  end
+  
+  def test_should_return_all_created_events
+    assert_instance_of Array, @result
+    assert_equal 2, @result.size
   end
 end
 

@@ -44,7 +44,7 @@ module StateMachine
     # owner class when the machine is in this state.
     # 
     # This can be called multiple times.  Each time a new context is created, a
-    # new module will be included in the module class.
+    # new module will be included in the owner class.
     def context(&block)
       value = self.value
       owner_class = machine.owner_class

@@ -9,17 +9,17 @@ module StateMachine
     # attribute, if not specified, is "state".
     # 
     # Configuration options:
-    # * +initial+ - The initial value to set the attribute to. This can be a static value or a dynamic proc which will be evaluated at runtime.  Default is nil.
+    # * +initial+ - The initial value to set the attribute to. This can be a static value or a lambda block which will be evaluated at runtime.  Default is nil.
     # * +action+ - The action to invoke when an object transitions.  Default is nil unless otherwise specified by the configured integration.
     # * +plural+ - The pluralized name of the attribute.  By default, this will attempt to call +pluralize+ on the attribute, otherwise an "s" is appended.
-    # * +namespace+ - The name to use for namespace all generated instance methods (e.g. "email" => "activate_email", "deactivate_email", etc.).  Default is no namespace.
-    # * +integration+ - The name of the integration to use for adding library-specific behavior to the machine.  Built-in integrations include :data_mapper and :active_record.  By default, this is determined automatically.
+    # * +namespace+ - The name to use for namespacing all generated instance methods (e.g. "email" => "activate_email", "deactivate_email", etc.).  Default is no namespace.
+    # * +integration+ - The name of the integration to use for adding library-specific behavior to the machine.  Built-in integrations include :data_mapper, :active_record, and :sequel.  By default, this is determined automatically.
     # 
     # This also requires a block which will be used to actually configure the
-    # events and transitions for the state machine.  *Note* that this block
-    # will be executed within the context of the state machine.  As a result,
-    # you will not be able to access any class methods unless you refer to
-    # them directly (i.e. specifying the class name).
+    # states, events and transitions for the state machine.  *Note* that this
+    # block will be executed within the context of the state machine.  As a
+    # result, you will not be able to access any class methods unless you refer
+    # to them directly (i.e. specifying the class name).
     # 
     # For examples on the types of configured state machines and blocks, see
     # the section below.
@@ -199,7 +199,7 @@ module StateMachine
     # Each predicate method will return true if it matches the object's
     # current state.  Otherwise, it will return false.
     # 
-    # When a namespace is configured for a state machine, then the name will be
+    # When a namespace is configured for a state machine, the name will be
     # prepended to each state predicate like so:
     # * <tt>car_parked?</tt>
     # * <tt>car_idling?</tt>
@@ -212,7 +212,7 @@ module StateMachine
     # == Defining callbacks
     # 
     # Within the +state_machine+ block, you can also define callbacks for
-    # particular states.  For more information about defining these callbacks,
+    # transitions.  For more information about defining these callbacks,
     # see StateMachine::Machine#before_transition and
     # StateMachine::Machine#after_transition.
     # 
