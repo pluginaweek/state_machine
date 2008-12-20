@@ -130,17 +130,17 @@ module StateMachine
         machine.owner_class.class_eval do
           # Checks whether the event can be fired on the current object
           define_method("can_#{qualified_name}?") do
-            self.class.state_machines[attribute].events[name].can_fire?(self)
+            self.class.state_machines[attribute].event(name).can_fire?(self)
           end
           
           # Gets the next transition that would be performed if the event were to be fired now
           define_method("next_#{qualified_name}_transition") do
-            self.class.state_machines[attribute].events[name].next_transition(self)
+            self.class.state_machines[attribute].event(name).next_transition(self)
           end
           
           # Fires the event
           define_method(qualified_name) do |*args|
-            self.class.state_machines[attribute].events[name].fire(self, *args)
+            self.class.state_machines[attribute].event(name).fire(self, *args)
           end
           
           # Fires the event, raising an exception if it fails to transition

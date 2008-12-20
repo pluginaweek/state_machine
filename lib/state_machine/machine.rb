@@ -497,8 +497,11 @@ module StateMachine
     def event(name, &block)
       name = name.to_s
       event = events[name] ||= Event.new(self, name)
-      event.instance_eval(&block)
-      add_states(event.known_states)
+      
+      if block_given?
+        event.instance_eval(&block)
+        add_states(event.known_states)
+      end
       
       event
     end

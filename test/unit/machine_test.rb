@@ -847,6 +847,10 @@ class MachineWithExistingEventTest < Test::Unit::TestCase
   def test_should_not_create_new_event
     assert_same @event, @same_event
   end
+  
+  def test_should_allow_accessing_event_without_block
+    assert_equal @event, @machine.event(:turn_on)
+  end
 end
 
 class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
