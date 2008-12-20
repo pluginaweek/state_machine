@@ -11,7 +11,7 @@ module StateMachine
     # is available to each subclass, each subclass having a copy of its
     # superclass's attribute.
     # 
-    # The hash of state machines maps +name+ => +machine+, e.g.
+    # The hash of state machines maps +attribute+ => +machine+, e.g.
     # 
     #   Vehicle.state_machines # => {"state" => #<StateMachine::Machine:0xb6f6e4a4 ...>
     def state_machines
