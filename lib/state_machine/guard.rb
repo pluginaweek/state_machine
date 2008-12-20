@@ -15,7 +15,7 @@ module StateMachine
     attr_reader :requirements
     
     # A list of all of the states known to this guard.  This will pull state
-    # names from the following requirements:
+    # values from the following requirements:
     # * +to+
     # * +from+
     # * +except_to+
