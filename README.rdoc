@@ -122,12 +122,6 @@ Class definition:
           20
         end
       end
-      
-      state 'third_gear' do
-        def speed
-          30
-        end
-      end
     end
     
     state_machine :hood_state, :initial => 'closed', :namespace => 'hood' do
