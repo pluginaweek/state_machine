@@ -173,6 +173,34 @@ class Motorcycle < Vehicle
   state_machine :initial => 'idling'
 end
 
+class TrafficLight
+  state_machine do
+    event :cycle do
+      transition :to => 'proceed', :from => 'stop'
+      transition :to => 'caution', :from => 'proceed'
+      transition :to => 'stop', :from => 'caution'
+    end
+    
+    state 'stop' do
+      def color
+        'red'
+      end
+    end
+    
+    state 'proceed' do
+      def color
+        'green'
+      end
+    end
+    
+    state 'caution' do
+      def color
+        'yellow'
+      end
+    end
+  end
+end
+
 class VehicleTest < Test::Unit::TestCase
   def setup
     @vehicle = Vehicle.new
@@ -774,5 +802,38 @@ class AutoShopBusyTest < Test::Unit::TestCase
   
   def test_should_allow_fix_vehicle
     assert @auto_shop.fix_vehicle
+  end
+end
+
+class TrafficLightStopTest < Test::Unit::TestCase
+  def setup
+    @light = TrafficLight.new
+    @light.state = 'stop'
+  end
+  
+  def test_should_use_stop_color
+    assert_equal 'red', @light.color
+  end
+end
+
+class TrafficLightProceedTest < Test::Unit::TestCase
+  def setup
+    @light = TrafficLight.new
+    @light.state = 'proceed'
+  end
+  
+  def test_should_use_proceed_color
+    assert_equal 'green', @light.color
+  end
+end
+
+class TrafficLightCautionTest < Test::Unit::TestCase
+  def setup
+    @light = TrafficLight.new
+    @light.state = 'caution'
+  end
+  
+  def test_should_use_caution_color
+    assert_equal 'yellow', @light.color
   end
 end

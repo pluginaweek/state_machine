@@ -43,6 +43,7 @@ Some brief, high-level features include:
 * Sequel integration
 * States of any data type
 * State predicates
+* State-driven behavior
 * GraphViz visualization creator
 
 Examples of the usage patterns for some of the above features are shown below.
@@ -54,8 +55,10 @@ You can find more detailed documentation in the actual API.
 
 Below is an example of many of the features offered by this plugin, including:
 * Initial states
+* Namespaced states
 * Transition callbacks
 * Conditional transitions
+* State-driven behavior
 
 Class definition:
 
@@ -101,6 +104,30 @@ Class definition:
       event :repair do
         transition :to => 'parked', :from => 'stalled', :if => :auto_shop_busy?
       end
+      
+      state 'parked' do
+        def speed
+          0
+        end
+      end
+      
+      state 'idling', 'first_gear' do
+        def speed
+          10
+        end
+      end
+      
+      state 'second_gear' do
+        def speed
+          20
+        end
+      end
+      
+      state 'third_gear' do
+        def speed
+          30
+        end
+      end
     end
     
     state_machine :hood_state, :initial => 'closed', :namespace => 'hood' do
@@ -145,11 +172,14 @@ like so:
   vehicle.ignite                  # => true
   vehicle.parked?                 # => false
   vehicle.idling?                 # => true
+  vehicle.speed                   # => 0
   vehicle                         # => #<Vehicle:0xb7cf4eac @state="idling", @seatbelt_on=true>
   vehicle.shift_up                # => true
   vehicle                         # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
+  vehicle.speed                   # => 10
   vehicle.shift_up                # => true
   vehicle                         # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
+  vehicle.speed                   # => 20
   
   # The bang (!) operator can raise exceptions if the event fails
   vehicle.park!                   # => StateMachine::InvalidTransition: Cannot transition via :park from "second_gear"

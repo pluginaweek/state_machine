@@ -36,7 +36,7 @@ class MachineByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_have_a_nil_state
-    assert_equal [nil], @machine.states
+    assert_equal [nil], @machine.states.keys
   end
   
   def test_should_not_be_extended_by_the_active_record_integration
@@ -150,7 +150,7 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
   end
   
   def test_should_be_included_in_known_states
-    assert_equal %w(off), @machine.states
+    assert_equal %w(off), @machine.states.keys
   end
 end
 
@@ -177,7 +177,7 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
   end
   
   def test_should_be_included_in_known_states
-    assert_equal [@initial_state], @machine.states
+    assert_equal [@initial_state], @machine.states.keys
   end
 end
 
@@ -315,7 +315,7 @@ end
 
 class MachineAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
-    @machine = StateMachine::Machine.new(Class.new, 'state')
+    @machine = StateMachine::Machine.new(Class.new, 'state', :initial => 'off')
     @machine.event(:turn_on) {}
     @machine.before_transition(lambda {})
     @machine.after_transition(lambda {})
@@ -326,6 +326,18 @@ class MachineAfterBeingCopiedTest < Test::Unit::TestCase
   
   def test_should_not_have_the_same_collection_of_states
     assert_not_same @copied_machine.states, @machine.states
+  end
+  
+  def test_should_copy_each_state
+    assert_not_same @copied_machine.states['off'], @machine.states['off']
+  end
+  
+  def test_should_update_machine_for_each_state
+    assert_equal @copied_machine, @copied_machine.states['off'].machine
+  end
+  
+  def test_should_not_update_machine_for_original_state
+    assert_equal @machine, @machine.states['off'].machine
   end
   
   def test_should_not_have_the_same_collection_of_events
@@ -493,28 +505,6 @@ class MachineWithConflictingPrivateAttributeAccessorsTest < Test::Unit::TestCase
   
   def test_should_not_define_attribute_predicate
     assert @object.send(:state?)
-  end
-end
-
-class MachineWithConflictingStatePredicatesTest < Test::Unit::TestCase
-  def setup
-    @klass = Class.new do
-      def on?
-        true
-      end
-      
-      def off?
-        true
-      end
-    end
-    @machine = StateMachine::Machine.new(@klass)
-    @machine.before_transition :to => 'on', :from => 'off', :do => lambda {}
-    @object = @klass.new
-  end
-  
-  def test_should_not_define_state_predicates
-    assert @object.on?
-    assert @object.off?
   end
 end
 
@@ -868,7 +858,7 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
   end
   
   def test_should_track_states_defined_in_event_transitions
-    assert_equal %w(error off on unknown), @machine.states.sort
+    assert_equal %w(error off on unknown), @machine.states.keys.sort
   end
   
   def test_should_not_duplicate_states_defined_in_multiple_event_transitions
@@ -876,7 +866,7 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
       transition :to => 'off', :from => 'on'
     end
     
-    assert_equal %w(error off on unknown), @machine.states.sort
+    assert_equal %w(error off on unknown), @machine.states.keys.sort
   end
   
   def test_should_track_state_from_new_events
@@ -885,61 +875,7 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
       transition :to => 'maybe'
     end
     
-    assert_equal %w(error maybe off on unknown), @machine.states.sort
-  end
-  
-  def test_should_define_predicates_for_each_state
-    object = @klass.new
-    
-    [:on?, :off?, :error?, :unknown?].each {|predicate| assert object.respond_to?(predicate)}
-  end
-end
-
-class MachineWithSymbolStatesTest < Test::Unit::TestCase
-  def setup
-    @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass)
-    @machine.event(:turn_on) do
-      transition :to => :on, :from => :off
-    end
-  end
-  
-  def test_should_define_predicates_for_each_state
-    object = @klass.new
-    
-    [:on?, :off?].each {|predicate| assert object.respond_to?(predicate)}
-  end
-end
-
-class MachineWithNumericStatesTest < Test::Unit::TestCase
-  def setup
-    @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass)
-    @machine.event(:turn_on) do
-      transition :to => 1, :from => 2
-    end
-  end
-  
-  def test_should_not_define_predicates_for_each_state
-    object = @klass.new
-    
-    ['1?', '2?'].each {|predicate| assert !object.respond_to?(predicate)}
-  end
-end
-
-class MachineWithNilStatesTest < Test::Unit::TestCase
-  def setup
-    @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass)
-    @machine.event(:turn_on) do
-      transition :to => 'on', :from => nil
-    end
-  end
-  
-  def test_should_not_redefine_nil_predicate
-    object = @klass.new
-    assert !object.nil?
-    assert !object.respond_to?('?')
+    assert_equal %w(error maybe off on unknown), @machine.states.keys.sort
   end
 end
 
@@ -1026,7 +962,7 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
     @machine.before_transition :from => 'off', :to => 'on', :do => lambda {}
     @machine.after_transition :from => 'unknown', :to => 'error', :do => lambda {}
     
-    assert_equal %w(error off on unknown), @machine.states.sort
+    assert_equal %w(error off on unknown), @machine.states.keys.sort
   end
   
   def test_should_not_duplicate_states_defined_in_multiple_event_transitions
@@ -1034,7 +970,7 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
     @machine.after_transition :from => 'unknown', :to => 'error', :do => lambda {}
     @machine.after_transition :from => 'off', :to => 'on', :do => lambda {}
     
-    assert_equal %w(error off on unknown), @machine.states.sort
+    assert_equal %w(error off on unknown), @machine.states.keys.sort
   end
   
   def test_should_define_predicates_for_each_state
@@ -1050,7 +986,7 @@ class MachineWithOtherStates < Test::Unit::TestCase
   end
   
   def test_should_include_other_states_in_known_states
-    assert_equal %w(off on), @machine.states.sort
+    assert_equal %w(off on), @machine.states.keys.sort
   end
   
   def test_should_define_predicates_for_each_state

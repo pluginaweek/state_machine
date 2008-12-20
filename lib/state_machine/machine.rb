@@ -1,4 +1,5 @@
 require 'state_machine/extensions'
+require 'state_machine/state'
 require 'state_machine/event'
 require 'state_machine/callback'
 require 'state_machine/assertions'
@@ -254,14 +255,18 @@ module StateMachine
     attr_reader :initial_state
     
     # The events that trigger transitions
+    # 
+    # Maps name => StateMachine::Event
     attr_reader :events
     
     # A list of all of the states known to this state machine.  This will pull
-    # state names from the following sources:
+    # state values from the following sources:
     # * Initial state
     # * Event transitions (:to, :from, :except_to, and :except_from options)
     # * Transition callbacks (:to, :from, :except_to, and :except_from options)
     # * Unreferenced states (using +other_states+ helper)
+    # 
+    # Maps value => StateMachine::State
     attr_reader :states
     
     # The callbacks to invoke before/after a transition is performed
@@ -283,7 +288,7 @@ module StateMachine
       # Set machine configuration
       @attribute = (args.first || 'state').to_s
       @events = {}
-      @states = []
+      @states = {}
       @callbacks = {:before => [], :after => []}
       @action = options[:action]
       @namespace = options[:namespace]
@@ -321,7 +326,12 @@ module StateMachine
         events[name] = event
         events
       end
-      @states = @states.dup
+      @states = @states.inject({}) do |states, (value, state)|
+        state = state.dup
+        state.machine = self
+        states[value] = state
+        states
+      end
       @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup}
     end
     
@@ -346,8 +356,7 @@ module StateMachine
       assert_valid_keys(options, :initial, :integration)
       
       @owner_class = owner_class
-      @initial_state = options[:initial] if options[:initial]
-      add_states([@initial_state])
+      @initial_state = add_states([options[:initial]]).first if options.include?(:initial) || !@initial_state
       
       # Find an integration that can be used for implementing various parts
       # of the state machine that may behave differently in different libraries
@@ -397,7 +406,99 @@ module StateMachine
     #   vehicle.force_idle = false
     #   Vehicle.state_machines['state'].initial_state(vehicle)   # => "parked"
     def initial_state(object)
-      @initial_state.is_a?(Proc) ? @initial_state.call(object) : @initial_state
+      @initial_state && @initial_state.value(object)
+    end
+    
+    # Defines a series of behaviors to mixin with objects when the current
+    # state matches the given one(s).  This allows instance methods to behave
+    # a specific way depending on what the value of the object's state is.
+    # 
+    # For example,
+    # 
+    #   class Vehicle
+    #     attr_accessor :driver
+    #     attr_accessor :passenger
+    #     
+    #     state_machine :initial => 'parked' do
+    #       event :ignite do
+    #         transition :to => 'idling', :from => 'parked'
+    #       end
+    #       
+    #       state 'parked' do
+    #         def speed
+    #           0
+    #         end
+    #         
+    #         def rotate_driver
+    #           driver = self.driver
+    #           self.driver = passenger
+    #           self.passenger = driver
+    #           true
+    #         end
+    #       end
+    #       
+    #       state 'idling', 'first_gear' do
+    #         def speed
+    #           20
+    #         end
+    #         
+    #         def rotate_driver
+    #           self.state = "parked"
+    #           rotate_driver
+    #         end
+    #       end
+    #     end
+    #   end
+    # 
+    # In the above example, there are two dynamic behaviors defined for the
+    # class:
+    # * +speed+
+    # * +rotate_driver+
+    # 
+    # Each of these behaviors are instance methods on the Vehicle class.  However,
+    # which method actually gets invoked is based on the current state of the
+    # object.  Using the above class as the example:
+    # 
+    #   vehicle = Vehicle.new
+    #   vehicle.driver = 'John'
+    #   vehicle.passenger = 'Jane'
+    #   
+    #   # Behaviors in the "parked" state
+    #   vehicle.state             # => "parked"
+    #   vehicle.speed             # => 0
+    #   vehicle.rotate_driver     # => true
+    #   vehicle.driver            # => "Jane"
+    #   vehicle.passenger         # => "John"
+    #   
+    #   vehicle.ignite            # => true
+    #   
+    #   # Behaviors in the "idling" state
+    #   vehicle.state             # => "idling"
+    #   vehicle.speed             # => 20
+    #   vehicle.rotate_driver     # => true
+    #   vehicle.driver            # => "John"
+    #   vehicle.passenger         # => "Jane"
+    #   vehicle.state             # => "parked"
+    # 
+    # As can be seen, both the +speed+ and +rotate_driver+ instance method
+    # implementations changed how they behave based on what the current state
+    # of the vehicle was.
+    # 
+    # == Invalid behaviors
+    # 
+    # If a specific behavior has not been defined for a state, then a
+    # NoMethodError exception will be raised, indicating that that method would
+    # not normally exist for an object with that behavior.
+    # 
+    # Using the example from before:
+    # 
+    #   vehicle = Vehicle.new
+    #   vehicle.state = "reverse"
+    #   vehicle.speed               # => NoMethodError: undefined method 'speed' for #<Vehicle:0xb7d296ac> in state "reverse"
+    def state(*values, &block)
+      states = add_states(values)
+      states.each {|state| state.context(&block)} if block_given?
+      states.length == 1 ? states.first : states
     end
     
     # Defines additional states that are possible in the state machine, but
@@ -721,16 +822,16 @@ module StateMachine
         dynamic_states = {}
         
         # Add nodes
-        states.each do |state|
+        states.values.each do |state|
           shape = state == @initial_state ? 'doublecircle' : 'circle'
           
           # Use GraphViz-friendly name/label for dynamic/nil states
-          if state.is_a?(Proc)
+          if state.value.is_a?(Proc)
             name = "lambda#{dynamic_states.keys.length}"
             label = '*'
-            dynamic_states[state] = name
+            dynamic_states[state.value] = name
           else
-            name = label = state.nil? ? 'nil' : state.to_s
+            name = label = state.value.nil? ? 'nil' : state.value.to_s
           end
           
           graph.add_node(name, :label => label, :width => '1', :height => '1', :fixedsize => 'true', :shape => shape, :fontname => options[:font])
@@ -840,24 +941,7 @@ module StateMachine
       # Tracks the given set of states in the list of all known states for
       # this machine
       def add_states(states)
-        new_states = states - @states
-        @states += new_states
-        
-        # Add state predicates
-        attribute = self.attribute
-        new_states.each do |state|
-          if state && (state.is_a?(String) || state.is_a?(Symbol))
-            name = "#{state}?"
-            name = "#{namespace}_#{name}" if namespace
-            
-            owner_class.class_eval do
-              # Checks whether the current state is equal to the given value
-              define_method(name) do
-                self.send(attribute) == state
-              end unless method_defined?(name) || private_method_defined?(name)
-            end
-          end
-        end
+        states.collect {|state| @states[state] ||= State.new(self, state)}
       end
   end
 end
