@@ -169,17 +169,21 @@ like so:
   vehicle.parked?                 # => true
   vehicle.can_ignite?             # => true
   vehicle.next_ignite_transition  # => #<StateMachine::Transition:0xb7c34cec ...>
+  vehicle.speed                   # => 0
+  
   vehicle.ignite                  # => true
   vehicle.parked?                 # => false
   vehicle.idling?                 # => true
-  vehicle.speed                   # => 0
-  vehicle                         # => #<Vehicle:0xb7cf4eac @state="idling", @seatbelt_on=true>
-  vehicle.shift_up                # => true
-  vehicle                         # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
   vehicle.speed                   # => 10
+  vehicle                         # => #<Vehicle:0xb7cf4eac @state="idling", @seatbelt_on=true>
+  
   vehicle.shift_up                # => true
-  vehicle                         # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
+  vehicle.speed                   # => 10
+  vehicle                         # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
+  
+  vehicle.shift_up                # => true
   vehicle.speed                   # => 20
+  vehicle                         # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
   
   # The bang (!) operator can raise exceptions if the event fails
   vehicle.park!                   # => StateMachine::InvalidTransition: Cannot transition via :park from "second_gear"
