@@ -400,3 +400,38 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
     assert_equal 'on', @object.state
   end
 end
+
+begin
+  # Load library
+  require 'rubygems'
+  require 'graphviz'
+  
+  class EventDrawingTest < Test::Unit::TestCase
+    def setup
+      states = %w(parked idling first_gear)
+      
+      @machine = StateMachine::Machine.new(Class.new, :initial => 'parked')
+      @machine.other_states(states)
+      
+      graph = GraphViz.new('G')
+      states.each {|state| graph.add_node(state)}
+      
+      @event = StateMachine::Event.new(@machine , 'park')
+      @event.transition :from => 'idling', :to => 'parked'
+      @event.transition :from => 'first_gear', :to => 'parked'
+      @event.transition :except_from => 'parked', :to => 'parked'
+      
+      @edges = @event.draw(graph)
+    end
+    
+    def test_should_generate_edges_for_each_transition
+      assert_equal 4, @edges.size
+    end
+    
+    def test_should_use_event_name_for_edge_label
+      assert_equal 'park', @edges.first['label']
+    end
+  end
+rescue LoadError
+  $stderr.puts 'Skipping GraphViz StateMachine::Guard tests. `gem install ruby-graphviz` and try again.'
+end

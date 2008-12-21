@@ -238,7 +238,7 @@ module StateMachine
           end
           
           # Draw each of the class's state machines
-          klass.state_machines.values.each do |machine|
+          klass.state_machines.each do |name, machine|
             machine.draw(options)
           end
         end
@@ -358,6 +358,7 @@ module StateMachine
       
       @owner_class = owner_class
       @initial_state = add_states([options[:initial]]).first if options.include?(:initial) || !@initial_state
+      states.each {|name, state| state.initial = (state == @initial_state)}
       
       # Find an integration that can be used for implementing various parts
       # of the state machine that may behave differently in different libraries
@@ -832,56 +833,21 @@ module StateMachine
         
         graph = GraphViz.new('G', :output => options[:format], :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}"))
         
-        # Tracks unique identifiers for dynamic states (via lambda blocks)
-        dynamic_states = {}
-        
         # Add nodes
-        states.values.each do |state|
-          shape = state == @initial_state ? 'doublecircle' : 'circle'
-          
-          # Use GraphViz-friendly name/label for dynamic/nil states
-          if state.value.is_a?(Proc)
-            name = "lambda#{dynamic_states.keys.length}"
-            label = '*'
-            dynamic_states[state.value] = name
-          else
-            name = label = state.value.nil? ? 'nil' : state.value.to_s
-          end
-          
-          graph.add_node(name, :label => label, :width => '1', :height => '1', :fixedsize => 'true', :shape => shape, :fontname => options[:font])
+        states.each do |value, state|
+          node = state.draw(graph)
+          node.fontname = options[:font]
         end
         
         # Add edges
-        events.values.each do |event|
-          event.guards.each do |guard|
-            # From states: :from, everything but :except states, or all states
-            from_states = guard.requirements[:from] || guard.requirements[:except_from] && (states - guard.requirements[:except_from]) || states
-            if to_state = guard.requirements[:to]
-              to_state = to_state.first
-              
-              # Convert to GraphViz-friendly name
-              to_state = case to_state
-                when Proc; dynamic_states[to_state]
-                when nil; 'nil'
-                else; to_state.to_s; end
-            end
-            
-            from_states.each do |from_state|
-              # Convert to GraphViz-friendly name
-              from_state = case from_state
-                when Proc; dynamic_states[from_state]
-                when nil; 'nil'
-                else; from_state.to_s; end
-              
-              graph.add_edge(from_state, to_state || from_state, :label => event.name, :fontname => options[:font])
-            end
-          end
+        events.each do |name, event|
+          edges = event.draw(graph)
+          edges.each {|edge| edge.fontname = options[:font]}
         end
         
         # Generate the graph
         graph.output
-        
-        true
+        graph
       rescue LoadError
         $stderr.puts 'Cannot draw the machine. `gem install ruby-graphviz` and try again.'
         false

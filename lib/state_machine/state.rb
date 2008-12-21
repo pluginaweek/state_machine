@@ -1,3 +1,5 @@
+require 'state_machine/assertions'
+
 module StateMachine
   # A state defines a value that an attribute can be in after being transitioned
   # 0 or more times.  States can represent a value of any type in Ruby, though
@@ -8,6 +10,26 @@ module StateMachine
   # StateMachine::Machine#state for more information about how state-driven
   # behavior can be utilized.
   class State
+    include Assertions
+    
+    class << self
+      # Generates a unique identifier for the given state value.  Ids are based
+      # on the object type:
+      # * Proc - "lambda#{object_id}"
+      # * NilClass - "nil"
+      # * Everything else - Stringified version of the object
+      def id_for(value)
+        case value
+        when Proc
+          "lambda#{value.object_id.abs}"
+        when nil
+          'nil'
+        else
+          value.to_s
+        end
+      end
+    end
+    
     # The state machine for which this state is defined
     attr_accessor :machine
     
@@ -17,11 +39,20 @@ module StateMachine
     # Maps "method name" => UnboundMethod
     attr_reader :methods
     
+    # Whether or not this state in the initial state to use for new objects
+    attr_accessor :initial
+    
     # Creates a new state within the context of the given machine
-    def initialize(machine, value) #:nodoc:
+    # 
+    # Configuration options:
+    # * +initial+ - Whether this state is the beginning state for the machine.  Default is false.
+    def initialize(machine, value, options = {}) #:nodoc:
+      assert_valid_keys(options, :initial)
+      
       @machine = machine
       @value = value
       @methods = {}
+      @initial = options.include?(:initial) && options[:initial]
       
       add_predicate
     end
@@ -97,6 +128,29 @@ module StateMachine
         # Raise exception as if the method never existed on the original object
         raise NoMethodError, "undefined method '#{method}' for #{object} in state #{object.send(machine.attribute).inspect}"
       end
+    end
+    
+    # Draws a representation of this state on the given machine.  This will
+    # create a new node on the graph with the following properties:
+    # * +label+ - A human-friendly version of the value.  For lambda blocks / procs, "*", otherwise the stringified version of the value is used.
+    # * +width+ - The width of the node.  Always 1.
+    # * +height+ - The height of the node.  Always 1.
+    # * +fixedsize+ - Whether the size of the node stays the same regardless of its contents.  Always true.
+    # * +shape+ - The actual shape of the node.  If the state is the beginning state, then "doublecircle", otherwise "circle".
+    # 
+    # The actual node generated on the graph will be returned.
+    def draw(graph)
+      shape = initial ? 'doublecircle' : 'circle'
+      
+      # Use GraphViz-friendly name/label for dynamic/nil states
+      name = self.class.id_for(value)
+      if value.is_a?(Proc)
+        label = '*'
+      else
+        label = value.nil? ? 'nil' : value.to_s
+      end
+      
+      graph.add_node(name, :label => label, :width => '1', :height => '1', :fixedsize => 'true', :shape => shape)
     end
     
     private

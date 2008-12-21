@@ -18,6 +18,20 @@ class StateByDefaultTest < Test::Unit::TestCase
     expected = {}
     assert_equal expected, @state.methods
   end
+  
+  def test_should_not_be_initial
+    assert !@state.initial
+  end
+end
+
+class StateTest < Test::Unit::TestCase
+  def setup
+    @machine = StateMachine::Machine.new(Class.new)
+  end
+  
+  def test_should_raise_exception_if_invalid_option_specified
+    assert_raise(ArgumentError) {StateMachine::State.new(@machine, 'on', :invalid => true)}
+  end
 end
 
 class StateWithNilValueTest < Test::Unit::TestCase
@@ -154,6 +168,28 @@ class StateWithLambdaValueTest < Test::Unit::TestCase
   def test_should_not_define_predicate
     object = @klass.new
     assert !object.respond_to?("#{@value.inspect}?")
+  end
+end
+
+class StateInitialTest < Test::Unit::TestCase
+  def setup
+    @machine = StateMachine::Machine.new(Class.new)
+    @state = StateMachine::State.new(@machine, 'on', :initial => true)
+  end
+  
+  def test_should_be_initial
+    assert @state.initial
+  end
+end
+
+class StateNotInitialTest < Test::Unit::TestCase
+  def setup
+    @machine = StateMachine::Machine.new(Class.new)
+    @state = StateMachine::State.new(@machine, 'on', :initial => false)
+  end
+  
+  def test_should_not_be_initial
+    assert !@state.initial
   end
 end
 
@@ -399,4 +435,149 @@ class StateWithValidMethodCallTest < Test::Unit::TestCase
   def test_should_pass_both_arguments_and_blocks_through
     assert_equal [1, 2], @state.call(@object, :color, 1) {2}
   end
+end
+
+class StateIdGeneratorTest < Test::Unit::TestCase
+  def test_should_use_nil_for_nil
+    assert_equal 'nil', StateMachine::State.id_for(nil)
+  end
+  
+  def test_should_use_to_s_for_string
+    assert_equal 'on', StateMachine::State.id_for('on')
+  end
+  
+  def test_should_use_to_s_for_symbol
+    assert_equal 'on', StateMachine::State.id_for(:on)
+  end
+  
+  def test_should_use_to_s_for_number
+    assert_equal '1', StateMachine::State.id_for(1)
+  end
+  
+  def test_should_use_to_s_for_object
+    class << (state = Object.new)
+      def to_s
+        'on'
+      end
+    end
+    
+    assert_equal 'on', StateMachine::State.id_for(state)
+  end
+  
+  def test_should_use_lambda_id_for_proc
+    state = lambda {}
+    
+    assert_equal "lambda#{state.object_id.abs}", StateMachine::State.id_for(state)
+  end
+end
+
+begin
+  # Load library
+  require 'rubygems'
+  require 'graphviz'
+  
+  class StateDrawingTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      @state = StateMachine::State.new(@machine, 'on')
+      
+      graph = GraphViz.new('G')
+      @node = @state.draw(graph)
+    end
+    
+    def test_should_use_circle_shape
+      assert_equal 'circle', @node['shape']
+    end
+    
+    def test_should_enabled_fixedsize
+      assert_equal 'true', @node['fixedsize']
+    end
+    
+    def test_should_set_width_to_one
+      assert_equal '1', @node['width']
+    end
+    
+    def test_should_set_height_to_one
+      assert_equal '1', @node['height']
+    end
+    
+    def test_should_use_value_as_name
+      assert_equal 'on', @node.name
+    end
+    
+    def test_should_use_stringified_value_as_label
+      assert_equal 'on', @node['label']
+    end
+  end
+  
+  class StateDrawingInitialTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      @state = StateMachine::State.new(@machine, 'on', :initial => true)
+      
+      graph = GraphViz.new('G')
+      @node = @state.draw(graph)
+    end
+    
+    def test_should_use_doublecircle_as_shape
+      assert_equal 'doublecircle', @node['shape']
+    end
+  end
+  
+  class StateDrawingNilTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      @state = StateMachine::State.new(@machine, nil)
+      
+      graph = GraphViz.new('G')
+      @node = @state.draw(graph)
+    end
+    
+    def test_should_use_value_as_name
+      assert_equal 'nil', @node.name
+    end
+    
+    def test_should_use_stringified_value_as_label
+      assert_equal 'nil', @node['label']
+    end
+  end
+  
+  class StateDrawingProcTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      @value = lambda {}
+      @state = StateMachine::State.new(@machine, @value)
+      
+      graph = GraphViz.new('G')
+      @node = @state.draw(graph)
+    end
+    
+    def test_should_use_lambda_id_as_name
+      assert_equal "lambda#{@value.object_id.abs}", @node.name
+    end
+    
+    def test_should_use_asterisk_as_label
+      assert_equal '*', @node['label']
+    end
+  end
+  
+  class StateDrawingSymbolTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      @state = StateMachine::State.new(@machine, :on)
+      
+      graph = GraphViz.new('G')
+      @node = @state.draw(graph)
+    end
+    
+    def test_should_use_stringified_value_as_name
+      assert_equal 'on', @node.name
+    end
+    
+    def test_should_use_stringified_value_as_label
+      assert_equal 'on', @node['label']
+    end
+  end
+rescue LoadError
+  $stderr.puts 'Skipping GraphViz StateMachine::State tests. `gem install ruby-graphviz` and try again.'
 end

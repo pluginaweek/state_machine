@@ -39,6 +39,10 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert_equal [nil], @machine.states.keys
   end
   
+  def test_should_set_initial_on_nil_state
+    assert @machine.state(nil).initial
+  end
+  
   def test_should_not_be_extended_by_the_active_record_integration
     assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::ActiveRecord)
   end
@@ -132,6 +136,10 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
   def test_should_have_an_initial_state
     object = @klass.new
     assert_equal 'off', @machine.initial_state(object)
+  end
+  
+  def test_should_set_initial_on_state_object
+    assert @machine.state('off').initial
   end
   
   def test_should_set_initial_state_if_existing_is_nil
@@ -394,7 +402,10 @@ class MachineAfterChangingContextTest < Test::Unit::TestCase
   
   def test_should_allow_changing_the_initial_state
     new_machine = @machine.within_context(@new_class, :initial => 'off')
+    
     assert_equal 'off', new_machine.initial_state(@object)
+    assert new_machine.state('off').initial
+    assert !new_machine.state(nil).initial
   end
   
   def test_should_not_change_original_initial_state_if_updated

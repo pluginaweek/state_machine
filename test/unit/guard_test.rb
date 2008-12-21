@@ -481,3 +481,143 @@ class GuardWithConflictingConditionalsTest < Test::Unit::TestCase
     assert !guard.matches?(@object)
   end
 end
+
+begin
+  # Load library
+  require 'rubygems'
+  require 'graphviz'
+  
+  class GuardDrawingTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      states = %w(parked idling)
+      
+      graph = GraphViz.new('G')
+      states.each {|state| graph.add_node(state)}
+      
+      @guard = StateMachine::Guard.new(:from => 'idling', :to => 'parked')
+      @edges = @guard.draw(graph, 'park', states)
+    end
+    
+    def test_should_create_edges
+      assert_equal 1, @edges.size
+    end
+    
+    def test_should_use_from_state_from_start_node
+      assert_equal 'idling', @edges.first.instance_variable_get('@xNodeOne')
+    end
+    
+    def test_should_use_to_state_for_end_node
+      assert_equal 'parked', @edges.first.instance_variable_get('@xNodeTwo')
+    end
+    
+    def test_should_use_event_name_as_label
+      assert_equal 'park', @edges.first['label']
+    end
+  end
+  
+  class GuardDrawingWithFromRequirementTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      states = %w(parked idling first_gear)
+      
+      graph = GraphViz.new('G')
+      states.each {|state| graph.add_node(state)}
+      
+      @guard = StateMachine::Guard.new(:from => %w(idling first_gear), :to => 'parked')
+      @edges = @guard.draw(graph, 'park', states)
+    end
+    
+    def test_should_generate_edges_for_each_valid_from_state
+      %w(idling first_gear).each_with_index do |from_state, index|
+        edge = @edges[index]
+        assert_equal from_state, edge.instance_variable_get('@xNodeOne')
+        assert_equal 'parked', edge.instance_variable_get('@xNodeTwo')
+      end
+    end
+  end
+  
+  class GuardDrawingWithExceptFromRequirementTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      states = %w(parked idling first_gear)
+      
+      graph = GraphViz.new('G')
+      states.each {|state| graph.add_node(state)}
+      
+      @guard = StateMachine::Guard.new(:except_from => 'parked', :to => 'parked')
+      @edges = @guard.draw(graph, 'park', states)
+    end
+    
+    def test_should_generate_edges_for_each_valid_from_state
+      %w(idling first_gear).each_with_index do |from_state, index|
+        edge = @edges[index]
+        assert_equal from_state, edge.instance_variable_get('@xNodeOne')
+        assert_equal 'parked', edge.instance_variable_get('@xNodeTwo')
+      end
+    end
+  end
+  
+  class GuardDrawingWithoutFromRequirementTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      states = %w(parked idling first_gear)
+      
+      graph = GraphViz.new('G')
+      states.each {|state| graph.add_node(state)}
+      
+      @guard = StateMachine::Guard.new(:to => 'parked')
+      @edges = @guard.draw(graph, 'park', states)
+    end
+    
+    def test_should_generate_edges_for_each_valid_from_state
+      %w(parked idling first_gear).each_with_index do |from_state, index|
+        edge = @edges[index]
+        assert_equal from_state, edge.instance_variable_get('@xNodeOne')
+        assert_equal 'parked', edge.instance_variable_get('@xNodeTwo')
+      end
+    end
+  end
+  
+  class GuardDrawingWithoutToRequirementTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      
+      graph = GraphViz.new('G')
+      graph.add_node('parked')
+      
+      @guard = StateMachine::Guard.new(:from => 'parked')
+      @edges = @guard.draw(graph, 'park', ['parked'])
+    end
+    
+    def test_should_create_loopback_edge
+      assert_equal 'parked', @edges.first.instance_variable_get('@xNodeOne')
+      assert_equal 'parked', @edges.first.instance_variable_get('@xNodeTwo')
+    end
+  end
+  
+  class GuardWithProcStatesTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      @from_state = lambda {}
+      @to_state = lambda {}
+      states = [@from_state, @to_state]
+      
+      graph = GraphViz.new('G')
+      states.each {|state| graph.add_node("lambda#{state.object_id.abs}")}
+      
+      @guard = StateMachine::Guard.new(:from => @from_state, :to => @to_state)
+      @edges = @guard.draw(graph, 'park', states)
+    end
+    
+    def test_should_use_state_id_for_from_state
+      assert_equal "lambda#{@from_state.object_id.abs}", @edges.first.instance_variable_get('@xNodeOne')
+    end
+    
+    def test_should_use_state_id_for_to_state
+      assert_equal "lambda#{@to_state.object_id.abs}", @edges.first.instance_variable_get('@xNodeTwo')
+    end
+  end
+rescue LoadError
+  $stderr.puts 'Skipping GraphViz StateMachine::Guard tests. `gem install ruby-graphviz` and try again.'
+end

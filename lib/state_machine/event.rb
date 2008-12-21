@@ -119,6 +119,15 @@ module StateMachine
       end
     end
     
+    # Draws a representation of this event on the given graph.  This will
+    # create 1 or more edges on the graph for each guard (i.e. transition)
+    # configured.
+    # 
+    # A collection of the generated edges will be returned.
+    def draw(graph)
+      guards.collect {|guard| guard.draw(graph, name, machine.states.keys)}.flatten
+    end
+    
     protected
       # Add the various instance methods that can transition the object using
       # the current event

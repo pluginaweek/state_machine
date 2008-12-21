@@ -75,6 +75,41 @@ module StateMachine
       matches_query?(object, query) && matches_conditions?(object)
     end
     
+    # Draws a representation of this guard on the given graph.  This will draw
+    # an edge between every state this guard matches *from* to either the
+    # configured to state or, if none specified, then a loopback to the from
+    # state.
+    # 
+    # For example, if the following from states are configured:
+    # * +first_gear+
+    # * +idling+
+    # * +backing_up+
+    # 
+    # ...and the to state is "parked", then the following edges will be created:
+    # * +first_gear+  -> +parked+
+    # * +idling+      -> +parked+
+    # * +backing_up+  -> +parked+
+    # 
+    # Each edge will be labeled with the name of the event that would cause the
+    # transition.
+    # 
+    # The collection of edges generated on the graph will be returned.
+    def draw(graph, event_name, valid_states)
+      # From states: :from, everything but :except states, or all states
+      from_states = requirements[:from] || requirements[:except_from] && (valid_states - requirements[:except_from]) || valid_states
+      
+      # To state can be optional, otherwise it's a loopback
+      if to_state = requirements[:to]
+        to_state = State.id_for(to_state.first)
+      end
+      
+      # Generate an edge between each from and to state
+      from_states.collect do |from_state|
+        from_state = State.id_for(from_state)
+        graph.add_edge(from_state, to_state || from_state, :label => event_name)
+      end
+    end
+    
     protected
       # Verify that the from state, to state, and event match the query
       def matches_query?(object, query)
