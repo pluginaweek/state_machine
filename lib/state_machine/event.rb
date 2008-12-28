@@ -125,7 +125,8 @@ module StateMachine
     # 
     # A collection of the generated edges will be returned.
     def draw(graph)
-      guards.collect {|guard| guard.draw(graph, name, machine.states.keys)}.flatten
+      valid_states = machine.states_order
+      guards.collect {|guard| guard.draw(graph, name, valid_states)}.flatten
     end
     
     protected
