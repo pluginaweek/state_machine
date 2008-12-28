@@ -113,8 +113,10 @@ module StateMachine
       # The actual method to invoke must be defined
       raise ArgumentError, ':do callback must be specified' unless @method
       
-      # Proxy the method so that it's bound to the object
-      @method = bound_method(@method) if @method.is_a?(Proc) && (!options.include?(:bind_to_object) && self.class.bind_to_object || options.delete(:bind_to_object))
+      # Proxy the method so that it's bound to the object.  Note that this only
+      # applies to lambda callbacks.  All other callbacks ignore this option.
+      bind_to_object = !options.include?(:bind_to_object) && self.class.bind_to_object || options.delete(:bind_to_object)
+      @method = bound_method(@method) if @method.is_a?(Proc) && bind_to_object
       @terminator = options.delete(:terminator)
       
       @guard = Guard.new(options)

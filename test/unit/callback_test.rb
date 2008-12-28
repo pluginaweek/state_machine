@@ -186,4 +186,20 @@ class CallbackWithBoundObjectTest < Test::Unit::TestCase
   def test_should_call_method_within_the_context_of_the_object
     assert_equal [@object, 1, 2, 3], @callback.call(@object, {}, 1, 2, 3)
   end
+  
+  def test_should_ignore_option_for_symbolic_callbacks
+    class << @object
+      def after_turn_on(*args)
+        args
+      end
+    end
+    
+    @callback = StateMachine::Callback.new(:do => :after_turn_on, :bind_to_object => true)
+    assert_equal [], @callback.call(@object)
+  end
+  
+  def test_should_ignore_option_for_string_callbacks
+    @callback = StateMachine::Callback.new(:do => '[1, 2, 3]', :bind_to_object => true)
+    assert_equal [1, 2, 3], @callback.call(@object)
+  end
 end

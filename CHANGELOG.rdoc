@@ -1,5 +1,7 @@
 == master
 
+* Fix non-lambda callbacks not working for DataMapper/Sequel
+
 == 0.4.2 / 2008-12-28
 
 * Fix graphs not being drawn the same way consistently

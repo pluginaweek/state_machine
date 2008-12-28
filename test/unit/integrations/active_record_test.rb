@@ -343,6 +343,31 @@ begin
         
         assert_equal %w(error off), @machine.states.keys.sort
       end
+      
+      def test_should_allow_symbolic_callbacks
+        callback_args = nil
+        
+        klass = class << @record; self; end
+        klass.send(:define_method, :after_turn_on) do |*args|
+          callback_args = args
+        end
+        
+        @machine.before_transition(:after_turn_on)
+        
+        @transition.perform
+        assert_equal [@transition], callback_args
+      end
+      
+      def test_should_allow_string_callbacks
+        class << @record
+          attr_reader :callback_result
+        end
+        
+        @machine.before_transition('@callback_result = [1, 2, 3]')
+        @transition.perform
+        
+        assert_equal [1, 2, 3], @record.callback_result
+      end
     end
     
     class MachineWithFailedBeforeCallbacksTest < ActiveRecord::TestCase
