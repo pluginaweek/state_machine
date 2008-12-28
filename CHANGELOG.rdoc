@@ -1,5 +1,6 @@
 == master
 
+* Allow dm-observer integration to be optional
 * Fix non-lambda callbacks not working for DataMapper/Sequel
 
 == 0.4.2 / 2008-12-28

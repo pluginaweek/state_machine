@@ -2,6 +2,19 @@ module StateMachine
   module Integrations #:nodoc:
     # Adds support for integrating state machines with DataMapper resources.
     # 
+    # == Requirements
+    # 
+    # To use this feature of the DataMapper integration, the dm-observer library
+    # must be available.  This can be installed either directly or indirectly
+    # through dm-more.  When loading DataMapper, be sure to load the dm-observer
+    # library as well like so:
+    # 
+    #   require 'rubygems'
+    #   require 'dm-core'
+    #   require 'dm-observer'
+    # 
+    # If dm-observer is not available, then this feature will be skipped.
+    # 
     # == Examples
     # 
     # Below is an example of a simple state machine defined within a
@@ -153,7 +166,7 @@ module StateMachine
       
       # Loads additional files specific to DataMapper
       def self.extended(base) #:nodoc:
-        require 'state_machine/integrations/data_mapper/observer'
+        require 'state_machine/integrations/data_mapper/observer' if ::DataMapper.const_defined?('Observer')
       end
       
       # Runs a new database transaction, rolling back any changes if the

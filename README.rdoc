@@ -332,6 +332,9 @@ callbacks, and observers.  For example,
     end
   end
 
+*Note* that the DataMapper::Observer integration is optional and only available
+when the dm-observer library is installed.
+
 For more information about the various behaviors added for DataMapper state
 machines, see StateMachine::Integrations::DataMapper.
 
