@@ -160,6 +160,32 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
   def test_should_be_included_in_known_states
     assert_equal %w(off), @machine.states.keys
   end
+  
+  def test_should_order_state_before_transition_states
+    @machine.event :turn_on do
+      transition :from => 'off', :to => 'on'
+    end
+    assert_equal %w(off on), @machine.states_order
+  end
+  
+  def test_should_order_state_before_states_with_behaviors
+    @machine.state 'error' do
+      def color
+        'red'
+      end
+    end
+    assert_equal %w(off error), @machine.states_order
+  end
+  
+  def test_should_order_state_before_other_states
+    @machine.other_states 'on'
+    assert_equal %w(off on), @machine.states_order
+  end
+  
+  def test_should_order_state_before_callback_states
+    @machine.before_transition :from => 'on', :do => lambda {}
+    assert_equal %w(off on), @machine.states_order
+  end
 end
 
 class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
@@ -362,6 +388,10 @@ class MachineAfterBeingCopiedTest < Test::Unit::TestCase
   
   def test_should_not_update_machine_for_original_event
     assert_equal @machine, @machine.events['turn_on'].machine
+  end
+  
+  def test_should_not_have_the_same_events_order
+    assert_not_same @copied_machine.events_order, @machine.events_order
   end
   
   def test_should_not_have_the_same_callbacks
@@ -842,6 +872,38 @@ class MachineWithExistingAttributeValue < Test::Unit::TestCase
   end
 end
 
+class MachineWithStateDrivenBehaviorsTest < Test::Unit::TestCase
+  def setup
+    @machine = StateMachine::Machine.new(Class.new, :initial => 'off')
+    @machine.state 'on' do
+      def color
+        'green'
+      end
+    end
+  end
+  
+  def test_should_order_states_after_initial_state
+    assert_equal %w(off on), @machine.states_order
+  end
+  
+  def test_should_order_states_after_transition_states
+    @machine.event :turn_on do
+      transition :to => 'error'
+    end
+    assert_equal %w(off error on), @machine.states_order
+  end
+  
+  def test_should_order_states_before_other_states
+    @machine.other_states 'error'
+    assert_equal %w(off on error), @machine.states_order
+  end
+  
+  def test_should_order_state_before_callback_states
+    @machine.before_transition :to => 'error', :do => lambda {}
+    assert_equal %w(off on error), @machine.states_order
+  end
+end
+
 class MachineWithExistingEventTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
@@ -892,6 +954,29 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
     
     assert_equal %w(error maybe off on unknown), @machine.states.keys.sort
   end
+  
+  def test_should_order_states_after_initial_state
+    assert_equal %w(off on error unknown), @machine.states_order
+  end
+  
+  def test_should_order_states_before_states_with_behaviors
+    @machine.state 'tripped' do
+      def color
+        'red'
+      end
+    end
+    assert_equal %w(off on error unknown tripped), @machine.states_order
+  end
+  
+  def test_should_order_states_before_other_states
+    @machine.other_states 'tripped'
+    assert_equal %w(off on error unknown tripped), @machine.states_order
+  end
+  
+  def test_should_order_state_before_callback_states
+    @machine.before_transition :to => 'tripped', :do => lambda {}
+    assert_equal %w(off on error unknown tripped), @machine.states_order
+  end
 end
 
 class MachineWithMultipleEventsTest < Test::Unit::TestCase
@@ -924,6 +1009,10 @@ class MachineWithMultipleEventsTest < Test::Unit::TestCase
   def test_should_return_all_created_events
     assert_instance_of Array, @result
     assert_equal 2, @result.size
+  end
+  
+  def test_should_track_events_order
+    assert_equal %w(turn_on activate), @machine.events_order
   end
 end
 
@@ -1024,13 +1113,42 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   def test_should_define_predicates_for_each_state
     [:on?, :off?].each {|predicate| assert @object.respond_to?(predicate)}
   end
+  
+  def test_should_order_states_after_initial_state
+    @machine.before_transition :to => 'unknown', :do => lambda {}
+    assert_equal %w(off on unknown), @machine.states_order
+  end
+  
+  def test_should_order_states_after_transition_states
+    @machine.before_transition :to => 'unknown', :do => lambda {}
+    @machine.event :turn_on do
+      transition :to => 'error'
+    end
+    assert_equal %w(off on error unknown), @machine.states_order
+  end
+  
+  def test_should_order_states_after_states_with_behaviors
+    @machine.before_transition :to => 'unknown', :do => lambda {}
+    @machine.state 'error' do
+      def color
+        'red'
+      end
+    end
+    assert_equal %w(off on error unknown), @machine.states_order
+  end
+  
+  def test_should_order_states_after_other_states
+    @machine.before_transition :to => 'unknown', :do => lambda {}
+    @machine.other_states 'error'
+    assert_equal %w(off on error unknown), @machine.states_order
+  end
 end
 
 class MachineWithOtherStates < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass, :initial => 'on')
-    @machine.other_states('on', 'off')
+    @machine = StateMachine::Machine.new(@klass, :initial => 'off')
+    @machine.other_states('off', 'on')
   end
   
   def test_should_include_other_states_in_known_states
@@ -1041,6 +1159,31 @@ class MachineWithOtherStates < Test::Unit::TestCase
     object = @klass.new
     
     [:on?, :off?].each {|predicate| assert object.respond_to?(predicate)}
+  end
+  
+  def test_should_order_states_after_initial_state
+    assert_equal %w(off on), @machine.states_order
+  end
+  
+  def test_should_order_states_after_transition_states
+    @machine.event :turn_on do
+      transition :to => 'error'
+    end
+    assert_equal %w(off error on), @machine.states_order
+  end
+  
+  def test_should_order_states_after_states_with_behaviors
+    @machine.state 'error' do
+      def color
+        'red'
+      end
+    end
+    assert_equal %w(off error on), @machine.states_order
+  end
+  
+  def test_should_order_state_before_callback_states
+    @machine.before_transition :to => 'error', :do => lambda {}
+    assert_equal %w(off on error), @machine.states_order
   end
 end
 

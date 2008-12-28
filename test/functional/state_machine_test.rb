@@ -174,7 +174,7 @@ class Motorcycle < Vehicle
 end
 
 class TrafficLight
-  state_machine do
+  state_machine :initial => 'stop' do
     event :cycle do
       transition :to => 'proceed', :from => 'stop'
       transition :to => 'caution', :from => 'proceed'

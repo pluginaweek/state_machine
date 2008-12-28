@@ -259,6 +259,10 @@ module StateMachine
     # Maps "name" => StateMachine::Event
     attr_reader :events
     
+    # Tracks the order in which events were defined.  This is used to determine
+    # in what order events are drawn on GraphViz visualizations.
+    attr_reader :events_order
+    
     # A list of all of the states known to this state machine.  This will pull
     # state values from the following sources:
     # * Initial state
@@ -289,6 +293,7 @@ module StateMachine
       # Set machine configuration
       @attribute = (args.first || 'state').to_s
       @events = {}
+      @events_order = []
       @states = {}
       @callbacks = {:before => [], :after => []}
       @action = options[:action]
@@ -327,6 +332,7 @@ module StateMachine
         events[name] = event
         events
       end
+      @events_order = @events_order.dup
       @states = @states.inject({}) do |states, (value, state)|
         state = state.dup
         state.machine = self
@@ -538,6 +544,25 @@ module StateMachine
       add_states(args.flatten)
     end
     
+    # Gets the order in which states should be displayed based on where they
+    # were first referenced.  This will order states in the following priority:
+    # 
+    # 1. Initial state
+    # 2. Event transitions (:to, :from, :except_to, :except_from options)
+    # 3. States with behaviors
+    # 4. States referenced via +other_states+
+    # 5. States referenced in callbacks
+    # 
+    # This order will determine how the GraphViz visualizations are rendered.
+    def states_order
+      order = [initial_state(nil)]
+      
+      events.each {|name, event| order |= event.known_states}
+      order |= states.select {|value, state| state.methods.any?}.map {|state| state.first}
+      order |= states.keys - callbacks.values.flatten.map {|callback| callback.known_states}.flatten
+      order |= states.keys
+    end
+    
     # Defines one or more events for the machine and the transitions that can
     # be performed when those events are run.
     # 
@@ -610,6 +635,7 @@ module StateMachine
       events = names.collect do |name|
         name = name.to_s
         event = self.events[name] ||= Event.new(self, name)
+        @events_order << name unless @events_order.include?(name)
         
         if block_given?
           event.instance_eval(&block)
@@ -834,13 +860,13 @@ module StateMachine
         graph = GraphViz.new('G', :output => options[:format], :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}"))
         
         # Add nodes
-        states.each do |value, state|
+        Array(state(*states_order)).each do |state|
           node = state.draw(graph)
           node.fontname = options[:font]
         end
         
         # Add edges
-        events.each do |name, event|
+        Array(event(*events_order)).each do |event|
           edges = event.draw(graph)
           edges.each {|edge| edge.fontname = options[:font]}
         end

@@ -1,5 +1,6 @@
 == master
 
+* Fix graphs not being drawn the same way consistently
 * Add support for sharing transitions across multiple events
 * Add support for state-driven behavior
 * Simplify initialize hooks, requiring super to be called instead
