@@ -430,6 +430,10 @@ class MachineAfterChangingContextTest < Test::Unit::TestCase
     assert_equal @original_class, @machine.owner_class
   end
   
+  def test_should_still_have_an_initial_state
+    assert @new_machine.states[nil].initial
+  end
+  
   def test_should_allow_changing_the_initial_state
     new_machine = @machine.within_context(@new_class, :initial => 'off')
     

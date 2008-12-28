@@ -339,6 +339,7 @@ module StateMachine
         states[value] = state
         states
       end
+      @initial_state = @states[@initial_state.value]
       @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup}
     end
     
