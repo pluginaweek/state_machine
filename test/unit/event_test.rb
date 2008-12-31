@@ -433,5 +433,5 @@ begin
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping GraphViz StateMachine::Guard tests. `gem install ruby-graphviz` and try again.'
+  $stderr.puts 'Skipping GraphViz StateMachine::Event tests. `gem install ruby-graphviz` and try again.'
 end

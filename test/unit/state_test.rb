@@ -270,7 +270,7 @@ class StateWithContextTest < Test::Unit::TestCase
   end
   
   def test_should_define_each_context_method_in_owner_class
-    %w(color glow).each {|method| assert @klass.instance_methods.include?(method)}
+    %w(color glow).each {|method| assert @klass.method_defined?(method)}
   end
   
   def test_should_not_use_context_methods_as_owner_class_methods
@@ -279,8 +279,8 @@ class StateWithContextTest < Test::Unit::TestCase
   end
   
   def test_should_include_context_methods_in_state_methods
-    assert_equal @color_method, @state.methods['color']
-    assert_equal @glow_method, @state.methods['glow']
+    assert_equal @color_method, @state.methods[:color]
+    assert_equal @glow_method, @state.methods[:glow]
   end
 end
 
@@ -318,7 +318,7 @@ class StateWithMultipleContextsTest < Test::Unit::TestCase
   end
   
   def test_should_define_each_context_method_in_owner_class
-    %w(color glow).each {|method| assert @klass.instance_methods.include?(method)}
+    %w(color glow).each {|method| assert @klass.method_defined?(method)}
   end
   
   def test_should_not_use_context_methods_as_owner_class_methods
@@ -327,8 +327,8 @@ class StateWithMultipleContextsTest < Test::Unit::TestCase
   end
   
   def test_should_include_context_methods_in_state_methods
-    assert_equal @color_method, @state.methods['color']
-    assert_equal @glow_method, @state.methods['glow']
+    assert_equal @color_method, @state.methods[:color]
+    assert_equal @glow_method, @state.methods[:glow]
   end
 end
 
@@ -381,7 +381,7 @@ class StateWithRedefinedContextMethodTest < Test::Unit::TestCase
   end
   
   def test_should_track_latest_defined_method
-    assert_equal @current_color_method, @state.methods['color']
+    assert_equal @current_color_method, @state.methods[:color]
   end
 end
 

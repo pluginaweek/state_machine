@@ -164,6 +164,11 @@ module StateMachine
         defined?(::ActiveRecord::Base) && klass <= ::ActiveRecord::Base
       end
       
+      # Loads additional files specific to ActiveRecord
+      def self.extended(base) #:nodoc:
+        require 'state_machine/integrations/active_record/observer'
+      end
+      
       # Runs a new database transaction, rolling back any changes by raising
       # an ActiveRecord::Rollback exception if the yielded block fails
       # (i.e. returns false).
@@ -199,7 +204,7 @@ module StateMachine
                 define_method("#{attribute}?") do |*args|
                   if args.empty?
                     # No arguments: querying for presence of the attribute
-                    super
+                    super(*args)
                   else
                     # Arguments: querying for the attribute's current value
                     state = args.first
@@ -251,11 +256,8 @@ module StateMachine
         def notify(type, object, transition)
           qualified_event = namespace ? "#{transition.event}_#{namespace}" : transition.event
           ["#{type}_#{qualified_event}", "#{type}_transition"].each do |method|
-            object.class.class_eval do
-              @observer_peers.dup.each do |observer|
-                observer.send(method, object, transition) if observer.respond_to?(method)
-              end if defined?(@observer_peers)
-            end
+            object.class.changed
+            object.class.notify_observers(method, object, transition)
           end
           
           true

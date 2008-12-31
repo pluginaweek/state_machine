@@ -7,7 +7,7 @@ begin
   
   # Establish database connection
   DataMapper.setup(:default, 'sqlite3::memory:')
-  DataObjects::Sqlite3.logger = DataObjects::Logger.new("#{File.dirname(__FILE__)}/../../data_mapper.log", 0)
+  DataObjects::Sqlite3.logger = DataObjects::Logger.new("#{File.dirname(__FILE__)}/../../data_mapper.log", :info)
   
   module DataMapperTest
     class BaseTestCase < Test::Unit::TestCase
@@ -432,5 +432,5 @@ begin
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping DataMapper Core tests. `gem install dm-core` and try again.'
+  $stderr.puts 'Skipping DataMapper tests. `gem install dm-core rspec hoe launchy do_sqlite3` and try again.'
 end

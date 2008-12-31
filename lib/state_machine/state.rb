@@ -96,14 +96,14 @@ module StateMachine
           owner_class.class_eval <<-end_eval, __FILE__, __LINE__
             def #{method}(*args, &block)
               attribute = #{attribute.dump}
-              self.class.state_machines[attribute].state(send(attribute)).call(self, #{method.dump}, *args, &block)
+              self.class.state_machines[attribute].state(send(attribute)).call(self, #{method.to_s.dump}, *args, &block)
             end
           end_eval
         end
         
         # Track the method defined for the context so that it can be invoked
         # at a later point in time
-        methods[method] = context.instance_method(method)
+        methods[method.to_sym] = context.instance_method(method)
       end
       
       # Include the context so that it can be bound to the owner class (the
@@ -121,7 +121,7 @@ module StateMachine
     # If the method has never been defined for this state, then a NoMethodError
     # will be raised.
     def call(object, method, *args, &block)
-      if context_method = methods[method.to_s]
+      if context_method = methods[method.to_sym]
         # Method is defined by the state: proxy it through
         context_method.bind(object).call(*args, &block)
       else

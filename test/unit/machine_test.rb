@@ -1532,5 +1532,5 @@ begin
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping GraphViz tests. `gem install ruby-graphviz` and try again.'
+  $stderr.puts 'Skipping GraphViz StateMachine::Machine tests. `gem install ruby-graphviz` and try again.'
 end
