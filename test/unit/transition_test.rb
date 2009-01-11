@@ -48,6 +48,10 @@ class TransitionTest < Test::Unit::TestCase
     expected = {:object => @object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}
     assert_equal expected, @transition.attributes
   end
+  
+  def test_should_use_pretty_inspect
+    assert_equal '#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>', @transition.inspect
+  end
 end
 
 class TransitionWithDynamicToValueTest < Test::Unit::TestCase

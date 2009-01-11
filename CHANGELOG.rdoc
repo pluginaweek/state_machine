@@ -1,5 +1,6 @@
 == master
 
+* Add nicely formatted #inspect for transitions
 * Fix ActiveRecord integrations failing when the database doesn't exist yet
 * Fix states not being drawn in GraphViz graphs in the correct order
 * Add nicely formatted #inspect for states and events

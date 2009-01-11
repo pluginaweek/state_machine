@@ -100,6 +100,16 @@ module StateMachine
       result
     end
     
+    # Generates a nicely formatted description of this transitions's contents.
+    # 
+    # For example,
+    # 
+    #   transition = StateMachine::Transition.new(object, machine, :ignite, :parked, :idling)
+    #   transition   # => #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>
+    def inspect
+      "#<#{self.class} #{%w(attribute event from from_name to to_name).map {|attr| "#{attr}=#{send(attr).inspect}"} * ' '}>"
+    end
+    
     protected
       # Gets a hash of the context defining this unique transition (including
       # event, from state, and to state).

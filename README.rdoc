@@ -170,7 +170,7 @@ like so:
   vehicle.state_name              # => :parked
   vehicle.parked?                 # => true
   vehicle.can_ignite?             # => true
-  vehicle.next_ignite_transition  # => #<StateMachine::Transition:0xb7c34cec ...>
+  vehicle.next_ignite_transition  # => #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>
   vehicle.speed                   # => 0
   
   vehicle.ignite                  # => true
