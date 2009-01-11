@@ -62,7 +62,7 @@ module StateMachine
     # will be replaced with the updated ones.
     def update(node)
       @indices.each do |attribute, index|
-        old_key = index.key(node)
+        old_key = index.respond_to?(:key) ? index.key(node) : index.index(node)
         new_key = node.send(attribute)
         
         # Only replace the key if it's changed
