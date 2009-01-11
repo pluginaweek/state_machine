@@ -1,66 +1,21 @@
 require 'state_machine/extensions'
+require 'state_machine/assertions'
+require 'state_machine/integrations'
+
 require 'state_machine/state'
 require 'state_machine/event'
 require 'state_machine/callback'
-require 'state_machine/assertions'
-
-# Load each available integration
-Dir["#{File.dirname(__FILE__)}/integrations/*.rb"].sort.each do |path|
-  require "state_machine/integrations/#{File.basename(path)}"
-end
+require 'state_machine/node_collection'
+require 'state_machine/state_collection'
 
 module StateMachine
   # Represents a state machine for a particular attribute.  State machines
   # consist of states, events and a set of transitions that define how the state
   # changes after a particular event is fired.
   # 
-  # A state machine may not necessarily know all of the possible states for
-  # an object since they can be any arbitrary value.  As a result, anything
-  # that relies on a list of all possible states should keep in mind that if
-  # a state has not been referenced *anywhere* in the state machine definition,
-  # then it will *not* be a known state unless the +other_states+ helper is used.
-  # 
-  # == State values
-  # 
-  # While strings are the most common object type used for setting values on
-  # the state of the machine, there are no restrictions on what can be used.
-  # This means that symbols, integers, dates/times, etc. can all be used.
-  # 
-  # With string states:
-  # 
-  #   class Vehicle
-  #     state_machine :initial => 'parked' do
-  #       event :ignite do
-  #         transition :to => 'idling', :from => 'parked'
-  #       end
-  #     end
-  #   end
-  # 
-  # With symbolic states:
-  # 
-  #   class Vehicle
-  #     state_machine :initial => :parked do
-  #       event :ignite do
-  #         transition :to => :idling, :from => :parked
-  #       end
-  #     end
-  #   end
-  # 
-  # With time states:
-  # 
-  #   class Switch
-  #     state_machine :activated_at
-  #       before_transition :to => nil, :do => lambda {...}
-  #       
-  #       event :activate do
-  #         transition :to => lambda {Time.now}
-  #       end
-  #       
-  #       event :deactivate do
-  #         transition :to => nil
-  #       end
-  #     end
-  #   end
+  # A state machine will not know all of the possible states for an object unless
+  # they are referenced *somewhere* in the state machine definition.  As a result,
+  # any unused states should be defined with the +other_states+ or +state+ helper.
   # 
   # == Callbacks
   # 
@@ -88,8 +43,8 @@ module StateMachine
   # example,
   # 
   #   class Vehicle
-  #     state_machine, :initial => 'parked' do
-  #       before_transition :to => 'idling', :do => lambda {|vehicle| throw :halt}
+  #     state_machine, :initial => :parked do
+  #       before_transition :to => :idling, :do => lambda {|vehicle| throw :halt}
   #       ...
   #     end
   #   end
@@ -109,7 +64,7 @@ module StateMachine
   #   class Vehicle
   #     state_machine do
   #       event :park do
-  #         transition :to => 'parked', :from => 'idling'
+  #         transition :to => :parked, :from => :idling
   #       end
   #       ...
   #     end
@@ -188,23 +143,28 @@ module StateMachine
       # Attempts to find or create a state machine for the given class.  For
       # example,
       # 
-      #   StateMachine::Machine.find_or_create(Switch)
-      #   StateMachine::Machine.find_or_create(Switch, :initial => 'off')
-      #   StateMachine::Machine.find_or_create(Switch, 'status')
-      #   StateMachine::Machine.find_or_create(Switch, 'status', :initial => 'off')
+      #   StateMachine::Machine.find_or_create(Vehicle)
+      #   StateMachine::Machine.find_or_create(Vehicle, :initial => :parked)
+      #   StateMachine::Machine.find_or_create(Vehicle, :status)
+      #   StateMachine::Machine.find_or_create(Vehicle, :status, :initial => :parked)
       # 
       # If a machine of the given name already exists in one of the class's
       # superclasses, then a copy of that machine will be created and stored
       # in the new owner class (the original will remain unchanged).
       def find_or_create(owner_class, *args, &block)
         options = args.last.is_a?(Hash) ? args.pop : {}
-        attribute = (args.first || 'state').to_s
+        attribute = args.first || :state
         
         # Attempts to find an existing machine
         if owner_class.respond_to?(:state_machines) && machine = owner_class.state_machines[attribute]
-          machine = machine.within_context(owner_class, options) unless machine.owner_class == owner_class
+          # Create a copy of the state machine if it's being created by a subclass
+          unless machine.owner_class == owner_class
+            machine = machine.clone
+            machine.initial_state = options[:initial] if options.include?(:initial)
+            machine.owner_class = owner_class
+          end
           
-          # Evaluate caller block for DSL
+          # Evaluate DSL caller block
           machine.instance_eval(&block) if block_given?
         else
           # No existing machine: create a new one
@@ -218,10 +178,11 @@ module StateMachine
       # The given classes must be a comma-delimited string of class names.
       # 
       # Configuration options:
-      # * +file+ - A comma-delimited string of files to load that contain the state machine definitions to draw
-      # * +path+ - The path to write the graph file to
-      # * +format+ - The image format to generate the graph in
-      # * +font+ - The name of the font to draw state names in
+      # * <tt>:file</tt> - A comma-delimited string of files to load that
+      #   contain the state machine definitions to draw
+      # * <tt>:path</tt> - The path to write the graph file to
+      # * <tt>:format</tt> - The image format to generate the graph in
+      # * <tt>:font</tt> - The name of the font to draw state names in
       def draw(class_names, options = {})
         raise ArgumentError, 'At least one class must be specified' unless class_names && class_names.split(',').any?
         
@@ -246,35 +207,29 @@ module StateMachine
     end
     
     # The class that the machine is defined in
-    attr_reader :owner_class
+    attr_accessor :owner_class
     
     # The attribute for which the machine is being defined
     attr_reader :attribute
     
-    # The initial state that the machine will be in when an object is created
-    attr_reader :initial_state
-    
-    # The events that trigger transitions
-    # 
-    # Maps "name" => StateMachine::Event
+    # The events that trigger transitions.  These are sorted, by default, in the
+    # order in which they were defined.
     attr_reader :events
     
-    # Tracks the order in which events were defined.  This is used to determine
-    # in what order events are drawn on GraphViz visualizations.
-    attr_reader :events_order
-    
     # A list of all of the states known to this state machine.  This will pull
-    # state values from the following sources:
+    # states from the following sources:
     # * Initial state
     # * State behaviors
-    # * Event transitions (:to, :from, :except_to, and :except_from options)
+    # * Event transitions (:to, :from, and :except_from options)
     # * Transition callbacks (:to, :from, :except_to, and :except_from options)
     # * Unreferenced states (using +other_states+ helper)
     # 
-    # Maps value => StateMachine::State
+    # These are sorted, by default, in the order in which they were referenced.
     attr_reader :states
     
     # The callbacks to invoke before/after a transition is performed
+    # 
+    # Maps :before => callbacks and :after => callbacks
     attr_reader :callbacks
     
     # The action to invoke when an object transitions
@@ -291,13 +246,49 @@ module StateMachine
       assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration)
       
       # Set machine configuration
-      @attribute = (args.first || 'state').to_s
-      @events = {}
-      @events_order = []
-      @states = {}
+      @attribute = args.first || :state
+      @events = NodeCollection.new
+      @states = StateCollection.new
       @callbacks = {:before => [], :after => []}
-      @action = options[:action]
       @namespace = options[:namespace]
+      self.owner_class = owner_class
+      self.initial_state = options[:initial]
+      
+      # Find an integration that matches this machine's owner class
+      if integration = options[:integration] ? StateMachine::Integrations.find(options[:integration]) : StateMachine::Integrations.match(owner_class)
+        extend integration
+      end
+      
+      # Set integration-specific configurations
+      @action = options.include?(:action) ? options[:action] : default_action
+      define_attribute_accessor
+      define_scopes(options[:plural])
+      
+      # Call after hook for integration-specific extensions
+      after_initialize
+      
+      # Evaluate DSL caller block
+      instance_eval(&block) if block_given?
+    end
+    
+    # Creates a copy of this machine in addition to copies of each associated
+    # event/states/callback, so that the modifications to those collections do
+    # not affect the original machine.
+    def initialize_copy(orig) #:nodoc:
+      super
+      
+      @events = @events.dup
+      @events.machine = self
+      @states = @states.dup
+      @states.machine = self
+      @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup}
+    end
+    
+    # Sets the class which is the owner of this state machine.  Any methods
+    # generated by states, events, or other parts of the machine will be defined
+    # on the given owner class.
+    def owner_class=(klass)
+      @owner_class = klass
       
       # Add class-/instance-level methods to the owner class for state initialization
       owner_class.class_eval do
@@ -305,104 +296,46 @@ module StateMachine
         include StateMachine::InstanceMethods
       end unless owner_class.included_modules.include?(StateMachine::InstanceMethods)
       
-      # Initialize the class context of the machine
-      set_context(owner_class, :initial => options[:initial], :integration => options[:integration], &block)
-      
-      # Set integration-specific configurations
-      @action ||= default_action unless options.include?(:action)
-      define_attribute_accessor
-      define_scopes(options[:plural])
-      
-      # Call after hook for integration-specific extensions
-      after_initialize
-      
-      # Evaluate caller block for DSL
-      instance_eval(&block) if block_given?
-    end
-    
-    # Creates a copy of this machine in addition to copies of each associated
-    # event, so that the list of transitions for each event don't conflict
-    # with different machines
-    def initialize_copy(orig) #:nodoc:
-      super
-      
-      @events = @events.inject({}) do |events, (name, event)|
-        event = event.dup
-        event.machine = self
-        events[name] = event
-        events
-      end
-      @events_order = @events_order.dup
-      @states = @states.inject({}) do |states, (value, state)|
-        state = state.dup
-        state.machine = self
-        states[value] = state
-        states
-      end
-      @initial_state = @states[@initial_state.value]
-      @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup}
-    end
-    
-    # Creates a copy of this machine within the context of the given class.
-    # This should be used for inheritance support of state machines.
-    def within_context(owner_class, options = {}, &block) #:nodoc:
-      machine = dup
-      machine.set_context(owner_class, {:integration => @integration}.merge(options))
-      machine
-    end
-    
-    # Changes the context of this machine to the given class so that new
-    # events and transitions are created in the proper context.
-    # 
-    # Configuration options:
-    # * +initial+ - The initial value to set the attribute to
-    # * +integration+ - The name of the integration for extending this machine with library-specific behavior
-    # 
-    # All other configuration options for the machine can only be set on
-    # creation.
-    def set_context(owner_class, options = {}) #:nodoc:
-      assert_valid_keys(options, :initial, :integration)
-      
-      @owner_class = owner_class
-      @initial_state = add_states([options[:initial]]).first if options.include?(:initial) || !@initial_state
-      states.each {|name, state| state.initial = (state == @initial_state)}
-      
-      # Find an integration that can be used for implementing various parts
-      # of the state machine that may behave differently in different libraries
-      if @integration = options[:integration] || StateMachine::Integrations.constants.find {|name| StateMachine::Integrations.const_get(name).matches?(owner_class)}
-        extend StateMachine::Integrations.const_get(@integration.to_s.gsub(/(?:^|_)(.)/) {$1.upcase})
-      end
-      
       # Record this machine as matched to the attribute in the current owner
       # class.  This will override any machines mapped to the same attribute
       # in any superclasses.
       owner_class.state_machines[attribute] = self
     end
     
+    # Sets the initial state of the machine.  This can be either the static name
+    # of a state or a lambda block which determines the initial state at
+    # creation time.
+    def initial_state=(new_initial_state)
+      @initial_state = new_initial_state
+      add_states([@initial_state]) unless @initial_state.is_a?(Proc)
+      
+      # Update all states to reflect the new initial state
+      states.each {|state| state.initial = (state.name == @initial_state)}
+    end
+    
     # Gets the initial state of the machine for the given object. If a dynamic
     # initial state was configured for this machine, then the object will be
-    # passed into the lambda block to help determine the actual value of the
-    # initial state.
+    # passed into the lambda block to help determine the actual state.
     # 
     # == Examples
     # 
     # With a static initial state:
     # 
     #   class Vehicle
-    #     state_machine :initial => 'parked' do
+    #     state_machine :initial => :parked do
     #       ...
     #     end
     #   end
     #   
     #   vehicle = Vehicle.new
-    #   Vehicle.state_machines['state'].initial_state(vehicle)   # => "parked"
+    #   Vehicle.state_machines[:state].initial_state(vehicle)   # => #<StateMachine::State name=:parked value="parked" initial=true>
     # 
     # With a dynamic initial state:
     # 
     #   class Vehicle
     #     attr_accessor :force_idle
     #     
-    #     state_machine :initial => lambda {|vehicle| vehicle.force_idle ? 'idling' : 'parked'} do
+    #     state_machine :initial => lambda {|vehicle| vehicle.force_idle ? :idling : :parked} do
     #       ...
     #     end
     #   end
@@ -410,15 +343,116 @@ module StateMachine
     #   vehicle = Vehicle.new
     #   
     #   vehicle.force_idle = true
-    #   Vehicle.state_machines['state'].initial_state(vehicle)   # => "idling"
+    #   Vehicle.state_machines[:state].initial_state(vehicle)   # => #<StateMachine::State name=:idling value="idling" initial=false>
     #   
     #   vehicle.force_idle = false
-    #   Vehicle.state_machines['state'].initial_state(vehicle)   # => "parked"
+    #   Vehicle.state_machines[:state].initial_state(vehicle)   # => #<StateMachine::State name=:parked value="parked" initial=false>
     def initial_state(object)
-      @initial_state && @initial_state.value(object)
+      states.fetch(@initial_state.is_a?(Proc) ? @initial_state.call(object) : @initial_state)
     end
     
-    # Defines a series of behaviors to mixin with objects when the current
+    # Customizes the definition of one or more states in the machine.
+    # 
+    # Configuration options:
+    # * <tt>:value</tt> - The actual value to store when an object transitions
+    #   to the state.  Default is the name (stringified).
+    # * <tt>:if</tt> - Determines whether an object's value matches the state
+    #   (e.g. :value => lambda {Time.now}, :if => lambda {|state| !state.nil?}).
+    #   By default, the configured value is matched.
+    # 
+    # == Customizing the stored value
+    # 
+    # Whenever a state is automatically discovered in the state machine, its
+    # default value is assumed to be the stringified version of the name.  For
+    # example,
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       event :ignite do
+    #         transition :to => :idling, :from => :parked
+    #       end
+    #     end
+    #   end
+    # 
+    # In the above state machine, there are two states automatically discovered:
+    # :parked and :idling.  These states, by default, will store their stringified
+    # equivalents when an object moves into that states (e.g. "parked" / "idling").
+    # 
+    # For legacy systems or when tying state machines into existing frameworks,
+    # it's oftentimes necessary to need to store a different value for a state
+    # than the default.  In order to continue taking advantage of an expressive
+    # state machine and helper methods, every defined state can be re-configured
+    # with a custom stored value.  For example,
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       event :ignite do
+    #         transition :to => :idling, :from => :parked
+    #       end
+    #       
+    #       state :idling, :value => 'IDLING'
+    #       state :parked, :value => 'PARKED
+    #     end
+    #   end
+    # 
+    # This is also useful if being used in association with a database and,
+    # instead of storing the state name in a column, you want to store the
+    # state's foreign key:
+    # 
+    #   class VehicleState < ActiveRecord::Base
+    #   end
+    #   
+    #   class Vehicle < ActiveRecord::Base
+    #     state_machine :state_id, :initial => :parked do
+    #       event :ignite do
+    #         transition :to => :idling, :from => :parked
+    #       end
+    #       
+    #       states.each {|state| self.state(state.name, :value => VehicleState.find_by_name(state.name.to_s).id)}
+    #     end
+    #   end
+    # 
+    # In the above example, each known state is configured to store it's
+    # associated database id in the +state_id+ attribute.
+    # 
+    # === Dynamic values
+    # 
+    # In addition to customizing states with other value types, lambda blocks
+    # can also be specified to allow for a state's value to be determined
+    # dynamically at runtime.  For example,
+    # 
+    #   class Vehicle
+    #     state_machine :purchased_at, :initial => :available do
+    #       event :purchase do
+    #         transition :to => :purchased
+    #       end
+    #       
+    #       event :restock do
+    #         transition :to => :available
+    #       end
+    #       
+    #       state :available, :value => nil
+    #       state :purchased, :if => lambda {|value| !value.nil?}, :value => lambda {Time.now}
+    #     end
+    #   end
+    # 
+    # In the above definition, the <tt>:purchased</tt> state is customized with
+    # both a dynamic value *and* a value matcher.
+    # 
+    # When an object transitions to the purchased state, the value's lambda
+    # block will be called.  This will get the current time and store it in the
+    # object's +purchased_at+ attribute.
+    # 
+    # *Note* that the custom matcher is very important here.  Since there's no
+    # way for the state machine to figure out an object's state when it's set to
+    # a runtime value, it must be explicitly defined.  If the <tt>:if</tt> option
+    # were not configured for the state, then an ArgumentError exception would
+    # be raised at runtime, indicating that the state machine could not figure
+    # out what the current state of the object was.
+    # 
+    # == Behaviors
+    # 
+    # Behaviors defined a series of methods to mixin with objects when the current
     # state matches the given one(s).  This allows instance methods to behave
     # a specific way depending on what the value of the object's state is.
     # 
@@ -428,12 +462,12 @@ module StateMachine
     #     attr_accessor :driver
     #     attr_accessor :passenger
     #     
-    #     state_machine :initial => 'parked' do
+    #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => 'idling', :from => 'parked'
+    #         transition :to => :idling, :from => :parked
     #       end
     #       
-    #       state 'parked' do
+    #       state :parked do
     #         def speed
     #           0
     #         end
@@ -446,16 +480,18 @@ module StateMachine
     #         end
     #       end
     #       
-    #       state 'idling', 'first_gear' do
+    #       state :idling, :first_gear do
     #         def speed
     #           20
     #         end
     #         
     #         def rotate_driver
-    #           self.state = "parked"
+    #           self.state = 'parked'
     #           rotate_driver
     #         end
     #       end
+    #       
+    #       other_states :backing_up
     #     end
     #   end
     # 
@@ -493,7 +529,7 @@ module StateMachine
     # implementations changed how they behave based on what the current state
     # of the vehicle was.
     # 
-    # == Invalid behaviors
+    # === Invalid behaviors
     # 
     # If a specific behavior has not been defined for a state, then a
     # NoMethodError exception will be raised, indicating that that method would
@@ -502,66 +538,79 @@ module StateMachine
     # Using the example from before:
     # 
     #   vehicle = Vehicle.new
-    #   vehicle.state = "backing_up"
+    #   vehicle.state = 'backing_up'
     #   vehicle.speed               # => NoMethodError: undefined method 'speed' for #<Vehicle:0xb7d296ac> in state "backing_up"
-    def state(*values, &block)
-      states = add_states(values)
-      states.each {|state| state.context(&block)} if block_given?
+    def state(*names, &block)
+      options = names.last.is_a?(Hash) ? names.pop : {}
+      assert_valid_keys(options, :value, :if)
+      
+      states = add_states(names)
+      states.each do |state|
+        if options.include?(:value)
+          state.value = options[:value]
+          self.states.update(state)
+        end
+        
+        state.matcher = options[:if] if options.include?(:if)
+        state.context(&block) if block_given?
+      end
+      
       states.length == 1 ? states.first : states
     end
+    alias_method :other_states, :state
     
-    # Defines additional states that are possible in the state machine, but
-    # which are derived outside of any events/transitions or possibly
-    # dynamically via a lambda block.  This allows the given states to be:
-    # * Queried via instance-level predicates
-    # * Included in GraphViz visualizations
-    # * Used in :except_from and :except_to transition/callback conditionals
+    # Determines whether the given object is in a specific state.  If the
+    # object's current value doesn't match the state, then this will return
+    # false, otherwise true.  If the given state is unknown, then an ArgumentError
+    # exception will be raised.
     # 
-    # == Example
+    # == Examples
     # 
     #   class Vehicle
-    #     state_machine :initial => 'parked' do
-    #       event :ignite do
-    #         transition :to => 'idling', :from => 'parked'
-    #       end
-    #        
-    #       other_states %w(stalled stopped)
-    #     end
-    #     
-    #     def stop
-    #       self.state = 'stopped'
+    #     state_machine :initial => :parked do
+    #       other_states :idling
     #     end
     #   end
-    # 
-    # In the above state machine, the known states would be:
-    # * +idling+
-    # * +parked+
-    # * +stalled+
-    # * +stopped+
-    # 
-    # Since +stalled+ and +stopped+ are not referenced in any transitions or
-    # callbacks, they are explicitly defined.
-    def other_states(*args)
-      add_states(args.flatten)
+    #   
+    #   machine = Vehicle.state_machines[:state]
+    #   vehicle = Vehicle.new               # => #<Vehicle:0xb7c464b0 @state="parked">
+    #   
+    #   machine.state?(vehicle, :parked)    # => true
+    #   machine.state?(vehicle, :idling)    # => false
+    #   machine.state?(vehicle, :invalid)   # => ArgumentError: :invalid is an invalid key for :name index
+    def state?(object, name)
+      states.fetch(name).matches?(object.send(attribute))
     end
     
-    # Gets the order in which states should be displayed based on where they
-    # were first referenced.  This will order states in the following priority:
+    # Determines the current state of the given object as configured by this
+    # state machine.  This will attempt to find a known state that matches
+    # the value of the attribute on the object.  If no state is found, then
+    # an ArgumentError will be raised.
     # 
-    # 1. Initial state
-    # 2. Event transitions (:to, :from, :except_to, :except_from options)
-    # 3. States with behaviors
-    # 4. States referenced via +other_states+
-    # 5. States referenced in callbacks
+    # == Examples
     # 
-    # This order will determine how the GraphViz visualizations are rendered.
-    def states_order
-      order = [initial_state(nil)]
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       other_states :idling
+    #     end
+    #   end
+    #   
+    #   machine = Vehicle.state_machines[:state]
+    #   
+    #   vehicle = Vehicle.new         # => #<Vehicle:0xb7c464b0 @state="parked">
+    #   machine.state_for(vehicle)    # => #<StateMachine::State name=:parked value="parked" initial=true>
+    #   
+    #   vehicle.state = 'idling'
+    #   machine.state_for(vehicle)    # => #<StateMachine::State name=:idling value="idling" initial=true>
+    #   
+    #   vehicle.state = 'invalid'
+    #   machine.state_for(vehicle)    # => ArgumentError: "invalid" is not a known state value
+    def state_for(object)
+      value = object.send(attribute)
+      state = states[value, :value] || states.detect {|state| state.matches?(value)}
+      raise ArgumentError, "#{value.inspect} is not a known #{attribute} value" unless state
       
-      events.each {|name, event| order |= event.known_states}
-      order |= states.select {|value, state| state.methods.any?}.map {|state| state.first}
-      order |= states.keys - callbacks.values.flatten.map {|callback| callback.known_states}.flatten
-      order |= states.keys
+      state
     end
     
     # Defines one or more events for the machine and the transitions that can
@@ -571,10 +620,16 @@ module StateMachine
     # 
     # The following instance methods are generated when a new event is defined
     # (the "park" event is used as an example):
-    # * <tt>can_park?</tt> - Checks whether the "park" event can be fired given the current state of the object.
-    # * <tt>next_park_transition</tt> -  Gets the next transition that would be performed if the "park" event were to be fired now on the object or nil if no transitions can be performed.
-    # * <tt>park(run_action = true)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.
-    # * <tt>park!(run_action = true)</tt> - Fires the "park" event, transitioning from the current state to the next valid state.  If the transition fails, then a StateMachine::InvalidTransition error will be raised.
+    # * <tt>can_park?</tt> - Checks whether the "park" event can be fired given
+    #   the current state of the object.
+    # * <tt>next_park_transition</tt> -  Gets the next transition that would be
+    #   performed if the "park" event were to be fired now on the object or nil
+    #   if no transitions can be performed.
+    # * <tt>park(run_action = true)</tt> - Fires the "park" event, transitioning
+    #   from the current state to the next valid state.
+    # * <tt>park!(run_action = true)</tt> - Fires the "park" event, transitioning
+    #   from the current state to the next valid state.  If the transition fails,
+    #   then a StateMachine::InvalidTransition error will be raised.
     # 
     # With a namespace of "car", the above names map to the following methods:
     # * <tt>can_park_car?</tt>
@@ -588,11 +643,11 @@ module StateMachine
     # transitions that can happen as a result of that event.  For example,
     # 
     #   event :park, :stop do
-    #     transition :to => 'parked', :from => 'idling'
+    #     transition :to => :parked, :from => :idling
     #   end
     #   
     #   event :first_gear do
-    #     transition :to => 'first_gear', :from => 'parked', :if => :seatbelt_on?
+    #     transition :to => :first_gear, :from => :parked, :if => :seatbelt_on?
     #   end
     # 
     # See StateMachine::Event#transition for more information on
@@ -604,12 +659,12 @@ module StateMachine
     # 
     #   class Vehicle
     #     def self.safe_states
-    #       %w(parked idling stalled)
+    #       [:parked, :idling, :stalled]
     #     end
     #     
     #     state_machine do
     #       event :park do
-    #         transition :to => 'parked', :from => Vehicle.safe_states
+    #         transition :to => :parked, :from => Vehicle.safe_states
     #       end
     #     end
     #   end 
@@ -620,23 +675,23 @@ module StateMachine
     #     state_machine do
     #       # The park, stop, and halt events will all share the given transitions
     #       event :park, :stop, :halt do
-    #         transition :to => 'parked', :from => %w(idling backing_up)
+    #         transition :to => :parked, :from => [:idling, :backing_up]
     #       end
     #       
     #       event :stop do
-    #         transition :to => 'idling', :from => 'first_gear'
+    #         transition :to => :idling, :from => :first_gear
     #       end
     #       
     #       event :ignite do
-    #         transition :to => 'idling', :from => 'parked'
+    #         transition :to => :idling, :from => :parked
     #       end
     #     end
     #   end
     def event(*names, &block)
       events = names.collect do |name|
-        name = name.to_s
-        event = self.events[name] ||= Event.new(self, name)
-        @events_order << name unless @events_order.include?(name)
+        unless event = self.events[name]
+          self.events << event = Event.new(self, name)
+        end
         
         if block_given?
           event.instance_eval(&block)
@@ -655,15 +710,25 @@ module StateMachine
     # order for the callback to get invoked.
     # 
     # Configuration options:
-    # * +to+ - One or more states being transitioned to.  If none are specified, then all states will match.
-    # * +from+ - One or more states being transitioned from.  If none are specified, then all states will match.
-    # * +on+ - One or more events that fired the transition.  If none are specified, then all events will match.
-    # * +except_to+ - One more states *not* being transitioned to
-    # * +except_from+ - One or more states *not* being transitioned from
-    # * +except_on+ - One or more events that *did not* fire the transition
-    # * +do+ - The callback to invoke when a transition matches. This can be a method, proc or string.
-    # * +if+ - A method, proc or string to call to determine if the callback should occur (e.g. :if => :allow_callbacks, or :if => lambda {|user| user.signup_step > 2}). The method, proc or string should return or evaluate to a true or false value. 
-    # * +unless+ - A method, proc or string to call to determine if the callback should not occur (e.g. :unless => :skip_callbacks, or :unless => lambda {|user| user.signup_step <= 2}). The method, proc or string should return or evaluate to a true or false value. 
+    # * <tt>:from</tt> - One or more states being transitioned from.  If none
+    #   are specified, then all states will match.
+    # * <tt>:to</tt> - One or more states being transitioned to.  If none are
+    #   specified, then all states will match.
+    # * <tt>:on</tt> - One or more events that fired the transition.  If none
+    #   are specified, then all events will match.
+    # * <tt>:except_from</tt> - One or more states *not* being transitioned from
+    # * <tt>:except_to</tt> - One more states *not* being transitioned to
+    # * <tt>:except_on</tt> - One or more events that *did not* fire the transition
+    # * <tt>:do</tt> - The callback to invoke when a transition matches. This
+    #   can be a method, proc or string.
+    # * <tt>:if</tt> - A method, proc or string to call to determine if the
+    #   callback should occur (e.g. :if => :allow_callbacks, or
+    #   :if => lambda {|user| user.signup_step > 2}). The method, proc or string
+    #   should return or evaluate to a true or false value. 
+    # * <tt>:unless</tt> - A method, proc or string to call to determine if the
+    #   callback should not occur (e.g. :unless => :skip_callbacks, or
+    #   :unless => lambda {|user| user.signup_step <= 2}). The method, proc or
+    #   string should return or evaluate to a true or false value. 
     # 
     # The +except+ group of options (+except_to+, +exception_from+, and
     # +except_on+) acts as the +unless+ equivalent of their counterparts (+to+,
@@ -676,8 +741,8 @@ module StateMachine
     # 
     #   class Vehicle
     #     state_machine do
-    #       before_transition :to => 'parked', :do => :set_alarm
-    #       before_transition :to => 'parked' do |vehicle, transition|
+    #       before_transition :to => :parked, :do => :set_alarm
+    #       before_transition :to => :parked do |vehicle, transition|
     #         vehicle.set_alarm
     #       end
     #       ...
@@ -687,18 +752,18 @@ module StateMachine
     # === Accessing the transition
     # 
     # In addition to passing the object being transitioned, the actual
-    # transition describing the context (e.g. event, from state, to state)
-    # can be accessed as well.  This additional argument is only passed if the
-    # callback allows for it.
+    # transition describing the context (e.g. event, from, to) can be accessed
+    # as well.  This additional argument is only passed if the callback allows
+    # for it.
     # 
     # For example,
     # 
     #   class Vehicle
     #     # Only specifies one parameter (the object being transitioned)
-    #     before_transition :to => 'parked', :do => lambda {|vehicle| vehicle.set_alarm}
+    #     before_transition :to => :parked, :do => lambda {|vehicle| vehicle.set_alarm}
     #     
     #     # Specifies 2 parameters (object being transitioned and actual transition)
-    #     before_transition :to => 'parked', :do => lambda {|vehicle, transition| vehicle.set_alarm(transition)}
+    #     before_transition :to => :parked, :do => lambda {|vehicle, transition| vehicle.set_alarm(transition)}
     #   end
     # 
     # *Note* that the object in the callback will only be passed in as an
@@ -719,13 +784,13 @@ module StateMachine
     #       before_transition :update_dashboard
     #       
     #       # Before specific transition:
-    #       before_transition :to => 'parked', :from => %w(first_gear idling), :on => 'park', :do => :take_off_seatbelt
+    #       before_transition :to => :parked, :from => [:first_gear, :idling], :on => :park, :do => :take_off_seatbelt
     #       
     #       # With conditional callback:
-    #       before_transition :to => 'parked', :do => :take_off_seatbelt, :if => :seatbelt_on?
+    #       before_transition :to => :parked, :do => :take_off_seatbelt, :if => :seatbelt_on?
     #       
     #       # Using :except counterparts:
-    #       before_transition :except_to => 'stalled', :except_from => 'stalled', :except_on => 'crash', :do => :update_dashboard
+    #       before_transition :except_to => :stalled, :except_from => :stalled, :except_on => :crash, :do => :update_dashboard
     #       ...
     #     end
     #   end
@@ -742,15 +807,25 @@ module StateMachine
     # in order for the callback to get invoked.
     # 
     # Configuration options:
-    # * +to+ - One or more states being transitioned to.  If none are specified, then all states will match.
-    # * +from+ - One or more states being transitioned from.  If none are specified, then all states will match.
-    # * +on+ - One or more events that fired the transition.  If none are specified, then all events will match.
-    # * +except_to+ - One more states *not* being transitioned to
-    # * +except_from+ - One or more states *not* being transitioned from
-    # * +except_on+ - One or more events that *did not* fire the transition
-    # * +do+ - The callback to invoke when a transition matches. This can be a method, proc or string.
-    # * +if+ - A method, proc or string to call to determine if the callback should occur (e.g. :if => :allow_callbacks, or :if => lambda {|user| user.signup_step > 2}). The method, proc or string should return or evaluate to a true or false value. 
-    # * +unless+ - A method, proc or string to call to determine if the callback should not occur (e.g. :unless => :skip_callbacks, or :unless => lambda {|user| user.signup_step <= 2}). The method, proc or string should return or evaluate to a true or false value. 
+    # * <tt>:from</tt> - One or more states being transitioned from.  If none
+    #   are specified, then all states will match.
+    # * <tt>:to</tt> - One or more states being transitioned to.  If none are
+    #   specified, then all states will match.
+    # * <tt>:on</tt> - One or more events that fired the transition.  If none
+    #   are specified, then all events will match.
+    # * <tt>:except_from</tt> - One or more states *not* being transitioned from
+    # * <tt>:except_to</tt> - One more states *not* being transitioned to
+    # * <tt>:except_on</tt> - One or more events that *did not* fire the transition
+    # * <tt>:do</tt> - The callback to invoke when a transition matches. This
+    #   can be a method, proc or string.
+    # * <tt>:if</tt> - A method, proc or string to call to determine if the
+    #   callback should occur (e.g. :if => :allow_callbacks, or
+    #   :if => lambda {|user| user.signup_step > 2}). The method, proc or string
+    #   should return or evaluate to a true or false value. 
+    # * <tt>:unless</tt> - A method, proc or string to call to determine if the
+    #   callback should not occur (e.g. :unless => :skip_callbacks, or
+    #   :unless => lambda {|user| user.signup_step <= 2}). The method, proc or
+    #   string should return or evaluate to a true or false value. 
     # 
     # The +except+ group of options (+except_to+, +exception_from+, and
     # +except_on+) acts as the +unless+ equivalent of their counterparts (+to+,
@@ -763,8 +838,8 @@ module StateMachine
     # 
     #   class Vehicle
     #     state_machine do
-    #       after_transition :to => 'parked', :do => :set_alarm
-    #       after_transition :to => 'parked' do |vehicle, transition, result|
+    #       after_transition :to => :parked, :do => :set_alarm
+    #       after_transition :to => :parked do |vehicle, transition, result|
     #         vehicle.set_alarm
     #       end
     #       ...
@@ -774,19 +849,18 @@ module StateMachine
     # === Accessing the transition / result
     # 
     # In addition to passing the object being transitioned, the actual
-    # transition describing the context (e.g. event, from state, to state) and
-    # the result from calling the object's action can be optionally passed as
-    # well.  These additional arguments are only passed if the callback allows
-    # for it.
+    # transition describing the context (e.g. event, from, to) and the result
+    # from calling the object's action can be optionally passed as well.  These
+    # additional arguments are only passed if the callback allows for it.
     # 
     # For example,
     # 
     #   class Vehicle
     #     # Only specifies one parameter (the object being transitioned)
-    #     after_transition :to => 'parked', :do => lambda {|vehicle| vehicle.set_alarm}
+    #     after_transition :to => :parked, :do => lambda {|vehicle| vehicle.set_alarm}
     #     
     #     # Specifies 3 parameters (object being transitioned, transition, and action result)
-    #     after_transition :to => 'parked', :do => lambda {|vehicle, transition, result| vehicle.set_alarm(transition) if result}
+    #     after_transition :to => :parked, :do => lambda {|vehicle, transition, result| vehicle.set_alarm(transition) if result}
     #   end
     # 
     # *Note* that the object in the callback will only be passed in as an
@@ -807,13 +881,13 @@ module StateMachine
     #       after_transition :update_dashboard
     #       
     #       # After specific transition:
-    #       after_transition :to => 'parked', :from => %w(first_gear idling), :on => 'park', :do => :take_off_seatbelt
+    #       after_transition :to => :parked, :from => [:first_gear, :idling], :on => :park, :do => :take_off_seatbelt
     #       
     #       # With conditional callback:
-    #       after_transition :to => 'parked', :do => :take_off_seatbelt, :if => :seatbelt_on?
+    #       after_transition :to => :parked, :do => :take_off_seatbelt, :if => :seatbelt_on?
     #       
     #       # Using :except counterparts:
-    #       after_transition :except_to => 'stalled', :except_from => 'stalled', :except_on => 'crash', :do => :update_dashboard
+    #       after_transition :except_to => :stalled, :except_from => :stalled, :except_on => :crash, :do => :update_dashboard
     #       ...
     #     end
     #   end
@@ -840,10 +914,14 @@ module StateMachine
     # installed on the system.
     # 
     # Configuration options:
-    # * +name+ - The name of the file to write to (without the file extension).  Default is "#{owner_class.name}_#{attribute}"
-    # * +path+ - The path to write the graph file to.  Default is the current directory (".").
-    # * +format+ - The image format to generate the graph in.  Default is "png'.
-    # * +font+ - The name of the font to draw state names in.  Default is "Arial'.
+    # * <tt>:name</tt> - The name of the file to write to (without the file extension).
+    #   Default is "#{owner_class.name}_#{attribute}"
+    # * <tt>:path</tt> - The path to write the graph file to.  Default is the
+    #   current directory (".").
+    # * <tt>:format</tt> - The image format to generate the graph in.
+    #   Default is "png'.
+    # * <tt>:font</tt> - The name of the font to draw state names in.
+    #   Default is "Arial".
     def draw(options = {})
       options = {
         :name => "#{owner_class.name}_#{attribute}",
@@ -861,13 +939,13 @@ module StateMachine
         graph = GraphViz.new('G', :output => options[:format], :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}"))
         
         # Add nodes
-        Array(state(*states_order)).each do |state|
+        states.by_priority.each do |state|
           node = state.draw(graph)
           node.fontname = options[:font]
         end
         
         # Add edges
-        Array(event(*events_order)).each do |event|
+        events.each do |event|
           edges = event.draw(graph)
           edges.each {|edge| edge.fontname = options[:font]}
         end
@@ -892,7 +970,7 @@ module StateMachine
       def default_action
       end
       
-      # Adds reader/writer/prediate methods for accessing the attribute that
+      # Adds reader/writer/predicate methods for accessing the attribute that
       # this state machine is defined for.
       def define_attribute_accessor
         attribute = self.attribute
@@ -901,12 +979,15 @@ module StateMachine
           attr_reader attribute unless method_defined?(attribute) || private_method_defined?(attribute)
           attr_writer attribute unless method_defined?("#{attribute}=") || private_method_defined?("#{attribute}=")
           
-          # Checks whether the current state is a given value.  If the value
-          # is not a known state, then an ArgumentError is raised.
+          # Checks whether the current state is a given value
           define_method("#{attribute}?") do |state|
-            raise ArgumentError, "#{state.inspect} is not a known #{attribute} value" unless self.class.state_machines[attribute].states.include?(state)
-            send(attribute) == state
+            self.class.state_machines[attribute].state?(self, state)
           end unless method_defined?("#{attribute}?") || private_method_defined?("#{attribute}?")
+          
+          # Gets the state name for the current value
+          define_method("#{attribute}_name") do
+            self.class.state_machines[attribute].state_for(self).name
+          end
         end
       end
       
@@ -916,39 +997,61 @@ module StateMachine
       # automatically determined by either calling +pluralize+ on the attribute
       # name or adding an "s" to the end of the name.
       def define_scopes(custom_plural = nil)
+        attribute = self.attribute
         plural = custom_plural || (attribute.respond_to?(:pluralize) ? attribute.pluralize : "#{attribute}s")
         
         [attribute, plural].uniq.each do |name|
-          define_with_scope("with_#{name}") unless owner_class.respond_to?("with_#{name}")
-          define_without_scope("without_#{name}") unless owner_class.respond_to?("without_#{name}")
+          [:with, :without].each do |kind|
+            method = "#{kind}_#{name}"
+            
+            if !owner_class.respond_to?(method) && scope = send("create_#{kind}_scope", method)
+              (class << owner_class; self; end).class_eval do
+                # Converts state names to their corresponding values so that
+                # they can be looked up properly
+                define_method(method) do |*states|
+                  machine_states = state_machines[attribute].states
+                  values = states.flatten.map {|state| machine_states.fetch(state).value}
+                  
+                  # Invoke the original scope implementation
+                  scope.call(self, values)
+                end
+              end
+            end
+          end
         end
       end
       
-      # Defines a scope for finding objects *with* a particular value or
-      # values for the attribute.
+      # Creates a scope for finding objects *with* a particular value or values
+      # for the attribute.
       # 
       # This is only applicable to specific integrations.
-      def define_with_scope(name)
+      def create_with_scope(name)
       end
       
-      # Defines a scope for finding objects *without* a particular value or
+      # Creates a scope for finding objects *without* a particular value or
       # values for the attribute.
       # 
       # This is only applicable to specific integrations.
-      def define_without_scope(name)
+      def create_without_scope(name)
       end
       
       # Adds a new transition callback of the given type.
       def add_callback(type, options, &block)
-        @callbacks[type] << callback = Callback.new(options, &block)
+        callbacks[type] << callback = Callback.new(options, &block)
         add_states(callback.known_states)
         callback
       end
       
       # Tracks the given set of states in the list of all known states for
       # this machine
-      def add_states(states)
-        states.collect {|state| @states[state] ||= State.new(self, state)}
+      def add_states(new_states)
+        new_states.collect do |new_state|
+          unless state = states[new_state]
+            states << state = State.new(self, new_state)
+          end
+          
+          state
+        end
       end
   end
 end

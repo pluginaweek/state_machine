@@ -8,6 +8,7 @@ class AssertionsTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_key_is_invalid
-    assert_raise(ArgumentError) { assert_valid_keys({:name => 'foo', :value => 'bar', :invalid => true}, :name, :value, :force) }
+    exception = assert_raise(ArgumentError) { assert_valid_keys({:name => 'foo', :value => 'bar', :invalid => true}, :name, :value, :force) }
+    assert_match 'Invalid key(s): invalid', exception.message
   end
 end

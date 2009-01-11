@@ -8,11 +8,11 @@ module StateMachine
     include EvalHelpers
     
     class << self
-      # Whether to automatically bind the callback to the object being
+      # Determines whether to automatically bind the callback to the object being
       # transitioned.  This only applies to callbacks that are defined as
-      # lambda blocks (or Procs).  Some libraries, such as Extlib, handle
+      # lambda blocks (or Procs).  Some integrations, such as DataMapper, handle
       # callbacks by executing them bound to the object involved, while other
-      # libraries, such as ActiveSupport, pass the object as an argument to
+      # integrations, such as ActiveRecord, pass the object as an argument to
       # the callback.  This can be configured on an application-wide basis by
       # setting this configuration to +true+ or +false+.  The default value
       # is +false+.
@@ -37,7 +37,7 @@ module StateMachine
       #     end
       #   end
       # 
-      # When bound to the object application-wide:
+      # When bound to the object:
       # 
       #   StateMachine::Callback.bind_to_object = true
       #   
@@ -96,12 +96,16 @@ module StateMachine
     # 
     # In addition to the possible configuration options for guards, the
     # following options can be configured:
-    # * +bind_to_object+ - Whether to bind the callback to the object involved.  If set to false, the object will be passed as a parameter instead.  Default is integration-specific or set to the application default.
-    # * +terminator+ - A block/proc that determines what callback results should cause the callback chain to halt (if not using the default <tt>throw :halt</tt> technique).
+    # * <tt>:bind_to_object</tt> - Whether to bind the callback to the object involved.
+    #   If set to false, the object will be passed as a parameter instead.
+    #   Default is integration-specific or set to the application default.
+    # * <tt>:terminator</tt> - A block/proc that determines what callback results
+    #   should cause the callback chain to halt (if not using the default
+    #   <tt>throw :halt</tt> technique).
     # 
     # More information about how those options affect the behavior of the
-    # callback can be found in their attr_accessor definitions.
-    def initialize(options = {}, &block) #:nodoc:
+    # callback can be found in their attribute definitions.
+    def initialize(options = {}, &block)
       if options.is_a?(Hash)
         @method = options.delete(:do) || block
       else
@@ -146,7 +150,7 @@ module StateMachine
     end
     
     private
-      # Generates an method that can be bound to the object being transitioned
+      # Generates a method that can be bound to the object being transitioned
       # when the callback is invoked
       def bound_method(block)
         # Generate a thread-safe unbound method that can be used on any object

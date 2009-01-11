@@ -8,9 +8,9 @@ module StateMachine
     # Sequel model:
     # 
     #   class Vehicle < Sequel::Model
-    #     state_machine :initial => 'parked' do
+    #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => 'idling', :from => 'parked'
+    #         transition :to => :idling, :from => :parked
     #       end
     #     end
     #   end
@@ -71,21 +71,24 @@ module StateMachine
     # 
     #   class Vehicle < Sequel::Model
     #     class << self
-    #       def with_states(*values)
-    #         filter(:state => values)
+    #       def with_states(*states)
+    #         filter(:state => states)
     #       end
     #       alias_method :with_state, :with_states
     #       
-    #       def without_states(*values)
-    #         filter(~{:state => values})
+    #       def without_states(*states)
+    #         filter(~{:state => states})
     #       end
     #       alias_method :without_state, :without_states
     #     end
     #   end
     # 
+    # *Note*, however, that the states are converted to their stored values
+    # before being passed into the query.
+    # 
     # Because of the way scopes work in Sequel, they can be chained like so:
     # 
-    #   Vehicle.with_state('parked').with_state('idling').order(:id.desc)
+    #   Vehicle.with_state(:parked).with_state('idling').order(:id.desc)
     # 
     # == Callbacks
     # 
@@ -97,8 +100,8 @@ module StateMachine
     # For example,
     # 
     #   class Vehicle < Sequel::Model
-    #     state_machine :initial => 'parked' do
-    #       before_transition :to => 'idling' do
+    #     state_machine :initial => :parked do
+    #       before_transition :to => :idling do
     #         put_on_seatbelt
     #       end
     #       
@@ -107,7 +110,7 @@ module StateMachine
     #       end
     #       
     #       event :ignite do
-    #         transition :to => 'idling', :from => 'parked'
+    #         transition :to => :idling, :from => :parked
     #       end
     #     end
     #     
@@ -138,22 +141,18 @@ module StateMachine
           :save
         end
         
-        # Defines a scope for finding records *with* a particular value or
-        # values for the attribute
-        def define_with_scope(name)
+        # Creates a scope for finding records *with* a particular state or
+        # states for the attribute
+        def create_with_scope(name)
           attribute = self.attribute
-          (class << owner_class; self; end).class_eval do
-            define_method(name) {|*values| filter(attribute.to_sym => values.flatten)}
-          end
+          lambda {|model, values| model.filter(attribute.to_sym => values)}
         end
         
-        # Defines a scope for finding records *without* a particular value or
-        # values for the attribute
-        def define_without_scope(name)
+        # Creates a scope for finding records *without* a particular state or
+        # states for the attribute
+        def create_without_scope(name)
           attribute = self.attribute
-          (class << owner_class; self; end).class_eval do
-            define_method(name) {|*values| filter(~{attribute.to_sym => values.flatten})}
-          end
+          lambda {|model, values| model.filter(~{attribute.to_sym => values})}
         end
         
         # Creates a new callback in the callback chain, always ensuring that

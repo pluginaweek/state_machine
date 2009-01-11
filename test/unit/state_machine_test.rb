@@ -7,7 +7,7 @@ class StateMachineByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_use_state_attribute
-    assert_equal 'state', @machine.attribute
+    assert_equal :state, @machine.attribute
   end
 end
 

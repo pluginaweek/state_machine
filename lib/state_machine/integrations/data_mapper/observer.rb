@@ -22,6 +22,20 @@ module StateMachine
       #       Audit.log(self, transition) if saved
       #     end
       #   end
+      # 
+      # == Requirements
+      # 
+      # To use this feature of the DataMapper integration, the dm-observer library
+      # must be available.  This can be installed either directly or indirectly
+      # through dm-more.  When loading DataMapper, be sure to load the dm-observer
+      # library as well like so:
+      # 
+      #   require 'rubygems'
+      #   require 'dm-core'
+      #   require 'dm-observer'
+      # 
+      # If dm-observer is not available, then this feature will be skipped.
+      # 
       module Observer
         # Creates a callback that will be invoked *before* a transition is
         # performed, so long as the given configuration options match the
@@ -39,9 +53,9 @@ module StateMachine
         #     property :id, Serial
         #     property :state, :String
         #     
-        #     state_machine :initial => 'parked' do
+        #     state_machine :initial => :parked do
         #       event :ignite do
-        #         transition :to => 'idling', :from => 'parked'
+        #         transition :to => :idling, :from => :parked
         #       end
         #     end
         #   end
@@ -56,12 +70,12 @@ module StateMachine
         #     end
         #     
         #     # Target all state machines
-        #     before_transition :to => 'idling', :from => 'parked', :on => 'ignite' do
+        #     before_transition :to => :idling, :from => :parked, :on => :ignite do
         #       # put on seatbelt
         #     end
         #     
         #     # Target a specific state machine
-        #     before_transition :state, :to => 'idling' do
+        #     before_transition :state, :to => :idling do
         #       # put on seatbelt
         #     end
         #     
@@ -95,9 +109,9 @@ module StateMachine
         #     property :id, Serial
         #     property :state, :String
         #     
-        #     state_machine :initial => 'parked' do
+        #     state_machine :initial => :parked do
         #       event :ignite do
-        #         transition :to => 'idling', :from => 'parked'
+        #         transition :to => :idling, :from => :parked
         #       end
         #     end
         #   end
@@ -112,12 +126,12 @@ module StateMachine
         #     end
         #     
         #     # Target all state machines
-        #     after_transition :to => 'idling', :from => 'parked', :on => 'ignite' do
+        #     after_transition :to => :idling, :from => :parked, :on => :ignite do
         #       # put on seatbelt
         #     end
         #     
         #     # Target a specific state machine
-        #     after_transition :state, :to => 'idling' do
+        #     after_transition :state, :to => :idling do
         #       # put on seatbelt
         #     end
         #     
@@ -143,7 +157,7 @@ module StateMachine
           def add_transition_callback(type, *args, &block)
             if args.first && !args.first.is_a?(Hash)
               # Specific attribute is being targeted
-              attribute = args.first.to_s
+              attribute = args.first
               transition_args = args[1..-1]
             else
               # Target all state machines

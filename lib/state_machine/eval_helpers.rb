@@ -55,13 +55,13 @@ module StateMachine
         when Symbol
           method = object.method(method)
           method.arity == 0 ? method.call : method.call(*args)
-        when String
-          eval(method, object.instance_eval {binding})
         when Proc, Method
           args.unshift(object)
           [0, 1].include?(method.arity) ? method.call(*args.slice(0, method.arity)) : method.call(*args)
+        when String
+          eval(method, object.instance_eval {binding})
         else
-          raise ArgumentError, 'Methods must be a symbol denoting the method to call, a string to be evaluated, or a block to be invoked'
+          raise ArgumentError, 'Methods must be a symbol denoting the method to call, a block to be invoked, or a string to be evaluated'
         end
     end
   end

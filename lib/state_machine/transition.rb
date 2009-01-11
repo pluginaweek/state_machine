@@ -4,6 +4,7 @@ module StateMachine
   end
   
   # A transition represents a state change for a specific attribute.
+  # 
   # Transitions consist of:
   # * An event
   # * A starting state
@@ -18,19 +19,27 @@ module StateMachine
     # The event that caused the transition
     attr_reader :event
     
-    # The original state *before* the transition
+    # The original state value *before* the transition
     attr_reader :from
     
-    # The new state *after* the transition
+    # The original state name *before* the transition
+    attr_reader :from_name
+    
+    # The new state value *after* the transition
     attr_reader :to
     
+    # The new state name *after* the transition
+    attr_reader :to_name
+    
     # Creates a new, specific transition
-    def initialize(object, machine, event, from, to) #:nodoc:
+    def initialize(object, machine, event, from_name, to_name) #:nodoc:
       @object = object
       @machine = machine
       @event = event
-      @from = from
-      @to = to
+      @from = object.send(machine.attribute)
+      @from_name = from_name
+      @to = machine.states[to_name].value
+      @to_name = to_name
     end
     
     # Gets the attribute which this transition's machine is defined for
@@ -38,14 +47,14 @@ module StateMachine
       machine.attribute
     end
     
-    # Gets a hash of all the attributes defined for this transition with their
-    # names as keys and values of the attributes as values.
+    # Gets a hash of all the core attributes defined for this transition with
+    # their names as keys and values of the attributes as values.
     # 
     # == Example
     # 
-    #   machine = StateMachine.new(Object, 'state')
-    #   transition = StateMachine::Transition.new(Object.new, machine, 'enable, 'disabled', 'enabled')
-    #   transition.attributes   # => {:object => #<Object:0xb7d60ea4>, :attribute => 'state', :event => 'enable', :from => 'disabled', :to => 'enabled'}
+    #   machine = StateMachine.new(Vehicle)
+    #   transition = StateMachine::Transition.new(Vehicle.new, machine, :ignite, :parked, :idling)
+    #   transition.attributes   # => {:object => #<Vehicle:0xb7d60ea4>, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}
     def attributes
       @attributes ||= {:object => object, :attribute => attribute, :event => event, :from => from, :to => to}
     end
@@ -63,9 +72,9 @@ module StateMachine
     #   end
     #   
     #   vehicle = Vehicle.new
-    #   transition = StateMachine::Transition.new(vehicle, machine, :turn_on, 'off', 'on')
-    #   transition.perform          # => Runs the +save+ action after updating the state attribute
-    #   transition.perform(false)   # => Only updates the state attribute
+    #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
+    #   transition.perform          # => Runs the +save+ action after setting the state attribute
+    #   transition.perform(false)   # => Only sets the state attribute
     def perform(run_action = true)
       result = false
       
@@ -97,11 +106,11 @@ module StateMachine
       # 
       # == Example
       # 
-      #   machine = StateMachine.new(Object, 'state')
-      #   transition = StateMachine::Transition.new(Object.new, machine, 'enable', 'disabled', 'enabled')
-      #   transition.context    # => {:on => "enable", :from => "disabled", :to => "enabled"}
+      #   machine = StateMachine.new(Vehicle)
+      #   transition = StateMachine::Transition.new(Vehicle.new, machine, :ignite, :parked, :idling)
+      #   transition.context    # => {:on => :ignite, :from => :parked, :to => :idling}
       def context
-        @context ||= {:on => event, :from => from, :to => to}
+        @context ||= {:on => event, :from => from_name, :to => to_name}
       end
       
       # Runs the callbacks of the given type for this transition.  This will

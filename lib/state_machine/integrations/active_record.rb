@@ -8,9 +8,9 @@ module StateMachine
     # ActiveRecord model:
     # 
     #   class Vehicle < ActiveRecord::Base
-    #     state_machine :initial => 'parked' do
+    #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => 'idling', :from => 'parked'
+    #         transition :to => :idling, :from => :parked
     #       end
     #     end
     #   end
@@ -66,21 +66,24 @@ module StateMachine
     # scopes are defined on the model for finding records with or without a
     # particular set of states.
     # 
-    # These named scopes are the functional equivalent of the following
-    # definitions:
+    # These named scopes are essentially the functional equivalent of the
+    # following definitions:
     # 
     #   class Vehicle < ActiveRecord::Base
-    #     named_scope :with_states, lambda {|*values| {:conditions => {:state => values.flatten}}}
+    #     named_scope :with_states, lambda {|*states| {:conditions => {:state => states}}}
     #     # with_states also aliased to with_state
     #     
-    #     named_scope :without_states, lambda {|*values| {:conditions => ['state NOT IN (?)', values.flatten]}}
+    #     named_scope :without_states, lambda {|*states| {:conditions => ['state NOT IN (?)', states]}}
     #     # without_states also aliased to without_state
     #   end
+    # 
+    # *Note*, however, that the states are converted to their stored values
+    # before being passed into the query.
     # 
     # Because of the way named scopes work in ActiveRecord, they can be
     # chained like so:
     # 
-    #   Vehicle.with_state('parked').all(:order => 'id DESC')
+    #   Vehicle.with_state(:parked).all(:order => 'id DESC')
     # 
     # == Callbacks
     # 
@@ -91,8 +94,8 @@ module StateMachine
     # For example,
     # 
     #   class Vehicle < ActiveRecord::Base
-    #     state_machine :initial => 'parked' do
-    #       before_transition :to => 'idling' do |vehicle|
+    #     state_machine :initial => :parked do
+    #       before_transition :to => :idling do |vehicle|
     #         vehicle.put_on_seatbelt
     #       end
     #       
@@ -101,7 +104,7 @@ module StateMachine
     #       end
     #       
     #       event :ignite do
-    #         transition :to => 'idling', :from => 'parked'
+    #         transition :to => :idling, :from => :parked
     #       end
     #     end
     #     
@@ -197,20 +200,14 @@ module StateMachine
             owner_class.define_attribute_methods
             
             # Support attribute predicate for ActiveRecord columns
-            if owner_class.column_names.include?(attribute)
+            if owner_class.column_names.include?(attribute.to_s)
               attribute = self.attribute
               
               owner_class.class_eval do
+                # Checks whether the current state is a given value.  If there
+                # are no arguments, then this checks for the presence of the attribute.
                 define_method("#{attribute}?") do |*args|
-                  if args.empty?
-                    # No arguments: querying for presence of the attribute
-                    super(*args)
-                  else
-                    # Arguments: querying for the attribute's current value
-                    state = args.first
-                    raise ArgumentError, "#{state.inspect} is not a known #{attribute} value" unless self.class.state_machines[attribute].states.include?(state)
-                    send(attribute) == state
-                  end
+                  args.empty? ? super(*args) : self.class.state_machines[attribute].state?(self, args.first)
                 end
               end
             end
@@ -219,18 +216,24 @@ module StateMachine
           super
         end
         
-        # Defines a scope for finding records *with* a particular value or
-        # values for the attribute
-        def define_with_scope(name)
+        # Creates a scope for finding records *with* a particular state or
+        # states for the attribute
+        def create_with_scope(name)
+          name = name.to_sym
           attribute = self.attribute
-          owner_class.named_scope name.to_sym, lambda {|*values| {:conditions => {attribute => values.flatten}}}
+          
+          owner_class.named_scope name, lambda {|values| {:conditions => {attribute => values}}}
+          lambda {|model, values| model.scopes[name].call(model, values)}
         end
         
-        # Defines a scope for finding records *without* a particular value or
-        # values for the attribute
-        def define_without_scope(name)
+        # Creates a scope for finding records *without* a particular state or
+        # states for the attribute
+        def create_without_scope(name)
+          name = name.to_sym
           attribute = self.attribute
-          owner_class.named_scope name.to_sym, lambda {|*values| {:conditions => ["#{attribute} NOT IN (?)", values.flatten]}}
+          
+          owner_class.named_scope name, lambda {|values| {:conditions => ["#{attribute} NOT IN (?)", values]}}
+          lambda {|model, values| model.scopes[name].call(model, values)}
         end
         
         # Creates a new callback in the callback chain, always inserting it

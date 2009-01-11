@@ -2,19 +2,6 @@ module StateMachine
   module Integrations #:nodoc:
     # Adds support for integrating state machines with DataMapper resources.
     # 
-    # == Requirements
-    # 
-    # To use this feature of the DataMapper integration, the dm-observer library
-    # must be available.  This can be installed either directly or indirectly
-    # through dm-more.  When loading DataMapper, be sure to load the dm-observer
-    # library as well like so:
-    # 
-    #   require 'rubygems'
-    #   require 'dm-core'
-    #   require 'dm-observer'
-    # 
-    # If dm-observer is not available, then this feature will be skipped.
-    # 
     # == Examples
     # 
     # Below is an example of a simple state machine defined within a
@@ -27,9 +14,9 @@ module StateMachine
     #     property :name, String
     #     property :state, String
     #     
-    #     state_machine :initial => 'parked' do
+    #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => 'idling', :from => 'parked'
+    #         transition :to => :idling, :from => :parked
     #       end
     #     end
     #   end
@@ -99,22 +86,25 @@ module StateMachine
     #     property :state, String
     #     
     #     class << self
-    #       def with_states(*values)
-    #         all(:state => values.flatten)
+    #       def with_states(*states)
+    #         all(:state => states.flatten)
     #       end
     #       alias_method :with_state, :with_states
     #       
-    #       def without_states(*values)
-    #         all(:state.not => values.flatten)
+    #       def without_states(*states)
+    #         all(:state.not => states.flatten)
     #       end
     #       alias_method :without_state, :without_states
     #     end
     #   end
     # 
+    # *Note*, however, that the states are converted to their stored values
+    # before being passed into the query.
+    # 
     # Because of the way scopes work in DataMapper, they can be chained like
     # so:
     # 
-    #   Vehicle.with_state('parked').all(:order => [:id.desc])
+    #   Vehicle.with_state(:parked).all(:order => [:id.desc])
     # 
     # == Callbacks / Observers
     # 
@@ -131,8 +121,8 @@ module StateMachine
     #     property :id, Serial
     #     property :state, String
     #     
-    #     state_machine :initial => 'parked' do
-    #       before_transition :to => 'idling' do
+    #     state_machine :initial => :parked do
+    #       before_transition :to => :idling do
     #         put_on_seatbelt
     #       end
     #       
@@ -141,7 +131,7 @@ module StateMachine
     #       end
     #       
     #       event :ignite do
-    #         transition :to => 'idling', :from => 'parked'
+    #         transition :to => :idling, :from => :parked
     #       end
     #     end
     #     
@@ -181,22 +171,18 @@ module StateMachine
           :save
         end
         
-        # Defines a scope for finding records *with* a particular value or
-        # values for the attribute
-        def define_with_scope(name)
+        # Creates a scope for finding records *with* a particular state or
+        # states for the attribute
+        def create_with_scope(name)
           attribute = self.attribute
-          (class << owner_class; self; end).class_eval do
-            define_method(name) {|*values| all(attribute => values.flatten)}
-          end
+          lambda {|resource, values| resource.all(attribute => values)}
         end
         
-        # Defines a scope for finding records *without* a particular value or
-        # values for the attribute
-        def define_without_scope(name)
+        # Creates a scope for finding records *without* a particular state or
+        # states for the attribute
+        def create_without_scope(name)
           attribute = self.attribute
-          (class << owner_class; self; end).class_eval do
-            define_method(name) {|*values| all(attribute.to_sym.not => values.flatten)}
-          end
+          lambda {|resource, values| resource.all(attribute.to_sym.not => values)}
         end
         
         # Creates a new callback in the callback chain, always ensuring that

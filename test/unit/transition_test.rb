@@ -4,8 +4,12 @@ class TransitionTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked, :idling
+    
     @object = @klass.new
-    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @object.state = 'parked'
+    
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
   end
   
   def test_should_have_an_object
@@ -17,45 +21,49 @@ class TransitionTest < Test::Unit::TestCase
   end
   
   def test_should_have_an_event
-    assert_equal 'turn_on', @transition.event
+    assert_equal :ignite, @transition.event
   end
   
-  def test_should_have_a_from_state
-    assert_equal 'off', @transition.from
+  def test_should_have_a_from_value
+    assert_equal 'parked', @transition.from
   end
   
-  def test_should_have_a_to_state
-    assert_equal 'on', @transition.to
+  def test_should_have_a_from_name
+    assert_equal :parked, @transition.from_name
+  end
+  
+  def test_should_have_a_to_value
+    assert_equal 'idling', @transition.to
+  end
+  
+  def test_should_have_a_to_name
+    assert_equal :idling, @transition.to_name
   end
   
   def test_should_have_an_attribute
-    assert_equal 'state', @transition.attribute
+    assert_equal :state, @transition.attribute
   end
   
   def test_should_generate_attributes
-    expected = {:object => @object, :attribute => 'state', :event => 'turn_on', :from => 'off', :to => 'on'}
+    expected = {:object => @object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}
     assert_equal expected, @transition.attributes
   end
 end
 
-class TransitionWithSymbolicValuesTest < Test::Unit::TestCase
+class TransitionWithDynamicToValueTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked
+    @machine.state :idling, :value => lambda {1}
+    
     @object = @klass.new
-    @transition = StateMachine::Transition.new(@object, @machine, :turn_on, :off, :on)
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
   end
   
-  def test_should_not_stringify_event
-    assert_equal :turn_on, @transition.event
-  end
-  
-  def test_should_not_stringify_from_state
-    assert_equal :off, @transition.from
-  end
-  
-  def test_should_not_stringify_to_state
-    assert_equal :on, @transition.to
+  def test_should_evaluate_to_value
+    assert_equal 1, @transition.to
   end
 end
 
@@ -71,8 +79,11 @@ class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
     end
     
     @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @machine.state :parked, :idling
+    
     @object = @klass.new
-    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
     @result = @transition.perform
   end
   
@@ -81,7 +92,7 @@ class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
   end
   
   def test_should_the_current_state
-    assert_equal 'on', @object.state
+    assert_equal 'idling', @object.state
   end
   
   def test_should_run_the_action
@@ -89,7 +100,7 @@ class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
   end
   
   def test_should_run_the_action_after_saving_the_state
-    assert_equal 'on', @object.save_state
+    assert_equal 'idling', @object.save_state
   end
 end
 
@@ -103,9 +114,12 @@ class TransitionWithoutRunningActionTest < Test::Unit::TestCase
       end
     end
     
-    @machine = StateMachine::Machine.new(@klass)
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @machine.state :parked, :idling
+    
     @object = @klass.new
-    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
     @result = @transition.perform(false)
   end
   
@@ -114,7 +128,7 @@ class TransitionWithoutRunningActionTest < Test::Unit::TestCase
   end
   
   def test_should_the_current_state
-    assert_equal 'on', @object.state
+    assert_equal 'idling', @object.state
   end
   
   def test_should_not_run_the_action
@@ -134,23 +148,25 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     end
     
     @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked, :idling
+    
     @object = @klass.new
-    @object.state = 'off'
-    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
   end
   
   def test_should_run_before_callbacks_before_changing_the_state
     @machine.before_transition(lambda {|object| @state = object.state})
     @transition.perform
     
-    assert_equal 'off', @state
+    assert_equal 'parked', @state
   end
   
   def test_should_run_after_callbacks_after_running_the_action
     @machine.after_transition(lambda {|object| @state = object.state})
     @transition.perform
     
-    assert_equal 'on', @state
+    assert_equal 'idling', @state
   end
   
   def test_should_run_before_callbacks_in_the_order_they_were_defined
@@ -175,10 +191,10 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     @count = 0
     callback = lambda {@count += 1}
     
-    @machine.before_transition :from => 'off', :to => 'on', :on => 'turn_off', :do => callback
-    @machine.before_transition :from => 'off', :to => 'off', :on => 'turn_off', :do => callback
-    @machine.before_transition :from => 'off', :to => 'on', :on => 'turn_on', :do => callback
-    @machine.before_transition :from => 'on', :to => 'on', :on => 'turn_off', :do => callback
+    @machine.before_transition :from => :parked, :to => :idling, :on => :park, :do => callback
+    @machine.before_transition :from => :parked, :to => :parked, :on => :park, :do => callback
+    @machine.before_transition :from => :parked, :to => :idling, :on => :ignite, :do => callback
+    @machine.before_transition :from => :idling, :to => :idling, :on => :park, :do => callback
     @transition.perform
     
     assert_equal 1, @count
@@ -188,10 +204,10 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     @count = 0
     callback = lambda {@count += 1}
     
-    @machine.after_transition :from => 'off', :to => 'on', :on => 'turn_off', :do => callback
-    @machine.after_transition :from => 'off', :to => 'off', :on => 'turn_off', :do => callback
-    @machine.after_transition :from => 'off', :to => 'on', :on => 'turn_on', :do => callback
-    @machine.after_transition :from => 'on', :to => 'on', :on => 'turn_off', :do => callback
+    @machine.after_transition :from => :parked, :to => :idling, :on => :park, :do => callback
+    @machine.after_transition :from => :parked, :to => :parked, :on => :park, :do => callback
+    @machine.after_transition :from => :parked, :to => :idling, :on => :ignite, :do => callback
+    @machine.after_transition :from => :idling, :to => :idling, :on => :park, :do => callback
     @transition.perform
     
     assert_equal 1, @count
@@ -226,16 +242,20 @@ class TransitionHaltedDuringBeforeCallbacksTest < Test::Unit::TestCase
     @after_count = 0
     
     @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @machine.state :parked, :idling
     class << @machine
       def within_transaction(object)
         owner_class.cancelled_transaction = yield == false
       end
     end
+    
     @machine.before_transition lambda {@before_count += 1; throw :halt}
     @machine.before_transition lambda {@before_count += 1}
     @machine.after_transition lambda {@after_count += 1}
+    
     @object = @klass.new
-    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
     @result = @transition.perform
   end
   
@@ -244,7 +264,7 @@ class TransitionHaltedDuringBeforeCallbacksTest < Test::Unit::TestCase
   end
   
   def test_should_not_change_current_state
-    assert_nil @object.state
+    assert_equal 'parked', @object.state
   end
   
   def test_should_not_run_action
@@ -278,15 +298,19 @@ class TransitionHaltedDuringActionTest < Test::Unit::TestCase
     @after_count = 0
     
     @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @machine.state :parked, :idling
     class << @machine
       def within_transaction(object)
         owner_class.cancelled_transaction = yield == false
       end
     end
+    
     @machine.before_transition lambda {@before_count += 1}
     @machine.after_transition lambda {@after_count += 1}
+    
     @object = @klass.new
-    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
     @result = @transition.perform
   end
   
@@ -295,7 +319,7 @@ class TransitionHaltedDuringActionTest < Test::Unit::TestCase
   end
   
   def test_should_change_current_state
-    assert_equal 'on', @object.state
+    assert_equal 'idling', @object.state
   end
   
   def test_should_run_before_callbacks
@@ -325,16 +349,20 @@ class TransitionHaltedAfterCallbackTest < Test::Unit::TestCase
     @after_count = 0
     
     @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @machine.state :parked, :idling
     class << @machine
       def within_transaction(object)
         owner_class.cancelled_transaction = yield == false
       end
     end
+    
     @machine.before_transition lambda {@before_count += 1}
     @machine.after_transition lambda {@after_count += 1; throw :halt}
     @machine.after_transition lambda {@after_count += 1}
+    
     @object = @klass.new
-    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
     @result = @transition.perform
   end
   
@@ -343,7 +371,7 @@ class TransitionHaltedAfterCallbackTest < Test::Unit::TestCase
   end
   
   def test_should_change_current_state
-    assert_equal 'on', @object.state
+    assert_equal 'idling', @object.state
   end
   
   def test_should_run_before_callbacks
@@ -373,15 +401,18 @@ class TransitionWithFailedActionTest < Test::Unit::TestCase
     @after_count = 0
     
     @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @machine.state :parked, :idling
     class << @machine
       def within_transaction(object)
         owner_class.cancelled_transaction = yield == false
       end
     end
+    
     @machine.before_transition lambda {@before_count += 1}
     @machine.after_transition lambda {@after_count += 1}
+    
     @object = @klass.new
-    @transition = StateMachine::Transition.new(@object, @machine, 'turn_on', 'off', 'on')
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
     @result = @transition.perform
   end
   
@@ -390,7 +421,7 @@ class TransitionWithFailedActionTest < Test::Unit::TestCase
   end
   
   def test_should_change_current_state
-    assert_equal 'on', @object.state
+    assert_equal 'idling', @object.state
   end
   
   def test_should_run_before_callbacks

@@ -3,50 +3,86 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class StateByDefaultTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, 'on')
+    @state = StateMachine::State.new(@machine, :parked)
   end
   
   def test_should_have_a_machine
     assert_equal @machine, @state.machine
   end
   
-  def test_should_have_a_value
-    assert_equal 'on', @state.value
+  def test_should_have_a_name
+    assert_equal :parked, @state.name
+  end
+  
+  def test_should_use_stringify_the_name_as_the_value
+    assert_equal 'parked', @state.value
+  end
+  
+  def test_should_not_be_initial
+    assert !@state.initial
+  end
+  
+  def test_should_not_have_a_matcher
+    assert_nil @state.matcher
   end
   
   def test_should_not_have_any_methods
     expected = {}
     assert_equal expected, @state.methods
   end
-  
-  def test_should_not_be_initial
-    assert !@state.initial
-  end
 end
 
 class StateTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
+    @state = StateMachine::State.new(@machine, :parked)
   end
   
   def test_should_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) {StateMachine::State.new(@machine, 'on', :invalid => true)}
+    exception = assert_raise(ArgumentError) {StateMachine::State.new(@machine, :parked, :invalid => true)}
+    assert_equal 'Invalid key(s): invalid', exception.message
+  end
+  
+  def test_should_allow_changing_machine
+    new_machine = StateMachine::Machine.new(Class.new)
+    @state.machine = new_machine
+    assert_equal new_machine, @state.machine
+  end
+  
+  def test_should_allow_changing_value
+    @state.value = 1
+    assert_equal 1, @state.value
+  end
+  
+  def test_should_allow_changing_initial
+    @state.initial = true
+    assert @state.initial
+  end
+  
+  def test_should_allow_changing_matcher
+    matcher = lambda {}
+    @state.matcher = matcher
+    assert_equal matcher, @state.matcher
+  end
+  
+  def test_should_use_pretty_inspect
+    assert_equal '#<StateMachine::State name=:parked value="parked" initial=false>', @state.inspect
   end
 end
 
-class StateWithNilValueTest < Test::Unit::TestCase
+class StateWithoutNameTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @state = StateMachine::State.new(@machine, nil)
   end
   
-  def test_should_be_nil_without_object
-    assert_nil @state.value
+  def test_should_have_a_nil_name
+    assert_nil @state.name
   end
   
-  def test_should_be_nil_with_object
-    assert_nil @state.value(@klass.new)
+  def test_should_have_a_nil_value
+    assert_nil @state.value
   end
   
   def test_should_not_redefine_nil_predicate
@@ -54,26 +90,67 @@ class StateWithNilValueTest < Test::Unit::TestCase
     assert !object.nil?
     assert !object.respond_to?('?')
   end
+  
+  def test_should_have_a_description
+    assert_equal 'nil', @state.description
+  end
 end
 
-class StateWithStringValueTest < Test::Unit::TestCase
+class StateWithNameTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, 'on')
+    @state = StateMachine::State.new(@machine, :parked)
   end
   
-  def test_should_use_original_value_without_object
-    assert_equal 'on', @state.value
+  def test_should_have_a_name
+    assert_equal :parked, @state.name
   end
   
-  def test_should_use_original_value_with_object
-    assert_equal 'on', @state.value(@klass.new)
+  def test_should_use_stringify_the_name_as_the_value
+    assert_equal 'parked', @state.value
+  end
+  
+  def test_should_match_stringified_name
+    assert @state.matches?('parked')
+    assert !@state.matches?('idling')
+  end
+  
+  def test_should_not_include_value_in_description
+    assert_equal 'parked', @state.description
+  end
+  
+  def test_should_define_predicate
+    assert @klass.new.respond_to?(:parked?)
+  end
+end
+
+class StateWithNilValueTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @state = StateMachine::State.new(@machine, :parked, :value => nil)
+  end
+  
+  def test_should_have_a_name
+    assert_equal :parked, @state.name
+  end
+  
+  def test_should_have_a_nil_value
+    assert_nil @state.value
+  end
+  
+  def test_should_match_nil_values
+    assert @state.matches?(nil)
+  end
+  
+  def test_should_have_a_description
+    assert_equal 'parked (nil)', @state.description
   end
   
   def test_should_define_predicate
     object = @klass.new
-    assert object.respond_to?(:on?)
+    assert object.respond_to?(:parked?)
   end
 end
 
@@ -81,20 +158,25 @@ class StateWithSymbolicValueTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :on)
+    @state = StateMachine::State.new(@machine, :parked, :value => :parked)
   end
   
-  def test_should_use_original_value_without_object
-    assert_equal :on, @state.value
+  def test_should_use_custom_value
+    assert_equal :parked, @state.value
+  end
+    
+  def test_should_not_include_value_in_description
+    assert_equal 'parked', @state.description
   end
   
-  def test_should_use_original_value_with_object
-    assert_equal :on, @state.value(@klass.new)
+  def test_should_match_symbolic_value
+    assert @state.matches?(:parked)
+    assert !@state.matches?('parked')
   end
   
   def test_should_define_predicate
     object = @klass.new
-    assert object.respond_to?(:on?)
+    assert object.respond_to?(:parked?)
   end
 end
 
@@ -102,42 +184,25 @@ class StateWithIntegerValueTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, 1)
+    @state = StateMachine::State.new(@machine, :parked, :value => 1)
   end
   
-  def test_should_use_original_value_without_object
+  def test_should_use_custom_value
     assert_equal 1, @state.value
   end
   
-  def test_should_use_original_value_with_object
-    assert_equal 1, @state.value(@klass.new)
+  def test_should_include_value_in_description
+    assert_equal 'parked (1)', @state.description
   end
   
-  def test_should_not_define_predicate
+  def test_should_match_integer_value
+    assert @state.matches?(1)
+    assert !@state.matches?(2)
+  end
+  
+  def test_should_define_predicate
     object = @klass.new
-    assert !object.respond_to?('1?')
-  end
-end
-
-class StateWithObjectValueTest < Test::Unit::TestCase
-  def setup
-    @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass)
-    @value = Object.new
-    @state = StateMachine::State.new(@machine, @value)
-  end
-  
-  def test_should_use_original_value_without_object
-    assert_equal @value, @state.value
-  end
-  
-  def test_should_use_original_value_with_object
-    assert_equal @value, @state.value(@klass.new)
-  end
-  
-  def test_should_not_define_predicate
-    object = @klass.new
-    assert !object.respond_to?("#{@value.inspect}?")
+    assert object.respond_to?(:parked?)
   end
 end
 
@@ -146,35 +211,49 @@ class StateWithLambdaValueTest < Test::Unit::TestCase
     @klass = Class.new
     @args = nil
     @machine = StateMachine::Machine.new(@klass)
-    @value = lambda {|*args| @args = args; 'on'}
-    @state = StateMachine::State.new(@machine, @value)
+    @state = StateMachine::State.new(@machine, :parked, :value => lambda {|*args| @args = args; :parked})
   end
   
-  def test_should_use_original_value_without_object
-    assert_equal @value, @state.value
+  def test_should_use_evaluated_value
+    assert_equal :parked, @state.value
   end
   
-  def test_should_use_evaluated_value_with_object
-    assert_equal 'on', @state.value(@klass.new)
+  def test_should_include_masked_value_in_description
+    assert_equal 'parked (*)', @state.description
   end
   
-  def test_should_pass_object_in_when_evaluating_value
+  def test_should_not_pass_in_any_arguments
+    @state.value
+    assert_equal [], @args
+  end
+  
+  def test_should_define_predicate
     object = @klass.new
-    @state.value(object)
-    
-    assert_equal [object], @args
+    assert object.respond_to?(:parked?)
+  end
+end
+
+class StateWithMatcherTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @args = nil
+    @machine = StateMachine::Machine.new(@klass)
+    @state = StateMachine::State.new(@machine, :parked, :if => lambda {|value| value == 1})
   end
   
-  def test_should_not_define_predicate
-    object = @klass.new
-    assert !object.respond_to?("#{@value.inspect}?")
+  def test_should_not_match_actual_value
+    assert !@state.matches?('parked')
+  end
+  
+  def test_should_match_evaluated_block
+    assert @state.matches?(1)
   end
 end
 
 class StateInitialTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, 'on', :initial => true)
+    @state = StateMachine::State.new(@machine, :parked, :initial => true)
   end
   
   def test_should_be_initial
@@ -185,7 +264,7 @@ end
 class StateNotInitialTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, 'on', :initial => false)
+    @state = StateMachine::State.new(@machine, :parked, :initial => false)
   end
   
   def test_should_not_be_initial
@@ -196,41 +275,37 @@ end
 class StateWithConflictingPredicateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do
-      def on?
-        true
+      def parked?
+        1
       end
     end
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, 'on')
+    @state = StateMachine::State.new(@machine, :parked)
     @object = @klass.new
   end
   
-  def test_should_not_define_state_predicate
-    assert @object.on?
+  def test_should_redefine_state_predicate
+    assert_equal false, @object.parked?
   end
 end
 
 class StateWithNamespaceTest < Test::Unit::TestCase
   def setup
-    @klass = Class.new do
-      def on?
-        true
-      end
-    end
-    @machine = StateMachine::Machine.new(@klass, :namespace => 'switch')
-    @state = StateMachine::State.new(@machine, 'on')
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :namespace => 'gear')
+    @state = StateMachine::State.new(@machine, :parked)
     @object = @klass.new
   end
   
   def test_should_namespace_predicate
-    assert @object.respond_to?(:switch_on?)
+    assert @object.respond_to?(:gear_parked?)
   end
 end
 
 class StateAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, 'on')
+    @state = StateMachine::State.new(@machine, :parked)
     @copied_state = @state.dup
   end
   
@@ -244,24 +319,24 @@ class StateWithContextTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @ancestors = @klass.ancestors
-    @state = StateMachine::State.new(@machine, 'on')
+    @state = StateMachine::State.new(@machine, :idling)
     
-    color_method = nil
-    glow_method = nil
+    speed_method = nil
+    rpm_method = nil
     @state.context do
-      def color
-        'green'
+      def speed
+        0
       end
-      color_method = instance_method(:color)
+      speed_method = instance_method(:speed)
       
-      def glow
-        3
+      def rpm
+        1000
       end
-      glow_method = instance_method(:glow)
+      rpm_method = instance_method(:rpm)
     end
     
-    @color_method = color_method
-    @glow_method = glow_method
+    @speed_method = speed_method
+    @rpm_method = rpm_method
   end
   
   def test_should_include_new_module_in_owner_class
@@ -270,17 +345,17 @@ class StateWithContextTest < Test::Unit::TestCase
   end
   
   def test_should_define_each_context_method_in_owner_class
-    %w(color glow).each {|method| assert @klass.method_defined?(method)}
+    %w(speed rpm).each {|method| assert @klass.method_defined?(method)}
   end
   
   def test_should_not_use_context_methods_as_owner_class_methods
-    assert_not_equal @color_method, @klass.instance_method(:color)
-    assert_not_equal @glow_method, @klass.instance_method(:glow)
+    assert_not_equal @speed_method, @klass.instance_method(:speed)
+    assert_not_equal @rpm_method, @klass.instance_method(:rpm)
   end
   
   def test_should_include_context_methods_in_state_methods
-    assert_equal @color_method, @state.methods[:color]
-    assert_equal @glow_method, @state.methods[:glow]
+    assert_equal @speed_method, @state.methods[:speed]
+    assert_equal @rpm_method, @state.methods[:rpm]
   end
 end
 
@@ -289,27 +364,27 @@ class StateWithMultipleContextsTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @ancestors = @klass.ancestors
-    @state = StateMachine::State.new(@machine, 'on')
+    @state = StateMachine::State.new(@machine, :idling)
     
-    color_method = nil
+    speed_method = nil
     @state.context do
-      def color
-        'green'
+      def speed
+        0
       end
       
-      color_method = instance_method(:color)
+      speed_method = instance_method(:speed)
     end
-    @color_method = color_method
+    @speed_method = speed_method
     
-    glow_method = nil
+    rpm_method = nil
     @state.context do
-      def glow
-        3
+      def rpm
+        1000
       end
       
-      glow_method = instance_method(:glow)
+      rpm_method = instance_method(:rpm)
     end
-    @glow_method = glow_method
+    @rpm_method = rpm_method
   end
   
   def test_should_include_new_module_in_owner_class
@@ -318,40 +393,40 @@ class StateWithMultipleContextsTest < Test::Unit::TestCase
   end
   
   def test_should_define_each_context_method_in_owner_class
-    %w(color glow).each {|method| assert @klass.method_defined?(method)}
+    %w(speed rpm).each {|method| assert @klass.method_defined?(method)}
   end
   
   def test_should_not_use_context_methods_as_owner_class_methods
-    assert_not_equal @color_method, @klass.instance_method(:color)
-    assert_not_equal @glow_method, @klass.instance_method(:glow)
+    assert_not_equal @speed_method, @klass.instance_method(:speed)
+    assert_not_equal @rpm_method, @klass.instance_method(:rpm)
   end
   
   def test_should_include_context_methods_in_state_methods
-    assert_equal @color_method, @state.methods[:color]
-    assert_equal @glow_method, @state.methods[:glow]
+    assert_equal @speed_method, @state.methods[:speed]
+    assert_equal @rpm_method, @state.methods[:rpm]
   end
 end
 
 class StateWithExistingContextMethodTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do
-      def color
-        'always green'
+      def speed
+        60
       end
     end
-    @original_color_method = @klass.instance_method(:color)
+    @original_speed_method = @klass.instance_method(:speed)
     
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, 'on')
+    @state = StateMachine::State.new(@machine, :idling)
     @state.context do
-      def color
-        'green'
+      def speed
+        0
       end
     end
   end
   
   def test_should_not_override_method
-    assert_equal @original_color_method, @klass.instance_method(:color)
+    assert_equal @original_speed_method, @klass.instance_method(:speed)
   end
 end
 
@@ -361,27 +436,27 @@ class StateWithRedefinedContextMethodTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass)
     @state = StateMachine::State.new(@machine, 'on')
     
-    old_color_method = nil
+    old_speed_method = nil
     @state.context do
-      def color
-        'green'
+      def speed
+        0
       end
-      old_color_method = instance_method(:color)
+      old_speed_method = instance_method(:speed)
     end
-    @old_color_method = old_color_method
+    @old_speed_method = old_speed_method
     
-    current_color_method = nil
+    current_speed_method = nil
     @state.context do
-      def color
+      def speed
         'green'
       end
-      current_color_method = instance_method(:color)
+      current_speed_method = instance_method(:speed)
     end
-    @current_color_method = current_color_method
+    @current_speed_method = current_speed_method
   end
   
   def test_should_track_latest_defined_method
-    assert_equal @current_color_method, @state.methods[:color]
+    assert_equal @current_speed_method, @state.methods[:speed]
   end
 end
 
@@ -390,10 +465,10 @@ class StateWithInvalidMethodCallTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @ancestors = @klass.ancestors
-    @state = StateMachine::State.new(@machine, 'on')
+    @state = StateMachine::State.new(@machine, :idling)
     @state.context do
-      def color
-        'green'
+      def speed
+        0
       end
     end
     
@@ -401,7 +476,8 @@ class StateWithInvalidMethodCallTest < Test::Unit::TestCase
   end
   
   def test_should_raise_an_exception
-    assert_raise(NoMethodError) { @state.call(@object, :invalid) }
+    exception = assert_raise(NoMethodError) { @state.call(@object, :invalid) }
+    assert_equal "undefined method 'invalid' for #{@object} in state nil", exception.message
   end
 end
 
@@ -410,9 +486,9 @@ class StateWithValidMethodCallTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @ancestors = @klass.ancestors
-    @state = StateMachine::State.new(@machine, 'on')
+    @state = StateMachine::State.new(@machine, :idling)
     @state.context do
-      def color(arg = nil)
+      def speed(arg = nil)
         block_given? ? [arg, yield] : arg
       end
     end
@@ -421,53 +497,19 @@ class StateWithValidMethodCallTest < Test::Unit::TestCase
   end
   
   def test_should_not_raise_an_exception
-    assert_nothing_raised { @state.call(@object, :color) }
+    assert_nothing_raised { @state.call(@object, :speed) }
   end
   
   def test_should_pass_arguments_through
-    assert_equal 1, @state.call(@object, :color, 1)
+    assert_equal 1, @state.call(@object, :speed, 1)
   end
   
   def test_should_pass_blocks_through
-    assert_equal [nil, 1], @state.call(@object, :color) {1}
+    assert_equal [nil, 1], @state.call(@object, :speed) {1}
   end
   
   def test_should_pass_both_arguments_and_blocks_through
-    assert_equal [1, 2], @state.call(@object, :color, 1) {2}
-  end
-end
-
-class StateIdGeneratorTest < Test::Unit::TestCase
-  def test_should_use_nil_for_nil
-    assert_equal 'nil', StateMachine::State.id_for(nil)
-  end
-  
-  def test_should_use_to_s_for_string
-    assert_equal 'on', StateMachine::State.id_for('on')
-  end
-  
-  def test_should_use_to_s_for_symbol
-    assert_equal 'on', StateMachine::State.id_for(:on)
-  end
-  
-  def test_should_use_to_s_for_number
-    assert_equal '1', StateMachine::State.id_for(1)
-  end
-  
-  def test_should_use_to_s_for_object
-    class << (state = Object.new)
-      def to_s
-        'on'
-      end
-    end
-    
-    assert_equal 'on', StateMachine::State.id_for(state)
-  end
-  
-  def test_should_use_lambda_id_for_proc
-    state = lambda {}
-    
-    assert_equal "lambda#{state.object_id.abs}", StateMachine::State.id_for(state)
+    assert_equal [1, 2], @state.call(@object, :speed, 1) {2}
   end
 end
 
@@ -479,7 +521,7 @@ begin
   class StateDrawingTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
-      @state = StateMachine::State.new(@machine, 'on')
+      @state = StateMachine::State.new(@machine, :parked, :value => 1)
       
       graph = GraphViz.new('G')
       @node = @state.draw(graph)
@@ -501,19 +543,19 @@ begin
       assert_equal '1', @node['height']
     end
     
-    def test_should_use_value_as_name
-      assert_equal 'on', @node.name
+    def test_should_use_stringified_name_as_name
+      assert_equal 'parked', @node.name
     end
     
-    def test_should_use_stringified_value_as_label
-      assert_equal 'on', @node['label']
+    def test_should_use_description_as_label
+      assert_equal 'parked (1)', @node['label']
     end
   end
   
   class StateDrawingInitialTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
-      @state = StateMachine::State.new(@machine, 'on', :initial => true)
+      @state = StateMachine::State.new(@machine, :parked, :initial => true)
       
       graph = GraphViz.new('G')
       @node = @state.draw(graph)
@@ -524,7 +566,7 @@ begin
     end
   end
   
-  class StateDrawingNilTest < Test::Unit::TestCase
+  class StateDrawingNilNameTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
       @state = StateMachine::State.new(@machine, nil)
@@ -533,49 +575,30 @@ begin
       @node = @state.draw(graph)
     end
     
-    def test_should_use_value_as_name
+    def test_should_use_stringified_nil_as_name
       assert_equal 'nil', @node.name
     end
     
-    def test_should_use_stringified_value_as_label
+    def test_should_use_description_as_label
       assert_equal 'nil', @node['label']
     end
   end
   
-  class StateDrawingProcTest < Test::Unit::TestCase
+  class StateDrawingLambdaValueTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
-      @value = lambda {}
-      @state = StateMachine::State.new(@machine, @value)
+      @state = StateMachine::State.new(@machine, :parked, :value => lambda {})
       
       graph = GraphViz.new('G')
       @node = @state.draw(graph)
     end
     
-    def test_should_use_lambda_id_as_name
-      assert_equal "lambda#{@value.object_id.abs}", @node.name
+    def test_should_use_stringified_name_as_name
+      assert_equal 'parked', @node.name
     end
     
-    def test_should_use_asterisk_as_label
-      assert_equal '*', @node['label']
-    end
-  end
-  
-  class StateDrawingSymbolTest < Test::Unit::TestCase
-    def setup
-      @machine = StateMachine::Machine.new(Class.new)
-      @state = StateMachine::State.new(@machine, :on)
-      
-      graph = GraphViz.new('G')
-      @node = @state.draw(graph)
-    end
-    
-    def test_should_use_stringified_value_as_name
-      assert_equal 'on', @node.name
-    end
-    
-    def test_should_use_stringified_value_as_label
-      assert_equal 'on', @node['label']
+    def test_should_use_description_as_label
+      assert_equal 'parked (*)', @node['label']
     end
   end
 rescue LoadError

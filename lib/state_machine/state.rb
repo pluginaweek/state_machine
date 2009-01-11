@@ -3,54 +3,55 @@ require 'state_machine/assertions'
 module StateMachine
   # A state defines a value that an attribute can be in after being transitioned
   # 0 or more times.  States can represent a value of any type in Ruby, though
-  # the most common type is String.
+  # the most common (and default) type is String.
   # 
-  # In addition to defining the machine's value, states can also define a
+  # In addition to defining the machine's value, a state can also define a
   # behavioral context for an object when that object is in the state.  See
   # StateMachine::Machine#state for more information about how state-driven
   # behavior can be utilized.
   class State
     include Assertions
     
-    class << self
-      # Generates a unique identifier for the given state value.  Ids are based
-      # on the object type:
-      # * Proc - "lambda#{object_id}"
-      # * NilClass - "nil"
-      # * Everything else - Stringified version of the object
-      def id_for(value)
-        case value
-        when Proc
-          "lambda#{value.object_id.abs}"
-        when nil
-          'nil'
-        else
-          value.to_s
-        end
-      end
-    end
-    
     # The state machine for which this state is defined
     attr_accessor :machine
+    
+    # The unique identifier for the state used in event and callback definitions
+    attr_reader :name
+    
+    # The value that is written to a machine's attribute when an object
+    # transitions into this state
+    attr_writer :value
+    
+    # Whether or not this state is the initial state to use for new objects
+    attr_accessor :initial
+    
+    # A custom lambda block for determining whether a given value matches this
+    # state
+    attr_accessor :matcher
     
     # Tracks all of the methods that have been defined for the machine's owner
     # class when objects are in this state.
     # 
-    # Maps "method name" => UnboundMethod
+    # Maps :method_name => UnboundMethod
     attr_reader :methods
     
-    # Whether or not this state in the initial state to use for new objects
-    attr_accessor :initial
-    
-    # Creates a new state within the context of the given machine
+    # Creates a new state within the context of the given machine.
     # 
     # Configuration options:
-    # * +initial+ - Whether this state is the beginning state for the machine.  Default is false.
-    def initialize(machine, value, options = {}) #:nodoc:
-      assert_valid_keys(options, :initial)
+    # * <tt>:initial</tt> - Whether this state is the beginning state for the
+    #   machine. Default is false.
+    # * <tt>:value</tt> - The value to store when an object transitions to this
+    #   state.  Default is the name (stringified).
+    # * <tt>:if</tt> - Determines whether a value matches this state
+    #   (e.g. :value => lambda {Time.now}, :if => lambda {|state| !state.nil?}).
+    #   By default, the configured value is matched.
+    def initialize(machine, name, options = {}) #:nodoc:
+      assert_valid_keys(options, :initial, :value, :if)
       
       @machine = machine
-      @value = value
+      @name = name
+      @value = options.include?(:value) ? options[:value] : name && name.to_s
+      @matcher = options[:if]
       @methods = {}
       @initial = options.include?(:initial) && options[:initial]
       
@@ -61,14 +62,53 @@ module StateMachine
     # methods to prevent conflicts across different states.
     def initialize_copy(orig) #:nodoc:
       super
-      @methods = @methods.dup
+      @methods = methods.dup
     end
     
-    # The value (of any type) that represents this state.  If an object is
-    # passed in and the state's value is a lambda block, then the object will be
-    # passed into the block to generate the actual value of the state.
-    def value(object = nil)
-      @value.is_a?(Proc) && object ? @value.call(object) : @value
+    # Generates a human-readable description of this state's name / value:
+    # 
+    # For example,
+    # 
+    #   State.new(machine, :parked).description                               # => "parked"
+    #   State.new(machine, :parked, :value => :parked).description            # => "parked"
+    #   State.new(machine, :parked, :value => nil).description                # => "parked (nil)"
+    #   State.new(machine, :parked, :value => 1).description                  # => "parked (1)"
+    #   State.new(machine, :parked, :value => lambda {Time.now}).description  # => "parked (*)
+    def description
+      description = name ? name.to_s : name.inspect
+      description << " (#{@value.is_a?(Proc) ? '*' : @value.inspect})" unless name.to_s == @value.to_s
+      description
+    end
+    
+    # The value that represents this state.  If the value is a lambda block,
+    # then it will be evaluated at this time.  Otherwise, the static value is
+    # returned.
+    # 
+    # For example,
+    # 
+    #   State.new(machine, :parked, :value => 1).value                  # => 1
+    #   State.new(machine, :parked, :value => lambda {Time.now}).value  # => Tue Jan 01 00:00:00 UTC 2008
+    def value
+      @value.is_a?(Proc) ? @value.call : @value
+    end
+    
+    # Determines whether this state matches the given value.  If no matcher is
+    # configured, then this will check whether the values are equivalent.
+    # Otherwise, the matcher will determine the result.
+    # 
+    # For example,
+    # 
+    #   # Without a matcher
+    #   state = State.new(machine, :parked, :value => 1)
+    #   state.matches?(1)           # => true
+    #   state.matches?(2)           # => false
+    #   
+    #   # With a matcher
+    #   state = State.new(machine, :parked, :value => lambda {Time.now}, :if => lambda {|value| !value.nil?})
+    #   state.matches?(nil)         # => false
+    #   state.matches?(Time.now)    # => true
+    def matches?(other_value)
+      matcher ? matcher.call(other_value) : other_value == value
     end
     
     # Defines a context for the state which will be enabled on instances of the
@@ -77,7 +117,6 @@ module StateMachine
     # This can be called multiple times.  Each time a new context is created, a
     # new module will be included in the owner class.
     def context(&block)
-      value = self.value
       owner_class = machine.owner_class
       attribute = machine.attribute
       
@@ -95,8 +134,7 @@ module StateMachine
           # not possible with lambdas in Ruby 1.8.6.
           owner_class.class_eval <<-end_eval, __FILE__, __LINE__
             def #{method}(*args, &block)
-              attribute = #{attribute.dump}
-              self.class.state_machines[attribute].state(send(attribute)).call(self, #{method.to_s.dump}, *args, &block)
+              self.class.state_machines[#{attribute.inspect}].state_for(self).call(self, #{method.inspect}, *args, &block)
             end
           end_eval
         end
@@ -112,7 +150,7 @@ module StateMachine
         include context
       end
       
-      methods
+      context
     end
     
     # Calls a method defined in this state's context on the given object.  All
@@ -126,48 +164,55 @@ module StateMachine
         context_method.bind(object).call(*args, &block)
       else
         # Raise exception as if the method never existed on the original object
-        raise NoMethodError, "undefined method '#{method}' for #{object} in state #{object.send(machine.attribute).inspect}"
+        raise NoMethodError, "undefined method '#{method}' for #{object} in state #{machine.state_for(object).name.inspect}"
       end
     end
     
     # Draws a representation of this state on the given machine.  This will
     # create a new node on the graph with the following properties:
-    # * +label+ - A human-friendly version of the value.  For lambda blocks / procs, "*", otherwise the stringified version of the value is used.
+    # * +label+ - The human-friendly description of the state.
     # * +width+ - The width of the node.  Always 1.
     # * +height+ - The height of the node.  Always 1.
-    # * +fixedsize+ - Whether the size of the node stays the same regardless of its contents.  Always true.
-    # * +shape+ - The actual shape of the node.  If the state is the beginning state, then "doublecircle", otherwise "circle".
+    # * +fixedsize+ - Whether the size of the node stays the same regardless of
+    #   its contents.  Always true.
+    # * +shape+ - The actual shape of the node.  If the state is the initial
+    #   state, then "doublecircle", otherwise "circle".
     # 
     # The actual node generated on the graph will be returned.
     def draw(graph)
-      shape = initial ? 'doublecircle' : 'circle'
-      
-      # Use GraphViz-friendly name/label for dynamic/nil states
-      name = self.class.id_for(value)
-      if value.is_a?(Proc)
-        label = '*'
-      else
-        label = value.nil? ? 'nil' : value.to_s
-      end
-      
-      graph.add_node(name, :label => label, :width => '1', :height => '1', :fixedsize => 'true', :shape => shape)
+      graph.add_node(name ? name.to_s : 'nil',
+        :label => description,
+        :width => '1',
+        :height => '1',
+        :fixedsize => 'true',
+        :shape => initial ? 'doublecircle' : 'circle'
+      )
+    end
+    
+    # Generates a nicely formatted description of this state's contents.
+    # 
+    # For example,
+    # 
+    #   state = StateMachine::State.new(machine, :parked, :value => 1, :initial => true)
+    #   state   # => #<StateMachine::State name=:parked value=1 initial=true>
+    def inspect
+      "#<#{self.class} #{%w(name value initial).map {|attr| "#{attr}=#{instance_variable_get("@#{attr}").inspect}"} * ' '}>"
     end
     
     private
-      # Adds a predicate method to the owner class as long as this state's value
-      # is a string/symbol
+      # Adds a predicate method to the owner class so long as a name has
+      # actually been configured for the state
       def add_predicate
-        if value && (value.is_a?(String) || value.is_a?(Symbol))
-          attribute = machine.attribute
-          value = self.value
-          name = "#{value}?"
-          name = "#{machine.namespace}_#{name}" if machine.namespace
-          
-          machine.owner_class.class_eval do
-            # Checks whether the current state is equal to the given value
-            define_method(name) do
-              self.send(attribute) == value
-            end unless method_defined?(name) || private_method_defined?(name)
+        return unless name
+        
+        attribute = machine.attribute
+        qualified_name = name = self.name
+        qualified_name = "#{machine.namespace}_#{name}" if machine.namespace
+        
+        machine.owner_class.class_eval do
+          # Checks whether the current value matches this state
+          define_method("#{qualified_name}?") do
+            self.class.state_machines[attribute].state(name).matches?(send(attribute))
           end
         end
       end

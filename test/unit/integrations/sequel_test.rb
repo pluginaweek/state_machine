@@ -54,6 +54,7 @@ begin
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
+        @machine.state :parked, :idling, :first_gear
       end
       
       def test_should_create_singular_with_scope
@@ -61,10 +62,10 @@ begin
       end
       
       def test_should_only_include_records_with_state_in_singular_with_scope
-        off = @model.create :state => 'off'
-        on = @model.create :state => 'on'
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
         
-        assert_equal [off], @model.with_state('off').all
+        assert_equal [parked], @model.with_state(:parked).all
       end
       
       def test_should_create_plural_with_scope
@@ -72,10 +73,10 @@ begin
       end
       
       def test_should_only_include_records_with_states_in_plural_with_scope
-        off = @model.create :state => 'off'
-        on = @model.create :state => 'on'
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
         
-        assert_equal [off, on], @model.with_states('off', 'on').all
+        assert_equal [parked, idling], @model.with_states(:parked, :idling).all
       end
       
       def test_should_create_singular_without_scope
@@ -83,10 +84,10 @@ begin
       end
       
       def test_should_only_include_records_without_state_in_singular_without_scope
-        off = @model.create :state => 'off'
-        on = @model.create :state => 'on'
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
         
-        assert_equal [off], @model.without_state('on').all
+        assert_equal [parked], @model.without_state(:idling).all
       end
       
       def test_should_create_plural_without_scope
@@ -94,11 +95,11 @@ begin
       end
       
       def test_should_only_include_records_without_states_in_plural_without_scope
-        off = @model.create :state => 'off'
-        on = @model.create :state => 'on'
-        error = @model.create :state => 'error'
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
+        first_gear = @model.create :state => 'first_gear'
         
-        assert_equal [off, on], @model.without_states('error').all
+        assert_equal [parked, idling], @model.without_states(:first_gear).all
       end
       
       def test_should_rollback_transaction_if_false
@@ -121,14 +122,14 @@ begin
       
       def test_should_not_override_the_column_reader
         record = @model.new
-        record[:state] = 'off'
-        assert_equal 'off', record.state
+        record[:state] = 'parked'
+        assert_equal 'parked', record.state
       end
       
       def test_should_not_override_the_column_writer
         record = @model.new
-        record.state = 'off'
-        assert_equal 'off', record[:state]
+        record.state = 'parked'
+        assert_equal 'parked', record[:state]
       end
     end
     
@@ -145,19 +146,19 @@ begin
     class MachineWithInitialStateTest < BaseTestCase
       def setup
         @model = new_model
-        @machine = StateMachine::Machine.new(@model, :initial => 'off')
+        @machine = StateMachine::Machine.new(@model, :initial => 'parked')
         @record = @model.new
       end
       
       def test_should_set_initial_state_on_created_object
-        assert_equal 'off', @record.state
+        assert_equal 'parked', @record.state
       end
     end
     
     class MachineWithNonColumnStateAttributeTest < BaseTestCase
       def setup
         @model = new_model
-        @machine = StateMachine::Machine.new(@model, :status, :initial => 'off')
+        @machine = StateMachine::Machine.new(@model, :status, :initial => 'parked')
         @record = @model.new
       end
       
@@ -170,7 +171,7 @@ begin
       end
       
       def test_should_set_initial_state_on_created_object
-        assert_equal 'off', @record.status
+        assert_equal 'parked', @record.status
       end
     end
     
@@ -178,8 +179,9 @@ begin
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
-        @record = @model.new(:state => 'off')
-        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @machine.state :parked, :idling
+        @record = @model.new(:state => 'parked')
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
       
       def test_should_run_before_callbacks
@@ -242,11 +244,11 @@ begin
         callback_args = nil
         
         klass = class << @record; self; end
-        klass.send(:define_method, :after_turn_on) do |*args|
+        klass.send(:define_method, :after_ignite) do |*args|
           callback_args = args
         end
         
-        @machine.before_transition(:after_turn_on)
+        @machine.before_transition(:after_ignite)
         
         @transition.perform
         assert_equal [@transition], callback_args

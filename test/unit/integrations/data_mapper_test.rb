@@ -68,6 +68,7 @@ begin
       def setup
         @resource = new_resource
         @machine = StateMachine::Machine.new(@resource)
+        @machine.state :parked, :idling, :first_gear
       end
       
       def test_should_create_singular_with_scope
@@ -75,10 +76,10 @@ begin
       end
       
       def test_should_only_include_records_with_state_in_singular_with_scope
-        off = @resource.create :state => 'off'
-        on = @resource.create :state => 'on'
+        parked = @resource.create :state => 'parked'
+        idling = @resource.create :state => 'idling'
         
-        assert_equal [off], @resource.with_state('off')
+        assert_equal [parked], @resource.with_state(:parked)
       end
       
       def test_should_create_plural_with_scope
@@ -86,10 +87,10 @@ begin
       end
       
       def test_should_only_include_records_with_states_in_plural_with_scope
-        off = @resource.create :state => 'off'
-        on = @resource.create :state => 'on'
+        parked = @resource.create :state => 'parked'
+        idling = @resource.create :state => 'idling'
         
-        assert_equal [off, on], @resource.with_states('off', 'on')
+        assert_equal [parked, idling], @resource.with_states(:parked, :idling)
       end
       
       def test_should_create_singular_without_scope
@@ -97,10 +98,10 @@ begin
       end
       
       def test_should_only_include_records_without_state_in_singular_without_scope
-        off = @resource.create :state => 'off'
-        on = @resource.create :state => 'on'
+        parked = @resource.create :state => 'parked'
+        idling = @resource.create :state => 'idling'
         
-        assert_equal [off], @resource.without_state('on')
+        assert_equal [parked], @resource.without_state(:idling)
       end
       
       def test_should_create_plural_without_scope
@@ -108,11 +109,11 @@ begin
       end
       
       def test_should_only_include_records_without_states_in_plural_without_scope
-        off = @resource.create :state => 'off'
-        on = @resource.create :state => 'on'
-        error = @resource.create :state => 'error'
+        parked = @resource.create :state => 'parked'
+        idling = @resource.create :state => 'idling'
+        first_gear = @resource.create :state => 'first_gear'
         
-        assert_equal [off, on], @resource.without_states('error')
+        assert_equal [parked, idling], @resource.without_states(:first_gear)
       end
       
       def test_should_rollback_transaction_if_false
@@ -135,14 +136,14 @@ begin
       
       def test_should_not_override_the_column_reader
         record = @resource.new
-        record.attribute_set(:state, 'off')
-        assert_equal 'off', record.state
+        record.attribute_set(:state, 'parked')
+        assert_equal 'parked', record.state
       end
       
       def test_should_not_override_the_column_writer
         record = @resource.new
-        record.state = 'off'
-        assert_equal 'off', record.attribute_get(:state)
+        record.state = 'parked'
+        assert_equal 'parked', record.attribute_get(:state)
       end
     end
     
@@ -159,19 +160,19 @@ begin
     class MachineWithInitialStateTest < BaseTestCase
       def setup
         @resource = new_resource
-        @machine = StateMachine::Machine.new(@resource, :initial => 'off')
+        @machine = StateMachine::Machine.new(@resource, :initial => 'parked')
         @record = @resource.new
       end
       
       def test_should_set_initial_state_on_created_object
-        assert_equal 'off', @record.state
+        assert_equal 'parked', @record.state
       end
     end
     
     class MachineWithNonColumnStateAttributeTest < BaseTestCase
       def setup
         @resource = new_resource
-        @machine = StateMachine::Machine.new(@resource, :status, :initial => 'off')
+        @machine = StateMachine::Machine.new(@resource, :status, :initial => 'parked')
         @record = @resource.new
       end
       
@@ -184,7 +185,7 @@ begin
       end
       
       def test_should_set_initial_state_on_created_object
-        assert_equal 'off', @record.status
+        assert_equal 'parked', @record.status
       end
     end
     
@@ -192,8 +193,9 @@ begin
       def setup
         @resource = new_resource
         @machine = StateMachine::Machine.new(@resource)
-        @record = @resource.new(:state => 'off')
-        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @machine.state :parked, :idling
+        @record = @resource.new(:state => 'parked')
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
       
       def test_should_run_before_callbacks
@@ -256,11 +258,11 @@ begin
         callback_args = nil
         
         klass = class << @record; self; end
-        klass.send(:define_method, :after_turn_on) do |*args|
+        klass.send(:define_method, :after_ignite) do |*args|
           callback_args = args
         end
         
-        @machine.before_transition(:after_turn_on)
+        @machine.before_transition(:after_ignite)
         
         @transition.perform
         assert_equal [@transition], callback_args
@@ -285,15 +287,16 @@ begin
         def setup
           @resource = new_resource
           @machine = StateMachine::Machine.new(@resource)
-          @record = @resource.new(:state => 'off')
-          @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+          @machine.state :parked, :idling
+          @record = @resource.new(:state => 'parked')
+          @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         end
         
         def test_should_call_before_transition_callback_if_requirements_match
           called = false
           
           observer = new_observer(@resource) do
-            before_transition :from => 'off' do
+            before_transition :from => :parked do
               called = true
             end
           end
@@ -306,7 +309,7 @@ begin
           called = false
           
           observer = new_observer(@resource) do
-            before_transition :from => 'on' do
+            before_transition :from => :idling do
               called = true
             end
           end
@@ -322,11 +325,11 @@ begin
           called_status = false
           
           observer = new_observer(@resource) do
-            before_transition :state, :from => 'off' do
+            before_transition :state, :from => :parked do
               called_state = true
             end
             
-            before_transition :status, :from => 'off' do
+            before_transition :status, :from => :parked do
               called_status = true
             end
           end
@@ -354,7 +357,7 @@ begin
           called = false
           
           observer = new_observer(@resource) do
-            after_transition :from => 'off' do
+            after_transition :from => :parked do
               called = true
             end
           end
@@ -367,7 +370,7 @@ begin
           called = false
           
           observer = new_observer(@resource) do
-            after_transition :from => 'on' do
+            after_transition :from => :idling do
               called = true
             end
           end
@@ -394,8 +397,9 @@ begin
         def setup
           @resource = new_resource
           @machine = StateMachine::Machine.new(@resource)
-          @record = @resource.new(:state => 'off')
-          @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+          @machine.state :parked, :idling
+          @record = @resource.new(:state => 'parked')
+          @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
           
           @notifications = notifications = []
           

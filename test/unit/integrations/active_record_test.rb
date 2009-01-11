@@ -87,6 +87,7 @@ begin
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
+        @machine.state :parked, :idling, :first_gear
       end
       
       def test_should_create_singular_with_scope
@@ -94,10 +95,10 @@ begin
       end
       
       def test_should_only_include_records_with_state_in_singular_with_scope
-        off = @model.create :state => 'off'
-        on = @model.create :state => 'on'
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
         
-        assert_equal [off], @model.with_state('off')
+        assert_equal [parked], @model.with_state(:parked)
       end
       
       def test_should_create_plural_with_scope
@@ -105,10 +106,10 @@ begin
       end
       
       def test_should_only_include_records_with_states_in_plural_with_scope
-        off = @model.create :state => 'off'
-        on = @model.create :state => 'on'
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
         
-        assert_equal [off, on], @model.with_states('off', 'on')
+        assert_equal [parked, idling], @model.with_states(:parked, :idling)
       end
       
       def test_should_create_singular_without_scope
@@ -116,10 +117,10 @@ begin
       end
       
       def test_should_only_include_records_without_state_in_singular_without_scope
-        off = @model.create :state => 'off'
-        on = @model.create :state => 'on'
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
         
-        assert_equal [off], @model.without_state('on')
+        assert_equal [parked], @model.without_state(:idling)
       end
       
       def test_should_create_plural_without_scope
@@ -127,11 +128,11 @@ begin
       end
       
       def test_should_only_include_records_without_states_in_plural_without_scope
-        off = @model.create :state => 'off'
-        on = @model.create :state => 'on'
-        error = @model.create :state => 'error'
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
+        first_gear = @model.create :state => 'first_gear'
         
-        assert_equal [off, on], @model.without_states('error')
+        assert_equal [parked, idling], @model.without_states(:first_gear)
       end
       
       def test_should_rollback_transaction_if_false
@@ -154,14 +155,14 @@ begin
       
       def test_should_not_override_the_column_reader
         record = @model.new
-        record[:state] = 'off'
-        assert_equal 'off', record.state
+        record[:state] = 'parked'
+        assert_equal 'parked', record.state
       end
       
       def test_should_not_override_the_column_writer
         record = @model.new
-        record.state = 'off'
-        assert_equal 'off', record[:state]
+        record.state = 'parked'
+        assert_equal 'parked', record[:state]
       end
     end
     
@@ -181,20 +182,21 @@ begin
     class MachineWithInitialStateTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = StateMachine::Machine.new(@model, :initial => 'off')
+        @machine = StateMachine::Machine.new(@model, :initial => :parked)
         @record = @model.new
       end
       
       def test_should_set_initial_state_on_created_object
-        assert_equal 'off', @record.state
+        assert_equal 'parked', @record.state
       end
     end
     
     class MachineWithColumnStateAttributeTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = StateMachine::Machine.new(@model, :initial => 'off')
-        @machine.other_states('on')
+        @machine = StateMachine::Machine.new(@model, :initial => :parked)
+        @machine.other_states(:idling)
+        
         @record = @model.new
       end
       
@@ -210,23 +212,23 @@ begin
       end
       
       def test_should_return_false_for_predicate_if_does_not_match_current_value
-        assert !@record.state?('on')
+        assert !@record.state?(:idling)
       end
       
       def test_should_return_true_for_predicate_if_matches_current_value
-        assert @record.state?('off')
+        assert @record.state?(:parked)
       end
       
       def test_should_raise_exception_for_predicate_if_invalid_state_specified
-        assert_raise(ArgumentError) { @record.state?('invalid') }
+        assert_raise(ArgumentError) { @record.state?(:invalid) }
       end
     end
     
     class MachineWithNonColumnStateAttributeTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = StateMachine::Machine.new(@model, :status, :initial => 'off')
-        @machine.other_states('on')
+        @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+        @machine.other_states(:idling)
         @record = @model.new
       end
       
@@ -250,28 +252,30 @@ begin
       end
       
       def test_should_return_false_for_predicate_if_does_not_match_current_value
-        assert !@record.status?('on')
+        assert !@record.status?(:idling)
       end
       
       def test_should_return_true_for_predicate_if_matches_current_value
-        assert @record.status?('off')
+        assert @record.status?(:parked)
       end
       
       def test_should_raise_exception_for_predicate_if_invalid_state_specified
-        assert_raise(ArgumentError) { @record.status?('invalid') }
+        assert_raise(ArgumentError) { @record.status?(:invalid) }
       end
       
       def test_should_set_initial_state_on_created_object
-        assert_equal 'off', @record.status
+        assert_equal 'parked', @record.status
       end
     end
     
     class MachineWithCallbacksTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = StateMachine::Machine.new(@model, :initial => 'off')
-        @record = @model.new(:state => 'off')
-        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @machine = StateMachine::Machine.new(@model, :initial => :parked)
+        @machine.other_states :idling
+        
+        @record = @model.new(:state => 'parked')
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
       
       def test_should_run_before_callbacks
@@ -339,20 +343,20 @@ begin
       end
       
       def test_should_include_transition_states_in_known_states
-        @machine.before_transition :to => 'error', :do => lambda {}
+        @machine.before_transition :to => :first_gear, :do => lambda {}
         
-        assert_equal %w(error off), @machine.states.keys.sort
+        assert_equal [:parked, :idling, :first_gear], @machine.states.map {|state| state.name}
       end
       
       def test_should_allow_symbolic_callbacks
         callback_args = nil
         
         klass = class << @record; self; end
-        klass.send(:define_method, :after_turn_on) do |*args|
+        klass.send(:define_method, :after_ignite) do |*args|
           callback_args = args
         end
         
-        @machine.before_transition(:after_turn_on)
+        @machine.before_transition(:after_ignite)
         
         @transition.perform
         assert_equal [@transition], callback_args
@@ -376,10 +380,12 @@ begin
         
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
+        @machine.state :parked, :idling
         @machine.before_transition(lambda {@before_count += 1; false})
         @machine.before_transition(lambda {@before_count += 1})
-        @record = @model.new(:state => 'off')
-        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        
+        @record = @model.new(:state => 'parked')
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         @result = @transition.perform
       end
       
@@ -388,7 +394,7 @@ begin
       end
       
       def test_should_not_change_current_state
-        assert_equal 'off', @record.state
+        assert_equal 'parked', @record.state
       end
       
       def test_should_not_run_action
@@ -403,12 +409,13 @@ begin
     class MachineWithFailedActionTest < ActiveRecord::TestCase
       def setup
         @model = new_model do
-          validates_inclusion_of :state, :in => %w(maybe)
+          validates_inclusion_of :state, :in => %w(first_gear)
         end
         
         @machine = StateMachine::Machine.new(@model)
-        @record = @model.new(:state => 'off')
-        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @machine.state :parked, :idling
+        @record = @model.new(:state => 'parked')
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         @result = @transition.perform
       end
       
@@ -417,7 +424,7 @@ begin
       end
       
       def test_should_change_current_state
-        assert_equal 'on', @record.state
+        assert_equal 'idling', @record.state
       end
       
       def test_should_not_save_record
@@ -431,10 +438,12 @@ begin
         
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
+        @machine.state :parked, :idling
         @machine.after_transition(lambda {@after_count += 1; false})
         @machine.after_transition(lambda {@after_count += 1})
-        @record = @model.new(:state => 'off')
-        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        
+        @record = @model.new(:state => 'parked')
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         @result = @transition.perform
       end
       
@@ -443,7 +452,7 @@ begin
       end
       
       def test_should_change_current_state
-        assert_equal 'on', @record.state
+        assert_equal 'idling', @record.state
       end
       
       def test_should_save_record
@@ -459,13 +468,14 @@ begin
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
-        @record = @model.new(:state => 'off')
-        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @machine.state :parked, :idling
+        @record = @model.new(:state => 'parked')
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
       
       def test_should_call_before_event_method
         observer = new_observer(@model) do
-          def before_turn_on(*args)
+          def before_ignite(*args)
             notifications << args
           end
         end
@@ -489,7 +499,7 @@ begin
       
       def test_should_call_after_event_method
         observer = new_observer(@model) do
-          def after_turn_on(*args)
+          def after_ignite(*args)
             notifications << args
           end
         end
@@ -513,8 +523,8 @@ begin
       
       def test_should_call_event_method_before_transition_method
         observer = new_observer(@model) do
-          def before_turn_on(*args)
-            notifications << :before_turn_on
+          def before_ignite(*args)
+            notifications << :before_ignite
           end
           
           def before_transition(*args)
@@ -524,12 +534,12 @@ begin
         instance = observer.instance
         
         @transition.perform
-        assert_equal [:before_turn_on, :before_transition], instance.notifications
+        assert_equal [:before_ignite, :before_transition], instance.notifications
       end
       
       def test_should_call_methods_outside_the_context_of_the_record
         observer = new_observer(@model) do
-          def before_turn_on(*args)
+          def before_ignite(*args)
             notifications << self
           end
         end
@@ -543,14 +553,15 @@ begin
     class MachineWithNamespacedObserversTest < ActiveRecord::TestCase
       def setup
         @model = new_model
-        @machine = StateMachine::Machine.new(@model, :namespace => 'switch')
-        @record = @model.new(:state => 'off')
-        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @machine = StateMachine::Machine.new(@model, :namespace => 'car')
+        @machine.state :parked, :idling
+        @record = @model.new(:state => 'parked')
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
       
       def test_should_call_namespaced_before_event_method
         observer = new_observer(@model) do
-          def before_turn_on_switch(*args)
+          def before_ignite_car(*args)
             notifications << args
           end
         end
@@ -562,7 +573,7 @@ begin
       
       def test_should_call_namespaced_after_event_method
         observer = new_observer(@model) do
-          def after_turn_on_switch(*args)
+          def after_ignite_car(*args)
             notifications << args
           end
         end
@@ -577,8 +588,9 @@ begin
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
-        @record = @model.new(:state => 'off')
-        @transition = StateMachine::Transition.new(@record, @machine, 'turn_on', 'off', 'on')
+        @machine.state :parked, :idling
+        @record = @model.new(:state => 'parked')
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         
         @notifications = []
         
@@ -588,16 +600,16 @@ begin
         
         # Create observer callbacks
         observer = new_observer(@model) do
-          def before_turn_on(*args)
-            notifications << :observer_before_turn_on
+          def before_ignite(*args)
+            notifications << :observer_before_ignite
           end
           
           def before_transition(*args)
             notifications << :observer_before_transition
           end
           
-          def after_turn_on(*args)
-            notifications << :observer_after_turn_on
+          def after_ignite(*args)
+            notifications << :observer_after_ignite
           end
           
           def after_transition(*args)
@@ -613,10 +625,10 @@ begin
       def test_should_invoke_callbacks_in_specific_order
         expected = [
           :callback_before_transition,
-          :observer_before_turn_on,
+          :observer_before_ignite,
           :observer_before_transition,
           :callback_after_transition,
-          :observer_after_turn_on,
+          :observer_after_ignite,
           :observer_after_transition
         ]
         

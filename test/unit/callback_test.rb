@@ -2,7 +2,8 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class CallbackTest < Test::Unit::TestCase
   def test_should_raise_exception_if_do_option_not_specified
-    assert_raise(ArgumentError) { StateMachine::Callback.new }
+    exception = assert_raise(ArgumentError) { StateMachine::Callback.new }
+    assert_match ':do callback must be specified', exception.message
   end
   
   def test_should_not_raise_exception_if_do_option_specified
@@ -10,7 +11,8 @@ class CallbackTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) { StateMachine::Callback.new(:do => :run, :invalid => true) }
+    exception = assert_raise(ArgumentError) { StateMachine::Callback.new(:do => :run, :invalid => true) }
+    assert_match 'Invalid key(s): invalid', exception.message
   end
   
   def test_should_not_bind_to_objects
@@ -57,7 +59,7 @@ end
 class CallbackWithRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
-    @callback = StateMachine::Callback.new(:from => 'off', :to => 'on', :on => 'turn_on', :do => lambda {true})
+    @callback = StateMachine::Callback.new(:from => :parked, :to => :idling, :on => :ignite, :do => lambda {true})
   end
   
   def test_should_call_with_empty_context
@@ -65,27 +67,27 @@ class CallbackWithRequirementsTest < Test::Unit::TestCase
   end
   
   def test_should_not_call_if_from_not_included
-    assert !@callback.call(@object, :from => 'on')
+    assert !@callback.call(@object, :from => :idling)
   end
   
   def test_should_not_call_if_to_not_included
-    assert !@callback.call(@object, :to => 'off')
+    assert !@callback.call(@object, :to => :parked)
   end
   
   def test_should_not_call_if_on_not_included
-    assert !@callback.call(@object, :on => 'turn_off')
+    assert !@callback.call(@object, :on => :park)
   end
   
   def test_should_call_if_all_requirements_met
-    assert @callback.call(@object, :from => 'off', :to => 'on', :on => 'turn_on')
+    assert @callback.call(@object, :from => :parked, :to => :idling, :on => :ignite)
   end
   
   def test_should_include_in_known_states
-    assert_equal %w(off on), @callback.known_states.sort
+    assert_equal [:parked, :idling], @callback.known_states
   end
 end
 
-class CallbackWithIfConditionalTest < Test::Unit::TestCase
+class CallbackWithIfConditionTest < Test::Unit::TestCase
   def setup
     @object = Object.new
   end
@@ -101,7 +103,7 @@ class CallbackWithIfConditionalTest < Test::Unit::TestCase
   end
 end
 
-class CallbackWithUnlessConditionalTest < Test::Unit::TestCase
+class CallbackWithUnlessConditionTest < Test::Unit::TestCase
   def setup
     @object = Object.new
   end
@@ -189,12 +191,12 @@ class CallbackWithBoundObjectTest < Test::Unit::TestCase
   
   def test_should_ignore_option_for_symbolic_callbacks
     class << @object
-      def after_turn_on(*args)
+      def after_ignite(*args)
         args
       end
     end
     
-    @callback = StateMachine::Callback.new(:do => :after_turn_on, :bind_to_object => true)
+    @callback = StateMachine::Callback.new(:do => :after_ignite, :bind_to_object => true)
     assert_equal [], @callback.call(@object)
   end
   

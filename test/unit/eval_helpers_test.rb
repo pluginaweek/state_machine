@@ -1,6 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
-class EvalHelperTest < Test::Unit::TestCase
+class EvalHelpersTest < Test::Unit::TestCase
   include StateMachine::EvalHelpers
   
   def setup
@@ -8,7 +8,8 @@ class EvalHelperTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_method_is_not_symbol_string_or_proc
-     assert_raise(ArgumentError) { evaluate_method(@object, 1) }
+    exception = assert_raise(ArgumentError) { evaluate_method(@object, 1) }
+    assert_match /Methods must/, exception.message
   end
 end
 
@@ -28,7 +29,7 @@ class EvalHelpersSymbolTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelperSymbolWithArgumentsTest < Test::Unit::TestCase
+class EvalHelpersSymbolWithArgumentsTest < Test::Unit::TestCase
   include StateMachine::EvalHelpers
   
   def setup
@@ -44,7 +45,7 @@ class EvalHelperSymbolWithArgumentsTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelperStringTest < Test::Unit::TestCase
+class EvalHelpersStringTest < Test::Unit::TestCase
   include StateMachine::EvalHelpers
   
   def setup
@@ -65,7 +66,7 @@ class EvalHelperStringTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelperProcTest < Test::Unit::TestCase
+class EvalHelpersProcTest < Test::Unit::TestCase
   include StateMachine::EvalHelpers
   
   def setup
@@ -78,7 +79,7 @@ class EvalHelperProcTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelperProcWithoutArgumentsTest < Test::Unit::TestCase
+class EvalHelpersProcWithoutArgumentsTest < Test::Unit::TestCase
   include StateMachine::EvalHelpers
   
   def setup
@@ -96,7 +97,7 @@ class EvalHelperProcWithoutArgumentsTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelperProcWithArgumentsTest < Test::Unit::TestCase
+class EvalHelpersProcWithArgumentsTest < Test::Unit::TestCase
   include StateMachine::EvalHelpers
   
   def setup

@@ -1,5 +1,15 @@
 == master
 
+* Fix states not being drawn in GraphViz graphs in the correct order
+* Add nicely formatted #inspect for states and events
+* Simplify machine context-switching
+* Store events/states in enumerable node collections
+* No longer allow subclasses to change the integration
+* Move fire! action logic into the Event class (no longer calls fire action on the object)
+* Allow states in subclasses to have different values
+* Recommend that all states be referenced as symbols instead of strings
+* All states must now be named (and can be associated with other value types)
+* Add support for customizing the actual stored value for a state
 * Add compatibility with Ruby 1.9+
 
 == 0.4.3 / 2008-12-28

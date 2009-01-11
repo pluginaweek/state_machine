@@ -24,7 +24,7 @@ Source
 == Description
 
 State machines make it dead-simple to manage the behavior of a class.  Too often,
-the status of an object is kept by creating multiple boolean attributes and
+the state of an object is kept by creating multiple boolean attributes and
 deciding how to behave based on the values.  This can become cumbersome and
 difficult to maintain when the complexity of your class starts to increase.
 
@@ -41,13 +41,15 @@ Some brief, high-level features include:
 * ActiveRecord integration
 * DataMapper integration
 * Sequel integration
-* States of any data type
 * State predicates
 * State-driven behavior
+* State values of any data type
+* Dynamically-generated state values
+* Inheritance
 * GraphViz visualization creator
 
 Examples of the usage patterns for some of the above features are shown below.
-You can find more detailed documentation in the actual API.
+You can find much more detailed documentation in the actual API.
 
 == Usage
 
@@ -59,79 +61,83 @@ Below is an example of many of the features offered by this plugin, including:
 * Transition callbacks
 * Conditional transitions
 * State-driven behavior
+* Customized state values
 
 Class definition:
 
   class Vehicle
     attr_accessor :seatbelt_on
     
-    state_machine :state, :initial => 'parked' do
-      before_transition :from => %w(parked idling), :do => :put_on_seatbelt
-      after_transition :on => 'crash', :do => :tow
-      after_transition :on => 'repair', :do => :fix
-      after_transition :to => 'parked' do |vehicle, transition|
+    state_machine :state, :initial => :parked do
+      before_transition :from => [:parked, :idling], :do => :put_on_seatbelt
+      after_transition :on => :crash, :do => :tow
+      after_transition :on => :repair, :do => :fix
+      after_transition :to => :parked do |vehicle, transition|
         vehicle.seatbelt_on = false
       end
       
       event :park do
-        transition :to => 'parked', :from => %w(idling first_gear)
+        transition :to => :parked, :from => [:idling, :first_gear]
       end
       
       event :ignite do
-        transition :to => 'stalled', :from => 'stalled'
-        transition :to => 'idling', :from => 'parked'
+        transition :to => :stalled, :from => :stalled
+        transition :to => :idling, :from => :parked
       end
       
       event :idle do
-        transition :to => 'idling', :from => 'first_gear'
+        transition :to => :idling, :from => :first_gear
       end
       
       event :shift_up do
-        transition :to => 'first_gear', :from => 'idling'
-        transition :to => 'second_gear', :from => 'first_gear'
-        transition :to => 'third_gear', :from => 'second_gear'
+        transition :to => :first_gear, :from => :idling
+        transition :to => :second_gear, :from => :first_gear
+        transition :to => :third_gear, :from => :second_gear
       end
       
       event :shift_down do
-        transition :to => 'second_gear', :from => 'third_gear'
-        transition :to => 'first_gear', :from => 'second_gear'
+        transition :to => :second_gear, :from => :third_gear
+        transition :to => :first_gear, :from => :second_gear
       end
       
       event :crash do
-        transition :to => 'stalled', :from => %w(first_gear second_gear third_gear), :unless => :auto_shop_busy?
+        transition :to => :stalled, :from => [:first_gear, :second_gear, :third_gear], :unless => :auto_shop_busy?
       end
       
       event :repair do
-        transition :to => 'parked', :from => 'stalled', :if => :auto_shop_busy?
+        transition :to => :parked, :from => :stalled, :if => :auto_shop_busy?
       end
       
-      state 'parked' do
+      state :parked do
         def speed
           0
         end
       end
       
-      state 'idling', 'first_gear' do
+      state :idling, :first_gear do
         def speed
           10
         end
       end
       
-      state 'second_gear' do
+      state :second_gear do
         def speed
           20
         end
       end
     end
     
-    state_machine :hood_state, :initial => 'closed', :namespace => 'hood' do
+    state_machine :hood_state, :initial => :closed, :namespace => 'hood' do
       event :open do
-        transition :to => 'opened', :from => 'closed'
+        transition :to => :opened
       end
       
       event :close do
-        transition :to => 'closed', :from => 'opened'
+        transition :to => :closed
       end
+      
+      state :opened, :value => 1
+      state :closed, :value => 0
     end
     
     def initialize
@@ -160,6 +166,8 @@ Using the above class as an example, you can interact with the state machine
 like so:
 
   vehicle = Vehicle.new           # => #<Vehicle:0xb7cf4eac @state="parked", @seatbelt_on=false>
+  vehicle.state                   # => "parked"
+  vehicle.state_name              # => :parked
   vehicle.parked?                 # => true
   vehicle.can_ignite?             # => true
   vehicle.next_ignite_transition  # => #<StateMachine::Transition:0xb7c34cec ...>
@@ -180,15 +188,20 @@ like so:
   vehicle                         # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
   
   # The bang (!) operator can raise exceptions if the event fails
-  vehicle.park!                   # => StateMachine::InvalidTransition: Cannot transition via :park from "second_gear"
+  vehicle.park!                   # => StateMachine::InvalidTransition: Cannot transition state via :park from :second_gear
   
   # Generic state predicates can raise exceptions if the value does not exist
-  vehicle.state?('parked')        # => true
-  vehicle.state?('invalid')       # => ArgumentError: "parked" is not a known state value
+  vehicle.state?(:parked)         # => true
+  vehicle.state?(:invalid)        # => ArgumentError: :invalid is an invalid name
   
   # Namespaced machines have uniquely-generated methods
+  vehicle.hood_state              # => 0
+  vehicle.hood_state_name         # => :closed
+  
   vehicle.can_open_hood?          # => true
   vehicle.open_hood               # => true
+  vehicle.hood_state              # => 1
+  vehicle.hood_state_name         # => :opened
   vehicle.can_close_hood?         # => true
   
   vehicle.hood_opened?            # => true
@@ -218,14 +231,14 @@ The ActiveRecord integration adds support for database transactions, automatical
 saving the record, named scopes, and observers.  For example,
 
   class Vehicle < ActiveRecord::Base
-    state_machine :initial => 'parked' do
-      before_transition :to => 'idling', :do => :put_on_seatbelt
-      after_transition :to => 'parked' do |vehicle, transition|
+    state_machine :initial => :parked do
+      before_transition :to => :idling, :do => :put_on_seatbelt
+      after_transition :to => :parked do |vehicle, transition|
         vehicle.seatbelt = 'off'
       end
       
       event :ignite do
-        transition :to => 'idling', :from => 'parked'
+        transition :to => :idling, :from => :parked
       end
     end
     
@@ -249,45 +262,6 @@ saving the record, named scopes, and observers.  For example,
 For more information about the various behaviors added for ActiveRecord state
 machines, see StateMachine::Integrations::ActiveRecord.
 
-==== With enumerations
-
-Using the acts_as_enumeration[http://github.com/pluginaweek/acts_as_enumeration] plugin
-with an ActiveRecord integration, states can be transparently stored using
-record ids in the database like so:
-
-  class VehicleState < ActiveRecord::Base
-    acts_as_enumeration
-    
-    create :id => 1, :name => 'parked'
-    create :id => 2, :name => 'idling'
-    ...
-  end
-  
-  class Vehicle < ActiveRecord::Base
-    belongs_to :state, :class_name => 'VehicleState'
-    
-    state_machine :state, :initial => 'parked' do
-      ...
-      
-      event :park do
-        transition :to => 'parked', :from => %w(idling first_gear)
-      end
-    end
-    
-    ...
-  end
-
-Notice that the state machine definition remains *exactly* the same.  However,
-when interacting with the records, the actual state will be stored using the
-identifiers defined for the enumeration:
-
-  vehicle = Vehicle.create  # => #<Vehicle id: 1, seatbelt_on: false, state_id: 1>
-  vehicle.ignite            # => true
-  vehicle                   # => #<Vehicle id: 1, seatbelt_on: true, state_id: 2>
-
-This allows states to take on more complex functionality other than just being
-a string value.
-
 === DataMapper
 
 Like the ActiveRecord integration, the DataMapper integration adds support for
@@ -300,14 +274,14 @@ callbacks, and observers.  For example,
     property :id, Serial
     property :state, String
     
-    state_machine :initial => 'parked' do
-      before_transition :to => 'idling', :do => :put_on_seatbelt
-      after_transition :to => 'parked' do |transition|
+    state_machine :initial => :parked do
+      before_transition :to => :idling, :do => :put_on_seatbelt
+      after_transition :to => :parked do |transition|
         self.seatbelt = 'off' # self is the record
       end
       
       event :ignite do
-        transition :to => 'idling', :from => 'parked'
+        transition :to => :idling, :from => :parked
       end
     end
     
@@ -345,14 +319,14 @@ database transactions, automatically saving the record, named scopes, and
 callbacks.  For example,
 
   class Vehicle < Sequel::Model
-    state_machine :initial => 'parked' do
-      before_transition :to => 'idling', :do => :put_on_seatbelt
-      after_transition :to => 'parked' do |transition|
+    state_machine :initial => :parked do
+      before_transition :to => :idling, :do => :put_on_seatbelt
+      after_transition :to => :parked do |transition|
         self.seatbelt = 'off' # self is the record
       end
       
       event :ignite do
-        transition :to => 'idling', :from => 'parked'
+        transition :to => :idling, :from => :parked
       end
     end
     
@@ -441,7 +415,3 @@ dependencies are listed below.
 * ActiveRecord[http://rubyonrails.org] integration: 2.1.0 or later
 * DataMapper[http://datamapper.org] integration: 0.9.0 or later
 * Sequel[http://sequel.rubyforge.org] integration: 2.8.0 or later
-
-== References
-
-* acts_as_enumeration[http://github.com/pluginaweek/acts_as_enumeration]

@@ -1,21 +1,10 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
-class EventTest < Test::Unit::TestCase
-  def setup
-    @machine = StateMachine::Machine.new(Class.new)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
-  end
-  
-  def test_should_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) {StateMachine::Event.new(@machine, 'turn_on', :invalid => true)}
-  end
-end
-
 class EventByDefaultTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
+    @event = StateMachine::Event.new(@machine, :ignite)
     
     @object = @klass.new
   end
@@ -25,7 +14,7 @@ class EventByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_have_a_name
-    assert_equal 'turn_on', @event.name
+    assert_equal :ignite, @event.name
   end
   
   def test_should_not_have_any_guards
@@ -44,71 +33,113 @@ class EventByDefaultTest < Test::Unit::TestCase
     assert_nil @event.next_transition(@object)
   end
   
-  def test_should_define_an_event_predicate_on_the_owner_class
-    assert @object.respond_to?(:can_turn_on?)
+  def test_should_define_a_predicate
+    assert @object.respond_to?(:can_ignite?)
   end
   
-  def test_should_define_an_event_transition_accessor_on_the_owner_class
-    assert @object.respond_to?(:next_turn_on_transition)
+  def test_should_define_a_transition_accessor
+    assert @object.respond_to?(:next_ignite_transition)
   end
   
-  def test_should_define_an_event_action_on_the_owner_class
-    assert @object.respond_to?(:turn_on)
+  def test_should_define_an_action
+    assert @object.respond_to?(:ignite)
   end
   
-  def test_should_define_an_event_bang_action_on_the_owner_class
-    assert @object.respond_to?(:turn_on!)
+  def test_should_define_a_bang_action
+    assert @object.respond_to?(:ignite!)
+  end
+end
+
+class EventTest < Test::Unit::TestCase
+  def setup
+    @machine = StateMachine::Machine.new(Class.new)
+    @event = StateMachine::Event.new(@machine, :ignite)
+    @event.transition :to => :idling, :from => :parked
+  end
+  
+  def test_should_allow_changing_machine
+    new_machine = StateMachine::Machine.new(Class.new)
+    @event.machine = new_machine
+    assert_equal new_machine, @event.machine
+  end
+  
+  def test_should_use_pretty_inspect
+    assert_match /#<StateMachine::Event name=:ignite transitions=\[\{.+\}\]>/, @event.inspect
+  end
+end
+
+class EventWithNamespaceTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :namespace => 'car')
+    @event = StateMachine::Event.new(@machine, :ignite)
+    @object = @klass.new
+  end
+  
+  def test_should_namespace_predicate
+    assert @object.respond_to?(:can_ignite_car?)
+  end
+  
+  def test_should_namespace_transition_accessor
+    assert @object.respond_to?(:next_ignite_car_transition)
+  end
+  
+  def test_should_namespace_action
+    assert @object.respond_to?(:ignite_car)
+  end
+  
+  def test_should_namespace_bang_action
+    assert @object.respond_to?(:ignite_car!)
   end
 end
 
 class EventTransitionsTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
+    @event = StateMachine::Event.new(@machine, :ignite)
   end
   
   def test_should_raise_exception_if_invalid_option_specified
     assert_raise(ArgumentError) {@event.transition(:invalid => true)}
   end
   
-  def test_should_not_raise_exception_if_to_option_not_specified
-    assert_nothing_raised {@event.transition(:from => 'off')}
-  end
-  
-  def test_should_not_raise_exception_if_from_option_not_specified
-    assert_nothing_raised {@event.transition(:to => 'on')}
-  end
-  
   def test_should_not_allow_on_option
-    assert_raise(ArgumentError) {@event.transition(:on => 'turn_on')}
+    exception = assert_raise(ArgumentError) {@event.transition(:on => :ignite)}
+    assert_equal 'Invalid key(s): on', exception.message
   end
   
   def test_should_not_allow_except_to_option
-    assert_raise(ArgumentError) {@event.transition(:except_to => 'off')}
+    exception = assert_raise(ArgumentError) {@event.transition(:except_to => :parked)}
+    assert_equal 'Invalid key(s): except_to', exception.message
   end
   
   def test_should_not_allow_except_on_option
-    assert_raise(ArgumentError) {@event.transition(:except_on => 'turn_on')}
-  end
-  
-  def test_should_allow_transitioning_without_a_from_state
-    assert @event.transition(:to => 'on')
+    exception = assert_raise(ArgumentError) {@event.transition(:except_on => :ignite)}
+    assert_equal 'Invalid key(s): except_on', exception.message
   end
   
   def test_should_allow_transitioning_without_a_to_state
-    assert @event.transition(:from => 'off')
+    assert_nothing_raised {@event.transition(:from => :parked)}
+  end
+  
+  def test_should_allow_transitioning_without_a_from_state
+    assert_nothing_raised {@event.transition(:to => :idling)}
+  end
+  
+  def test_should_allow_except_from_option
+    assert_nothing_raised {@event.transition(:except_from => :idling)}
   end
   
   def test_should_allow_transitioning_from_a_single_state
-    assert @event.transition(:to => 'on', :from => 'off')
+    assert @event.transition(:to => :idling, :from => :parked)
   end
   
   def test_should_allow_transitioning_from_multiple_states
-    assert @event.transition(:to => 'on', :from => %w(off on))
+    assert @event.transition(:to => :idling, :from => [:parked, :idling])
   end
   
   def test_should_have_transitions
-    guard = @event.transition(:to => 'on')
+    guard = @event.transition(:to => :idling)
     assert_equal [guard], @event.guards
   end
 end
@@ -116,8 +147,7 @@ end
 class EventAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
-    @event.known_states # Call so that it's cached
+    @event = StateMachine::Event.new(@machine, :ignite)
     @copied_event = @event.dup
   end
   
@@ -134,7 +164,7 @@ class EventWithoutTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
+    @event = StateMachine::Event.new(@machine, :ignite)
     @object = @klass.new
   end
   
@@ -148,6 +178,11 @@ class EventWithoutTransitionsTest < Test::Unit::TestCase
   
   def test_should_not_fire
     assert !@event.fire(@object)
+  end
+  
+  def test_should_raise_exception_on_fire!
+    exception = assert_raise(StateMachine::InvalidTransition) { @event.fire!(@object) }
+    assert_equal 'Cannot transition state via :ignite from nil', exception.message
   end
   
   def test_should_not_change_the_current_state
@@ -160,20 +195,20 @@ class EventWithTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
-    @event.transition(:to => 'on', :from => 'off')
-    @event.transition(:to => 'on', :except_from => 'maybe')
+    @event = StateMachine::Event.new(@machine, :ignite)
+    @event.transition(:to => :idling, :from => :parked)
+    @event.transition(:to => :idling, :except_from => :first_gear)
   end
   
   def test_should_include_all_transition_states_in_known_states
-    assert_equal %w(maybe off on), @event.known_states.sort
+    assert_equal [:parked, :idling, :first_gear], @event.known_states
   end
   
   def test_should_include_new_transition_states_after_calling_known_states
     @event.known_states
-    @event.transition(:to => 'error')
+    @event.transition(:to => :idling, :from => :stalled)
     
-    assert_equal %w(error maybe off on), @event.known_states.sort
+    assert_equal [:parked, :idling, :first_gear, :stalled], @event.known_states
   end
 end
 
@@ -181,11 +216,13 @@ class EventWithoutMatchingTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
-    @event.transition(:to => 'on', :from => 'off')
+    @machine.state :parked, :idling
+    
+    @event = StateMachine::Event.new(@machine, :ignite)
+    @event.transition(:to => :idling, :from => :parked)
     
     @object = @klass.new
-    @object.state = 'on'
+    @object.state = 'idling'
   end
   
   def test_should_not_be_able_to_fire
@@ -200,9 +237,14 @@ class EventWithoutMatchingTransitionsTest < Test::Unit::TestCase
     assert !@event.fire(@object)
   end
   
+  def test_should_raise_exception_on_fire!
+    exception = assert_raise(StateMachine::InvalidTransition) { @event.fire!(@object) }
+    assert_equal 'Cannot transition state via :ignite from :idling', exception.message
+  end
+  
   def test_should_not_change_the_current_state
     @event.fire(@object)
-    assert_equal 'on', @object.state
+    assert_equal 'idling', @object.state
   end
 end
 
@@ -210,11 +252,13 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
-    @event.transition(:to => 'on', :from => 'off', :if => lambda {false})
+    @machine.state :parked, :idling
+    
+    @event = StateMachine::Event.new(@machine, :ignite)
+    @event.transition(:to => :idling, :from => :parked, :if => lambda {false})
     
     @object = @klass.new
-    @object.state = 'off'
+    @object.state = 'parked'
   end
   
   def test_should_not_be_able_to_fire
@@ -231,7 +275,7 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
   
   def test_should_not_change_the_current_state
     @event.fire(@object)
-    assert_equal 'off', @object.state
+    assert_equal 'parked', @object.state
   end
 end
 
@@ -239,11 +283,13 @@ class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
-    @event.transition(:to => 'on', :from => 'off')
+    @machine.state :parked, :idling
+    
+    @event = StateMachine::Event.new(@machine, :ignite)
+    @event.transition(:to => :idling, :from => :parked)
     
     @object = @klass.new
-    @object.state = 'off'
+    @object.state = 'parked'
   end
   
   def test_should_be_able_to_fire
@@ -253,9 +299,9 @@ class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
   def test_should_have_a_next_transition
     transition = @event.next_transition(@object)
     assert_not_nil transition
-    assert_equal 'off', transition.from
-    assert_equal 'on', transition.to
-    assert_equal 'turn_on', transition.event
+    assert_equal 'parked', transition.from
+    assert_equal 'idling', transition.to
+    assert_equal :ignite, transition.event
   end
   
   def test_should_fire
@@ -264,7 +310,7 @@ class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
   
   def test_should_change_the_current_state
     @event.fire(@object)
-    assert_equal 'on', @object.state
+    assert_equal 'idling', @object.state
   end
 end
 
@@ -272,11 +318,13 @@ class EventWithTransitionWithoutToStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_off')
-    @event.transition(:from => 'off')
+    @machine.state :parked
+    
+    @event = StateMachine::Event.new(@machine, :park)
+    @event.transition(:from => :parked)
     
     @object = @klass.new
-    @object.state = 'off'
+    @object.state = 'parked'
   end
   
   def test_should_be_able_to_fire
@@ -286,9 +334,9 @@ class EventWithTransitionWithoutToStateTest < Test::Unit::TestCase
   def test_should_have_a_next_transition
     transition = @event.next_transition(@object)
     assert_not_nil transition
-    assert_equal 'off', transition.from
-    assert_equal 'off', transition.to
-    assert_equal 'turn_off', transition.event
+    assert_equal 'parked', transition.from
+    assert_equal 'parked', transition.to
+    assert_equal :park, transition.event
   end
   
   def test_should_fire
@@ -297,7 +345,7 @@ class EventWithTransitionWithoutToStateTest < Test::Unit::TestCase
   
   def test_should_not_change_the_current_state
     @event.fire(@object)
-    assert_equal 'off', @object.state
+    assert_equal 'parked', @object.state
   end
 end
 
@@ -305,11 +353,14 @@ class EventWithTransitionWithNilToStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_off')
-    @event.transition(:from => 'off', :to => nil)
+    @machine.state :parked, :value => nil
+    @machine.state :idling
+    
+    @event = StateMachine::Event.new(@machine, :park)
+    @event.transition(:from => :idling, :to => :parked)
     
     @object = @klass.new
-    @object.state = 'off'
+    @object.state = 'idling'
   end
   
   def test_should_be_able_to_fire
@@ -319,9 +370,9 @@ class EventWithTransitionWithNilToStateTest < Test::Unit::TestCase
   def test_should_have_a_next_transition
     transition = @event.next_transition(@object)
     assert_not_nil transition
-    assert_equal 'off', transition.from
+    assert_equal 'idling', transition.from
     assert_equal nil, transition.to
-    assert_equal 'turn_off', transition.event
+    assert_equal :park, transition.event
   end
   
   def test_should_fire
@@ -334,49 +385,18 @@ class EventWithTransitionWithNilToStateTest < Test::Unit::TestCase
   end
 end
 
-class EventWithTransitionWithDynamicToStateTest < Test::Unit::TestCase
-  def setup
-    @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
-    @event.transition(:to => lambda {'on'}, :from => 'off')
-    
-    @object = @klass.new
-    @object.state = 'off'
-  end
-  
-  def test_should_be_able_to_fire
-    assert @event.can_fire?(@object)
-  end
-  
-  def test_should_have_a_next_transition
-    transition = @event.next_transition(@object)
-    assert_not_nil transition
-    assert_equal 'off', transition.from
-    assert_equal 'on', transition.to
-    assert_equal 'turn_on', transition.event
-  end
-  
-  def test_should_fire
-    assert @event.fire(@object)
-  end
-  
-  def test_should_change_the_current_state
-    @event.fire(@object)
-    assert_equal 'on', @object.state
-  end
-end
-
 class EventWithMultipleTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, 'turn_on')
-    @event.transition(:to => 'on', :from => 'on')
-    @event.transition(:to => 'on', :from => 'off') # This one should get used
+    @machine.state :parked, :idling
+    
+    @event = StateMachine::Event.new(@machine, :ignite)
+    @event.transition(:to => :idling, :from => :idling)
+    @event.transition(:to => :idling, :from => :parked) # This one should get used
     
     @object = @klass.new
-    @object.state = 'off'
+    @object.state = 'parked'
   end
   
   def test_should_be_able_to_fire
@@ -386,9 +406,9 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
   def test_should_have_a_next_transition
     transition = @event.next_transition(@object)
     assert_not_nil transition
-    assert_equal 'off', transition.from
-    assert_equal 'on', transition.to
-    assert_equal 'turn_on', transition.event
+    assert_equal 'parked', transition.from
+    assert_equal 'idling', transition.to
+    assert_equal :ignite, transition.event
   end
   
   def test_should_fire
@@ -397,7 +417,7 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
   
   def test_should_change_the_current_state
     @event.fire(@object)
-    assert_equal 'on', @object.state
+    assert_equal 'idling', @object.state
   end
 end
 
@@ -408,18 +428,18 @@ begin
   
   class EventDrawingTest < Test::Unit::TestCase
     def setup
-      states = %w(parked idling first_gear)
+      states = [:parked, :idling, :first_gear]
       
-      @machine = StateMachine::Machine.new(Class.new, :initial => 'parked')
-      @machine.other_states(states)
+      @machine = StateMachine::Machine.new(Class.new, :initial => :parked)
+      @machine.other_states(*states)
       
       graph = GraphViz.new('G')
-      states.each {|state| graph.add_node(state)}
+      states.each {|state| graph.add_node(state.to_s)}
       
-      @event = StateMachine::Event.new(@machine , 'park')
-      @event.transition :from => 'idling', :to => 'parked'
-      @event.transition :from => 'first_gear', :to => 'parked'
-      @event.transition :except_from => 'parked', :to => 'parked'
+      @event = StateMachine::Event.new(@machine , :park)
+      @event.transition :from => :idling, :to => :parked
+      @event.transition :from => :first_gear, :to => :parked
+      @event.transition :except_from => :parked, :to => :parked
       
       @edges = @event.draw(graph)
     end
