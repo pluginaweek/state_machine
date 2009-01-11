@@ -1,5 +1,7 @@
 == master
 
+== 0.5.0 / 2008-01-11
+
 * Add to_name and from_name to transition objects
 * Add nicely formatted #inspect for transitions
 * Fix ActiveRecord integrations failing when the database doesn't exist yet
