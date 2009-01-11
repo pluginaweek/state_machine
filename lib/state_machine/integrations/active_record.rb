@@ -196,7 +196,12 @@ module StateMachine
         # Forces all attribute methods to be generated for the model so that
         # the reader/writer methods for the attribute are available
         def define_attribute_accessor
-          if owner_class.table_exists?
+          # If an exception is raised while trying to access the connection, then
+          # the assumption is that there's an issue with the database (most likely
+          # doesn't exist yet), so we won't be able to check the table properties
+          connection_exists = begin; owner_class.connection; true; rescue Exception; false; end
+          
+          if connection_exists && owner_class.table_exists?
             owner_class.define_attribute_methods
             
             # Support attribute predicate for ActiveRecord columns

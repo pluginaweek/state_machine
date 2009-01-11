@@ -166,6 +166,26 @@ begin
       end
     end
     
+    class MachineWithoutDatabaseTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model(false)
+        
+        # Drop the table so that it definitely doesn't exist
+        @model.connection.drop_table(:foo) if @model.connection.table_exists?(:foo)
+        
+        @model.class_eval do
+          # Simulate the database not being available entirely
+          def self.connection
+            raise ActiveRecord::ConnectionNotEstablished
+          end
+        end
+      end
+      
+      def test_should_allow_machine_creation
+        assert_nothing_raised { StateMachine::Machine.new(@model) }
+      end
+    end
+    
     class MachineUnmigratedTest < ActiveRecord::TestCase
       def setup
         @model = new_model(false)
