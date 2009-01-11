@@ -67,7 +67,7 @@ module StateMachine
     # 
     #   transition :from => nil, :to => :parked
     #   transition :from => [:first_gear, :reverse]
-    #   transition :except_from => :parkedguards.map {|guard| guard.requirements}
+    #   transition :except_from => :parked
     #   transition :to => nil
     #   transition :to => :parked
     #   transition :to => :parked, :from => :first_gear

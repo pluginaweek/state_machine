@@ -34,7 +34,7 @@ module StateMachine
     # 
     # For example,
     # 
-    #   vehicle = Vehicle.create          # => #<Vehicle id=1 name=nil state=nil>
+    #   vehicle = Vehicle.create          # => #<Vehicle id=1 name=nil state="parked">
     #   vehicle.name = 'Ford Explorer'
     #   vehicle.ignite                    # => true
     #   vehicle.reload                    # => #<Vehicle id=1 name="Ford Explorer" state="idling">
@@ -61,7 +61,7 @@ module StateMachine
     #     end
     #   end
     #   
-    #   vehicle = Vehicle.create      # => #<Vehicle id=1 name=nil state=nil>
+    #   vehicle = Vehicle.create      # => #<Vehicle id=1 name=nil state="parked">
     #   vehicle.ignite                # => false
     #   Message.all.count             # => 0
     # 

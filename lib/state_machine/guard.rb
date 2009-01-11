@@ -10,15 +10,15 @@ module StateMachine
     include Assertions
     include EvalHelpers
     
-    # The transition/conditional options that must be met in order for the
-    # guard to match
+    # The transition/condition options that must be met in order for the guard
+    # to match
     attr_reader :requirements
     
     # A list of all of the states known to this guard.  This will pull states
     # from the following requirements (in the same order):
     # * +from+
-    # * +to+
     # * +except_from+
+    # * +to+
     # * +except_to+
     attr_reader :known_states
     
@@ -112,7 +112,7 @@ module StateMachine
     protected
       # Verify that the from state, to state, and event match the query
       def matches_query?(object, query)
-        (!query || query.empty?) || [:from, :to, :on].all? do |option|
+        !query || query.empty? || [:from, :to, :on].all? do |option|
           !query.include?(option) || find_match(query[option], requirements[option], requirements[:"except_#{option}"])
         end
       end

@@ -28,7 +28,7 @@ module StateMachine
     # 
     # For example,
     # 
-    #   vehicle = Vehicle.create          # => #<Vehicle id=1 name=nil state=nil>
+    #   vehicle = Vehicle.create          # => #<Vehicle id=1 name=nil state="parked">
     #   vehicle.name = 'Ford Explorer'
     #   vehicle.ignite                    # => true
     #   vehicle.refresh                   # => #<Vehicle id=1 name="Ford Explorer" state="idling">
@@ -51,7 +51,7 @@ module StateMachine
     #     end
     #   end
     #   
-    #   vehicle = Vehicle.create      # => #<Vehicle id=1 name=nil state=nil>
+    #   vehicle = Vehicle.create      # => #<Vehicle id=1 name=nil state="parked">
     #   vehicle.ignite                # => false
     #   Message.count                 # => 0
     # 
@@ -88,7 +88,7 @@ module StateMachine
     # 
     # Because of the way scopes work in Sequel, they can be chained like so:
     # 
-    #   Vehicle.with_state(:parked).with_state('idling').order(:id.desc)
+    #   Vehicle.with_state(:parked).order(:id.desc)
     # 
     # == Callbacks
     # 

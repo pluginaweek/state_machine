@@ -28,7 +28,7 @@ module StateMachine
     # 
     # For example,
     # 
-    #   vehicle = Vehicle.create          # => #<Vehicle id: 1, name: nil, state: nil>
+    #   vehicle = Vehicle.create          # => #<Vehicle id: 1, name: nil, state: "parked">
     #   vehicle.name = 'Ford Explorer'
     #   vehicle.ignite                    # => true
     #   vehicle.reload                    # => #<Vehicle id: 1, name: "Ford Explorer", state: "idling">
@@ -51,7 +51,7 @@ module StateMachine
     #     end
     #   end
     #   
-    #   vehicle = Vehicle.create      # => #<Vehicle id: 1, name: nil, state: nil>
+    #   vehicle = Vehicle.create      # => #<Vehicle id: 1, name: nil, state: "parked">
     #   vehicle.ignite                # => false
     #   Message.count                 # => 0
     # 
@@ -212,7 +212,7 @@ module StateMachine
                 # Checks whether the current state is a given value.  If there
                 # are no arguments, then this checks for the presence of the attribute.
                 define_method("#{attribute}?") do |*args|
-                  args.empty? ? super(*args) : self.class.state_machines[attribute].state?(self, args.first)
+                  args.empty? ? super(*args) : self.class.state_machines[attribute].state?(self, *args)
                 end
               end
             end
