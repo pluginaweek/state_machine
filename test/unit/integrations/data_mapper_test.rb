@@ -116,6 +116,13 @@ begin
         assert_equal [parked, idling], @resource.without_states(:first_gear)
       end
       
+      def test_should_allow_chaining_scopes
+        parked = @resource.create :state => 'parked'
+        idling = @resource.create :state => 'idling'
+        
+        assert_equal [idling], @resource.without_state(:parked).with_state(:idling)
+      end
+      
       def test_should_rollback_transaction_if_false
         @machine.within_transaction(@resource.new) do
           @resource.create

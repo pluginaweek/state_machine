@@ -224,21 +224,15 @@ module StateMachine
         # Creates a scope for finding records *with* a particular state or
         # states for the attribute
         def create_with_scope(name)
-          name = name.to_sym
           attribute = self.attribute
-          
-          owner_class.named_scope name, lambda {|values| {:conditions => {attribute => values}}}
-          lambda {|model, values| model.scopes[name].call(model, values)}
+          define_scope(name, lambda {|values| {:conditions => {attribute => values}}})
         end
         
         # Creates a scope for finding records *without* a particular state or
         # states for the attribute
         def create_without_scope(name)
-          name = name.to_sym
           attribute = self.attribute
-          
-          owner_class.named_scope name, lambda {|values| {:conditions => ["#{attribute} NOT IN (?)", values]}}
-          lambda {|model, values| model.scopes[name].call(model, values)}
+          define_scope(name, lambda {|values| {:conditions => ["#{attribute} NOT IN (?)", values]}})
         end
         
         # Creates a new callback in the callback chain, always inserting it
@@ -253,6 +247,28 @@ module StateMachine
         end
         
       private
+        # Defines a new named scope with the given name.  Since ActiveRecord
+        # does not allow direct access to the model being used within the
+        # evaluation of a dynamic named scope, the scope must be generated
+        # manually.  It's necessary to have access to the model so that the
+        # state names can be translated to their associated values and so that
+        # inheritance is respected properly.
+        def define_scope(name, scope)
+          name = name.to_sym
+          attribute = self.attribute
+          
+          # Created the scope and then override it with state translation
+          owner_class.named_scope(name)
+          owner_class.scopes[name] = lambda do |klass, *states|
+            machine_states = klass.state_machines[attribute].states
+            values = states.flatten.map {|state| machine_states.fetch(state).value}
+            
+            ::ActiveRecord::NamedScope::Scope.new(klass, scope.call(values))
+          end
+          
+          false
+        end
+        
         # Notifies observers on the given object that a callback occurred
         # involving the given transition.  This will attempt to call the
         # following methods on observers:

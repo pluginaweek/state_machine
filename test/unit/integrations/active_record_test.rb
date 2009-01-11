@@ -135,6 +135,13 @@ begin
         assert_equal [parked, idling], @model.without_states(:first_gear)
       end
       
+      def test_should_allow_chaining_scopes
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
+        
+        assert_equal [idling], @model.without_state(:parked).with_state(:idling)
+      end
+      
       def test_should_rollback_transaction_if_false
         @machine.within_transaction(@model.new) do
           @model.create
