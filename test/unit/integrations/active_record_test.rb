@@ -168,12 +168,7 @@ begin
     
     class MachineWithoutDatabaseTest < ActiveRecord::TestCase
       def setup
-        @model = new_model(false)
-        
-        # Drop the table so that it definitely doesn't exist
-        @model.connection.drop_table(:foo) if @model.connection.table_exists?(:foo)
-        
-        @model.class_eval do
+        @model = new_model(false) do
           # Simulate the database not being available entirely
           def self.connection
             raise ActiveRecord::ConnectionNotEstablished
