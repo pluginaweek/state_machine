@@ -11,7 +11,7 @@ module StateMachine
     # Configuration options:
     # * <tt>:initial</tt> - The initial state of the attribute. This can be a
     #   static state or a lambda block which will be evaluated at runtime
-    #   (e.g. lambda {|vehicle| vehicle.speed > 0 ? :idling : :parked}).
+    #   (e.g. lambda {|vehicle| vehicle.speed == 0 ? :parked : :idling}).
     #   Default is nil.
     # * <tt>:action</tt> - The action to invoke when an object transitions.
     #   Default is nil unless otherwise specified by the configured integration.
@@ -83,8 +83,8 @@ module StateMachine
     # (assuming the attribute is called +state+):
     # * <tt>state</tt> - Gets the current value for the attribute
     # * <tt>state=(value)</tt> - Sets the current value for the attribute
-    # * <tt>state?(value)</tt> - Checks the given value against the current value.
-    #   If the value is not a known state, then an ArgumentError is raised.
+    # * <tt>state?(name)</tt> - Checks the given state name against the current
+    #   state.  If the name is not a known state, then an ArgumentError is raised.
     # * <tt>state_name</tt> - Gets the name of the state for the current value
     # 
     # For example, the following machine definition will not generate the reader
@@ -124,8 +124,8 @@ module StateMachine
     #     end
     #   end
     #   
-    #   v = Vehicle.new   # => #<Vehicle:0xb7c8dbf8 @state="parked">
-    #   v.state           # => "parked"
+    #   vehicle = Vehicle.new   # => #<Vehicle:0xb7c8dbf8 @state="parked">
+    #   vehicle.state           # => "parked"
     # 
     # In the above example, no +initialize+ method is defined.  As a result,
     # the default behavior of initializing the state machine attributes is used.
@@ -141,8 +141,8 @@ module StateMachine
     #     end
     #   end
     #   
-    #   v = Vehicle.new   # => #<Vehicle:0xb7c77678>
-    #   v.state           # => nil
+    #   vehicle = Vehicle.new   # => #<Vehicle:0xb7c77678>
+    #   vehicle.state           # => nil
     # 
     # Since the +initialize+ method is defined, the state machine attributes
     # never get initialized.  In order to ensure that all initialization hooks
@@ -160,8 +160,8 @@ module StateMachine
     #     end
     #   end
     #   
-    #   v = Vehicle.new   # => #<Vehicle:0xb7c464b0 @state="parked">
-    #   v.state           # => "parked"
+    #   vehicle = Vehicle.new   # => #<Vehicle:0xb7c8dbf8 @state="parked">
+    #   vehicle.state           # => "parked"
     # 
     # Because of the way the inclusion of modules works in Ruby, calling
     # <tt>super()</tt> will not only call the superclass's +initialize+, but
@@ -182,8 +182,8 @@ module StateMachine
     #     end
     #   end
     #   
-    #   v = Vehicle.new   # => #<Vehicle:0xb7c464b0 @state="parked">
-    #   v.state           # => "parked"
+    #   vehicle = Vehicle.new   # => #<Vehicle:0xb7c8dbf8 @state="parked">
+    #   vehicle.state           # => "parked"
     # 
     # == States
     # 
@@ -242,21 +242,21 @@ module StateMachine
     #   class Vehicle
     #     state_machine :heater_state, :initial => :off :namespace => 'heater' do
     #       event :turn_on do
-    #         transition :to => :on, :from => :off
+    #         transition :to => :on
     #       end
     #       
     #       event :turn_off do
-    #         transition :to => :off, :from => :on
+    #         transition :to => :off
     #       end
     #     end
     #     
     #     state_machine :hood_state, :initial => :closed, :namespace => 'hood' do
     #       event :open do
-    #         transition :to => :opened, :from => :closed
+    #         transition :to => :opened
     #       end
     #       
     #       event :close do
-    #         transition :to => :closed, :from => :opened
+    #         transition :to => :closed
     #       end
     #     end
     #   end
@@ -288,7 +288,7 @@ module StateMachine
     # 
     # For integrations that support it, a group of default scope filters will
     # be automatically created for assisting in finding objects that have the
-    # attribute set to a given value.
+    # attribute set to the value for a given set of states.
     # 
     # For example,
     # 
