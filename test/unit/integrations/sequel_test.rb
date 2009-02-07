@@ -162,19 +162,39 @@ begin
       end
     end
     
-    class MachineWithNonColumnStateAttributeTest < BaseTestCase
+    class MachineWithNonColumnStateAttributeUndefinedTest < BaseTestCase
       def setup
-        @model = new_model
+        @model = new_model do
+          def initialize
+            # Skip attribute initialization
+          end
+        end
+        
         @machine = StateMachine::Machine.new(@model, :status, :initial => 'parked')
         @record = @model.new
       end
       
-      def test_should_define_a_reader_attribute_for_the_attribute
-        assert @record.respond_to?(:status)
+      def test_should_not_define_a_reader_attribute_for_the_attribute
+        assert !@record.respond_to?(:status)
       end
       
-      def test_should_define_a_writer_attribute_for_the_attribute
-        assert @record.respond_to?(:status=)
+      def test_should_not_define_a_writer_attribute_for_the_attribute
+        assert !@record.respond_to?(:status=)
+      end
+      
+      def test_should_define_an_attribute_predicate
+        assert @record.respond_to?(:status?)
+      end
+    end
+    
+    class MachineWithNonColumnStateAttributeDefinedTest < BaseTestCase
+      def setup
+        @model = new_model do
+          attr_accessor :status
+        end
+        
+        @machine = StateMachine::Machine.new(@model, :status, :initial => 'parked')
+        @record = @model.new
       end
       
       def test_should_set_initial_state_on_created_object

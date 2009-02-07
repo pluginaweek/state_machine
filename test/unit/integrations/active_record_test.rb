@@ -246,20 +246,25 @@ begin
       end
     end
     
-    class MachineWithNonColumnStateAttributeTest < ActiveRecord::TestCase
+    class MachineWithNonColumnStateAttributeUndefinedTest < ActiveRecord::TestCase
       def setup
-        @model = new_model
+        @model = new_model do
+          def initialize
+            # Skip attribute initialization
+          end
+        end
+        
         @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
         @machine.other_states(:idling)
         @record = @model.new
       end
       
-      def test_should_define_a_reader_attribute_for_the_attribute
-        assert @record.respond_to?(:status)
+      def test_should_not_define_a_reader_attribute_for_the_attribute
+        assert !@record.respond_to?(:status)
       end
       
-      def test_should_define_a_writer_attribute_for_the_attribute
-        assert @record.respond_to?(:status=)
+      def test_should_not_define_a_writer_attribute_for_the_attribute
+        assert !@record.respond_to?(:status=)
       end
       
       def test_should_define_an_attribute_predicate
@@ -268,9 +273,21 @@ begin
       
       def test_should_raise_exception_on_predicate_without_parameters
         old_verbose, $VERBOSE = $VERBOSE, nil
-        assert_raise(ArgumentError) { @record.status? }
+        assert_raise(NoMethodError) { @record.status? }
       ensure
         $VERBOSE = old_verbose
+      end
+    end
+    
+    class MachineWithNonColumnStateAttributeDefinedTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model do
+          attr_accessor :status
+        end
+        
+        @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+        @machine.other_states(:idling)
+        @record = @model.new
       end
       
       def test_should_return_false_for_predicate_if_does_not_match_current_value

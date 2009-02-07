@@ -261,7 +261,7 @@ module StateMachine
       
       # Set integration-specific configurations
       @action = options.include?(:action) ? options[:action] : default_action
-      define_attribute_accessor
+      define_attribute_helpers
       define_scopes(options[:plural])
       
       # Call after hook for integration-specific extensions
@@ -970,24 +970,42 @@ module StateMachine
       def default_action
       end
       
-      # Adds reader/writer/predicate methods for accessing the attribute that
-      # this state machine is defined for.
+      # Adds helper methods for interacting with this state machine's attribute,
+      # including reader, writer, and predicate methods
+      def define_attribute_helpers
+        define_attribute_accessor
+        define_attribute_predicate
+        
+        attribute = self.attribute
+        
+        owner_class.class_eval do
+          # Gets the state name for the current value
+          define_method("#{attribute}_name") do
+            self.class.state_machines[attribute].state_for(self).name
+          end
+        end
+      end
+      
+      # Adds reader/writer methods for accessing the attribute
       def define_attribute_accessor
         attribute = self.attribute
         
         owner_class.class_eval do
           attr_reader attribute unless method_defined?(attribute) || private_method_defined?(attribute)
           attr_writer attribute unless method_defined?("#{attribute}=") || private_method_defined?("#{attribute}=")
-          
+        end
+      end
+      
+      # Adds predicate method to the owner class for determining the name of the
+      # current state
+      def define_attribute_predicate
+        attribute = self.attribute
+        
+        owner_class.class_eval do
           # Checks whether the current state is a given value
           define_method("#{attribute}?") do |state|
             self.class.state_machines[attribute].state?(self, state)
           end unless method_defined?("#{attribute}?") || private_method_defined?("#{attribute}?")
-          
-          # Gets the state name for the current value
-          define_method("#{attribute}_name") do
-            self.class.state_machines[attribute].state_for(self).name
-          end
         end
       end
       

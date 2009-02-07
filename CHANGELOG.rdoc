@@ -1,5 +1,7 @@
 == master
 
+* Never automatically define machine attribute accessors when using an integration
+
 == 0.5.0 / 2009-01-11
 
 * Add to_name and from_name to transition objects

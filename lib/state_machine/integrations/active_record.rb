@@ -193,32 +193,21 @@ module StateMachine
           :save
         end
         
-        # Forces all attribute methods to be generated for the model so that
-        # the reader/writer methods for the attribute are available
+        # Skips defining reader/writer methods since this is done automatically
         def define_attribute_accessor
-          # If an exception is raised while trying to access the connection, then
-          # the assumption is that there's an issue with the database (most likely
-          # doesn't exist yet), so we won't be able to check the table properties
-          connection_exists = begin; owner_class.connection; true; rescue Exception; false; end
+        end
+        
+        # Adds support for defining the attribute predicate, while providing
+        # compatibility with the default predicate which determines whether
+        # *anything* is set for the attribute's value
+        def define_attribute_predicate
+          attribute = self.attribute
           
-          if connection_exists && owner_class.table_exists?
-            owner_class.define_attribute_methods
-            
-            # Support attribute predicate for ActiveRecord columns
-            if owner_class.column_names.include?(attribute.to_s)
-              attribute = self.attribute
-              
-              owner_class.class_eval do
-                # Checks whether the current state is a given value.  If there
-                # are no arguments, then this checks for the presence of the attribute.
-                define_method("#{attribute}?") do |*args|
-                  args.empty? ? super(*args) : self.class.state_machines[attribute].state?(self, *args)
-                end
-              end
+          owner_class.class_eval do
+            define_method("#{attribute}?") do |*args|
+              args.empty? ? super(*args) : self.class.state_machines[attribute].state?(self, *args)
             end
           end
-          
-          super
         end
         
         # Creates a scope for finding records *with* a particular state or
