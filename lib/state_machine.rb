@@ -314,3 +314,6 @@ end
 Class.class_eval do
   include StateMachine::MacroMethods
 end
+
+# Register rake tasks for supported libraries
+Merb::Plugins.add_rakefiles("#{File.dirname(__FILE__)}/../tasks/state_machine") if defined?(Merb::Plugins)

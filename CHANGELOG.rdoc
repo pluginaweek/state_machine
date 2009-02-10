@@ -1,5 +1,6 @@
 == master
 
+* Fix rake tasks not being registered in Rails/Merb applications
 * Never automatically define machine attribute accessors when using an integration
 
 == 0.5.0 / 2009-01-11
