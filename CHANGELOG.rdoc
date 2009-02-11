@@ -1,5 +1,6 @@
 == master
 
+* Allow states to be drawn as ellipses to accommodate long names
 * Fix rake tasks not being registered in Rails/Merb applications
 * Never automatically define machine attribute accessors when using an integration
 

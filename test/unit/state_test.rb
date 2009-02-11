@@ -527,12 +527,8 @@ begin
       @node = @state.draw(graph)
     end
     
-    def test_should_use_circle_shape
-      assert_equal 'circle', @node['shape']
-    end
-    
-    def test_should_enabled_fixedsize
-      assert_equal 'true', @node['fixedsize']
+    def test_should_use_ellipse_shape
+      assert_equal 'ellipse', @node['shape']
     end
     
     def test_should_set_width_to_one

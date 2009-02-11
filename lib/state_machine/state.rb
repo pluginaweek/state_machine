@@ -184,8 +184,7 @@ module StateMachine
         :label => description,
         :width => '1',
         :height => '1',
-        :fixedsize => 'true',
-        :shape => initial ? 'doublecircle' : 'circle'
+        :shape => initial ? 'doublecircle' : 'ellipse'
       )
     end
     
