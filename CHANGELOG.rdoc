@@ -1,5 +1,7 @@
 == master
 
+* Fix scope name pluralization not being applied correctly
+
 == 0.5.1 / 2009-02-11
 
 * Allow states to be drawn as ellipses to accommodate long names

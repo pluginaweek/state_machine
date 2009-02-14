@@ -201,6 +201,21 @@ begin
       end
     end
     
+    class MachineWithComplexPluralizationTest < BaseTestCase
+      def setup
+        @resource = new_resource
+        @machine = StateMachine::Machine.new(@resource, :status)
+      end
+      
+      def test_should_create_singular_with_scope
+        assert @resource.respond_to?(:with_status)
+      end
+      
+      def test_should_create_plural_with_scope
+        assert @resource.respond_to?(:with_statuses)
+      end
+    end
+    
     class MachineWithNonColumnStateAttributeDefinedTest < BaseTestCase
       def setup
         @resource = new_resource do

@@ -1016,7 +1016,7 @@ module StateMachine
       # name or adding an "s" to the end of the name.
       def define_scopes(custom_plural = nil)
         attribute = self.attribute
-        plural = custom_plural || (attribute.respond_to?(:pluralize) ? attribute.pluralize : "#{attribute}s")
+        plural = custom_plural || (attribute.to_s.respond_to?(:pluralize) ? attribute.to_s.pluralize : "#{attribute}s")
         
         [attribute, plural].uniq.each do |name|
           [:with, :without].each do |kind|
