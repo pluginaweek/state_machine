@@ -26,6 +26,11 @@ module StateMachine
     def initialize(requirements = {}) #:nodoc:
       assert_valid_keys(requirements, :from, :to, :on, :except_from, :except_to, :except_on, :if, :unless)
       
+      # Ensure conflicting keys aren't specified
+      [[:if, :unless], [:from, :except_from], [:to, :except_to], [:on, :except_on]].each do |exclusive_keys|
+        assert_exclusive_keys(requirements, *exclusive_keys)
+      end
+      
       @requirements = requirements
       @known_states = []
       

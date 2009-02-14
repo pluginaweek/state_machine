@@ -17,5 +17,21 @@ module StateMachine
       invalid_keys = hash.keys - valid_keys
       raise ArgumentError, "Invalid key(s): #{invalid_keys.join(', ')}" unless invalid_keys.empty?
     end
+    
+    # Validates that at *most* one of a set of exclusive keys is included in
+    # the given hash.  If more than one key is found, an ArgumentError will be
+    # raised.
+    # 
+    # == Examples
+    # 
+    #   options = {:only => :on, :except => :off}
+    #   assert_exclusive_keys(options, :only)                   # => nil
+    #   assert_exclusive_keys(options, :except)                 # => nil
+    #   assert_exclusive_keys(options, :only, :except)          # => ArgumentError: Conflicting keys: only, except
+    #   assert_exclusive_keys(options, :only, :except, :with)   # => ArgumentError: Conflicting keys: only, except
+    def assert_exclusive_keys(hash, *exclusive_keys)
+      conflicting_keys = exclusive_keys & hash.keys
+      raise ArgumentError, "Conflicting keys: #{conflicting_keys.join(', ')}" unless conflicting_keys.length <= 1
+    end
   end
 end

@@ -1,5 +1,6 @@
 == master
 
+* Add better error notification when conflicting guard options are defined
 * Fix scope name pluralization not being applied correctly
 
 == 0.5.1 / 2009-02-11

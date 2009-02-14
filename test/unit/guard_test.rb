@@ -340,35 +340,23 @@ class GuardWithMultipleExceptOnRequirementsTest < Test::Unit::TestCase
 end
 
 class GuardWithConflictingFromRequirementsTest < Test::Unit::TestCase
-  def setup
-    @object = Object.new
-    @guard = StateMachine::Guard.new(:from => :parked, :except_from => :parked)
-  end
-  
-  def test_should_ignore_except_requirement
-    assert @guard.matches?(@object, :from => :parked)
+  def test_should_raise_an_exception
+    exception = assert_raise(ArgumentError) { StateMachine::Guard.new(:from => :parked, :except_from => :parked) }
+    assert_equal 'Conflicting keys: from, except_from', exception.message
   end
 end
 
 class GuardWithConflictingToRequirementsTest < Test::Unit::TestCase
-  def setup
-    @object = Object.new
-    @guard = StateMachine::Guard.new(:to => :idling, :except_to => :idling)
-  end
-  
-  def test_should_ignore_except_requirement
-    assert @guard.matches?(@object, :to => :idling)
+  def test_should_raise_an_exception
+    exception = assert_raise(ArgumentError) { StateMachine::Guard.new(:to => :idling, :except_to => :idling) }
+    assert_equal 'Conflicting keys: to, except_to', exception.message
   end
 end
 
 class GuardWithConflictingOnRequirementsTest < Test::Unit::TestCase
-  def setup
-    @object = Object.new
-    @guard = StateMachine::Guard.new(:on => :ignite, :except_on => :ignite)
-  end
-  
-  def test_should_ignore_except_requirement
-    assert @guard.matches?(@object, :on => :ignite)
+  def test_should_raise_an_exception
+    exception = assert_raise(ArgumentError) { StateMachine::Guard.new(:on => :ignite, :except_on => :ignite) }
+    assert_equal 'Conflicting keys: on, except_on', exception.message
   end
 end
 
@@ -468,18 +456,9 @@ class GuardWithUnlessConditionalTest < Test::Unit::TestCase
 end
 
 class GuardWithConflictingConditionalsTest < Test::Unit::TestCase
-  def setup
-    @object = Object.new
-  end
-  
-  def test_should_match_if_true
-    guard = StateMachine::Guard.new(:if => lambda {true}, :unless => lambda {true})
-    assert guard.matches?(@object)
-  end
-  
-  def test_should_not_match_if_false
-    guard = StateMachine::Guard.new(:if => lambda {false}, :unless => lambda {false})
-    assert !guard.matches?(@object)
+  def test_should_raise_an_exception
+    exception = assert_raise(ArgumentError) { StateMachine::Guard.new(:if => lambda {true}, :unless => lambda {true}) }
+    assert_equal 'Conflicting keys: if, unless', exception.message
   end
 end
 
