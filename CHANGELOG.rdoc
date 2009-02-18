@@ -1,5 +1,7 @@
 == master
 
+== 0.5.2 / 2009-02-17
+
 * Improve pretty-print of events
 * Simplify state/event matching design, improving guard performance by 30%
 * Add better error notification when conflicting guard options are defined
