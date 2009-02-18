@@ -1,5 +1,7 @@
 == master
 
+* Improve pretty-print of events
+* Simplify state/event matching design, improving guard performance by 30%
 * Add better error notification when conflicting guard options are defined
 * Fix scope name pluralization not being applied correctly
 

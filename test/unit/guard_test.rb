@@ -10,9 +10,12 @@ class GuardTest < Test::Unit::TestCase
     assert_equal 'Invalid key(s): invalid', exception.message
   end
   
-  def test_should_have_requirements
-    expected = {:to => [:idling], :from => [:parked]}
-    assert_equal expected, @guard.requirements
+  def test_should_not_have_an_if_condition
+    assert_nil @guard.if_condition
+  end
+  
+  def test_should_not_have_an_unless_condition
+    assert_nil @guard.unless_condition
   end
 end
 
@@ -20,6 +23,18 @@ class GuardWithNoRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
     @guard = StateMachine::Guard.new
+  end
+  
+  def test_should_use_all_matcher_for_event_requirement
+    assert_equal StateMachine::AllMatcher.instance, @guard.event_requirement
+  end
+  
+  def test_should_use_all_matcher_for_from_state_requirement
+    assert_equal StateMachine::AllMatcher.instance, @guard.state_requirement[:from]
+  end
+  
+  def test_should_use_all_matcher_for_to_state_requirement
+    assert_equal StateMachine::AllMatcher.instance, @guard.state_requirement[:to]
   end
   
   def test_should_match_nil_query
@@ -39,6 +54,10 @@ class GuardWithFromRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
     @guard = StateMachine::Guard.new(:from => :parked)
+  end
+  
+  def test_should_use_a_whitelist_matcher
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirement[:from]
   end
   
   def test_should_match_if_not_specified
@@ -95,6 +114,10 @@ class GuardWithToRequirementTest < Test::Unit::TestCase
     @guard = StateMachine::Guard.new(:to => :idling)
   end
   
+  def test_should_use_a_whitelist_matcher
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirement[:to]
+  end
+  
   def test_should_match_if_not_specified
     assert @guard.matches?(@object, :from => :parked)
   end
@@ -149,6 +172,10 @@ class GuardWithOnRequirementTest < Test::Unit::TestCase
     @guard = StateMachine::Guard.new(:on => :ignite)
   end
   
+  def test_should_use_a_whitelist_matcher
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.event_requirement
+  end
+  
   def test_should_match_if_not_specified
     assert @guard.matches?(@object, :from => :parked)
   end
@@ -197,6 +224,10 @@ class GuardWithExceptFromRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
     @guard = StateMachine::Guard.new(:except_from => :parked)
+  end
+  
+  def test_should_use_a_blacklist_matcher
+    assert_instance_of StateMachine::BlacklistMatcher, @guard.state_requirement[:from]
   end
   
   def test_should_match_if_not_included
@@ -249,6 +280,10 @@ class GuardWithExceptToRequirementTest < Test::Unit::TestCase
     @guard = StateMachine::Guard.new(:except_to => :idling)
   end
   
+  def test_should_use_a_blacklist_matcher
+    assert_instance_of StateMachine::BlacklistMatcher, @guard.state_requirement[:to]
+  end
+  
   def test_should_match_if_not_included
     assert @guard.matches?(@object, :to => :parked)
   end
@@ -297,6 +332,10 @@ class GuardWithExceptOnRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
     @guard = StateMachine::Guard.new(:except_on => :ignite)
+  end
+  
+  def test_should_use_a_blacklist_matcher
+    assert_instance_of StateMachine::BlacklistMatcher, @guard.event_requirement
   end
   
   def test_should_match_if_not_included
@@ -428,6 +467,11 @@ class GuardWithIfConditionalTest < Test::Unit::TestCase
     @object = Object.new
   end
   
+  def test_should_have_an_if_condition
+    guard = StateMachine::Guard.new(:if => lambda {true})
+    assert_not_nil guard.if_condition
+  end
+  
   def test_should_match_if_true
     guard = StateMachine::Guard.new(:if => lambda {true})
     assert guard.matches?(@object)
@@ -442,6 +486,11 @@ end
 class GuardWithUnlessConditionalTest < Test::Unit::TestCase
   def setup
     @object = Object.new
+  end
+  
+  def test_should_have_an_unless_condition
+    guard = StateMachine::Guard.new(:unless => lambda {true})
+    assert_not_nil guard.unless_condition
   end
   
   def test_should_match_if_false

@@ -66,7 +66,7 @@ class StateTest < Test::Unit::TestCase
   end
   
   def test_should_use_pretty_inspect
-    assert_equal '#<StateMachine::State name=:parked value="parked" initial=false>', @state.inspect
+    assert_equal '#<StateMachine::State name=:parked value="parked" initial=false context=[]>', @state.inspect
   end
 end
 

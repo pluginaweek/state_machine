@@ -98,7 +98,7 @@ module StateMachine
       
       if guard = guards.find {|guard| guard.matches?(object, :from => from)}
         # Guard allows for the transition to occur
-        to = guard.requirements[:to] ? guard.requirements[:to].first : from
+        to = guard.state_requirement[:to].values.any? ? guard.state_requirement[:to].values.first : from
         Transition.new(object, machine, name, from, to)
       end
     end
@@ -140,10 +140,13 @@ module StateMachine
     # 
     #   event = StateMachine::Event.new(machine, :park)
     #   event.transition :to => :parked, :from => :idling
-    #   event   # => #<StateMachine::Event name=:park transitions=[{:to => [:parked], :from => [:idling]}]>
+    #   event   # => #<StateMachine::Event name=:park transitions=[:idling => :parked]>
     def inspect
-      attributes = [[:name, name], [:transitions, guards.map {|guard| guard.requirements}]]
-      "#<#{self.class} #{attributes.map {|name, value| "#{name}=#{value.inspect}"} * ' '}>"
+      transitions = guards.map do |guard|
+        "#{guard.state_requirement[:from].description} => #{guard.state_requirement[:to].description}"
+      end
+      
+      "#<#{self.class} name=#{name.inspect} transitions=[#{transitions * ', '}]>"
     end
     
     protected

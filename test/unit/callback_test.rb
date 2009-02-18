@@ -31,9 +31,10 @@ class CallbackByDefaultTest < Test::Unit::TestCase
     assert_nil @callback.terminator
   end
   
-  def test_should_have_a_guard_with_no_requirements
-    expected = {}
-    assert_equal expected, @callback.guard.requirements
+  def test_should_have_a_guard_with_all_matcher_requirements
+    assert_equal StateMachine::AllMatcher.instance, @callback.guard.event_requirement
+    assert_equal StateMachine::AllMatcher.instance, @callback.guard.state_requirement[:from]
+    assert_equal StateMachine::AllMatcher.instance, @callback.guard.state_requirement[:to]
   end
   
   def test_should_not_bind_to_the_object

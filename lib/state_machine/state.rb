@@ -193,9 +193,10 @@ module StateMachine
     # For example,
     # 
     #   state = StateMachine::State.new(machine, :parked, :value => 1, :initial => true)
-    #   state   # => #<StateMachine::State name=:parked value=1 initial=true>
+    #   state   # => #<StateMachine::State name=:parked value=1 initial=true context=[]>
     def inspect
-      "#<#{self.class} #{%w(name value initial).map {|attr| "#{attr}=#{instance_variable_get("@#{attr}").inspect}"} * ' '}>"
+      attributes = [[:name, name], [:value, @value], [:initial, initial], [:context, methods.keys]]
+      "#<#{self.class} #{attributes.map {|attr, value| "#{attr}=#{value.inspect}"} * ' '}>"
     end
     
     private

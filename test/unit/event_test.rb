@@ -64,7 +64,7 @@ class EventTest < Test::Unit::TestCase
   end
   
   def test_should_use_pretty_inspect
-    assert_match /#<StateMachine::Event name=:ignite transitions=\[\{.+\}\]>/, @event.inspect
+    assert_match "#<StateMachine::Event name=:ignite transitions=[:parked => :idling]>", @event.inspect
   end
 end
 
