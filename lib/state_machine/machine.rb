@@ -747,6 +747,8 @@ module StateMachine
     # * <tt>any</tt> - An alias for +all+ (matches every state/event in the machine)
     # * <tt>same</tt> - Matches the same state being transitioned from
     # 
+    # See StateMachine::MatcherHelpers for more information.
+    # 
     # Examples:
     # 
     #   before_transition :parked => [:idling, :first_gear], :do => ...     # Matches from parked to idling or first_gear

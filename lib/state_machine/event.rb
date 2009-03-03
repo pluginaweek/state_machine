@@ -66,7 +66,7 @@ module StateMachine
     # 
     # See StateMachine::MatcherHelpers for more information.
     # 
-    # === Examples
+    # Examples:
     # 
     #   transition all => nil                               # Transitions to nil regardless of the current state
     #   transition all => :idling                           # Transitions to :idling regardless of the current state
@@ -90,7 +90,7 @@ module StateMachine
     # * <tt>:except_from</tt> - A state or array of states that *cannot* be
     #   transitioned from.
     # 
-    # === Examples
+    # Examples:
     # 
     #   transition :to => nil
     #   transition :to => :idling
@@ -119,7 +119,7 @@ module StateMachine
     #   transition should not occur (e.g. :unless => :stopped?, or :unless => lambda {|vehicle| vehicle.speed <= 60}).
     #   The condition should return or evaluate to true or false.
     # 
-    # === Examples
+    # Examples:
     # 
     #   transition :parked => :idling, :if => :moving?
     #   transition :parked => :idling, :unless => :stopped?
@@ -206,8 +206,8 @@ module StateMachine
     # For example,
     # 
     #   event = StateMachine::Event.new(machine, :park)
-    #   event.transition :to => :parked, :from => :idling
-    #   event   # => #<StateMachine::Event name=:park transitions=[:idling => :parked]>
+    #   event.transition all - :idling => :parked, :idling => same
+    #   event   # => #<StateMachine::Event name=:park transitions=[all - :idling => :parked, :idling => same]>
     def inspect
       transitions = guards.map do |guard|
         guard.state_requirements.map do |state_requirement|

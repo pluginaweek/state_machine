@@ -127,7 +127,7 @@ module StateMachine
     end
     
     # Gets a list of the states known to this callback by looking at the
-    # guard's requirements
+    # guard's known states
     def known_states
       guard.known_states
     end
