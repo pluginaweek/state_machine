@@ -7,6 +7,7 @@ require 'state_machine/event'
 require 'state_machine/callback'
 require 'state_machine/node_collection'
 require 'state_machine/state_collection'
+require 'state_machine/matcher_helpers'
 
 module StateMachine
   # Represents a state machine for a particular attribute.  State machines
@@ -44,7 +45,7 @@ module StateMachine
   # 
   #   class Vehicle
   #     state_machine, :initial => :parked do
-  #       before_transition :to => :idling, :do => lambda {|vehicle| throw :halt}
+  #       before_transition any => :idling, :do => lambda {|vehicle| throw :halt}
   #       ...
   #     end
   #   end
@@ -64,7 +65,7 @@ module StateMachine
   #   class Vehicle
   #     state_machine do
   #       event :park do
-  #         transition :to => :parked, :from => :idling
+  #         transition :idling => :parked
   #       end
   #       ...
   #     end
@@ -115,8 +116,8 @@ module StateMachine
   #     end
   #   end
   # 
-  # Additional observer-like behavior may be exposed by the various
-  # integrations available.  See below for more information.
+  # Additional observer-like behavior may be exposed by the various integrations
+  # available.  See below for more information.
   # 
   # == Integrations
   # 
@@ -138,6 +139,7 @@ module StateMachine
   # constants defined under the StateMachine::Integrations namespace.
   class Machine
     include Assertions
+    include MatcherHelpers
     
     class << self
       # Attempts to find or create a state machine for the given class.  For
@@ -369,7 +371,7 @@ module StateMachine
     #   class Vehicle
     #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => :idling, :from => :parked
+    #         transition :parked => :idling
     #       end
     #     end
     #   end
@@ -387,7 +389,7 @@ module StateMachine
     #   class Vehicle
     #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => :idling, :from => :parked
+    #         transition :parked => :idling
     #       end
     #       
     #       state :idling, :value => 'IDLING'
@@ -405,7 +407,7 @@ module StateMachine
     #   class Vehicle < ActiveRecord::Base
     #     state_machine :state_id, :initial => :parked do
     #       event :ignite do
-    #         transition :to => :idling, :from => :parked
+    #         transition :parked => :idling
     #       end
     #       
     #       states.each {|state| self.state(state.name, :value => VehicleState.find_by_name(state.name.to_s).id)}
@@ -424,11 +426,11 @@ module StateMachine
     #   class Vehicle
     #     state_machine :purchased_at, :initial => :available do
     #       event :purchase do
-    #         transition :to => :purchased
+    #         transition all => :purchased
     #       end
     #       
     #       event :restock do
-    #         transition :to => :available
+    #         transition all => :available
     #       end
     #       
     #       state :available, :value => nil
@@ -464,7 +466,7 @@ module StateMachine
     #     
     #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => :idling, :from => :parked
+    #         transition :parked => :idling
     #       end
     #       
     #       state :parked do
@@ -643,11 +645,11 @@ module StateMachine
     # transitions that can happen as a result of that event.  For example,
     # 
     #   event :park, :stop do
-    #     transition :to => :parked, :from => :idling
+    #     transition :idling => :parked
     #   end
     #   
     #   event :first_gear do
-    #     transition :to => :first_gear, :from => :parked, :if => :seatbelt_on?
+    #     transition :parked => :first_gear, :if => :seatbelt_on?
     #   end
     # 
     # See StateMachine::Event#transition for more information on
@@ -664,7 +666,7 @@ module StateMachine
     #     
     #     state_machine do
     #       event :park do
-    #         transition :to => :parked, :from => Vehicle.safe_states
+    #         transition Vehicle.safe_states => :parked
     #       end
     #     end
     #   end 
@@ -675,15 +677,15 @@ module StateMachine
     #     state_machine do
     #       # The park, stop, and halt events will all share the given transitions
     #       event :park, :stop, :halt do
-    #         transition :to => :parked, :from => [:idling, :backing_up]
+    #         transition [:idling, :backing_up] => :parked
     #       end
     #       
     #       event :stop do
-    #         transition :to => :idling, :from => :first_gear
+    #         transition :first_gear => :idling
     #       end
     #       
     #       event :ignite do
-    #         transition :to => :idling, :from => :parked
+    #         transition :parked => :idling
     #       end
     #     end
     #   end
@@ -705,9 +707,66 @@ module StateMachine
     end
     
     # Creates a callback that will be invoked *before* a transition is
-    # performed so long as the given configuration options match the transition.
-    # Each part of the transition (event, to state, from state) must match in
-    # order for the callback to get invoked.
+    # performed so long as the given requirements match the transition.
+    # 
+    # == The callback
+    # 
+    # Callbacks must be defined as either the only argument, in the :do option,
+    # or as a block.  For example,
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       before_transition :set_alarm
+    #       before_transition all => :parked :do => :set_alarm
+    #       before_transition all => :parked do |vehicle, transition|
+    #         vehicle.set_alarm
+    #       end
+    #       ...
+    #     end
+    #   end
+    # 
+    # == State requirements
+    # 
+    # Callbacks can require that the machine be transitioning from and to
+    # specific states.  These requirements use a Hash syntax to map beginning
+    # states to ending states.  For example,
+    # 
+    #   before_transition :parked => :idling, :idling => :first_gear, :do => :set_alarm
+    # 
+    # In this case, the +set_alarm+ callback will only be called if the machine
+    # is transitioning from +parked+ to +idling+ or from +idling+ to +parked+.
+    # 
+    # To help define state requirements, a set of helpers are available for
+    # slightly more complex matching:
+    # * <tt>all</tt> - Matches every state/event in the machine
+    # * <tt>all - [:parked, :idling, ...]</tt> - Matches every state/event except those specified
+    # * <tt>any</tt> - An alias for +all+ (matches every state/event in the machine)
+    # * <tt>same</tt> - Matches the same state being transitioned from
+    # 
+    # Examples:
+    # 
+    #   before_transition :parked => [:idling, :first_gear], :do => ...     # Matches from parked to idling or first_gear
+    #   before_transition all - [:parked, :idling] => :idling, :do => ...   # Matches from every state except parked and idling to idling
+    #   before_transition all => :parked, :do => ...                        # Matches all states to parked
+    #   before_transition any => same, :do => ...                           # Matches every loopback
+    # 
+    # == Event requirements
+    # 
+    # In addition to state requirements, an event requirement can be defined so
+    # that the callback is only invoked on specific events using the +on+
+    # option.  This can also use the same matcher helpers as the state
+    # requirements.
+    # 
+    # Examples:
+    # 
+    #   before_transition :on => :ignite, :do => ...                        # Matches only on ignite
+    #   before_transition :on => all - :ignite, :do => ...                  # Matches on every event except ignite
+    #   before_transition :parked => :idling, :on => :ignite, :do => ...    # Matches from parked to idling on ignite
+    # 
+    # == Verbose Requirements
+    # 
+    # Requirements can also be defined using verbose options rather than the
+    # implicit Hash syntax and helper methods described above.
     # 
     # Configuration options:
     # * <tt>:from</tt> - One or more states being transitioned from.  If none
@@ -719,8 +778,18 @@ module StateMachine
     # * <tt>:except_from</tt> - One or more states *not* being transitioned from
     # * <tt>:except_to</tt> - One more states *not* being transitioned to
     # * <tt>:except_on</tt> - One or more events that *did not* fire the transition
-    # * <tt>:do</tt> - The callback to invoke when a transition matches. This
-    #   can be a method, proc or string.
+    # 
+    # Examples:
+    # 
+    #   before_transition :from => :ignite, :to => :idling, :on => :park, :do => ...
+    #   before_transition :except_from => :ignite, :except_to => :idling, :except_on => :park, :do => ...
+    # 
+    # == Conditions
+    # 
+    # In addition to the state/event requirements, a condition can also be
+    # defined to help determine whether the callback should be invoked.
+    # 
+    # Configuration options:
     # * <tt>:if</tt> - A method, proc or string to call to determine if the
     #   callback should occur (e.g. :if => :allow_callbacks, or
     #   :if => lambda {|user| user.signup_step > 2}). The method, proc or string
@@ -730,24 +799,10 @@ module StateMachine
     #   :unless => lambda {|user| user.signup_step <= 2}). The method, proc or
     #   string should return or evaluate to a true or false value. 
     # 
-    # The +except+ group of options (+except_to+, +exception_from+, and
-    # +except_on+) acts as the +unless+ equivalent of their counterparts (+to+,
-    # +from+, and +on+, respectively)
+    # Examples:
     # 
-    # == The callback
-    # 
-    # When defining additional configuration options, callbacks must be defined
-    # in either the :do option or as a block.  For example,
-    # 
-    #   class Vehicle
-    #     state_machine do
-    #       before_transition :to => :parked, :do => :set_alarm
-    #       before_transition :to => :parked do |vehicle, transition|
-    #         vehicle.set_alarm
-    #       end
-    #       ...
-    #     end
-    #   end
+    #   before_transition :parked => :idling, :if => :moving?
+    #   before_transition :on => :ignite, :unless => :seatbelt_on?
     # 
     # === Accessing the transition
     # 
@@ -784,13 +839,13 @@ module StateMachine
     #       before_transition :update_dashboard
     #       
     #       # Before specific transition:
-    #       before_transition :to => :parked, :from => [:first_gear, :idling], :on => :park, :do => :take_off_seatbelt
+    #       before_transition [:first_gear, :idling] => :parked, :on => :park, :do => :take_off_seatbelt
     #       
     #       # With conditional callback:
     #       before_transition :to => :parked, :do => :take_off_seatbelt, :if => :seatbelt_on?
     #       
-    #       # Using :except counterparts:
-    #       before_transition :except_to => :stalled, :except_from => :stalled, :except_on => :crash, :do => :update_dashboard
+    #       # Using helpers:
+    #       before_transition all - :stalled => same, :on => any - :crash, :do => :update_dashboard
     #       ...
     #     end
     #   end
@@ -802,98 +857,10 @@ module StateMachine
     end
     
     # Creates a callback that will be invoked *after* a transition is
-    # performed, so long as the given configuration options match the transition.
-    # Each part of the transition (event, to state, from state) must match
-    # in order for the callback to get invoked.
+    # performed so long as the given requirements match the transition.
     # 
-    # Configuration options:
-    # * <tt>:from</tt> - One or more states being transitioned from.  If none
-    #   are specified, then all states will match.
-    # * <tt>:to</tt> - One or more states being transitioned to.  If none are
-    #   specified, then all states will match.
-    # * <tt>:on</tt> - One or more events that fired the transition.  If none
-    #   are specified, then all events will match.
-    # * <tt>:except_from</tt> - One or more states *not* being transitioned from
-    # * <tt>:except_to</tt> - One more states *not* being transitioned to
-    # * <tt>:except_on</tt> - One or more events that *did not* fire the transition
-    # * <tt>:do</tt> - The callback to invoke when a transition matches. This
-    #   can be a method, proc or string.
-    # * <tt>:if</tt> - A method, proc or string to call to determine if the
-    #   callback should occur (e.g. :if => :allow_callbacks, or
-    #   :if => lambda {|user| user.signup_step > 2}). The method, proc or string
-    #   should return or evaluate to a true or false value. 
-    # * <tt>:unless</tt> - A method, proc or string to call to determine if the
-    #   callback should not occur (e.g. :unless => :skip_callbacks, or
-    #   :unless => lambda {|user| user.signup_step <= 2}). The method, proc or
-    #   string should return or evaluate to a true or false value. 
-    # 
-    # The +except+ group of options (+except_to+, +exception_from+, and
-    # +except_on+) acts as the +unless+ equivalent of their counterparts (+to+,
-    # +from+, and +on+, respectively)
-    # 
-    # == The callback
-    # 
-    # When defining additional configuration options, callbacks must be defined
-    # in either the :do option or as a block.  For example,
-    # 
-    #   class Vehicle
-    #     state_machine do
-    #       after_transition :to => :parked, :do => :set_alarm
-    #       after_transition :to => :parked do |vehicle, transition, result|
-    #         vehicle.set_alarm
-    #       end
-    #       ...
-    #     end
-    #   end
-    # 
-    # === Accessing the transition / result
-    # 
-    # In addition to passing the object being transitioned, the actual
-    # transition describing the context (e.g. event, from, to) and the result
-    # from calling the object's action can be optionally passed as well.  These
-    # additional arguments are only passed if the callback allows for it.
-    # 
-    # For example,
-    # 
-    #   class Vehicle
-    #     # Only specifies one parameter (the object being transitioned)
-    #     after_transition :to => :parked, :do => lambda {|vehicle| vehicle.set_alarm}
-    #     
-    #     # Specifies 3 parameters (object being transitioned, transition, and action result)
-    #     after_transition :to => :parked, :do => lambda {|vehicle, transition, result| vehicle.set_alarm(transition) if result}
-    #   end
-    # 
-    # *Note* that the object in the callback will only be passed in as an
-    # argument if callbacks are configured to *not* be bound to the object
-    # involved.  This is the default and may change on a per-integration basis.
-    # 
-    # See StateMachine::Transition for more information about the
-    # attributes available on the transition.
-    # 
-    # == Examples
-    # 
-    # Below is an example of a model with one state machine and various types
-    # of +after+ transitions defined for it:
-    # 
-    #   class Vehicle
-    #     state_machine do
-    #       # After all transitions
-    #       after_transition :update_dashboard
-    #       
-    #       # After specific transition:
-    #       after_transition :to => :parked, :from => [:first_gear, :idling], :on => :park, :do => :take_off_seatbelt
-    #       
-    #       # With conditional callback:
-    #       after_transition :to => :parked, :do => :take_off_seatbelt, :if => :seatbelt_on?
-    #       
-    #       # Using :except counterparts:
-    #       after_transition :except_to => :stalled, :except_from => :stalled, :except_on => :crash, :do => :update_dashboard
-    #       ...
-    #     end
-    #   end
-    # 
-    # As can be seen, any number of transitions can be created using various
-    # combinations of configuration options.
+    # See +before_transition+ for a description of the possible configurations
+    # for defining callbacks.
     def after_transition(options = {}, &block)
       add_callback(:after, options.is_a?(Hash) ? options : {:do => options}, &block)
     end

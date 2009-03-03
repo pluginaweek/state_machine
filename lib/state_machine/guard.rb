@@ -17,58 +17,61 @@ module StateMachine
     # The condition that must *not* be met on an object
     attr_reader :unless_condition
     
-    # The requirement for verifying the event being guarded (includes :on and
-    # :except_on).
+    # The requirement for verifying the event being guarded
     attr_reader :event_requirement
     
-    # The requirement for verifying the states being guarded (includes :from,
-    # :to, :except_from, and :except_to).  All options map to
-    # either nil (if not specified) or an array of state names.
-    attr_reader :state_requirement
+    # One or more requrirements for verifying the states being guarded.  All
+    # requirements contain a mapping of {:from => matcher, :to => matcher}.
+    attr_reader :state_requirements
     
     # A list of all of the states known to this guard.  This will pull states
-    # from the following options in +state_requirements+ (in the same order):
+    # from the following options (in the same order):
     # * +from+ / +except_from+
     # * +to+ / +except_to+
     attr_reader :known_states
     
     # Creates a new guard
     def initialize(options = {}) #:nodoc:
-      assert_valid_keys(options, :from, :to, :on, :except_from, :except_to, :except_on, :if, :unless)
-      
       # Build conditionals
       assert_exclusive_keys(options, :if, :unless)
       @if_condition = options.delete(:if)
       @unless_condition = options.delete(:unless)
       
-      # Build event/state requirements
+      # Build event requirement
       @event_requirement = build_matcher(options, :on, :except_on)
-      @state_requirement = {:from => build_matcher(options, :from, :except_from), :to => build_matcher(options, :to, :except_to)}
+      
+      if (options.keys - [:from, :to, :on, :except_from, :except_to, :except_on]).empty?
+        # Explicit from/to requirements specified
+        @state_requirements = [{:from => build_matcher(options, :from, :except_from), :to => build_matcher(options, :to, :except_to)}]
+      else
+        # Separate out the event requirement
+        options.delete(:on)
+        options.delete(:except_on)
+        
+        # Implicit from/to requirements specified
+        @state_requirements = options.collect do |from, to|
+          from = WhitelistMatcher.new(from) unless from.is_a?(Matcher)
+          to = WhitelistMatcher.new(to) unless to.is_a?(Matcher)
+          {:from => from, :to => to}
+        end
+      end
       
       # Track known states.  The order that requirements are iterated is based
       # on the priority in which tracked states should be added.
       @known_states = []
-      [:from, :to].each {|option| @known_states |= @state_requirement[option].values}
+      @state_requirements.each do |state_requirement|
+        [:from, :to].each {|option| @known_states |= state_requirement[option].values}
+      end
     end
     
-    # Attempts to match the given object / query against the set of requirements
+    # Determines whether the given object / query matches the requirements
     # configured for this guard.  In addition to matching the event, from state,
     # and to state, this will also check whether the configured :if/:unless
     # conditions pass on the given object.
     # 
-    # This will return true or false depending on whether a match is found.
-    # 
-    # Query options:
-    # * <tt>:from</tt> - One or more states being transitioned from.  If none
-    #   are specified, then this will always match.
-    # * <tt>:to</tt> - One or more states being transitioned to.  If none are
-    #   specified, then this will always match.
-    # * <tt>:on</tt> - One or more events that fired the transition.  If none
-    #   are specified, then this will always match.
-    # 
     # == Examples
     # 
-    #   guard = StateMachine::Guard.new(:from => [nil, :parked], :to => :idling, :on => :ignite)
+    #   guard = StateMachine::Guard.new(:parked => :idling, :on => :ignite)
     #   
     #   # Successful
     #   guard.matches?(object, :on => :ignite)                                    # => true
@@ -85,7 +88,36 @@ module StateMachine
     #   guard.matches?(object, :from => :parked, :to => :first_gear)              # => false
     #   guard.matches?(object, :on => :park, :from => :parked, :to => :idling)    # => false
     def matches?(object, query = {})
-      matches_query?(query) && matches_conditions?(object)
+      !match(object, query).nil?
+    end
+    
+    # Attempts to match the given object / query against the set of requirements
+    # configured for this guard.  In addition to matching the event, from state,
+    # and to state, this will also check whether the configured :if/:unless
+    # conditions pass on the given object.
+    # 
+    # If a match is found, then the event/state requirements that the query
+    # passed successfully will be returned.  Otherwise, nil is returned if there
+    # was no match.
+    # 
+    # Query options:
+    # * <tt>:from</tt> - One or more states being transitioned from.  If none
+    #   are specified, then this will always match.
+    # * <tt>:to</tt> - One or more states being transitioned to.  If none are
+    #   specified, then this will always match.
+    # * <tt>:on</tt> - One or more events that fired the transition.  If none
+    #   are specified, then this will always match.
+    # 
+    # == Examples
+    # 
+    #   guard = StateMachine::Guard.new(:parked => :idling, :on => :ignite)
+    #   
+    #   guard.match(object, :on => :ignite) # => {:to => ..., :from => ..., :on => ...}
+    #   guard.match(object, :on => :park)   # => nil
+    def match(object, query = {})
+      if (match = match_query(query)) && matches_conditions?(object)
+        match
+      end
     end
     
     # Draws a representation of this guard on the given graph.  This will draw
@@ -108,26 +140,28 @@ module StateMachine
     # 
     # The collection of edges generated on the graph will be returned.
     def draw(graph, event, valid_states)
-      edges = []
-      
-      # From states determined based on the known valid states
-      from_states = state_requirement[:from].filter(valid_states)
-      
-      # If a to state is not specified, then it's a loopback and each from
-      # state maps back to itself
-      if state_requirement[:to].values.any?
-        to_state = state_requirement[:to].values.first
-        loopback = false
-      else
-        loopback = true
+      state_requirements.inject([]) do |edges, state_requirement|
+        # From states determined based on the known valid states
+        from_states = state_requirement[:from].filter(valid_states)
+        
+        # If a to state is not specified, then it's a loopback and each from
+        # state maps back to itself
+        if state_requirement[:to].values.empty?
+          loopback = true
+        else
+          to_state = state_requirement[:to].values.first
+          to_state = to_state ? to_state.to_s : 'nil'
+          loopback = false
+        end
+        
+        # Generate an edge between each from and to state
+        from_states.each do |from_state|
+          from_state = from_state ? from_state.to_s : 'nil'
+          edges << graph.add_edge(from_state, loopback ? from_state : to_state, :label => event.to_s)
+        end
+        
+        edges
       end
-      
-      # Generate an edge between each from and to state
-      from_states.each do |from_state|
-        edges << graph.add_edge(from_state.to_s, (loopback ? from_state : to_state).to_s, :label => event.to_s)
-      end
-      
-      edges
     end
     
     protected
@@ -149,20 +183,25 @@ module StateMachine
       # Verifies that all configured requirements (event and state) match the
       # given query.  If a match is return, then a hash containing the
       # event/state requirements that passed will be returned; otherwise, nil.
-      def matches_query?(query)
+      def match_query(query)
         query ||= {}
-        matches_event?(query) && matches_states?(query)
+        
+        if match_event(query) && (state_requirement = match_states(query))
+          state_requirement.merge(:on => event_requirement)
+        end
       end
       
       # Verifies that the event requirement matches the given query
-      def matches_event?(query)
+      def match_event(query)
         matches_requirement?(query, :on, event_requirement)
       end
       
       # Verifies that the state requirements match the given query.  If a
       # matching requirement is found, then it is returned.
-      def matches_states?(query)
-        [:from, :to].all? {|option| matches_requirement?(query, option, state_requirement[option])}
+      def match_states(query)
+        state_requirements.detect do |state_requirement|
+          [:from, :to].all? {|option| matches_requirement?(query, option, state_requirement[option])}
+        end
       end
       
       # Verifies that an option in the given query matches the values required

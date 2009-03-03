@@ -1,5 +1,9 @@
 == master
 
+* Fix nil from/to states not being handled properly
+* Simplify hooking callbacks into loopbacks
+* Add simplified transition/callback requirement syntax
+
 == 0.5.2 / 2009-02-17
 
 * Improve pretty-print of events

@@ -10,9 +10,8 @@ class CallbackTest < Test::Unit::TestCase
     assert_nothing_raised { StateMachine::Callback.new(:do => :run) }
   end
   
-  def test_should_raise_exception_if_invalid_option_specified
-    exception = assert_raise(ArgumentError) { StateMachine::Callback.new(:do => :run, :invalid => true) }
-    assert_match 'Invalid key(s): invalid', exception.message
+  def test_should_not_raise_exception_if_implicit_option_specified
+    assert_nothing_raised { StateMachine::Callback.new(:do => :run, :invalid => true) }
   end
   
   def test_should_not_bind_to_objects
@@ -33,8 +32,8 @@ class CallbackByDefaultTest < Test::Unit::TestCase
   
   def test_should_have_a_guard_with_all_matcher_requirements
     assert_equal StateMachine::AllMatcher.instance, @callback.guard.event_requirement
-    assert_equal StateMachine::AllMatcher.instance, @callback.guard.state_requirement[:from]
-    assert_equal StateMachine::AllMatcher.instance, @callback.guard.state_requirement[:to]
+    assert_equal StateMachine::AllMatcher.instance, @callback.guard.state_requirements.first[:from]
+    assert_equal StateMachine::AllMatcher.instance, @callback.guard.state_requirements.first[:to]
   end
   
   def test_should_not_bind_to_the_object
@@ -57,10 +56,41 @@ class CallbackWithOnlyMethodTest < Test::Unit::TestCase
   end
 end
 
-class CallbackWithRequirementsTest < Test::Unit::TestCase
+class CallbackWithExplicitRequirementsTest < Test::Unit::TestCase
   def setup
     @object = Object.new
     @callback = StateMachine::Callback.new(:from => :parked, :to => :idling, :on => :ignite, :do => lambda {true})
+  end
+  
+  def test_should_call_with_empty_context
+    assert @callback.call(@object, {})
+  end
+  
+  def test_should_not_call_if_from_not_included
+    assert !@callback.call(@object, :from => :idling)
+  end
+  
+  def test_should_not_call_if_to_not_included
+    assert !@callback.call(@object, :to => :parked)
+  end
+  
+  def test_should_not_call_if_on_not_included
+    assert !@callback.call(@object, :on => :park)
+  end
+  
+  def test_should_call_if_all_requirements_met
+    assert @callback.call(@object, :from => :parked, :to => :idling, :on => :ignite)
+  end
+  
+  def test_should_include_in_known_states
+    assert_equal [:parked, :idling], @callback.known_states
+  end
+end
+
+class CallbackWithImplicitRequirementsTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+    @callback = StateMachine::Callback.new(:parked => :idling, :on => :ignite, :do => lambda {true})
   end
   
   def test_should_call_with_empty_context

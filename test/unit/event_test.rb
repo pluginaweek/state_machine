@@ -54,13 +54,23 @@ class EventTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
     @event = StateMachine::Event.new(@machine, :ignite)
-    @event.transition :to => :idling, :from => :parked
+    @event.transition :parked => :idling
   end
   
   def test_should_allow_changing_machine
     new_machine = StateMachine::Machine.new(Class.new)
     @event.machine = new_machine
     assert_equal new_machine, @event.machine
+  end
+  
+  def test_should_provide_matcher_helpers_during_initialization
+    matchers = []
+    
+    @event.instance_eval do
+      matchers = [all, any, same]
+    end
+    
+    assert_equal [StateMachine::AllMatcher.instance, StateMachine::AllMatcher.instance, StateMachine::LoopbackMatcher.instance], matchers
   end
   
   def test_should_use_pretty_inspect
@@ -99,8 +109,8 @@ class EventTransitionsTest < Test::Unit::TestCase
     @event = StateMachine::Event.new(@machine, :ignite)
   end
   
-  def test_should_raise_exception_if_invalid_option_specified
-    assert_raise(ArgumentError) {@event.transition(:invalid => true)}
+  def test_should_not_raise_exception_if_implicit_option_specified
+    assert_nothing_raised {@event.transition(:invalid => true)}
   end
   
   def test_should_not_allow_on_option
@@ -131,11 +141,11 @@ class EventTransitionsTest < Test::Unit::TestCase
   end
   
   def test_should_allow_transitioning_from_a_single_state
-    assert @event.transition(:to => :idling, :from => :parked)
+    assert @event.transition(:parked => :idling)
   end
   
   def test_should_allow_transitioning_from_multiple_states
-    assert @event.transition(:to => :idling, :from => [:parked, :idling])
+    assert @event.transition([:parked, :idling] => :idling)
   end
   
   def test_should_have_transitions
@@ -196,8 +206,8 @@ class EventWithTransitionsTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @event = StateMachine::Event.new(@machine, :ignite)
-    @event.transition(:to => :idling, :from => :parked)
-    @event.transition(:to => :idling, :except_from => :first_gear)
+    @event.transition(:parked => :idling)
+    @event.transition(:first_gear => :idling)
   end
   
   def test_should_include_all_transition_states_in_known_states
@@ -206,9 +216,13 @@ class EventWithTransitionsTest < Test::Unit::TestCase
   
   def test_should_include_new_transition_states_after_calling_known_states
     @event.known_states
-    @event.transition(:to => :idling, :from => :stalled)
+    @event.transition(:stalled => :idling)
     
     assert_equal [:parked, :idling, :first_gear, :stalled], @event.known_states
+  end
+  
+  def test_should_use_pretty_inspect
+    assert_match "#<StateMachine::Event name=:ignite transitions=[:parked => :idling, :first_gear => :idling]>", @event.inspect
   end
 end
 
@@ -219,7 +233,7 @@ class EventWithoutMatchingTransitionsTest < Test::Unit::TestCase
     @machine.state :parked, :idling
     
     @event = StateMachine::Event.new(@machine, :ignite)
-    @event.transition(:to => :idling, :from => :parked)
+    @event.transition(:parked => :idling)
     
     @object = @klass.new
     @object.state = 'idling'
@@ -255,7 +269,7 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
     @machine.state :parked, :idling
     
     @event = StateMachine::Event.new(@machine, :ignite)
-    @event.transition(:to => :idling, :from => :parked, :if => lambda {false})
+    @event.transition(:parked => :idling, :if => lambda {false})
     
     @object = @klass.new
     @object.state = 'parked'
@@ -286,7 +300,7 @@ class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
     @machine.state :parked, :idling
     
     @event = StateMachine::Event.new(@machine, :ignite)
-    @event.transition(:to => :idling, :from => :parked)
+    @event.transition(:parked => :idling)
     
     @object = @klass.new
     @object.state = 'parked'
@@ -353,11 +367,11 @@ class EventWithTransitionWithNilToStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @machine.state :parked, :value => nil
+    @machine.state nil
     @machine.state :idling
     
     @event = StateMachine::Event.new(@machine, :park)
-    @event.transition(:from => :idling, :to => :parked)
+    @event.transition(:idling => nil)
     
     @object = @klass.new
     @object.state = 'idling'
@@ -392,8 +406,8 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
     @machine.state :parked, :idling
     
     @event = StateMachine::Event.new(@machine, :ignite)
-    @event.transition(:to => :idling, :from => :idling)
-    @event.transition(:to => :idling, :from => :parked) # This one should get used
+    @event.transition(:idling => :idling)
+    @event.transition(:parked => :idling) # This one should get used
     
     @object = @klass.new
     @object.state = 'parked'
@@ -437,8 +451,8 @@ begin
       states.each {|state| graph.add_node(state.to_s)}
       
       @event = StateMachine::Event.new(@machine , :park)
-      @event.transition :from => :idling, :to => :parked
-      @event.transition :from => :first_gear, :to => :parked
+      @event.transition :parked => :idling
+      @event.transition :first_gear => :parked
       @event.transition :except_from => :parked, :to => :parked
       
       @edges = @event.draw(graph)

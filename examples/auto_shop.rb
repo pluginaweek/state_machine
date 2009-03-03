@@ -1,11 +1,11 @@
 class AutoShop
   state_machine :initial => :available do
     event :tow_vehicle do
-      transition :to => :busy, :from => :available
+      transition :available => :busy
     end
     
     event :fix_vehicle do
-      transition :to => :available, :from => :busy
+      transition :busy => :available 
     end
   end
 end

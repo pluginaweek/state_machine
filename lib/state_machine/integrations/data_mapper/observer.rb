@@ -37,6 +37,8 @@ module StateMachine
       # If dm-observer is not available, then this feature will be skipped.
       # 
       module Observer
+        include MatcherHelpers
+        
         # Creates a callback that will be invoked *before* a transition is
         # performed, so long as the given configuration options match the
         # transition.  Each part of the transition (event, to state, from state)
@@ -55,7 +57,7 @@ module StateMachine
         #     
         #     state_machine :initial => :parked do
         #       event :ignite do
-        #         transition :to => :idling, :from => :parked
+        #         transition :parked => :idling
         #       end
         #     end
         #   end
@@ -70,12 +72,12 @@ module StateMachine
         #     end
         #     
         #     # Target all state machines
-        #     before_transition :to => :idling, :from => :parked, :on => :ignite do
+        #     before_transition :parked => :idling, :on => :ignite do
         #       # put on seatbelt
         #     end
         #     
         #     # Target a specific state machine
-        #     before_transition :state, :to => :idling do
+        #     before_transition :state, any => :idling do
         #       # put on seatbelt
         #     end
         #     
@@ -111,7 +113,7 @@ module StateMachine
         #     
         #     state_machine :initial => :parked do
         #       event :ignite do
-        #         transition :to => :idling, :from => :parked
+        #         transition :parked => :idling
         #       end
         #     end
         #   end
@@ -126,12 +128,12 @@ module StateMachine
         #     end
         #     
         #     # Target all state machines
-        #     after_transition :to => :idling, :from => :parked, :on => :ignite do
+        #     after_transition :parked => :idling, :on => :ignite do
         #       # put on seatbelt
         #     end
         #     
         #     # Target a specific state machine
-        #     after_transition :state, :to => :idling do
+        #     after_transition :state, any => :idling do
         #       # put on seatbelt
         #     end
         #     

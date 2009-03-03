@@ -10,7 +10,7 @@ module StateMachine
     #   class Vehicle < ActiveRecord::Base
     #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => :idling, :from => :parked
+    #         transition :parked => :idling
     #       end
     #     end
     #   end
@@ -95,7 +95,7 @@ module StateMachine
     # 
     #   class Vehicle < ActiveRecord::Base
     #     state_machine :initial => :parked do
-    #       before_transition :to => :idling do |vehicle|
+    #       before_transition any => :idling do |vehicle|
     #         vehicle.put_on_seatbelt
     #       end
     #       
@@ -104,7 +104,7 @@ module StateMachine
     #       end
     #       
     #       event :ignite do
-    #         transition :to => :idling, :from => :parked
+    #         transition :parked => :idling
     #       end
     #     end
     #     

@@ -69,43 +69,39 @@ Class definition:
     attr_accessor :seatbelt_on
     
     state_machine :state, :initial => :parked do
-      before_transition :from => [:parked, :idling], :do => :put_on_seatbelt
+      before_transition any => [:parked, :idling], :do => :put_on_seatbelt
       after_transition :on => :crash, :do => :tow
       after_transition :on => :repair, :do => :fix
-      after_transition :to => :parked do |vehicle, transition|
+      after_transition any => :parked do |vehicle, transition|
         vehicle.seatbelt_on = false
       end
       
       event :park do
-        transition :to => :parked, :from => [:idling, :first_gear]
+        transition [:idling, :first_gear] => :parked
       end
       
       event :ignite do
-        transition :to => :stalled, :from => :stalled
-        transition :to => :idling, :from => :parked
+        transition :stalled => :stalled, :parked => :idling
       end
       
       event :idle do
-        transition :to => :idling, :from => :first_gear
+        transition :first_gear => :idling
       end
       
       event :shift_up do
-        transition :to => :first_gear, :from => :idling
-        transition :to => :second_gear, :from => :first_gear
-        transition :to => :third_gear, :from => :second_gear
+        transition :idling => :first_gear, :first_gear => :second_gear, :second_gear => :third_gear
       end
       
       event :shift_down do
-        transition :to => :second_gear, :from => :third_gear
-        transition :to => :first_gear, :from => :second_gear
+        transition :third_gear => :second_gear, :second_gear => :first_gear
       end
       
       event :crash do
-        transition :to => :stalled, :from => [:first_gear, :second_gear, :third_gear], :unless => :auto_shop_busy?
+        transition [:first_gear, :second_gear, :third_gear] => :stalled, :unless => :auto_shop_busy?
       end
       
       event :repair do
-        transition :to => :parked, :from => :stalled, :if => :auto_shop_busy?
+        transition :stalled => :parked, :if => :auto_shop_busy?
       end
       
       state :parked do
@@ -129,11 +125,11 @@ Class definition:
     
     state_machine :hood_state, :initial => :closed, :namespace => 'hood' do
       event :open do
-        transition :to => :opened
+        transition all => :opened
       end
       
       event :close do
-        transition :to => :closed
+        transition all => :closed
       end
       
       state :opened, :value => 1
@@ -232,13 +228,13 @@ saving the record, named scopes, and observers.  For example,
 
   class Vehicle < ActiveRecord::Base
     state_machine :initial => :parked do
-      before_transition :to => :idling, :do => :put_on_seatbelt
-      after_transition :to => :parked do |vehicle, transition|
+      before_transition any => :idling, :do => :put_on_seatbelt
+      after_transition any => :parked do |vehicle, transition|
         vehicle.seatbelt = 'off'
       end
       
       event :ignite do
-        transition :to => :idling, :from => :parked
+        transition :parked => :idling
       end
     end
     
@@ -275,13 +271,13 @@ callbacks, and observers.  For example,
     property :state, String
     
     state_machine :initial => :parked do
-      before_transition :to => :idling, :do => :put_on_seatbelt
-      after_transition :to => :parked do |transition|
+      before_transition any => :idling, :do => :put_on_seatbelt
+      after_transition any => :parked do |transition|
         self.seatbelt = 'off' # self is the record
       end
       
       event :ignite do
-        transition :to => :idling, :from => :parked
+        transition :parked => :idling
       end
     end
     
@@ -320,13 +316,13 @@ callbacks.  For example,
 
   class Vehicle < Sequel::Model
     state_machine :initial => :parked do
-      before_transition :to => :idling, :do => :put_on_seatbelt
-      after_transition :to => :parked do |transition|
+      before_transition any => :idling, :do => :put_on_seatbelt
+      after_transition any => :parked do |transition|
         self.seatbelt = 'off' # self is the record
       end
       
       event :ignite do
-        transition :to => :idling, :from => :parked
+        transition :parked => :idling
       end
     end
     

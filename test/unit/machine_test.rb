@@ -373,6 +373,16 @@ class MachineTest < Test::Unit::TestCase
     
     assert called
   end
+  
+  def test_should_provide_matcher_helpers_during_initialization
+    matchers = []
+    
+    StateMachine::Machine.new(Class.new) do
+      matchers = [all, any, same]
+    end
+    
+    assert_equal [StateMachine::AllMatcher.instance, StateMachine::AllMatcher.instance, StateMachine::LoopbackMatcher.instance], matchers
+  end
 end
 
 class MachineAfterBeingCopiedTest < Test::Unit::TestCase
@@ -1029,9 +1039,8 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
     @object.callbacks = []
   end
   
-  def test_should_raise_exception_if_invalid_option_specified
-    exception = assert_raise(ArgumentError) {@machine.before_transition :invalid => true, :do => lambda {}}
-    assert_equal 'Invalid key(s): invalid', exception.message
+  def test_should_not_raise_exception_if_implicit_option_specified
+    assert_nothing_raised {@machine.before_transition :invalid => true, :do => lambda {}}
   end
   
   def test_should_raise_exception_if_do_option_not_specified
@@ -1093,6 +1102,14 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
     
     @event.fire(@object)
     assert_equal [:park], @object.callbacks
+  end
+  
+  def test_should_support_implicit_requirement
+    @machine.before_transition :parked => :idling, :do => lambda {|object| object.callbacks << :parked}
+    @machine.before_transition :idling => :parked, :do => lambda {|object| object.callbacks << :idling}
+    
+    @event.fire(@object)
+    assert_equal [:parked], @object.callbacks
   end
   
   def test_should_track_states_defined_in_transition_callbacks

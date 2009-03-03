@@ -199,7 +199,7 @@ module StateMachine
     #   class Vehicle
     #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => :idling
+    #         transition all => :idling
     #       end
     #     end
     #   end
@@ -242,21 +242,21 @@ module StateMachine
     #   class Vehicle
     #     state_machine :heater_state, :initial => :off :namespace => 'heater' do
     #       event :turn_on do
-    #         transition :to => :on
+    #         transition all => :on
     #       end
     #       
     #       event :turn_off do
-    #         transition :to => :off
+    #         transition all => :off
     #       end
     #     end
     #     
     #     state_machine :hood_state, :initial => :closed, :namespace => 'hood' do
     #       event :open do
-    #         transition :to => :opened
+    #         transition all => :opened
     #       end
     #       
     #       event :close do
-    #         transition :to => :closed
+    #         transition all => :closed
     #       end
     #     end
     #   end

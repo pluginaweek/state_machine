@@ -9,15 +9,15 @@ class AutoShop
   end
   
   state_machine :initial => :available do
-    after_transition :from => :available, :do => :increment_customers
-    after_transition :from => :busy, :do => :decrement_customers
+    after_transition :available => any, :do => :increment_customers
+    after_transition :busy => any, :do => :decrement_customers
     
     event :tow_vehicle do
-      transition :to => :busy, :from => :available
+      transition :available => :busy
     end
     
     event :fix_vehicle do
-      transition :to => :available, :from => :busy
+      transition :busy => :available
     end
   end
   
@@ -51,56 +51,54 @@ class Vehicle
   
   # Defines the state machine for the state of the vehicled
   state_machine :initial => lambda {|vehicle| vehicle.force_idle ? :idling : :parked}, :action => :save do
-    before_transition :from => :parked, :do => :put_on_seatbelt
-    before_transition :to => :stalled, :do => :increase_insurance_premium
-    after_transition :to => :parked, :do => lambda {|vehicle| vehicle.seatbelt_on = false}
+    before_transition :parked => any, :do => :put_on_seatbelt
+    before_transition any => :stalled, :do => :increase_insurance_premium
+    after_transition any => :parked, :do => lambda {|vehicle| vehicle.seatbelt_on = false}
     after_transition :on => :crash, :do => :tow
     after_transition :on => :repair, :do => :fix
     
     # Callback tracking for initial state callbacks
-    after_transition :to => :parked, :do => lambda {|vehicle| vehicle.callbacks << 'before_enter_parked'}
-    before_transition :to => :idling, :do => lambda {|vehicle| vehicle.callbacks << 'before_enter_idling'}
+    after_transition any => :parked, :do => lambda {|vehicle| vehicle.callbacks << 'before_enter_parked'}
+    before_transition any => :idling, :do => lambda {|vehicle| vehicle.callbacks << 'before_enter_idling'}
     
     event :park do
-      transition :to => :parked, :from => [:idling, :first_gear]
+      transition [:idling, :first_gear] => :parked
     end
     
     event :ignite do
-      transition :to => :stalled, :from => :stalled
-      transition :to => :idling, :from => :parked
+      transition :stalled => :stalled
+      transition :parked => :idling
     end
     
     event :idle do
-      transition :to => :idling, :from => :first_gear
+      transition :first_gear => :idling
     end
     
     event :shift_up do
-      transition :to => :first_gear, :from => :idling
-      transition :to => :second_gear, :from => :first_gear
-      transition :to => :third_gear, :from => :second_gear
+      transition :idling => :first_gear, :first_gear => :second_gear, :second_gear => :third_gear
     end
     
     event :shift_down do
-      transition :to => :second_gear, :from => :third_gear
-      transition :to => :first_gear, :from => :second_gear
+      transition :third_gear => :second_gear
+      transition :second_gear => :first_gear
     end
     
     event :crash do
-      transition :to => :stalled, :from => [:first_gear, :second_gear, :third_gear], :if => lambda {|vehicle| vehicle.auto_shop.available?}
+      transition [:first_gear, :second_gear, :third_gear] => :stalled, :if => lambda {|vehicle| vehicle.auto_shop.available?}
     end
     
     event :repair do
-      transition :to => :parked, :from => :stalled, :if => :auto_shop_busy?
+      transition :stalled => :parked, :if => :auto_shop_busy?
     end
   end
   
   state_machine :insurance_state, :initial => :inactive, :namespace => 'insurance' do
     event :buy do
-      transition :to => :active, :from => :inactive
+      transition :inactive => :active
     end
     
     event :cancel do
-      transition :to => :inactive, :from => :active
+      transition :active => :inactive
     end
   end
   
@@ -142,19 +140,19 @@ end
 class Car < Vehicle
   state_machine do
     event :reverse do
-      transition :to => :backing_up, :from => [:parked, :idling, :first_gear]
+      transition [:parked, :idling, :first_gear] => :backing_up
     end
     
     event :park do
-      transition :to => :parked, :from => :backing_up
+      transition :backing_up => :parked
     end
     
     event :idle do
-      transition :to => :idling, :from => :backing_up
+      transition :backing_up => :idling
     end
     
     event :shift_up do
-      transition :to => :first_gear, :from => :backing_up
+      transition :backing_up => :first_gear
     end
   end
 end
@@ -166,9 +164,7 @@ end
 class TrafficLight
   state_machine :initial => :stop do
     event :cycle do
-      transition :to => :proceed, :from => :stop
-      transition :to => :caution, :from => :proceed
-      transition :to => :stop, :from => :caution
+      transition :stop => :proceed, :proceed=> :caution, :caution => :stop
     end
     
     state :stop do

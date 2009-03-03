@@ -6,10 +6,6 @@ class NodeCollectionByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_not_have_any_nodes
-    assert !@collection.any?
-  end
-  
-  def test_should_have_a_zero_length
     assert_equal 0, @collection.length
   end
   

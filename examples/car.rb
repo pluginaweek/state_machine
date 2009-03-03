@@ -1,19 +1,19 @@
 class Car < Vehicle
   state_machine do
     event :reverse do
-      transition :to => :backing_up, :from => [:parked, :idling, :first_gear]
+      transition [:parked, :idling, :first_gear] => :backing_up
     end
     
     event :park do
-      transition :to => :parked, :from => :backing_up
+      transition :backing_up => :parked
     end
     
     event :idle do
-      transition :to => :idling, :from => :backing_up
+      transition :backing_up => :idling
     end
     
     event :shift_up do
-      transition :to => :first_gear, :from => :backing_up
+      transition :backing_up => :first_gear
     end
   end
 end

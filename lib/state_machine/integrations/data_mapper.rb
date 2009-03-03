@@ -16,7 +16,7 @@ module StateMachine
     #     
     #     state_machine :initial => :parked do
     #       event :ignite do
-    #         transition :to => :idling, :from => :parked
+    #         transition :parked => :idling
     #       end
     #     end
     #   end
@@ -122,7 +122,7 @@ module StateMachine
     #     property :state, String
     #     
     #     state_machine :initial => :parked do
-    #       before_transition :to => :idling do
+    #       before_transition any => :idling do
     #         put_on_seatbelt
     #       end
     #       
@@ -131,7 +131,7 @@ module StateMachine
     #       end
     #       
     #       event :ignite do
-    #         transition :to => :idling, :from => :parked
+    #         transition :parked => :idling
     #       end
     #     end
     #     

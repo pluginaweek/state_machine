@@ -334,6 +334,16 @@ begin
           @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         end
         
+        def test_should_provide_matcher_helpers
+          matchers = []
+          
+          new_observer(@resource) do
+            matchers = [all, any, same]
+          end
+          
+          assert_equal [StateMachine::AllMatcher.instance, StateMachine::AllMatcher.instance, StateMachine::LoopbackMatcher.instance], matchers
+        end
+        
         def test_should_call_before_transition_callback_if_requirements_match
           called = false
           

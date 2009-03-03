@@ -2,12 +2,11 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class GuardTest < Test::Unit::TestCase
   def setup
-    @guard = StateMachine::Guard.new(:to => :idling, :from => :parked)
+    @guard = StateMachine::Guard.new(:from => :parked, :to => :idling)
   end
   
-  def test_should_raise_exception_if_invalid_option_specified
-    exception = assert_raise(ArgumentError) { StateMachine::Guard.new(:invalid => true) }
-    assert_equal 'Invalid key(s): invalid', exception.message
+  def test_should_not_raise_exception_if_implicit_option_specified
+    assert_nothing_raised { StateMachine::Guard.new(:invalid => true) }
   end
   
   def test_should_not_have_an_if_condition
@@ -16,6 +15,10 @@ class GuardTest < Test::Unit::TestCase
   
   def test_should_not_have_an_unless_condition
     assert_nil @guard.unless_condition
+  end
+  
+  def test_should_have_a_state_requirement
+    assert_equal 1, @guard.state_requirements.length
   end
 end
 
@@ -30,11 +33,11 @@ class GuardWithNoRequirementsTest < Test::Unit::TestCase
   end
   
   def test_should_use_all_matcher_for_from_state_requirement
-    assert_equal StateMachine::AllMatcher.instance, @guard.state_requirement[:from]
+    assert_equal StateMachine::AllMatcher.instance, @guard.state_requirements.first[:from]
   end
   
   def test_should_use_all_matcher_for_to_state_requirement
-    assert_equal StateMachine::AllMatcher.instance, @guard.state_requirement[:to]
+    assert_equal StateMachine::AllMatcher.instance, @guard.state_requirements.first[:to]
   end
   
   def test_should_match_nil_query
@@ -48,6 +51,14 @@ class GuardWithNoRequirementsTest < Test::Unit::TestCase
   def test_should_match_non_empty_query
     assert @guard.matches?(@object, :to => :idling, :from => :parked, :on => :ignite)
   end
+  
+  def test_should_include_all_requirements_in_match
+    match = @guard.match(@object, nil)
+    
+    assert_equal @guard.state_requirements.first[:from], match[:from]
+    assert_equal @guard.state_requirements.first[:to], match[:to]
+    assert_equal @guard.event_requirement, match[:on]
+  end
 end
 
 class GuardWithFromRequirementTest < Test::Unit::TestCase
@@ -57,7 +68,7 @@ class GuardWithFromRequirementTest < Test::Unit::TestCase
   end
   
   def test_should_use_a_whitelist_matcher
-    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirement[:from]
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirements.first[:from]
   end
   
   def test_should_match_if_not_specified
@@ -87,6 +98,11 @@ class GuardWithFromRequirementTest < Test::Unit::TestCase
   def test_should_be_included_in_known_states
     assert_equal [:parked], @guard.known_states
   end
+  
+  def test_should_include_requirement_in_match
+    match = @guard.match(@object, :from => :parked)
+    assert_equal @guard.state_requirements.first[:from], match[:from]
+  end
 end
 
 class GuardWithMultipleFromRequirementsTest < Test::Unit::TestCase
@@ -115,7 +131,7 @@ class GuardWithToRequirementTest < Test::Unit::TestCase
   end
   
   def test_should_use_a_whitelist_matcher
-    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirement[:to]
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirements.first[:to]
   end
   
   def test_should_match_if_not_specified
@@ -144,6 +160,11 @@ class GuardWithToRequirementTest < Test::Unit::TestCase
   
   def test_should_be_included_in_known_states
     assert_equal [:idling], @guard.known_states
+  end
+  
+  def test_should_include_requirement_in_match
+    match = @guard.match(@object, :to => :idling)
+    assert_equal @guard.state_requirements.first[:to], match[:to]
   end
 end
 
@@ -203,6 +224,11 @@ class GuardWithOnRequirementTest < Test::Unit::TestCase
   def test_should_not_be_included_in_known_states
     assert_equal [], @guard.known_states
   end
+  
+  def test_should_include_requirement_in_match
+    match = @guard.match(@object, :on => :ignite)
+    assert_equal @guard.event_requirement, match[:on]
+  end
 end
 
 class GuardWithMultipleOnRequirementsTest < Test::Unit::TestCase
@@ -227,7 +253,7 @@ class GuardWithExceptFromRequirementTest < Test::Unit::TestCase
   end
   
   def test_should_use_a_blacklist_matcher
-    assert_instance_of StateMachine::BlacklistMatcher, @guard.state_requirement[:from]
+    assert_instance_of StateMachine::BlacklistMatcher, @guard.state_requirements.first[:from]
   end
   
   def test_should_match_if_not_included
@@ -281,7 +307,7 @@ class GuardWithExceptToRequirementTest < Test::Unit::TestCase
   end
   
   def test_should_use_a_blacklist_matcher
-    assert_instance_of StateMachine::BlacklistMatcher, @guard.state_requirement[:to]
+    assert_instance_of StateMachine::BlacklistMatcher, @guard.state_requirements.first[:to]
   end
   
   def test_should_match_if_not_included
@@ -425,6 +451,10 @@ class GuardWithDifferentRequirementsTest < Test::Unit::TestCase
     assert !@guard.matches?(@object, :on => :park)
   end
   
+  def test_should_be_nil_if_unmatched
+    assert_nil @guard.match(@object, :from => :parked, :to => :idling, :on => :park)
+  end
+  
   def test_should_include_all_known_states
     assert_equal [:parked, :idling], @guard.known_states
   end
@@ -462,6 +492,129 @@ class GuardWithNilRequirementsTest < Test::Unit::TestCase
   end
 end
 
+class GuardWithImplicitRequirementTest < Test::Unit::TestCase
+  def setup
+    @guard = StateMachine::Guard.new(:parked => :idling, :on => :ignite)
+  end
+  
+  def test_should_create_an_event_requirement
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.event_requirement
+    assert_equal [:ignite], @guard.event_requirement.values
+  end
+  
+  def test_should_use_a_whitelist_from_matcher
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirements.first[:from]
+  end
+  
+  def test_should_use_a_whitelist_to_matcher
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirements.first[:to]
+  end
+end
+
+class GuardWithMultipleImplicitRequirementsTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+    @guard = StateMachine::Guard.new(:parked => :idling, :idling => :first_gear, :on => :ignite)
+  end
+  
+  def test_should_create_multiple_state_requirements
+    assert_equal 2, @guard.state_requirements.length
+  end
+  
+  def test_should_not_match_event_as_state_requirement
+    assert !@guard.matches?(@object, :from => :on, :to => :ignite)
+  end
+  
+  def test_should_match_if_from_included_in_any
+    assert @guard.matches?(@object, :from => :parked)
+    assert @guard.matches?(@object, :from => :idling)
+  end
+  
+  def test_should_not_match_if_from_not_included_in_any
+    assert !@guard.matches?(@object, :from => :first_gear)
+  end
+  
+  def test_should_match_if_to_included_in_any
+    assert @guard.matches?(@object, :to => :idling)
+    assert @guard.matches?(@object, :to => :first_gear)
+  end
+  
+  def test_should_not_match_if_to_not_included_in_any
+    assert !@guard.matches?(@object, :to => :parked)
+  end
+  
+  def test_should_match_if_all_options_match
+    assert @guard.matches?(@object, :from => :parked, :to => :idling, :on => :ignite)
+    assert @guard.matches?(@object, :from => :idling, :to => :first_gear, :on => :ignite)
+  end
+  
+  def test_should_not_match_if_any_options_do_not_match
+    assert !@guard.matches?(@object, :from => :parked, :to => :idling, :on => :park)
+    assert !@guard.matches?(@object, :from => :parked, :to => :first_gear, :on => :park)
+  end
+  
+  def test_should_include_all_known_states
+    assert_equal [:first_gear, :idling, :parked], @guard.known_states.sort_by {|state| state.to_s}
+  end
+  
+  def test_should_not_duplicate_known_statse
+    guard = StateMachine::Guard.new(:parked => :idling, :first_gear => :idling)
+    assert_equal [:first_gear, :idling, :parked], guard.known_states.sort_by {|state| state.to_s}
+  end
+end
+
+class GuardWithImplicitFromRequirementMatcherTest < Test::Unit::TestCase
+  def setup
+    @matcher = StateMachine::BlacklistMatcher.new(:parked)
+    @guard = StateMachine::Guard.new(@matcher => :idling)
+  end
+  
+  def test_should_not_convert_from_to_whitelist_matcher
+    assert_equal @matcher, @guard.state_requirements.first[:from]
+  end
+  
+  def test_should_convert_to_to_whitelist_matcher
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirements.first[:to]
+  end
+end
+
+class GuardWithImplicitToRequirementMatcherTest < Test::Unit::TestCase
+  def setup
+    @matcher = StateMachine::BlacklistMatcher.new(:idling)
+    @guard = StateMachine::Guard.new(:parked => @matcher)
+  end
+  
+  def test_should_convert_from_to_whitelist_matcher
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.state_requirements.first[:from]
+  end
+  
+  def test_should_not_convert_to_to_whitelist_matcher
+    assert_equal @matcher, @guard.state_requirements.first[:to]
+  end
+end
+
+class GuardWithImplicitAndExplicitRequirementsTest < Test::Unit::TestCase
+  def setup
+    @guard = StateMachine::Guard.new(:parked => :idling, :from => :parked)
+  end
+  
+  def test_should_create_multiple_requirements
+    assert_equal 2, @guard.state_requirements.length
+  end
+  
+  def test_should_create_implicit_requirements_for_implicit_options
+    assert(@guard.state_requirements.any? do |state_requirement|
+      state_requirement[:from].values == [:parked] && state_requirement[:to].values == [:idling]
+    end)
+  end
+  
+  def test_should_create_implicit_requirements_for_explicit_options
+    assert(@guard.state_requirements.any? do |state_requirement|
+      state_requirement[:from].values == [:from] && state_requirement[:to].values == [:parked]
+    end)
+  end
+end
+
 class GuardWithIfConditionalTest < Test::Unit::TestCase
   def setup
     @object = Object.new
@@ -480,6 +633,11 @@ class GuardWithIfConditionalTest < Test::Unit::TestCase
   def test_should_not_match_if_false
     guard = StateMachine::Guard.new(:if => lambda {false})
     assert !guard.matches?(@object)
+  end
+  
+  def test_should_be_nil_if_unmatched
+    guard = StateMachine::Guard.new(:if => lambda {false})
+    assert_nil guard.match(@object)
   end
 end
 
@@ -501,6 +659,11 @@ class GuardWithUnlessConditionalTest < Test::Unit::TestCase
   def test_should_not_match_if_true
     guard = StateMachine::Guard.new(:unless => lambda {true})
     assert !guard.matches?(@object)
+  end
+  
+  def test_should_be_nil_if_unmatched
+    guard = StateMachine::Guard.new(:unless => lambda {true})
+    assert_nil guard.match(@object)
   end
 end
 
@@ -622,6 +785,23 @@ begin
     def test_should_create_loopback_edge
       assert_equal 'parked', @edges.first.instance_variable_get('@xNodeOne')
       assert_equal 'parked', @edges.first.instance_variable_get('@xNodeTwo')
+    end
+  end
+  
+  class GuardDrawingWithNilStateTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      
+      graph = GraphViz.new('G')
+      graph.add_node('parked')
+      
+      @guard = StateMachine::Guard.new(:from => :idling, :to => nil)
+      @edges = @guard.draw(graph, :park, [nil, :idling])
+    end
+    
+    def test_should_generate_edges_for_each_valid_from_state
+      assert_equal 'idling', @edges.first.instance_variable_get('@xNodeOne')
+      assert_equal 'nil', @edges.first.instance_variable_get('@xNodeTwo')
     end
   end
 rescue LoadError
