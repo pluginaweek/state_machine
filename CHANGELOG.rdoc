@@ -1,5 +1,6 @@
 == master
 
+* Alias Machine#event as Machine#on
 * Fix nil from/to states not being handled properly
 * Simplify hooking callbacks into loopbacks
 * Add simplified transition/callback requirement syntax

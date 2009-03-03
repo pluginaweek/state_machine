@@ -618,6 +618,9 @@ module StateMachine
     # Defines one or more events for the machine and the transitions that can
     # be performed when those events are run.
     # 
+    # This method is also aliased as +on+ for improved compatibility with
+    # using a domain-specific language.
+    # 
     # == Instance methods
     # 
     # The following instance methods are generated when a new event is defined
@@ -705,6 +708,7 @@ module StateMachine
       
       events.length == 1 ? events.first : events
     end
+    alias_method :on, :event
     
     # Creates a callback that will be invoked *before* a transition is
     # performed so long as the given requirements match the transition.

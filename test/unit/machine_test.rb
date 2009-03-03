@@ -937,6 +937,11 @@ class MachineWithEventsTest < Test::Unit::TestCase
     assert responded
   end
   
+  def test_should_be_aliased_as_on
+    event = @machine.on(:ignite) {}
+    assert_equal :ignite, event.name
+  end
+  
   def test_should_have_events
     event = @machine.event(:ignite)
     assert_equal [event], @machine.events.to_a
