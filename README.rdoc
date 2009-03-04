@@ -285,7 +285,7 @@ callbacks, and observers.  For example,
       end
       
       state :first_gear, :second_gear do
-        validates_presence_of :seatbelt_on
+        validates_present :seatbelt_on
       end
     end
     
