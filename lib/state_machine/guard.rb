@@ -33,7 +33,6 @@ module StateMachine
     # Creates a new guard
     def initialize(options = {}) #:nodoc:
       # Build conditionals
-      assert_exclusive_keys(options, :if, :unless)
       @if_condition = options.delete(:if)
       @unless_condition = options.delete(:unless)
       
@@ -213,13 +212,8 @@ module StateMachine
       # Verifies that the conditionals for this guard evaluate to true for the
       # given object
       def matches_conditions?(object)
-        if if_condition
-          evaluate_method(object, if_condition)
-        elsif unless_condition
-          !evaluate_method(object, unless_condition)
-        else
-          true
-        end
+        Array(if_condition).all? {|condition| evaluate_method(object, condition)} &&
+        !Array(unless_condition).any? {|condition| evaluate_method(object, condition)}
       end
   end
 end

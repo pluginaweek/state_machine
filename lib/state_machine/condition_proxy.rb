@@ -66,11 +66,8 @@ module StateMachine
       end
       
       # Get any existing condition that may need to be merged
-      if condition = options.delete(:if)
-        expected = true
-      elsif condition = options.delete(:unless)
-        expected = false
-      end
+      if_condition = options.delete(:if)
+      unless_condition = options.delete(:unless)
       
       # Provide scope access to configuration in case the block is evaluated
       # within the object instance
@@ -80,7 +77,9 @@ module StateMachine
       # Replace the configuration condition with the one configured for this
       # proxy, merging together any existing conditions
       options[:if] = lambda do |object|
-        proxy.evaluate_method(object, proxy_condition) && (!condition || proxy.evaluate_method(object, condition) == expected)
+        proxy.evaluate_method(object, proxy_condition) &&
+        Array(if_condition).all? {|condition| proxy.evaluate_method(object, condition)} &&
+        !Array(unless_condition).any? {|condition| proxy.evaluate_method(object, condition)}
       end
       
       # Evaluate the method on the original class with the condition proxied

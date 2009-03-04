@@ -641,6 +641,25 @@ class GuardWithIfConditionalTest < Test::Unit::TestCase
   end
 end
 
+class GuardWithMultipleIfConditionalsTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+  end
+  
+  def test_should_match_if_all_are_true
+    guard = StateMachine::Guard.new(:if => [lambda {true}, lambda {true}])
+    assert guard.match(@object)
+  end
+  
+  def test_should_not_match_if_any_are_false
+    guard = StateMachine::Guard.new(:if => [lambda {true}, lambda {false}])
+    assert !guard.match(@object)
+    
+    guard = StateMachine::Guard.new(:if => [lambda {false}, lambda {true}])
+    assert !guard.match(@object)
+  end
+end
+
 class GuardWithUnlessConditionalTest < Test::Unit::TestCase
   def setup
     @object = Object.new
@@ -667,10 +686,44 @@ class GuardWithUnlessConditionalTest < Test::Unit::TestCase
   end
 end
 
+class GuardWithMultipleUnlessConditionalsTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+  end
+  
+  def test_should_match_if_all_are_false
+    guard = StateMachine::Guard.new(:unless => [lambda {false}, lambda {false}])
+    assert guard.match(@object)
+  end
+  
+  def test_should_not_match_if_any_are_true
+    guard = StateMachine::Guard.new(:unless => [lambda {true}, lambda {false}])
+    assert !guard.match(@object)
+    
+    guard = StateMachine::Guard.new(:unless => [lambda {false}, lambda {true}])
+    assert !guard.match(@object)
+  end
+end
+
 class GuardWithConflictingConditionalsTest < Test::Unit::TestCase
-  def test_should_raise_an_exception
-    exception = assert_raise(ArgumentError) { StateMachine::Guard.new(:if => lambda {true}, :unless => lambda {true}) }
-    assert_equal 'Conflicting keys: if, unless', exception.message
+  def test_should_match_if_if_is_true_and_unless_is_false
+    guard = StateMachine::Guard.new(:if => lambda {true}, :unless => lambda {false})
+    assert guard.match(@object)
+  end
+  
+  def test_should_not_match_if_if_is_false_and_unless_is_true
+    guard = StateMachine::Guard.new(:if => lambda {false}, :unless => lambda {true})
+    assert !guard.match(@object)
+  end
+  
+  def test_should_not_match_if_if_is_false_and_unless_is_false
+    guard = StateMachine::Guard.new(:if => lambda {false}, :unless => lambda {false})
+    assert !guard.match(@object)
+  end
+  
+  def test_should_not_match_if_if_is_true_and_unless_is_true
+    guard = StateMachine::Guard.new(:if => lambda {true}, :unless => lambda {true})
+    assert !guard.match(@object)
   end
 end
 

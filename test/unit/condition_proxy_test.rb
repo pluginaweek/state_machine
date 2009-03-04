@@ -173,6 +173,36 @@ class ConditionProxyWithIfConditionTest < Test::Unit::TestCase
   end
 end
 
+class ConditionProxyWithMultipleIfConditionsTest < Test::Unit::TestCase
+  def setup
+    @proxy_result = true
+    condition_proxy = StateMachine::ConditionProxy.new(Validateable, lambda {@proxy_result})
+    
+    @object = Validateable.new
+    
+    @first_condition_result = nil
+    @second_condition_result = nil
+    @validation = condition_proxy.validate(:name, :if => [lambda {@first_condition_result}, lambda {@second_condition_result}])
+    @options = @validation.pop
+  end
+  
+  def test_should_be_true_if_all_conditions_are_true
+    @first_condition_result = true
+    @second_condition_result = true
+    assert @options[:if].call(@object)
+  end
+  
+  def test_should_be_false_if_any_condition_is_false
+    @first_condition_result = true
+    @second_condition_result = false
+    assert !@options[:if].call(@object)
+    
+    @first_condition_result = false
+    @second_condition_result = true
+    assert !@options[:if].call(@object)
+  end
+end
+
 class ConditionProxyWithUnlessConditionTest < Test::Unit::TestCase
   def setup
     @proxy_result = nil
@@ -237,5 +267,35 @@ class ConditionProxyWithUnlessConditionTest < Test::Unit::TestCase
     
     object.callback = false
     assert options[:if].call(object)
+  end
+end
+
+class ConditionProxyWithMultipleUnlessConditionsTest < Test::Unit::TestCase
+  def setup
+    @proxy_result = true
+    condition_proxy = StateMachine::ConditionProxy.new(Validateable, lambda {@proxy_result})
+    
+    @object = Validateable.new
+    
+    @first_condition_result = nil
+    @second_condition_result = nil
+    @validation = condition_proxy.validate(:name, :unless => [lambda {@first_condition_result}, lambda {@second_condition_result}])
+    @options = @validation.pop
+  end
+  
+  def test_should_be_true_if_all_conditions_are_false
+    @first_condition_result = false
+    @second_condition_result = false
+    assert @options[:if].call(@object)
+  end
+  
+  def test_should_be_false_if_any_condition_is_true
+    @first_condition_result = true
+    @second_condition_result = false
+    assert !@options[:if].call(@object)
+    
+    @first_condition_result = false
+    @second_condition_result = true
+    assert !@options[:if].call(@object)
   end
 end
