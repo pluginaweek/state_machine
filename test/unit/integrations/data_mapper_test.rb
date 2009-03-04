@@ -486,6 +486,41 @@ begin
     rescue LoadError
       $stderr.puts 'Skipping DataMapper Observer tests. `gem install dm-observer` and try again.'
     end
+    
+    begin
+      require 'dm-validations'
+      
+      class MachineWithStateDrivenValidationsTest < BaseTestCase
+        def setup
+          @resource = new_resource do
+            attr_accessor :seatbelt
+          end
+          
+          @machine = StateMachine::Machine.new(@resource)
+          @machine.state :first_gear, :second_gear do
+            validates_present :seatbelt
+          end
+          @machine.other_states :parked
+        end
+        
+        def test_should_be_valid_if_validation_fails_outside_state_scope
+          record = @resource.new(:state => 'parked', :seatbelt => nil)
+          assert record.valid?
+        end
+        
+        def test_should_be_invalid_if_validation_fails_within_state_scope
+          record = @resource.new(:state => 'first_gear', :seatbelt => nil)
+          assert !record.valid?
+        end
+        
+        def test_should_be_valid_if_validation_succeeds_within_state_scope
+          record = @resource.new(:state => 'second_gear', :seatbelt => true)
+          assert record.valid?
+        end
+      end
+    rescue LoadError
+      $stderr.puts 'Skipping DataMapper Validation tests. `gem install dm-validations` and try again.'
+    end
   end
 rescue LoadError
   $stderr.puts 'Skipping DataMapper tests. `gem install dm-core cucumber rspec hoe launchy do_sqlite3` and try again.'

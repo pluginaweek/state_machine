@@ -1,5 +1,6 @@
 == master
 
+* Add support state-driven class behavior with :if/:unless options
 * Alias Machine#event as Machine#on
 * Fix nil from/to states not being handled properly
 * Simplify hooking callbacks into loopbacks

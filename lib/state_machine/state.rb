@@ -1,4 +1,5 @@
 require 'state_machine/assertions'
+require 'state_machine/condition_proxy'
 
 module StateMachine
   # A state defines a value that an attribute can be in after being transitioned
@@ -119,9 +120,10 @@ module StateMachine
     def context(&block)
       owner_class = machine.owner_class
       attribute = machine.attribute
+      name = self.name
       
       # Evaluate the method definitions
-      context = Module.new
+      context = ConditionProxy.new(owner_class, lambda {|object| object.send("#{attribute}_name") == name})
       context.class_eval(&block)
       
       # Define all of the methods that were created in the module so that they
@@ -173,8 +175,6 @@ module StateMachine
     # * +label+ - The human-friendly description of the state.
     # * +width+ - The width of the node.  Always 1.
     # * +height+ - The height of the node.  Always 1.
-    # * +fixedsize+ - Whether the size of the node stays the same regardless of
-    #   its contents.  Always true.
     # * +shape+ - The actual shape of the node.  If the state is the initial
     #   state, then "doublecircle", otherwise "circle".
     # 

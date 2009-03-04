@@ -542,6 +542,39 @@ module StateMachine
     #   vehicle = Vehicle.new
     #   vehicle.state = 'backing_up'
     #   vehicle.speed               # => NoMethodError: undefined method 'speed' for #<Vehicle:0xb7d296ac> in state "backing_up"
+    # 
+    # == State-aware class methods
+    # 
+    # In addition to defining scopes for instance methods that are state-aware,
+    # the same can be done for certain types of class methods.
+    # 
+    # Some libraries have support for class-level methods that only run certain
+    # behaviors based on a conditions hash passed in.  For example:
+    # 
+    #   class Vehicle < ActiveRecord::Base
+    #     state_machine do
+    #       ...
+    #       state :first_gear, :second_gear, :third_gear do
+    #         validates_presence_of   :speed
+    #         validates_inclusion_of  :speed, :in => 0..25, :if => :in_school_zone?
+    #       end
+    #     end
+    #   end
+    # 
+    # In the above ActiveRecord model, two validations have been defined which
+    # will *only* run when the Vehicle object is in one of the three states:
+    # +first_gear+, +second_gear+, or +third_gear.  Notice, also, that if/unless
+    # conditions can continue to be used.
+    # 
+    # This functionality is not library-specific and can work for any class-level
+    # method that is defined like so:
+    # 
+    #   def validates_presence_of(args, options = {})
+    #     ...
+    #   end
+    # 
+    # The minimum requirement is that the last argument in the method be an
+    # options hash which contains at least <tt>:if</tt> condition support.
     def state(*names, &block)
       options = names.last.is_a?(Hash) ? names.pop : {}
       assert_valid_keys(options, :value, :if)

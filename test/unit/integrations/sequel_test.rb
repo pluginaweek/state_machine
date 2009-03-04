@@ -307,6 +307,35 @@ begin
         assert_equal [1, 2, 3], @record.callback_result
       end
     end
+    
+    class MachineWithStateDrivenValidationsTest < BaseTestCase
+      def setup
+        @model = new_model do
+          attr_accessor :seatbelt
+        end
+        
+        @machine = StateMachine::Machine.new(@model)
+        @machine.state :first_gear do
+          validates_presence_of :seatbelt
+        end
+        @machine.other_states :parked
+      end
+      
+      def test_should_be_valid_if_validation_fails_outside_state_scope
+        record = @model.new(:state => 'parked', :seatbelt => nil)
+        assert record.valid?
+      end
+      
+      def test_should_be_invalid_if_validation_fails_within_state_scope
+        record = @model.new(:state => 'first_gear', :seatbelt => nil)
+        assert !record.valid?
+      end
+      
+      def test_should_be_valid_if_validation_succeeds_within_state_scope
+        record = @model.new(:state => 'first_gear', :seatbelt => true)
+        assert record.valid?
+      end
+    end
   end
 rescue LoadError
   $stderr.puts 'Skipping Sequel tests. `gem install sequel` and try again.'

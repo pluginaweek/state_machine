@@ -42,7 +42,7 @@ Some brief, high-level features include:
 * DataMapper integration
 * Sequel integration
 * State predicates
-* State-driven behavior
+* State-driven instance / class behavior
 * State values of any data type
 * Dynamically-generated state values
 * Inheritance
@@ -60,7 +60,7 @@ Below is an example of many of the features offered by this plugin, including:
 * Namespaced states
 * Transition callbacks
 * Conditional transitions
-* State-driven behavior
+* State-driven instance behavior
 * Customized state values
 
 Class definition:
@@ -236,6 +236,10 @@ saving the record, named scopes, and observers.  For example,
       event :ignite do
         transition :parked => :idling
       end
+      
+      state :first_gear, :second_gear do
+        validates_presence_of :seatbelt_on
+      end
     end
     
     def put_on_seatbelt
@@ -278,6 +282,10 @@ callbacks, and observers.  For example,
       
       event :ignite do
         transition :parked => :idling
+      end
+      
+      state :first_gear, :second_gear do
+        validates_presence_of :seatbelt_on
       end
     end
     
@@ -323,6 +331,10 @@ callbacks.  For example,
       
       event :ignite do
         transition :parked => :idling
+      end
+      
+      state :first_gear, :second_gear do
+        validates_presence_of :seatbelt_on
       end
     end
     
