@@ -76,7 +76,11 @@ module StateMachine
       
       # Replace the configuration condition with the one configured for this
       # proxy, merging together any existing conditions
-      options[:if] = lambda do |object|
+      options[:if] = lambda do |*args|
+        # Block may be executed within the context of the actual object, so it'll
+        # either be the first argument or the executing context
+        object = args.first || self
+        
         proxy.evaluate_method(object, proxy_condition) &&
         Array(if_condition).all? {|condition| proxy.evaluate_method(object, condition)} &&
         !Array(unless_condition).any? {|condition| proxy.evaluate_method(object, condition)}
