@@ -1,5 +1,7 @@
 == master
 
+== 0.6.0 / 2009-03-03
+
 * Allow multiple conditions for callbacks / class behaviors
 * Add support for state-driven class behavior with :if/:unless options
 * Alias Machine#event as Machine#on
