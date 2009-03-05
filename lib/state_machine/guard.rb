@@ -180,7 +180,7 @@ module StateMachine
       end
       
       # Verifies that all configured requirements (event and state) match the
-      # given query.  If a match is return, then a hash containing the
+      # given query.  If a match is found, then a hash containing the
       # event/state requirements that passed will be returned; otherwise, nil.
       def match_query(query)
         query ||= {}

@@ -44,7 +44,7 @@ module StateMachine
   # example,
   # 
   #   class Vehicle
-  #     state_machine, :initial => :parked do
+  #     state_machine :initial => :parked do
   #       before_transition any => :idling, :do => lambda {|vehicle| throw :halt}
   #       ...
   #     end
@@ -454,7 +454,7 @@ module StateMachine
     # 
     # == Behaviors
     # 
-    # Behaviors defined a series of methods to mixin with objects when the current
+    # Behaviors define a series of methods to mixin with objects when the current
     # state matches the given one(s).  This allows instance methods to behave
     # a specific way depending on what the value of the object's state is.
     # 
@@ -569,7 +569,7 @@ module StateMachine
     # This functionality is not library-specific and can work for any class-level
     # method that is defined like so:
     # 
-    #   def validates_presence_of(args, options = {})
+    #   def validates_presence_of(attribute, options = {})
     #     ...
     #   end
     # 
@@ -597,7 +597,7 @@ module StateMachine
     # Determines whether the given object is in a specific state.  If the
     # object's current value doesn't match the state, then this will return
     # false, otherwise true.  If the given state is unknown, then an ArgumentError
-    # exception will be raised.
+    # will be raised.
     # 
     # == Examples
     # 

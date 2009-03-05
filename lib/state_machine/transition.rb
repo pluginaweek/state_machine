@@ -16,7 +16,7 @@ module StateMachine
     # The state machine for which this transition is defined
     attr_reader :machine
     
-    # The event that caused the transition
+    # The event that triggered the transition
     attr_reader :event
     
     # The original state value *before* the transition
