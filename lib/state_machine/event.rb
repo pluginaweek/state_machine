@@ -177,6 +177,8 @@ module StateMachine
     # Any additional arguments are passed to the StateMachine::Transition#perform
     # instance method.
     def fire(object, *args)
+      machine.reset(object)
+      
       if transition = next_transition(object)
         transition.perform(*args)
       else

@@ -182,6 +182,11 @@ module StateMachine
         object.errors.add(attribute, invalid_message(object, event)) if object.respond_to?(:errors)
       end
       
+      # Resets an errors previously added when invalidating the given object
+      def reset(object)
+        object.errors.clear
+      end
+      
       # Runs a new database transaction, rolling back any changes if the
       # yielded block fails (i.e. returns false).
       def within_transaction(object)

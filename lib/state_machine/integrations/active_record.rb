@@ -195,6 +195,11 @@ module StateMachine
         object.errors.add(attribute, invalid_message(object, event))
       end
       
+      # Resets an errors previously added when invalidating the given object
+      def reset(object)
+        object.errors.clear
+      end
+      
       # Runs a new database transaction, rolling back any changes by raising
       # an ActiveRecord::Rollback exception if the yielded block fails
       # (i.e. returns false).

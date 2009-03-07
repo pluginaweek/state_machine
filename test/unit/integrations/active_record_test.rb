@@ -170,6 +170,15 @@ begin
         assert_equal 'cannot be transitioned via :park from :parked', record.errors.on(:state)
       end
       
+      def test_should_clear_errors_on_reset
+        record = @model.new
+        record.state = 'parked'
+        record.errors.add(:state, 'is invalid')
+        
+        @machine.reset(record)
+        assert_nil record.errors.on(:id)
+      end
+      
       def test_should_not_override_the_column_reader
         record = @model.new
         record[:state] = 'parked'

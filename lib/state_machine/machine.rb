@@ -919,6 +919,12 @@ module StateMachine
     def invalidate(object, event)
     end
     
+    # Resets an errors previously added when invalidating the given object
+    # 
+    # By default, this is a no-op.
+    def reset(object)
+    end
+    
     # Runs a transaction, rolling back any changes if the yielded block fails.
     # 
     # This is only applicable to integrations that involve databases.  By

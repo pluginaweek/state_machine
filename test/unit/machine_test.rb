@@ -254,6 +254,10 @@ class MachineWithoutIntegrationTest < Test::Unit::TestCase
   def test_invalidation_should_do_nothing
     assert_nil @machine.invalidate(@object, StateMachine::Event.new(@machine, :park))
   end
+  
+  def test_reset_should_do_nothing
+    assert_nil @machine.reset(@object)
+  end
 end
 
 class MachineWithCustomIntegrationTest < Test::Unit::TestCase
