@@ -160,6 +160,16 @@ begin
         assert_equal 1, @model.count
       end
       
+      def test_should_invalidate_using_errors
+        record = @model.new
+        record.state = 'parked'
+        
+        @machine.invalidate(record, StateMachine::Event.new(@machine, :park))
+        
+        assert record.errors.invalid?(:state)
+        assert_equal 'cannot be transitioned via :park from :parked', record.errors.on(:state)
+      end
+      
       def test_should_not_override_the_column_reader
         record = @model.new
         record[:state] = 'parked'

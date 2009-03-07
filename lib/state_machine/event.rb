@@ -180,6 +180,7 @@ module StateMachine
       if transition = next_transition(object)
         transition.perform(*args)
       else
+        machine.invalidate(object, self)
         false
       end
     end

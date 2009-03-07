@@ -141,6 +141,15 @@ begin
         assert_equal 1, @resource.all.size
       end
       
+      def test_should_invalidate_using_errors
+        record = @resource.new
+        record.state = 'parked'
+        
+        @machine.invalidate(record, StateMachine::Event.new(@machine, :park))
+        
+        assert_equal ['cannot be transitioned via :park from :parked'], record.errors.on(:state)
+      end
+      
       def test_should_not_override_the_column_reader
         record = @resource.new
         record.attribute_set(:state, 'parked')

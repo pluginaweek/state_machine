@@ -224,7 +224,7 @@ A brief overview of these integrations is described below.
 === ActiveRecord
 
 The ActiveRecord integration adds support for database transactions, automatically
-saving the record, named scopes, and observers.  For example,
+saving the record, named scopes, validation errors, and observers.  For example,
 
   class Vehicle < ActiveRecord::Base
     state_machine :initial => :parked do
@@ -266,7 +266,7 @@ machines, see StateMachine::Integrations::ActiveRecord.
 
 Like the ActiveRecord integration, the DataMapper integration adds support for
 database transactions, automatically saving the record, named scopes, Extlib-like
-callbacks, and observers.  For example,
+callbacks, validation errors, and observers.  For example,
 
   class Vehicle
     include DataMapper::Resource
@@ -319,8 +319,8 @@ machines, see StateMachine::Integrations::DataMapper.
 === Sequel
 
 Like the ActiveRecord integration, the Sequel integration adds support for
-database transactions, automatically saving the record, named scopes, and
-callbacks.  For example,
+database transactions, automatically saving the record, named scopes, validation
+errors and callbacks.  For example,
 
   class Vehicle < Sequel::Model
     state_machine :initial => :parked do

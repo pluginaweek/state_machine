@@ -142,6 +142,10 @@ module StateMachine
     include MatcherHelpers
     
     class << self
+      # The default message to use when invalidating objects that fail to
+      # transition when triggering an event
+      attr_accessor :default_invalid_message
+      
       # Attempts to find or create a state machine for the given class.  For
       # example,
       # 
@@ -208,6 +212,9 @@ module StateMachine
       end
     end
     
+    # Set defaults
+    self.default_invalid_message = 'cannot be transitioned via :%s from :%s'
+    
     # The class that the machine is defined in
     attr_accessor :owner_class
     
@@ -245,7 +252,7 @@ module StateMachine
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration)
+      assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration, :invalid_message)
       
       # Set machine configuration
       @attribute = args.first || :state
@@ -253,6 +260,7 @@ module StateMachine
       @states = StateCollection.new
       @callbacks = {:before => [], :after => []}
       @namespace = options[:namespace]
+      @invalid_message = options[:invalid_message] || self.class.default_invalid_message
       self.owner_class = owner_class
       self.initial_state = options[:initial]
       
@@ -904,6 +912,13 @@ module StateMachine
       add_callback(:after, options.is_a?(Hash) ? options : {:do => options}, &block)
     end
     
+    # Marks the given object as invalid after failing to transition via the
+    # given event.
+    # 
+    # By default, this is a no-op.
+    def invalidate(object, event)
+    end
+    
     # Runs a transaction, rolling back any changes if the yielded block fails.
     # 
     # This is only applicable to integrations that involve databases.  By
@@ -1076,6 +1091,12 @@ module StateMachine
           
           state
         end
+      end
+      
+      # Generates the message to use when invalidating the given object after
+      # failing to transition on a specific event
+      def invalid_message(object, event)
+        @invalid_message % [event.name, state_for(object).name]
       end
   end
 end

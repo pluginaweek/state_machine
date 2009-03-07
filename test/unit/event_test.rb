@@ -264,8 +264,17 @@ end
 
 class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
   def setup
-    @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass)
+    StateMachine::Integrations.const_set('Custom', Module.new do
+      def invalidate(object, event)
+        object.error = invalid_message(object, event)
+      end
+    end)
+    
+    @klass = Class.new do
+      attr_accessor :error
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :integration => :custom)
     @machine.state :parked, :idling
     
     @event = StateMachine::Event.new(@machine, :ignite)
@@ -291,12 +300,30 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
     @event.fire(@object)
     assert_equal 'parked', @object.state
   end
+  
+  def test_should_invalidate_the_state
+    @event.fire(@object)
+    assert_equal 'cannot be transitioned via :ignite from :parked', @object.error
+  end
+  
+  def teardown
+    StateMachine::Integrations.send(:remove_const, 'Custom')
+  end
 end
 
 class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
   def setup
-    @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass)
+    StateMachine::Integrations.const_set('Custom', Module.new do
+      def invalidate(object, event)
+        object.error = invalid_message(object, event)
+      end
+    end)
+    
+    @klass = Class.new do
+      attr_accessor :error
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :integration => :custom)
     @machine.state :parked, :idling
     
     @event = StateMachine::Event.new(@machine, :ignite)
@@ -325,6 +352,15 @@ class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
   def test_should_change_the_current_state
     @event.fire(@object)
     assert_equal 'idling', @object.state
+  end
+  
+  def test_should_not_invalidate_the_state
+    @event.fire(@object)
+    assert_nil @object.error
+  end
+  
+  def teardown
+    StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 

@@ -250,6 +250,10 @@ class MachineWithoutIntegrationTest < Test::Unit::TestCase
     
     assert @yielded
   end
+  
+  def test_invalidation_should_do_nothing
+    assert_nil @machine.invalidate(@object, StateMachine::Event.new(@machine, :park))
+  end
 end
 
 class MachineWithCustomIntegrationTest < Test::Unit::TestCase
@@ -328,7 +332,6 @@ class MachineWithCustomPluralTest < Test::Unit::TestCase
   def setup
     @integration = Module.new do
       class << self; attr_accessor :with_scopes, :without_scopes; end
-      @initialized = false
       @with_scopes = []
       @without_scopes = []
       
@@ -360,9 +363,43 @@ class MachineWithCustomPluralTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithCustomInvalidationTest < Test::Unit::TestCase
+  def setup
+    @integration = Module.new do
+      def invalidate(object, event)
+        object.error = invalid_message(object, event)
+      end
+    end
+    StateMachine::Integrations.const_set('Custom', @integration)
+    
+    @klass = Class.new do
+      attr_accessor :error
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :integration => :custom, :invalid_message => 'cannot %s when %s')
+    @machine.state :parked
+    
+    @object = @klass.new
+    @object.state = 'parked'
+  end
+  
+  def test_use_custom_message
+    @machine.invalidate(@object, StateMachine::Event.new(@machine, :park))
+    assert_equal 'cannot park when parked', @object.error
+  end
+  
+  def teardown
+    StateMachine::Integrations.send(:remove_const, 'Custom')
+  end
+end
+
 class MachineTest < Test::Unit::TestCase
   def test_should_raise_exception_if_invalid_option_specified
     assert_raise(ArgumentError) {StateMachine::Machine.new(Class.new, :invalid => true)}
+  end
+  
+  def test_should_not_raise_exception_if_custom_invalid_message_specified
+    assert_nothing_raised {StateMachine::Machine.new(Class.new, :invalid_message => 'custom')}
   end
   
   def test_should_evaluate_a_block_during_initialization
@@ -969,8 +1006,8 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @event = @machine.event(:ignite) do
-      transition :to => :idling, :from => :parked
-      transition :to => :idling, :from => :stalled
+      transition :parked => :idling
+      transition :stalled => :idling
     end
   end
   
@@ -984,7 +1021,7 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
   
   def test_should_not_duplicate_states_defined_in_multiple_event_transitions
     @machine.event :park do
-      transition :to => :parked, :from => :idling
+      transition :idling => :parked
     end
     
     assert_equal [:parked, :idling, :stalled], @machine.states.map {|state| state.name}
@@ -992,7 +1029,7 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
   
   def test_should_track_state_from_new_events
     @machine.event :shift_up do
-      transition :to => :first_gear, :from => :idling
+      transition :idling => :first_gear
     end
     
     assert_equal [:parked, :idling, :stalled, :first_gear], @machine.states.map {|state| state.name}
@@ -1004,7 +1041,7 @@ class MachineWithMultipleEventsTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @park, @shift_down = @machine.event(:park, :shift_down) do
-      transition :to => :parked, :from => :first_gear
+      transition :first_gear => :parked
     end
   end
   
@@ -1037,7 +1074,7 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @event = @machine.event :ignite do
-      transition :to => :idling, :from => :parked
+      transition :parked => :idling
     end
     
     @object = @klass.new
@@ -1118,16 +1155,16 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   end
   
   def test_should_track_states_defined_in_transition_callbacks
-    @machine.before_transition :from => :parked, :to => :idling, :do => lambda {}
-    @machine.after_transition :from => :first_gear, :to => :second_gear, :do => lambda {}
+    @machine.before_transition :parked => :idling, :do => lambda {}
+    @machine.after_transition :first_gear => :second_gear, :do => lambda {}
     
     assert_equal [:parked, :idling, :first_gear, :second_gear], @machine.states.map {|state| state.name}
   end
   
   def test_should_not_duplicate_states_defined_in_multiple_event_transitions
-    @machine.before_transition :from => :parked, :to => :idling, :do => lambda {}
-    @machine.after_transition :from => :first_gear, :to => :second_gear, :do => lambda {}
-    @machine.after_transition :from => :parked, :to => :idling, :do => lambda {}
+    @machine.before_transition :parked => :idling, :do => lambda {}
+    @machine.after_transition :first_gear => :second_gear, :do => lambda {}
+    @machine.after_transition :parked => :idling, :do => lambda {}
     
     assert_equal [:parked, :idling, :first_gear, :second_gear], @machine.states.map {|state| state.name}
   end
@@ -1177,11 +1214,11 @@ class MachineWithNamespaceTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :namespace => 'car', :initial => :parked) do
       event :ignite do
-        transition :to => :idling, :from => :parked
+        transition :parked => :idling
       end
       
       event :park do
-        transition :to => :parked, :from => :idling
+        transition :idling => :parked
       end
     end
     @object = @klass.new
@@ -1354,7 +1391,7 @@ begin
       end
       @machine = StateMachine::Machine.new(@klass, :initial => :parked)
       @machine.event :ignite do
-        transition :to => :idling, :from => :parked
+        transition :parked => :idling
       end
     end
     
@@ -1398,7 +1435,7 @@ begin
       end
       @machine = StateMachine::Machine.new(@klass, :state_id, :initial => :parked)
       @machine.event :ignite do
-        transition :to => :idling, :from => :parked
+        transition :parked => :idling
       end
       @machine.state :parked, :value => 1
       @machine.state :idling, :value => 2
@@ -1419,7 +1456,7 @@ begin
       end
       @machine = StateMachine::Machine.new(@klass, :initial => :parked)
       @machine.event :ignite do
-        transition :to => :idling, :from => :parked
+        transition :parked => :idling
       end
       @machine.state :parked, :value => nil
       @machine.draw
@@ -1439,7 +1476,7 @@ begin
       end
       @machine = StateMachine::Machine.new(@klass, :initial => :parked)
       @machine.event :activate do
-        transition :to => :idling, :from => :parked
+        transition :parked => :idling
       end
       @machine.state :idling, :value => lambda {Time.now}
       @machine.draw
@@ -1459,7 +1496,7 @@ begin
       end
       @machine = StateMachine::Machine.new(@klass)
       @machine.event :ignite do
-        transition :to => :idling, :from => :parked
+        transition :parked => :idling
       end
     end
     

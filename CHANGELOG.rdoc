@@ -1,5 +1,7 @@
 == master
 
+* Add a validation error when failing to transition for ActiveRecord / DataMapper / Sequel integrations
+
 == 0.6.0 / 2009-03-03
 
 * Allow multiple conditions for callbacks / class behaviors

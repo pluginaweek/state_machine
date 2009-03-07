@@ -85,7 +85,7 @@ module StateMachine
           
           # Updates the object's attribute to the ending state
           object.send("#{attribute}=", to)
-          result = run_action && machine.action ? object.send(machine.action) : true
+          result = run_action && machine.action ? object.send(machine.action) != false : true
           
           # Always run after callbacks regardless of whether the action failed.
           # Result is included in case the callback depends on this value

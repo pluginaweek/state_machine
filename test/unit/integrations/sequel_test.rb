@@ -22,6 +22,8 @@ begin
             column :state, :string
           end if auto_migrate
           model = Class.new(Sequel::Model(:foo)) do
+            self.raise_on_save_failure = false
+            
             def self.name; 'SequelTest::Foo'; end
           end
           model.class_eval(&block) if block_given?
@@ -125,6 +127,15 @@ begin
         end
         
         assert_equal 1, @model.count
+      end
+      
+      def test_should_invalidate_using_errors
+        record = @model.new
+        record.state = 'parked'
+        
+        @machine.invalidate(record, StateMachine::Event.new(@machine, :park))
+        
+        assert_equal ['cannot be transitioned via :park from :parked'], record.errors.on(:state)
       end
       
       def test_should_not_override_the_column_reader
@@ -271,7 +282,7 @@ begin
         @machine.after_transition(lambda {|*args| callback_args = args})
         
         @transition.perform
-        assert_equal [@transition, @record], callback_args
+        assert_equal [@transition, true], callback_args
       end
       
       def test_should_run_after_callbacks_with_the_context_of_the_record

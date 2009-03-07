@@ -13,6 +13,7 @@ module StateMachine
   # * Observers
   # * Scopes
   # * Callbacks
+  # * Validation errors
   # 
   # This type of integration allows the user to work with state machines in a
   # fashion similar to other object models in their application.
