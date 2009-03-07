@@ -161,6 +161,8 @@ begin
       end
       
       def test_should_invalidate_using_errors
+        I18n.backend = I18n::Backend::Simple.new if Object.const_defined?(:I18n)
+        
         record = @model.new
         record.state = 'parked'
         
@@ -736,6 +738,74 @@ begin
         
         assert_equal expected, @notifications
       end
+    end
+    
+    if Object.const_defined?(:I18n)
+      class MachineWithInternationalizationTest < ActiveRecord::TestCase
+        def setup
+          I18n.backend = I18n::Backend::Simple.new
+          
+          # Initialize the backend
+          I18n.backend.translate(:en, 'activerecord.errors.messages.invalid_transition', :event => 'ignite', :value => 'idling')
+          
+          @model = new_model
+        end
+        
+        def test_should_invalidate_using_i18n_default
+          I18n.backend.store_translations(:en, {
+            :activerecord => {
+              :errors => {
+                :messages => {
+                  :invalid_transition => 'cannot {{event}} when {{value}}'
+                }
+              }
+            }
+          })
+          
+          machine = StateMachine::Machine.new(@model)
+          machine.state :parked, :idling
+          event = StateMachine::Event.new(machine, :ignite)
+          
+          record = @model.new(:state => 'idling')
+          
+          machine.invalidate(record, event)
+          assert_equal 'cannot ignite when idling', record.errors.on(:state)
+        end
+        
+        def test_should_invalidate_using_customized_i18n_key_if_specified
+          I18n.backend.store_translations(:en, {
+            :activerecord => {
+              :errors => {
+                :messages => {
+                  :bad_transition => 'cannot {{event}} when {{value}}'
+                }
+              }
+            }
+          })
+          
+          machine = StateMachine::Machine.new(@model, :invalid_message => :bad_transition)
+          machine.state :parked, :idling
+          event = StateMachine::Event.new(machine, :ignite)
+          
+          record = @model.new(:state => 'idling')
+          
+          machine.invalidate(record, event)
+          assert_equal 'cannot ignite when idling', record.errors.on(:state)
+        end
+      end
+      
+      def test_should_invalidate_using_customized_i18n_string_if_specified
+        machine = StateMachine::Machine.new(@model, :invalid_message => 'cannot {{event}} when {{value}}')
+        machine.state :parked, :idling
+        event = StateMachine::Event.new(machine, :ignite)
+        
+        record = @model.new(:state => 'idling')
+        
+        machine.invalidate(record, event)
+        assert_equal 'cannot ignite when idling', record.errors.on(:state)
+      end
+    else
+      $stderr.puts 'Skipping ActiveRecord I18n tests. `gem install active_record` and try again.'
     end
   end
 rescue LoadError

@@ -260,7 +260,7 @@ module StateMachine
       @states = StateCollection.new
       @callbacks = {:before => [], :after => []}
       @namespace = options[:namespace]
-      @invalid_message = options[:invalid_message] || self.class.default_invalid_message
+      @invalid_message = options[:invalid_message]
       self.owner_class = owner_class
       self.initial_state = options[:initial]
       
@@ -1102,7 +1102,7 @@ module StateMachine
       # Generates the message to use when invalidating the given object after
       # failing to transition on a specific event
       def invalid_message(object, event)
-        @invalid_message % [event.name, state_for(object).name]
+        (@invalid_message || self.class.default_invalid_message) % [event.name, state_for(object).name]
       end
   end
 end

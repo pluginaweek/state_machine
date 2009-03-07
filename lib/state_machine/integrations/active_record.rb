@@ -187,12 +187,21 @@ module StateMachine
       # Loads additional files specific to ActiveRecord
       def self.extended(base) #:nodoc:
         require 'state_machine/integrations/active_record/observer'
+        I18n.load_path << "#{File.dirname(__FILE__)}/active_record/locale.rb" if Object.const_defined?(:I18n)
       end
       
       # Adds a validation error to the given object after failing to fire a
       # specific event
       def invalidate(object, event)
-        object.errors.add(attribute, invalid_message(object, event))
+        if Object.const_defined?(:I18n)
+          object.errors.add(attribute, :invalid_transition,
+            :event => event.name,
+            :value => state_for(object).name,
+            :default => @invalid_message
+          )
+        else
+          object.errors.add(attribute, invalid_message(object, event))
+        end
       end
       
       # Resets an errors previously added when invalidating the given object
