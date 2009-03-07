@@ -447,4 +447,3 @@ dependencies are listed below.
 * ActiveRecord[http://rubyonrails.org] integration: 2.1.0 or later
 * DataMapper[http://datamapper.org] integration: 0.9.0 or later
 * Sequel[http://sequel.rubyforge.org] integration: 2.8.0 or later
-* i18n[http://github.com/svenfuchs/i18n] support (when used outside of ActiveRecord): 0.1.1 or later
