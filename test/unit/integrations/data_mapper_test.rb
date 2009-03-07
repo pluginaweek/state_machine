@@ -3,6 +3,8 @@ require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 begin
   # Load library
   require 'rubygems'
+  
+  gem 'dm-core', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.0'
   require 'dm-core'
   
   # Establish database connection
@@ -341,6 +343,7 @@ begin
     end
     
     begin
+      gem 'dm-observer', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.0'
       require 'dm-observer'
       
       class MachineWithObserversTest < BaseTestCase
@@ -502,10 +505,11 @@ begin
         end
       end
     rescue LoadError
-      $stderr.puts 'Skipping DataMapper Observer tests. `gem install dm-observer` and try again.'
+      $stderr.puts "Skipping DataMapper Observer tests. `gem install dm-observer#{" -v #{ENV['DM_VERSION']}" if ENV['DM_VERSION']}` and try again."
     end
     
     begin
+      gem 'dm-validations', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.0'
       require 'dm-validations'
       
       class MachineWithStateDrivenValidationsTest < BaseTestCase
@@ -537,9 +541,9 @@ begin
         end
       end
     rescue LoadError
-      $stderr.puts 'Skipping DataMapper Validation tests. `gem install dm-validations` and try again.'
+      $stderr.puts "Skipping DataMapper Validation tests. `gem install dm-validations#{" -v #{ENV['DM_VERSION']}" if ENV['DM_VERSION']}` and try again."
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping DataMapper tests. `gem install dm-core cucumber rspec hoe launchy do_sqlite3` and try again.'
+  $stderr.puts "Skipping DataMapper tests. `gem install dm-core#{" -v #{ENV['DM_VERSION']}" if ENV['DM_VERSION']}`, `gem install cucumber rspec hoe launchy do_sqlite3` and try again."
 end

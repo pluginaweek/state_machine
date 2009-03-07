@@ -3,6 +3,8 @@ require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 begin
   # Load library
   require 'rubygems'
+  
+  gem 'activerecord', ENV['AR_VERSION'] ? "=#{ENV['AR_VERSION']}" : '>=2.1.0'
   require 'active_record'
   
   FIXTURES_ROOT = File.dirname(__FILE__) + '/../../fixtures/'
@@ -805,9 +807,9 @@ begin
         assert_equal 'cannot ignite when idling', record.errors.on(:state)
       end
     else
-      $stderr.puts 'Skipping ActiveRecord I18n tests. `gem install active_record` and try again.'
+      $stderr.puts 'Skipping ActiveRecord I18n tests. `gem install active_record` >= v2.2.0 and try again.'
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping ActiveRecord tests. `gem install active_record` and try again.'
+  $stderr.puts "Skipping ActiveRecord tests. `gem install activerecord#{" -v #{ENV['AR_VERSION']}" if ENV['AR_VERSION']}` and try again."
 end

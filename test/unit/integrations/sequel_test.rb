@@ -3,6 +3,8 @@ require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 begin
   # Load library
   require 'rubygems'
+  
+  gem 'sequel', ENV['SEQUEL_VERSION'] ? "=#{ENV['SEQUEL_VERSION']}" : '>=2.8.0'
   require 'sequel'
   require 'logger'
   
@@ -358,5 +360,5 @@ begin
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping Sequel tests. `gem install sequel` and try again.'
+  $stderr.puts "Skipping Sequel tests. `gem install sequel#{" -v #{ENV['SEQUEL_VERSION']}" if ENV['SEQUEL_VERSION']}` and try again."
 end
