@@ -439,6 +439,10 @@ integrations if the proper dependencies are available):
 
   rake test
 
+Target specific versions of integrations like so:
+
+  rake test AR_VERSION=2.1.0 DM_VERSION=0.9.0 SEQUEL_VERSION=2.8.0
+
 == Dependencies
 
 By default, there are no dependencies.  If using specific integrations, those
