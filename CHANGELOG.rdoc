@@ -1,5 +1,7 @@
 == master
 
+== 0.6.1 / 2009-03-07
+
 * Add i18n support for ActiveRecord validation errors
 * Add a validation error when failing to transition for ActiveRecord / DataMapper / Sequel integrations
 
