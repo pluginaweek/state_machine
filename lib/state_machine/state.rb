@@ -205,15 +205,12 @@ module StateMachine
       def add_predicate
         return unless name
         
-        attribute = machine.attribute
         qualified_name = name = self.name
         qualified_name = "#{machine.namespace}_#{name}" if machine.namespace
         
-        machine.owner_class.class_eval do
-          # Checks whether the current value matches this state
-          define_method("#{qualified_name}?") do
-            self.class.state_machines[attribute].state(name).matches?(send(attribute))
-          end
+        # Checks whether the current value matches this state
+        machine.define_instance_method("#{qualified_name}?") do |machine, object|
+          machine.state?(object, name)
         end
       end
   end

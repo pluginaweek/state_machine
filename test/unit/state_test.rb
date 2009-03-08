@@ -272,20 +272,30 @@ class StateNotInitialTest < Test::Unit::TestCase
   end
 end
 
-class StateWithConflictingPredicateTest < Test::Unit::TestCase
+class StateWithConflictingHelpersTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do
       def parked?
-        1
+        0
       end
     end
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked)
+    @machine.state :parked
     @object = @klass.new
   end
   
-  def test_should_redefine_state_predicate
-    assert_equal false, @object.parked?
+  def test_should_not_redefine_state_predicate
+    assert_equal 0, @object.parked?
+  end
+  
+  def test_should_allow_super_chaining
+    @klass.class_eval do
+      def parked?
+        super ? 1 : 0
+      end
+    end
+    
+    assert_equal 0, @object.parked?
   end
 end
 

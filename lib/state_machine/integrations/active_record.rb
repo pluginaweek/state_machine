@@ -240,6 +240,8 @@ module StateMachine
         def define_attribute_predicate
           attribute = self.attribute
           
+          # Still use class_eval here instance of define_instance_method since
+          # we need to directly override the method defined in the model
           owner_class.class_eval do
             define_method("#{attribute}?") do |*args|
               args.empty? ? super(*args) : self.class.state_machines[attribute].state?(self, *args)

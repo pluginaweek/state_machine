@@ -536,96 +536,102 @@ class MachineAfterChangingInitialState < Test::Unit::TestCase
   end
 end
 
-class MachineWithConflictingAttributeAccessorsTest < Test::Unit::TestCase
+class MachineWithInstanceHelpersTest < Test::Unit::TestCase
   def setup
-    @klass = Class.new do
-      attr_accessor :status
-      
-      def state
-        status
-      end
-      
-      def state=(value)
-        self.status = value
-      end
-      
-      def state?
-        true
-      end
-      
-      def state_name
-        :parked
-      end
-    end
+    @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @object = @klass.new
   end
   
-  def test_should_not_define_attribute_reader
-    @object.status = 'parked'
+  def test_should_not_redefine_existing_public_methods
+    @klass.class_eval do
+      def state
+        'parked'
+      end
+    end
+    
+    @machine.define_instance_method(:state) {}
     assert_equal 'parked', @object.state
   end
   
-  def test_should_not_define_attribute_writer
-    @object.state = 'parked'
-    assert_equal 'parked', @object.status
-  end
-  
-  def test_should_not_define_attribute_predicate
-    assert @object.state?
-  end
-  
-  def test_should_define_attribute_name_reader
-    assert_nil @object.state_name
-  end
-end
-
-class MachineWithConflictingPrivateAttributeAccessorsTest < Test::Unit::TestCase
-  def setup
-    @klass = Class.new do
-      attr_accessor :status
-      
-      private
+  def test_should_not_redefine_existing_protected_methods
+    @klass.class_eval do
+      protected
         def state
-          status
-        end
-        
-        def state=(value)
-          self.status = value
-        end
-        
-        def state?
-          true
-        end
-        
-        def state_name
-          :parked
+          'parked'
         end
     end
-    @machine = StateMachine::Machine.new(@klass)
-    @object = @klass.new
-  end
-  
-  def test_should_not_define_attribute_reader
-    @object.status = 'parked'
+    
+    @machine.define_instance_method(:state) {}
     assert_equal 'parked', @object.send(:state)
   end
   
-  def test_should_not_define_attribute_writer
-    @object.send(:state=, 'parked')
-    assert_equal 'parked', @object.status
+  def test_should_not_redefine_existing_private_methods
+    @klass.class_eval do
+      private
+        def state
+          'parked'
+        end
+    end
+    
+    @machine.define_instance_method(:state) {}
+    assert_equal 'parked', @object.send(:state)
   end
   
-  def test_should_not_define_attribute_predicate
-    assert @object.send(:state?)
-  end
-  
-  def test_should_define_attribute_name_reader
-    assert_nil @object.send(:state_name)
+  def test_should_define_nonexistent_methods
+    @machine.define_instance_method(:state) {'parked'}
+    assert_equal 'parked', @object.state
   end
 end
 
-class MachineWithConflictingScopesTest < Test::Unit::TestCase
+class MachineWithClassHelpersTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+  end
+  
+  def test_should_not_redefine_existing_public_methods
+    class << @klass
+      def states
+        []
+      end
+    end
+    
+    @machine.define_class_method(:states) {}
+    assert_equal [], @klass.states
+  end
+  
+  def test_should_not_redefine_existing_protected_methods
+    class << @klass
+      protected
+        def states
+          []
+        end
+    end
+    
+    @machine.define_class_method(:states) {}
+    assert_equal [], @klass.send(:states)
+  end
+  
+  def test_should_not_redefine_existing_private_methods
+    class << @klass
+      private
+        def states
+          []
+        end
+    end
+    
+    @machine.define_class_method(:states) {}
+    assert_equal [], @klass.send(:states)
+  end
+  
+  def test_should_define_nonexistent_methods
+    @machine.define_class_method(:states) {[]}
+    assert_equal [], @klass.states
+  end
+end
+
+class MachineWithConflictingHelpersTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do
       def self.with_state
@@ -643,35 +649,122 @@ class MachineWithConflictingScopesTest < Test::Unit::TestCase
       def self.without_states
         :without_states
       end
-    end
-    
-    integration = Module.new do
-      def define_with_scope(name)
-        raise ArgumentError, 'should not define a with scope'
+      
+      attr_accessor :status
+      
+      def state
+        'parked'
       end
       
-      def define_without_scope(name)
-        raise ArgumentError, 'should not define a without scope'
+      def state=(value)
+        self.status = value
+      end
+      
+      def state?
+        true
+      end
+      
+      def state_name
+        :parked
       end
     end
-    StateMachine::Integrations.const_set('Custom', integration)
+    
+    StateMachine::Integrations.const_set('Custom', Module.new do
+      def create_with_scope(name)
+        lambda {|klass, values| []}
+      end
+      
+      def create_without_scope(name)
+        lambda {|klass, values| []}
+      end
+    end)
+    
     @machine = StateMachine::Machine.new(@klass, :integration => :custom)
+    @machine.state :parked, :idling
+    @object = @klass.new
   end
   
-  def test_should_not_define_singular_with_scope
+  def test_should_not_redefine_singular_with_scope
     assert_equal :with_state, @klass.with_state
   end
   
-  def test_should_not_define_plural_with_scope
+  def test_should_not_redefine_plural_with_scope
     assert_equal :with_states, @klass.with_states
   end
   
-  def test_should_not_define_singular_without_scope
+  def test_should_not_redefine_singular_without_scope
     assert_equal :without_state, @klass.without_state
   end
   
-  def test_should_not_define_plural_without_scope
+  def test_should_not_redefine_plural_without_scope
     assert_equal :without_states, @klass.without_states
+  end
+  
+  def test_should_not_redefine_attribute_writer
+    assert_equal 'parked', @object.state
+  end
+  
+  def test_should_not_redefine_attribute_writer
+    @object.state = 'parked'
+    assert_equal 'parked', @object.status
+  end
+  
+  def test_should_not_define_attribute_predicate
+    assert @object.state?
+  end
+  
+  def test_should_not_redefine_attribute_name_reader
+    assert_equal :parked, @object.state_name
+  end
+  
+  def test_should_allow_super_chaining
+    @klass.class_eval do
+      def self.with_state(*states)
+        super == []
+      end
+      
+      def self.with_states(*states)
+        super == []
+      end
+      
+      def self.without_state(*states)
+        super == []
+      end
+      
+      def self.without_states(*states)
+        super == []
+      end
+      
+      attr_accessor :status
+      
+      def state
+        super || 'parked'
+      end
+      
+      def state=(value)
+        super
+        self.status = value
+      end
+      
+      def state?(state)
+        super ? 1 : 0
+      end
+      
+      def state_name
+        super == :parked ? 1 : 0
+      end
+    end
+    
+    assert_equal true, @klass.with_state
+    assert_equal true, @klass.with_states
+    assert_equal true, @klass.without_state
+    assert_equal true, @klass.without_states
+    
+    assert_equal 'parked', @object.state
+    @object.state = 'idling'
+    assert_equal 'idling', @object.status
+    assert_equal 0, @object.state?(:parked)
+    assert_equal 0, @object.state_name
   end
   
   def teardown

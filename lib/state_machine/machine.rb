@@ -119,6 +119,39 @@ module StateMachine
   # Additional observer-like behavior may be exposed by the various integrations
   # available.  See below for more information.
   # 
+  # == Overriding instance / class methods
+  # 
+  # Hooking in behavior to the generate instance / class methods from the
+  # state machine, events, and states is very simple because of the way these
+  # methods are generated on the class.  Using module inheritance, the original
+  # generated method can be referred to via +super+.  For example,
+  # 
+  #   class Vehicle
+  #     state_machine do
+  #       event :park do
+  #         transition :idling => :parked
+  #       end
+  #     end
+  #     
+  #     def park(kind = :parallel, *args)
+  #       take_deep_breath if kind == :parallel
+  #       super(*args)
+  #     end
+  #     
+  #     def take_deep_breath
+  #       sleep 3
+  #     end
+  #   end
+  # 
+  # In the above example, the +park+ instance method that's generated on the
+  # Vehicle class (by the associated event) is overriden with custom behavior
+  # that takes an additional argument.  Once this behavior is complete, the
+  # original method from the state machine is invoked by simply calling
+  # <tt>super(*args)</tt>.
+  # 
+  # The same technique can be used for +state+, +state_name+, and all other
+  # instance *and* class methods on the Vehicle class.
+  # 
   # == Integrations
   # 
   # By default, state machines are library-agnostic, meaning that they work
@@ -261,6 +294,7 @@ module StateMachine
       @callbacks = {:before => [], :after => []}
       @namespace = options[:namespace]
       @invalid_message = options[:invalid_message]
+      
       self.owner_class = owner_class
       self.initial_state = options[:initial]
       
@@ -306,6 +340,14 @@ module StateMachine
         include StateMachine::InstanceMethods
       end unless owner_class.included_modules.include?(StateMachine::InstanceMethods)
       
+      # Create modules for extending the class with state/event-specific methods
+      class_helper_module = @class_helper_module = Module.new
+      instance_helper_module = @instance_helper_module = Module.new
+      owner_class.class_eval do
+        extend class_helper_module
+        include instance_helper_module
+      end
+      
       # Record this machine as matched to the attribute in the current owner
       # class.  This will override any machines mapped to the same attribute
       # in any superclasses.
@@ -321,6 +363,54 @@ module StateMachine
       
       # Update all states to reflect the new initial state
       states.each {|state| state.initial = (state.name == @initial_state)}
+    end
+    
+    # Defines a new instance method with the given name on the machine's owner
+    # class.  If the method is already defined in the class, then this will not
+    # override it.
+    # 
+    # Not that in order for inheritance to work properly within state machines,
+    # any states/events/etc. must be referred to from the current state machine
+    # associated with the executing class.
+    # 
+    # Example:
+    # 
+    #   attribute = machine.attribute
+    #   machine.define_instance_method(:parked?) do |machine, object|
+    #     machine.state?(object, :parked)
+    #   end
+    def define_instance_method(method, &block)
+      attribute = self.attribute
+      
+      @instance_helper_module.class_eval do
+        define_method(method) do |*args|
+          block.call(self.class.state_machines[attribute], self, *args)
+        end
+      end
+    end
+    attr_reader :instance_helper_module
+    
+    # Defines a new class method with the given name on the machine's owner
+    # class.  If the method is already defined in the class, then this will not
+    # override it.
+    # 
+    # Not that in order for inheritance to work properly within state machines,
+    # any states/events/etc. must be referred to from the current state machine
+    # associated with the executing class.
+    # 
+    # Example:
+    # 
+    #   machine.define_class_method(:states) do |machine, klass|
+    #     machine.states.keys
+    #   end
+    def define_class_method(method, &block)
+      attribute = self.attribute
+      
+      @class_helper_module.class_eval do
+        define_method(method) do |*args|
+          block.call(self.state_machines[attribute], self, *args)
+        end
+      end
     end
     
     # Gets the initial state of the machine for the given object. If a dynamic
@@ -1005,11 +1095,9 @@ module StateMachine
         
         attribute = self.attribute
         
-        owner_class.class_eval do
-          # Gets the state name for the current value
-          define_method("#{attribute}_name") do
-            self.class.state_machines[attribute].state_for(self).name
-          end
+        # Gets the state name for the current value
+        define_instance_method("#{attribute}_name") do |machine, object|
+          machine.state_for(object).name
         end
       end
       
@@ -1017,9 +1105,9 @@ module StateMachine
       def define_attribute_accessor
         attribute = self.attribute
         
-        owner_class.class_eval do
-          attr_reader attribute unless method_defined?(attribute) || private_method_defined?(attribute)
-          attr_writer attribute unless method_defined?("#{attribute}=") || private_method_defined?("#{attribute}=")
+        @instance_helper_module.class_eval do
+          attr_reader attribute
+          attr_writer attribute
         end
       end
       
@@ -1028,11 +1116,9 @@ module StateMachine
       def define_attribute_predicate
         attribute = self.attribute
         
-        owner_class.class_eval do
-          # Checks whether the current state is a given value
-          define_method("#{attribute}?") do |state|
-            self.class.state_machines[attribute].state?(self, state)
-          end unless method_defined?("#{attribute}?") || private_method_defined?("#{attribute}?")
+        # Checks whether the current state is a given value
+        define_instance_method("#{attribute}?") do |machine, object, state|
+          machine.state?(object, state)
         end
       end
       
@@ -1049,17 +1135,15 @@ module StateMachine
           [:with, :without].each do |kind|
             method = "#{kind}_#{name}"
             
-            if !owner_class.respond_to?(method) && scope = send("create_#{kind}_scope", method)
-              (class << owner_class; self; end).class_eval do
-                # Converts state names to their corresponding values so that
-                # they can be looked up properly
-                define_method(method) do |*states|
-                  machine_states = state_machines[attribute].states
-                  values = states.flatten.map {|state| machine_states.fetch(state).value}
-                  
-                  # Invoke the original scope implementation
-                  scope.call(self, values)
-                end
+            if scope = send("create_#{kind}_scope", method)
+              # Converts state names to their corresponding values so that they
+              # can be looked up properly
+              define_class_method(method) do |machine, klass, *states|
+                machine_states = machine.states
+                values = states.flatten.map {|state| machine_states.fetch(state).value}
+                
+                # Invoke the original scope implementation
+                scope.call(klass, values)
               end
             end
           end

@@ -225,31 +225,28 @@ module StateMachine
       # Add the various instance methods that can transition the object using
       # the current event
       def add_actions
-        attribute = machine.attribute
         qualified_name = name = self.name
         qualified_name = "#{name}_#{machine.namespace}" if machine.namespace
         
-        machine.owner_class.class_eval do
-          # Checks whether the event can be fired on the current object
-          define_method("can_#{qualified_name}?") do
-            self.class.state_machines[attribute].event(name).can_fire?(self)
-          end
-          
-          # Gets the next transition that would be performed if the event were
-          # fired now
-          define_method("next_#{qualified_name}_transition") do
-            self.class.state_machines[attribute].event(name).next_transition(self)
-          end
-          
-          # Fires the event
-          define_method(qualified_name) do |*args|
-            self.class.state_machines[attribute].event(name).fire(self, *args)
-          end
-          
-          # Fires the event, raising an exception if it fails
-          define_method("#{qualified_name}!") do |*args|
-            self.class.state_machines[attribute].event(name).fire!(self, *args)
-          end
+        # Checks whether the event can be fired on the current object
+        machine.define_instance_method("can_#{qualified_name}?") do |machine, object|
+          machine.event(name).can_fire?(object)
+        end
+        
+        # Gets the next transition that would be performed if the event were
+        # fired now
+        machine.define_instance_method("next_#{qualified_name}_transition") do |machine, object|
+          machine.event(name).next_transition(object)
+        end
+        
+        # Fires the event
+        machine.define_instance_method(qualified_name) do |machine, object, *args|
+          machine.event(name).fire(object, *args)
+        end
+        
+        # Fires the event, raising an exception if it fails
+        machine.define_instance_method("#{qualified_name}!") do |machine, object, *args|
+          machine.event(name).fire!(object, *args)
         end
       end
   end

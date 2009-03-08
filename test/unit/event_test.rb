@@ -78,6 +78,77 @@ class EventTest < Test::Unit::TestCase
   end
 end
 
+class EventWithConflictingHelpersTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def can_ignite?
+        0
+      end
+      
+      def next_ignite_transition
+        0
+      end
+      
+      def ignite
+        0
+      end
+      
+      def ignite!
+        0
+      end
+    end
+    @machine = StateMachine::Machine.new(@klass)
+    @state = StateMachine::Event.new(@machine, :ignite)
+    @object = @klass.new
+  end
+  
+  def test_should_not_redefine_predicate
+    assert_equal 0, @object.can_ignite?
+  end
+  
+  def test_should_not_redefine_transition_accessor
+    assert_equal 0, @object.next_ignite_transition
+  end
+  
+  def test_should_not_redefine_action
+    assert_equal 0, @object.ignite
+  end
+  
+  def test_should_not_redefine_bang_action
+    assert_equal 0, @object.ignite!
+  end
+  
+  def test_should_allow_super_chaining
+    @klass.class_eval do
+      def can_ignite?
+        super ? 1 : 0
+      end
+      
+      def next_ignite_transition
+        super ? 1 : 0
+      end
+      
+      def ignite
+        super ? 1 : 0
+      end
+      
+      def ignite!
+        begin
+          super
+          1
+        rescue Exception => ex
+          0
+        end
+      end
+    end
+    
+    assert_equal 0, @object.can_ignite?
+    assert_equal 0, @object.next_ignite_transition
+    assert_equal 0, @object.ignite
+    assert_equal 0, @object.ignite!
+  end
+end
+
 class EventWithNamespaceTest < Test::Unit::TestCase
   def setup
     @klass = Class.new

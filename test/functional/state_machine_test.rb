@@ -110,6 +110,10 @@ class Vehicle
     @saved == false
   end
   
+  def park
+    super
+  end
+  
   # Tows the vehicle to the auto shop
   def tow
     auto_shop.tow_vehicle
