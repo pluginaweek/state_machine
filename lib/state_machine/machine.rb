@@ -121,10 +121,10 @@ module StateMachine
   # 
   # == Overriding instance / class methods
   # 
-  # Hooking in behavior to the generate instance / class methods from the
+  # Hooking in behavior to the generated instance / class methods from the
   # state machine, events, and states is very simple because of the way these
-  # methods are generated on the class.  Using module inheritance, the original
-  # generated method can be referred to via +super+.  For example,
+  # methods are generated on the class.  Using the class's ancestors, the
+  # original generated method can be referred to via +super+.  For example,
   # 
   #   class Vehicle
   #     state_machine do
