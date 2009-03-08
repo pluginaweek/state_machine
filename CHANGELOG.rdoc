@@ -1,5 +1,7 @@
 == master
 
+== 0.6.2 / 2009-03-08
+
 * Make it easier to override generated instance / class methods
 
 == 0.6.1 / 2009-03-07
