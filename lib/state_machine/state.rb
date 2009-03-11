@@ -67,10 +67,10 @@ module StateMachine
       @methods = methods.dup
     end
     
-    # Determines whether there are any states that can transition from this
-    # state.  If there are none, then this state is considered *final*.  That
-    # is, any objects in this state will remain so forever given the
-    # current machine's definition.
+    # Determines whether there are any states that can be transitioned to from
+    # this state.  If there are none, then this state is considered *final*.
+    # Any objects in a final state will remain so forever given the current
+    # machine's definition.
     def final?
       !machine.events.any? do |event|
         event.guards.any? do |guard|
