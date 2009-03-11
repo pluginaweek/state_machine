@@ -291,6 +291,14 @@ class StateFinalTest < Test::Unit::TestCase
     
     assert @state.final?
   end
+  
+  def test_should_be_final_with_loopback
+    @machine.event :ignite do
+      transition :parked => same
+    end
+    
+    assert @state.final?
+  end
 end
 
 class StateNotFinalTest < Test::Unit::TestCase
@@ -318,14 +326,6 @@ class StateNotFinalTest < Test::Unit::TestCase
   def test_should_not_be_final_with_outgoing_blacklist_transitions
     @machine.event :ignite do
       transition all - :first_gear => :idling
-    end
-    
-    assert !@state.final?
-  end
-  
-  def test_should_not_be_final_with_loopback
-    @machine.event :ignite do
-      transition :parked => same
     end
     
     assert !@state.final?
@@ -591,6 +591,9 @@ begin
   class StateDrawingTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
       @state = StateMachine::State.new(@machine, :parked, :value => 1)
       
       graph = GraphViz.new('G')
@@ -621,14 +624,22 @@ begin
   class StateDrawingInitialTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
       @state = StateMachine::State.new(@machine, :parked, :initial => true)
       
-      graph = GraphViz.new('G')
-      @node = @state.draw(graph)
+      @graph = GraphViz.new('G')
+      @node = @state.draw(@graph)
     end
     
-    def test_should_use_doublecircle_as_shape
-      assert_equal 'doublecircle', @node['shape']
+    def test_should_use_ellipse_as_shape
+      assert_equal 'ellipse', @node['shape']
+    end
+    
+    def test_should_draw_edge_between_point_and_state
+      assert_equal 2, @graph.node_count
+      assert_equal 1, @graph.edge_count
     end
   end
   
@@ -680,8 +691,8 @@ begin
       @node = @state.draw(graph)
     end
     
-    def test_should_set_penwidth_to_one
-      assert_equal '1', @node['penwidth']
+    def test_should_use_ellipse_as_shape
+      assert_equal 'ellipse', @node['shape']
     end
   end
   
@@ -694,8 +705,8 @@ begin
       @node = @state.draw(graph)
     end
     
-    def test_should_set_penwidth_to_three
-      assert_equal '3', @node['penwidth']
+    def test_should_use_doublecircle_as_shape
+      assert_equal 'doublecircle', @node['shape']
     end
   end
 rescue LoadError

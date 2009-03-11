@@ -1,5 +1,6 @@
 == master
 
+* Use the standard visualizations for initial (open arrow) and final (double circle) states
 * Highlight final states in GraphViz drawings
 
 == 0.6.2 / 2009-03-08

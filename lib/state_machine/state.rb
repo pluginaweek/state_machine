@@ -75,7 +75,7 @@ module StateMachine
       !machine.events.any? do |event|
         event.guards.any? do |guard|
           guard.state_requirements.any? do |requirement|
-            requirement[:from].matches?(name)
+            requirement[:from].matches?(name) && !requirement[:to].matches?(name, :from => name)
           end
         end
       end
@@ -195,13 +195,17 @@ module StateMachine
     # 
     # The actual node generated on the graph will be returned.
     def draw(graph)
-      graph.add_node(name ? name.to_s : 'nil',
+      node = graph.add_node(name ? name.to_s : 'nil',
         :label => description,
         :width => '1',
         :height => '1',
-        :shape => initial? ? 'doublecircle' : 'ellipse',
-        :penwidth => final? ? '3' : '1'
+        :shape => final? ? 'doublecircle' : 'ellipse'
       )
+      
+      # Add open arrow for initial state
+      graph.add_edge(graph.add_node('starting_state', :shape => 'point'), node) if initial?
+      
+      node
     end
     
     # Generates a nicely formatted description of this state's contents.
