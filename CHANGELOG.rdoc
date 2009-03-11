@@ -1,5 +1,7 @@
 == master
 
+== 0.6.3 / 2008-03-10
+
 * Add support for customizing the graph's orientation
 * Use the standard visualizations for initial (open arrow) and final (double circle) states
 * Highlight final states in GraphViz drawings
