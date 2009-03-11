@@ -1497,31 +1497,34 @@ begin
     end
     
     def test_should_save_file_with_class_name_by_default
-      @machine.draw
-      assert File.exist?('./Vehicle_state.png')
-    ensure
-      FileUtils.rm('./Vehicle_state.png')
+      graph = @machine.draw(:output => false)
+      assert_equal './Vehicle_state.png', graph.instance_variable_get('@filename')
     end
     
     def test_should_allow_base_name_to_be_customized
-      @machine.draw(:name => 'machine')
-      assert File.exist?('./machine.png')
-    ensure
-      FileUtils.rm('./machine.png')
+      graph = @machine.draw(:name => 'machine', :output => false)
+      assert_equal './machine.png', graph.instance_variable_get('@filename')
     end
     
     def test_should_allow_format_to_be_customized
-      @machine.draw(:format => 'jpg')
-      assert File.exist?('./Vehicle_state.jpg')
-    ensure
-      FileUtils.rm('./Vehicle_state.jpg')
+      graph = @machine.draw(:format => 'jpg', :output => false)
+      assert_equal './Vehicle_state.jpg', graph.instance_variable_get('@filename')
+      assert_equal 'jpg', graph.instance_variable_get('@format')
     end
     
     def test_should_allow_path_to_be_customized
-      @machine.draw(:path => "#{File.dirname(__FILE__)}/")
-      assert File.exist?("#{File.dirname(__FILE__)}/Vehicle_state.png")
-    ensure
-      FileUtils.rm("#{File.dirname(__FILE__)}/Vehicle_state.png")
+      graph = @machine.draw(:path => "#{File.dirname(__FILE__)}/", :output => false)
+      assert_equal "#{File.dirname(__FILE__)}/Vehicle_state.png", graph.instance_variable_get('@filename')
+    end
+    
+    def test_should_allow_orientation_to_be_landscape
+      graph = @machine.draw(:orientation => 'landscape', :output => false)
+      assert_equal 'LR', graph['rankdir']
+    end
+    
+    def test_should_allow_orientation_to_be_portrait
+      graph = @machine.draw(:orientation => 'portrait', :output => false)
+      assert_equal 'TB', graph['rankdir']
     end
   end
   
@@ -1536,7 +1539,15 @@ begin
       end
       @machine.state :parked, :value => 1
       @machine.state :idling, :value => 2
-      @machine.draw
+      @graph = @machine.draw
+    end
+    
+    def test_should_draw_all_states
+      assert_equal 3, @graph.node_count
+    end
+    
+    def test_should_draw_all_events
+      assert_equal 2, @graph.edge_count
     end
     
     def test_should_draw_machine
@@ -1556,7 +1567,15 @@ begin
         transition :parked => :idling
       end
       @machine.state :parked, :value => nil
-      @machine.draw
+      @graph = @machine.draw
+    end
+    
+    def test_should_draw_all_states
+      assert_equal 3, @graph.node_count
+    end
+    
+    def test_should_draw_all_events
+      assert_equal 2, @graph.edge_count
     end
     
     def test_should_draw_machine
@@ -1576,7 +1595,15 @@ begin
         transition :parked => :idling
       end
       @machine.state :idling, :value => lambda {Time.now}
-      @machine.draw
+      @graph = @machine.draw
+    end
+    
+    def test_should_draw_all_states
+      assert_equal 3, @graph.node_count
+    end
+    
+    def test_should_draw_all_events
+      assert_equal 2, @graph.edge_count
     end
     
     def test_should_draw_machine

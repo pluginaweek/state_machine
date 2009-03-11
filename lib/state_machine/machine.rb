@@ -1039,21 +1039,30 @@ module StateMachine
     #   Default is "png'.
     # * <tt>:font</tt> - The name of the font to draw state names in.
     #   Default is "Arial".
+    # * <tt>:orientation</tt> - The direction of the graph ("portrait" or
+    #   "landscape").  Default is "portrait".
+    # * <tt>:output</tt> - Whether to generate the output of the graph
     def draw(options = {})
       options = {
         :name => "#{owner_class.name}_#{attribute}",
         :path => '.',
         :format => 'png',
-        :font => 'Arial'
+        :font => 'Arial',
+        :orientation => 'portrait',
+        :output => true
       }.merge(options)
-      assert_valid_keys(options, :name, :font, :path, :format)
+      assert_valid_keys(options, :name, :path, :format, :font, :orientation, :output)
       
       begin
         # Load the graphviz library
         require 'rubygems'
         require 'graphviz'
         
-        graph = GraphViz.new('G', :output => options[:format], :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}"))
+        graph = GraphViz.new('G',
+          :output => options[:format],
+          :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}"),
+          :rankdir => options[:orientation] == 'landscape' ? 'LR' : 'TB'
+        )
         
         # Add nodes
         states.by_priority.each do |state|
@@ -1068,7 +1077,7 @@ module StateMachine
         end
         
         # Generate the graph
-        graph.output
+        graph.output if options[:output]
         graph
       rescue LoadError
         $stderr.puts 'Cannot draw the machine. `gem install ruby-graphviz` and try again.'
