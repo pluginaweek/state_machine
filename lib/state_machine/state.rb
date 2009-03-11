@@ -25,6 +25,7 @@ module StateMachine
     
     # Whether or not this state is the initial state to use for new objects
     attr_accessor :initial
+    alias_method :initial?, :initial
     
     # A custom lambda block for determining whether a given value matches this
     # state
@@ -64,6 +65,20 @@ module StateMachine
     def initialize_copy(orig) #:nodoc:
       super
       @methods = methods.dup
+    end
+    
+    # Determines whether there are any states that can transition from this
+    # state.  If there are none, then this state is considered *final*.  That
+    # is, any objects in this state will remain so forever given the
+    # current machine's definition.
+    def final?
+      !machine.events.any? do |event|
+        event.guards.any? do |guard|
+          guard.state_requirements.any? do |requirement|
+            requirement[:from].matches?(name)
+          end
+        end
+      end
     end
     
     # Generates a human-readable description of this state's name / value:
@@ -184,7 +199,8 @@ module StateMachine
         :label => description,
         :width => '1',
         :height => '1',
-        :shape => initial ? 'doublecircle' : 'ellipse'
+        :shape => initial? ? 'doublecircle' : 'ellipse',
+        :penwidth => final? ? '3' : '1'
       )
     end
     
@@ -195,7 +211,7 @@ module StateMachine
     #   state = StateMachine::State.new(machine, :parked, :value => 1, :initial => true)
     #   state   # => #<StateMachine::State name=:parked value=1 initial=true context=[]>
     def inspect
-      attributes = [[:name, name], [:value, @value], [:initial, initial], [:context, methods.keys]]
+      attributes = [[:name, name], [:value, @value], [:initial, initial?], [:context, methods.keys]]
       "#<#{self.class} #{attributes.map {|attr, value| "#{attr}=#{value.inspect}"} * ' '}>"
     end
     

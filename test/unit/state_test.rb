@@ -258,6 +258,7 @@ class StateInitialTest < Test::Unit::TestCase
   
   def test_should_be_initial
     assert @state.initial
+    assert @state.initial?
   end
 end
 
@@ -269,6 +270,65 @@ class StateNotInitialTest < Test::Unit::TestCase
   
   def test_should_not_be_initial
     assert !@state.initial
+    assert !@state.initial?
+  end
+end
+
+class StateFinalTest < Test::Unit::TestCase
+  def setup
+    @machine = StateMachine::Machine.new(Class.new)
+    @state = StateMachine::State.new(@machine, :parked)
+  end
+  
+  def test_should_be_final_without_input_transitions
+    assert @state.final?
+  end
+  
+  def test_should_be_final_with_input_transitions
+    @machine.event :park do
+      transition :idling => :parked
+    end
+    
+    assert @state.final?
+  end
+end
+
+class StateNotFinalTest < Test::Unit::TestCase
+  def setup
+    @machine = StateMachine::Machine.new(Class.new)
+    @state = StateMachine::State.new(@machine, :parked)
+  end
+  
+  def test_should_not_be_final_with_outgoing_whitelist_transitions
+    @machine.event :ignite do
+      transition :parked => :idling
+    end
+    
+    assert !@state.final?
+  end
+  
+  def test_should_not_be_final_with_outgoing_all_transitions
+    @machine.event :ignite do
+      transition all => :idling
+    end
+    
+    assert !@state.final?
+  end
+  
+  def test_should_not_be_final_with_outgoing_blacklist_transitions
+    @machine.event :ignite do
+      transition all - :first_gear => :idling
+    end
+    
+    assert !@state.final?
+  end
+  
+  def test_should_not_be_final_with_loopback
+    @machine.event :ignite do
+      transition :parked => same
+    end
+    
+    assert !@state.final?
   end
 end
 
@@ -605,6 +665,37 @@ begin
     
     def test_should_use_description_as_label
       assert_equal 'parked (*)', @node['label']
+    end
+  end
+  
+  class StateDrawingNonFinalTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
+      @state = StateMachine::State.new(@machine, :parked)
+      
+      graph = GraphViz.new('G')
+      @node = @state.draw(graph)
+    end
+    
+    def test_should_set_penwidth_to_one
+      assert_equal '1', @node['penwidth']
+    end
+  end
+  
+  class StateDrawingFinalTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      @state = StateMachine::State.new(@machine, :parked)
+      
+      graph = GraphViz.new('G')
+      @node = @state.draw(graph)
+    end
+    
+    def test_should_set_penwidth_to_three
+      assert_equal '3', @node['penwidth']
     end
   end
 rescue LoadError
