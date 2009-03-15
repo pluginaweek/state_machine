@@ -19,6 +19,10 @@ module StateMachine
     # The unique identifier for the state used in event and callback definitions
     attr_reader :name
     
+    # The fully-qualified identifier for the state, scoped by the machine's
+    # namespace
+    attr_reader :qualified_name
+    
     # The value that is written to a machine's attribute when an object
     # transitions into this state
     attr_writer :value
@@ -52,6 +56,7 @@ module StateMachine
       
       @machine = machine
       @name = name
+      @qualified_name = name && machine.namespace ? :"#{machine.namespace}_#{name}" : name
       @value = options.include?(:value) ? options[:value] : name && name.to_s
       @matcher = options[:if]
       @methods = {}
@@ -224,9 +229,6 @@ module StateMachine
       # actually been configured for the state
       def add_predicate
         return unless name
-        
-        qualified_name = name = self.name
-        qualified_name = "#{machine.namespace}_#{name}" if machine.namespace
         
         # Checks whether the current value matches this state
         machine.define_instance_method("#{qualified_name}?") do |machine, object|

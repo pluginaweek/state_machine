@@ -14,6 +14,10 @@ class StateByDefaultTest < Test::Unit::TestCase
     assert_equal :parked, @state.name
   end
   
+  def test_should_have_a_qualified_name
+    assert_equal :parked, @state.name
+  end
+  
   def test_should_use_stringify_the_name_as_the_value
     assert_equal 'parked', @state.value
   end
@@ -81,6 +85,10 @@ class StateWithoutNameTest < Test::Unit::TestCase
     assert_nil @state.name
   end
   
+  def test_should_have_a_nil_qualified_name
+    assert_nil @state.qualified_name
+  end
+  
   def test_should_have_a_nil_value
     assert_nil @state.value
   end
@@ -104,6 +112,10 @@ class StateWithNameTest < Test::Unit::TestCase
   end
   
   def test_should_have_a_name
+    assert_equal :parked, @state.name
+  end
+  
+  def test_should_have_a_qualified_name
     assert_equal :parked, @state.name
   end
   
@@ -365,6 +377,14 @@ class StateWithNamespaceTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass, :namespace => 'gear')
     @state = StateMachine::State.new(@machine, :parked)
     @object = @klass.new
+  end
+  
+  def test_should_have_a_name
+    assert_equal :parked, @state.name
+  end
+  
+  def test_should_have_a_qualified_name
+    assert_equal :gear_parked, @state.qualified_name
   end
   
   def test_should_namespace_predicate

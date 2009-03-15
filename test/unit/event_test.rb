@@ -17,6 +17,10 @@ class EventByDefaultTest < Test::Unit::TestCase
     assert_equal :ignite, @event.name
   end
   
+  def test_should_have_a_qualified_name
+    assert_equal :ignite, @event.qualified_name
+  end
+  
   def test_should_not_have_any_guards
     assert @event.guards.empty?
   end
@@ -155,6 +159,14 @@ class EventWithNamespaceTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass, :namespace => 'car')
     @event = StateMachine::Event.new(@machine, :ignite)
     @object = @klass.new
+  end
+  
+  def test_should_have_a_name
+    assert_equal :ignite, @event.name
+  end
+  
+  def test_should_have_a_qualified_name
+    assert_equal :ignite_car, @event.qualified_name
   end
   
   def test_should_namespace_predicate

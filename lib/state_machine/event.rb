@@ -14,8 +14,11 @@ module StateMachine
     # The state machine for which this event is defined
     attr_accessor :machine
     
-    # The name of the action that fires the event
+    # The name of the event
     attr_reader :name
+    
+    # The fully-qualified name of the event, scoped by the machine's namespace 
+    attr_reader :qualified_name
     
     # The list of guards that determine what state this event transitions
     # objects to when fired
@@ -29,6 +32,7 @@ module StateMachine
     def initialize(machine, name) #:nodoc:
       @machine = machine
       @name = name
+      @qualified_name = machine.namespace ? :"#{name}_#{machine.namespace}" : name
       @guards = []
       @known_states = []
       
@@ -225,8 +229,7 @@ module StateMachine
       # Add the various instance methods that can transition the object using
       # the current event
       def add_actions
-        qualified_name = name = self.name
-        qualified_name = "#{name}_#{machine.namespace}" if machine.namespace
+        name = self.name
         
         # Checks whether the event can be fired on the current object
         machine.define_instance_method("can_#{qualified_name}?") do |machine, object|
