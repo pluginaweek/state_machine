@@ -31,6 +31,10 @@ module StateMachine
     # The new state name *after* the transition
     attr_reader :to_name
     
+    # The arguments passed in to the event that triggered the transition
+    # (does not include the +run_action+ boolean argument if specified)
+    attr_reader :args
+    
     # Creates a new, specific transition
     def initialize(object, machine, event, from_name, to_name) #:nodoc:
       @object = object
@@ -75,7 +79,10 @@ module StateMachine
     #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
     #   transition.perform          # => Runs the +save+ action after setting the state attribute
     #   transition.perform(false)   # => Only sets the state attribute
-    def perform(run_action = true)
+    def perform(*args)
+      run_action = [true, false].include?(args.last) ? args.pop : true
+      @args = args
+      
       result = false
       
       machine.within_transaction(object) do

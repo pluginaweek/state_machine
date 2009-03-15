@@ -49,6 +49,10 @@ class TransitionTest < Test::Unit::TestCase
     assert_equal expected, @transition.attributes
   end
   
+  def test_should_not_have_any_args
+    assert_nil @transition.args
+  end
+  
   def test_should_use_pretty_inspect
     assert_equal '#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>', @transition.inspect
   end
@@ -91,11 +95,15 @@ class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
     @result = @transition.perform
   end
   
+  def test_should_have_empty_args
+    assert_equal [], @transition.args
+  end
+  
   def test_should_be_successful
     assert_equal true, @result
   end
   
-  def test_should_the_current_state
+  def test_should_change_the_current_state
     assert_equal 'idling', @object.state
   end
   
@@ -127,15 +135,52 @@ class TransitionWithoutRunningActionTest < Test::Unit::TestCase
     @result = @transition.perform(false)
   end
   
+  def test_should_have_empty_args
+    assert_equal [], @transition.args
+  end
+  
   def test_should_be_successful
     assert_equal true, @result
   end
   
-  def test_should_the_current_state
+  def test_should_change_the_current_state
     assert_equal 'idling', @object.state
   end
   
   def test_should_not_run_the_action
+    assert !@object.saved
+  end
+end
+
+class TransitionWithPerformArgumentsTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      attr_reader :saved
+      
+      def save
+        @saved = true
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @machine.state :parked, :idling
+    
+    @object = @klass.new
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+  end
+  
+  def test_should_have_arguments
+    @transition.perform(1, 2)
+    
+    assert_equal [1, 2], @transition.args
+    assert @object.saved
+  end
+  
+  def test_should_not_include_run_action_in_arguments
+    @transition.perform(1, 2, false)
+    
+    assert_equal [1, 2], @transition.args
     assert !@object.saved
   end
 end

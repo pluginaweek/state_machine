@@ -1,5 +1,7 @@
 == master
 
+* Provide access to arguments passed into an event from transition callbacks via Transition#args
+
 == 0.6.3 / 2008-03-10
 
 * Add support for customizing the graph's orientation

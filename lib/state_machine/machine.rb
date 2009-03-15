@@ -129,25 +129,20 @@ module StateMachine
   #   class Vehicle
   #     state_machine do
   #       event :park do
-  #         transition :idling => :parked
+  #         ...
   #       end
   #     end
   #     
-  #     def park(kind = :parallel, *args)
-  #       take_deep_breath if kind == :parallel
-  #       super(*args)
-  #     end
-  #     
-  #     def take_deep_breath
-  #       sleep 3
+  #     def park(*args)
+  #       logger.info "..."
+  #       super
   #     end
   #   end
   # 
   # In the above example, the +park+ instance method that's generated on the
-  # Vehicle class (by the associated event) is overriden with custom behavior
-  # that takes an additional argument.  Once this behavior is complete, the
-  # original method from the state machine is invoked by simply calling
-  # <tt>super(*args)</tt>.
+  # Vehicle class (by the associated event) is overriden with custom behavior.
+  # Once this behavior is complete, the original method from the state machine
+  # is invoked by simply calling +super+.
   # 
   # The same technique can be used for +state+, +state_name+, and all other
   # instance *and* class methods on the Vehicle class.
@@ -804,6 +799,36 @@ module StateMachine
     #       end
     #     end
     #   end 
+    # 
+    # == Defining additional arguments
+    # 
+    # Additional arguments on event actions can be defined like so:
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       event :park do
+    #         ...
+    #       end
+    #     end
+    #     
+    #     def park(kind = :parallel, *args)
+    #       take_deep_breath if kind == :parallel
+    #       super
+    #     end
+    #     
+    #     def take_deep_breath
+    #       sleep 3
+    #     end
+    #   end
+    # 
+    # Note that +super+ is called instead of <tt>super(*args)</tt>.  This
+    # allows the entire arguments list to be accessed by transition callbacks
+    # through StateMachine::Transition#args like so:
+    # 
+    #   after_transition :on => :park do |vehicle, transition|
+    #     kind = *transition.args
+    #     ...
+    #   end
     # 
     # == Example
     # 
