@@ -1127,8 +1127,6 @@ module StateMachine
         define_attribute_accessor
         define_attribute_predicate
         
-        attribute = self.attribute
-        
         # Gets the state name for the current value
         define_instance_method("#{attribute}_name") do |machine, object|
           machine.state_for(object).name
@@ -1148,9 +1146,6 @@ module StateMachine
       # Adds predicate method to the owner class for determining the name of the
       # current state
       def define_attribute_predicate
-        attribute = self.attribute
-        
-        # Checks whether the current state is a given value
         define_instance_method("#{attribute}?") do |machine, object, state|
           machine.state?(object, state)
         end
@@ -1162,7 +1157,6 @@ module StateMachine
       # automatically determined by either calling +pluralize+ on the attribute
       # name or adding an "s" to the end of the name.
       def define_scopes(custom_plural = nil)
-        attribute = self.attribute
         plural = custom_plural || (attribute.to_s.respond_to?(:pluralize) ? attribute.to_s.pluralize : "#{attribute}s")
         
         [attribute, plural].uniq.each do |name|

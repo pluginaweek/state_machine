@@ -229,8 +229,6 @@ module StateMachine
       # Add the various instance methods that can transition the object using
       # the current event
       def add_actions
-        name = self.name
-        
         # Checks whether the event can be fired on the current object
         machine.define_instance_method("can_#{qualified_name}?") do |machine, object|
           machine.event(name).can_fire?(object)
