@@ -191,13 +191,6 @@ module StateMachine
       end
     end
     
-    # Attempts to perform the next available transition on the given object.
-    # If no transitions can be made, then a StateMachine::InvalidTransition
-    # exception will be raised, otherwise true will be returned.
-    def fire!(object, *args)
-      fire(object, *args) || raise(StateMachine::InvalidTransition, "Cannot transition #{machine.attribute} via :#{name} from #{machine.state_for(object).name.inspect}")
-    end
-    
     # Draws a representation of this event on the given graph.  This will
     # create 1 or more edges on the graph for each guard (i.e. transition)
     # configured.
@@ -247,7 +240,7 @@ module StateMachine
         
         # Fires the event, raising an exception if it fails
         machine.define_instance_method("#{qualified_name}!") do |machine, object, *args|
-          machine.event(name).fire!(object, *args)
+          object.send(qualified_name, *args) || raise(StateMachine::InvalidTransition, "Cannot transition #{machine.attribute} via :#{name} from #{machine.state_for(object).name.inspect}")
         end
       end
   end

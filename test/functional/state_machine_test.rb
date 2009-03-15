@@ -414,6 +414,16 @@ class VehicleIdlingTest < Test::Unit::TestCase
     assert @vehicle.park
   end
   
+  def test_should_call_park_with_bang_action
+    class << @vehicle
+      def park
+        super && 1
+      end
+    end
+    
+    assert_equal 1, @vehicle.park!
+  end
+  
   def test_should_not_allow_idle
     assert !@vehicle.idle
   end

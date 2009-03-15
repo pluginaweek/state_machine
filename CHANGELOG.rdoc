@@ -1,5 +1,6 @@
 == master
 
+* Use generated non-bang event when running bang version so that overriding one affects the other
 * Provide access to arguments passed into an event from transition callbacks via Transition#args
 
 == 0.6.3 / 2008-03-10

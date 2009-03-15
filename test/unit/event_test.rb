@@ -149,7 +149,7 @@ class EventWithConflictingHelpersTest < Test::Unit::TestCase
     assert_equal 0, @object.can_ignite?
     assert_equal 0, @object.next_ignite_transition
     assert_equal 0, @object.ignite
-    assert_equal 0, @object.ignite!
+    assert_equal 1, @object.ignite!
   end
 end
 
@@ -273,11 +273,6 @@ class EventWithoutTransitionsTest < Test::Unit::TestCase
     assert !@event.fire(@object)
   end
   
-  def test_should_raise_exception_on_fire!
-    exception = assert_raise(StateMachine::InvalidTransition) { @event.fire!(@object) }
-    assert_equal 'Cannot transition state via :ignite from nil', exception.message
-  end
-  
   def test_should_not_change_the_current_state
     @event.fire(@object)
     assert_nil @object.state
@@ -332,11 +327,6 @@ class EventWithoutMatchingTransitionsTest < Test::Unit::TestCase
   
   def test_should_not_fire
     assert !@event.fire(@object)
-  end
-  
-  def test_should_raise_exception_on_fire!
-    exception = assert_raise(StateMachine::InvalidTransition) { @event.fire!(@object) }
-    assert_equal 'Cannot transition state via :ignite from :idling', exception.message
   end
   
   def test_should_not_change_the_current_state
