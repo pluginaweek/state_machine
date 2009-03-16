@@ -14,13 +14,6 @@ begin
   require 'active_record/fixtures'
   require 'active_record/test_case'
   
-  # Set default fixtures configuration
-  ActiveSupport::TestCase.class_eval do
-    self.fixture_path = File.dirname(__FILE__) + '/../../fixtures/'
-    self.use_instantiated_fixtures  = false
-    self.use_transactional_fixtures = true
-  end
-  
   # Establish database connection
   ActiveRecord::Base.establish_connection({'adapter' => 'sqlite3', 'database' => ':memory:'})
   ActiveRecord::Base.logger = Logger.new("#{File.dirname(__FILE__)}/../../active_record.log")
