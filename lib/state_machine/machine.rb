@@ -753,7 +753,7 @@ module StateMachine
     # (the "park" event is used as an example):
     # * <tt>can_park?</tt> - Checks whether the "park" event can be fired given
     #   the current state of the object.
-    # * <tt>next_park_transition</tt> -  Gets the next transition that would be
+    # * <tt>park_transition</tt> -  Gets the next transition that would be
     #   performed if the "park" event were to be fired now on the object or nil
     #   if no transitions can be performed.
     # * <tt>park(run_action = true)</tt> - Fires the "park" event, transitioning
@@ -764,7 +764,7 @@ module StateMachine
     # 
     # With a namespace of "car", the above names map to the following methods:
     # * <tt>can_park_car?</tt>
-    # * <tt>next_park_car_transition</tt>
+    # * <tt>park_car_transition</tt>
     # * <tt>park_car</tt>
     # * <tt>park_car!</tt>
     # 
@@ -924,7 +924,7 @@ module StateMachine
     #                                                #<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
     def transitions_for(object, include_no_op = false)
       # Get the possible transitions for this object
-      transitions = events.collect {|event| event.next_transition(object)}.compact
+      transitions = events.collect {|event| event.transition_for(object)}.compact
       
       if include_no_op
         state = state_for(object)

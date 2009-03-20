@@ -1443,7 +1443,7 @@ class MachineWithNamespaceTest < Test::Unit::TestCase
   end
   
   def test_should_namespace_event_transition_readers
-    [:next_ignite_car_transition, :next_park_car_transition].each do |name|
+    [:ignite_car_transition, :park_car_transition].each do |name|
       assert @object.respond_to?(name)
     end
   end

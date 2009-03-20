@@ -33,8 +33,8 @@ class EventByDefaultTest < Test::Unit::TestCase
     assert !@event.can_fire?(@object)
   end
   
-  def test_should_not_have_a_next_transition
-    assert_nil @event.next_transition(@object)
+  def test_should_not_have_a_transition
+    assert_nil @event.transition_for(@object)
   end
   
   def test_should_define_a_predicate
@@ -42,7 +42,7 @@ class EventByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_define_a_transition_accessor
-    assert @object.respond_to?(:next_ignite_transition)
+    assert @object.respond_to?(:ignite_transition)
   end
   
   def test_should_define_an_action
@@ -89,7 +89,7 @@ class EventWithConflictingHelpersTest < Test::Unit::TestCase
         0
       end
       
-      def next_ignite_transition
+      def ignite_transition
         0
       end
       
@@ -111,7 +111,7 @@ class EventWithConflictingHelpersTest < Test::Unit::TestCase
   end
   
   def test_should_not_redefine_transition_accessor
-    assert_equal 0, @object.next_ignite_transition
+    assert_equal 0, @object.ignite_transition
   end
   
   def test_should_not_redefine_action
@@ -128,7 +128,7 @@ class EventWithConflictingHelpersTest < Test::Unit::TestCase
         super ? 1 : 0
       end
       
-      def next_ignite_transition
+      def ignite_transition
         super ? 1 : 0
       end
       
@@ -147,7 +147,7 @@ class EventWithConflictingHelpersTest < Test::Unit::TestCase
     end
     
     assert_equal 0, @object.can_ignite?
-    assert_equal 0, @object.next_ignite_transition
+    assert_equal 0, @object.ignite_transition
     assert_equal 0, @object.ignite
     assert_equal 1, @object.ignite!
   end
@@ -174,7 +174,7 @@ class EventWithNamespaceTest < Test::Unit::TestCase
   end
   
   def test_should_namespace_transition_accessor
-    assert @object.respond_to?(:next_ignite_car_transition)
+    assert @object.respond_to?(:ignite_car_transition)
   end
   
   def test_should_namespace_action
@@ -265,8 +265,8 @@ class EventWithoutTransitionsTest < Test::Unit::TestCase
     assert !@event.can_fire?(@object)
   end
   
-  def test_should_not_have_a_next_transition
-    assert_nil @event.next_transition(@object)
+  def test_should_not_have_a_transition
+    assert_nil @event.transition_for(@object)
   end
   
   def test_should_not_fire
@@ -321,8 +321,8 @@ class EventWithoutMatchingTransitionsTest < Test::Unit::TestCase
     assert !@event.can_fire?(@object)
   end
   
-  def test_should_not_have_a_next_transition
-    assert_nil @event.next_transition(@object)
+  def test_should_not_have_a_transition
+    assert_nil @event.transition_for(@object)
   end
   
   def test_should_not_fire
@@ -365,8 +365,8 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
     assert !@event.can_fire?(@object)
   end
   
-  def test_should_not_have_a_next_transition
-    assert_nil @event.next_transition(@object)
+  def test_should_not_have_a_transition
+    assert_nil @event.transition_for(@object)
   end
   
   def test_should_not_fire
@@ -425,8 +425,8 @@ class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
     assert @event.can_fire?(@object)
   end
   
-  def test_should_have_a_next_transition
-    transition = @event.next_transition(@object)
+  def test_should_have_a_transition
+    transition = @event.transition_for(@object)
     assert_not_nil transition
     assert_equal 'parked', transition.from
     assert_equal 'idling', transition.to
@@ -476,8 +476,8 @@ class EventWithTransitionWithoutToStateTest < Test::Unit::TestCase
     assert @event.can_fire?(@object)
   end
   
-  def test_should_have_a_next_transition
-    transition = @event.next_transition(@object)
+  def test_should_have_a_transition
+    transition = @event.transition_for(@object)
     assert_not_nil transition
     assert_equal 'parked', transition.from
     assert_equal 'parked', transition.to
@@ -512,8 +512,8 @@ class EventWithTransitionWithNilToStateTest < Test::Unit::TestCase
     assert @event.can_fire?(@object)
   end
   
-  def test_should_have_a_next_transition
-    transition = @event.next_transition(@object)
+  def test_should_have_a_transition
+    transition = @event.transition_for(@object)
     assert_not_nil transition
     assert_equal 'idling', transition.from
     assert_equal nil, transition.to
@@ -548,8 +548,8 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
     assert @event.can_fire?(@object)
   end
   
-  def test_should_have_a_next_transition
-    transition = @event.next_transition(@object)
+  def test_should_have_a_transition
+    transition = @event.transition_for(@object)
     assert_not_nil transition
     assert_equal 'parked', transition.from
     assert_equal 'idling', transition.to
