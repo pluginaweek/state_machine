@@ -27,6 +27,32 @@ module StateMachine
   # and StateMachine::Machine#after_transition for documentation
   # on how to define new callbacks.
   # 
+  # *Note* that callbacks only get executed within the context of an event.
+  # As a result, if a class has an initial state when it's created, any
+  # callbacks that would normally get executed when the object enters that
+  # state will *not* get triggered.
+  # 
+  # For example,
+  # 
+  #   class Vehicle < ActiveRecord::Base
+  #     state_machine :initial => :parked do
+  #       after_transition all => :parked do
+  #         raise ArgumentError
+  #       end
+  #       ...
+  #     end
+  #   end
+  #   
+  #   vehicle = Vehicle.new   # => #<Vehicle id: 1, state: "parked">
+  #   vehicle.save            # => true (no exception raised)
+  # 
+  # If you need callbacks to get triggered when an object is created, this
+  # should be done by either:
+  # * Use a <tt>before :save</tt> or equivalent hook, or
+  # * Set an initial state of nil and use the correct event to create the
+  #   object with the proper state, resulting in callbacks being triggered and
+  #   the object getting persisted
+  # 
   # === Canceling callbacks
   # 
   # Callbacks can be canceled by throwing :halt at any point during the
