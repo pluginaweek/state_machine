@@ -9,8 +9,106 @@ class StateCollectionByDefaultTest < Test::Unit::TestCase
     assert_equal 0, @states.length
   end
   
+  def test_should_raise_exception_when_matching_state
+    assert_raise(ArgumentError) { @states.matches?(Object.new, :parked) }
+  end
+  
+  def test_should_raise_exception_when_finding_state_for_object
+    assert_raise(ArgumentError) { @states.match(Object.new) }
+  end
+  
   def test_should_be_empty_by_priority
     assert_equal [], @states.by_priority
+  end
+end
+
+class StateCollectionTest < Test::Unit::TestCase
+  def setup
+    @states = StateMachine::StateCollection.new
+    
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @states << @nil = StateMachine::State.new(@machine, nil)
+    @states << @parked = StateMachine::State.new(@machine, :parked)
+    @states << @idling = StateMachine::State.new(@machine, :idling)
+    
+    @object = @klass.new
+  end
+  
+  def test_should_not_match_if_value_does_not_match
+    assert !@states.matches?(@object, :parked)
+    assert !@states.matches?(@object, :idling)
+  end
+  
+  def test_should_match_if_value_matches
+    assert @states.matches?(@object, nil)
+  end
+  
+  def test_raise_exception_if_matching_invalid_state
+    assert_raise(ArgumentError) { @states.matches?(@object, :invalid) }
+  end
+  
+  def test_should_find_state_for_object_if_value_is_known
+    @object.state = 'parked'
+    assert_equal @parked, @states.match(@object)
+  end
+  
+  def test_should_raise_exception_if_finding_state_for_object_with_unknown_value
+    @object.state = 'invalid'
+    exception = assert_raise(ArgumentError) { @states.match(@object) }
+    assert_equal '"invalid" is not a known state value', exception.message
+  end
+end
+
+class StateCollectionWithCustomStateValuesTest < Test::Unit::TestCase
+  def setup
+    @states = StateMachine::StateCollection.new
+    
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @states << @state = StateMachine::State.new(@machine, :parked, :value => 1)
+    
+    @object = @klass.new
+    @object.state = 1
+  end
+  
+  def test_should_match_if_value_matches
+    assert @states.matches?(@object, :parked)
+  end
+  
+  def test_should_not_match_if_value_does_not_match
+    @object.state = 2
+    assert !@states.matches?(@object, :parked)
+  end
+  
+  def test_should_find_state_for_object_if_value_is_known
+    assert_equal @state, @states.match(@object)
+  end
+end
+
+class StateCollectionWithStateMatchersTest < Test::Unit::TestCase
+  def setup
+    @states = StateMachine::StateCollection.new
+    
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @states << @state = StateMachine::State.new(@machine, :parked, :if => lambda {|value| !value.nil?})
+    
+    @object = @klass.new
+    @object.state = 1
+  end
+  
+  def test_should_match_if_value_matches
+    assert @states.matches?(@object, :parked)
+  end
+  
+  def test_should_not_match_if_value_does_not_match
+    @object.state = nil
+    assert !@states.matches?(@object, :parked)
+  end
+  
+  def test_should_find_state_for_object_if_value_is_known
+    assert_equal @state, @states.match(@object)
   end
 end
 

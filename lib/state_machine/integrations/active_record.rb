@@ -196,7 +196,7 @@ module StateMachine
         if Object.const_defined?(:I18n)
           object.errors.add(attribute, :invalid_transition,
             :event => event.name,
-            :value => state_for(object).name,
+            :value => states.match(object).name,
             :default => @invalid_message
           )
         else
@@ -241,10 +241,10 @@ module StateMachine
           attribute = self.attribute
           
           # Still use class_eval here instance of define_instance_method since
-          # we need to directly override the method defined in the model
+          # we need to be able to call +super+
           owner_class.class_eval do
             define_method("#{attribute}?") do |*args|
-              args.empty? ? super(*args) : self.class.state_machines[attribute].state?(self, *args)
+              args.empty? ? super(*args) : self.class.state_machines[attribute].states.matches?(self, *args)
             end
           end
         end

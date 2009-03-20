@@ -27,14 +27,6 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert !@machine.events.any?
   end
   
-  def test_should_not_have_any_events_for_an_object
-    assert @machine.events_for(@object).empty?
-  end
-  
-  def test_should_not_have_any_transitions_for_an_object
-    assert @machine.transitions_for(@object).empty?
-  end
-  
   def test_should_not_have_any_before_callbacks
     assert @machine.callbacks[:before].empty?
   end
@@ -943,30 +935,6 @@ class MachineWithStatesTest < Test::Unit::TestCase
     exception = assert_raise(ArgumentError) {@machine.state(:first_gear, :invalid => true)}
     assert_equal 'Invalid key(s): invalid', exception.message
   end
-  
-  def test_should_not_be_in_state_if_value_does_not_match
-    assert !@machine.state?(@object, :parked)
-    assert !@machine.state?(@object, :idling)
-  end
-  
-  def test_should_be_in_state_if_value_matches
-    assert @machine.state?(@object, nil)
-  end
-  
-  def test_raise_exception_if_checking_invalid_state
-    assert_raise(ArgumentError) { @machine.state?(@object, :invalid) }
-  end
-  
-  def test_should_find_state_for_object_if_value_is_known
-    @object.state = 'parked'
-    assert_equal @parked, @machine.state_for(@object)
-  end
-  
-  def test_should_raise_exception_if_finding_state_for_object_with_unknown_value
-    @object.state = 'invalid'
-    exception = assert_raise(ArgumentError) { @machine.state_for(@object) }
-    assert_equal '"invalid" is not a known state value', exception.message
-  end
 end
 
 class MachineWithStatesWithCustomValuesTest < Test::Unit::TestCase
@@ -986,19 +954,6 @@ class MachineWithStatesWithCustomValuesTest < Test::Unit::TestCase
   def test_should_allow_lookup_by_custom_value
     assert_equal @state, @machine.states[1, :value]
   end
-  
-  def test_should_be_in_state_if_value_matches
-    assert @machine.state?(@object, :parked)
-  end
-  
-  def test_should_not_be_in_state_if_value_does_not_match
-    @object.state = 2
-    assert !@machine.state?(@object, :parked)
-  end
-  
-  def test_should_find_state_for_object_if_value_is_known
-    assert_equal @state, @machine.state_for(@object)
-  end
 end
 
 class MachineWithStateWithMatchersTest < Test::Unit::TestCase
@@ -1015,19 +970,6 @@ class MachineWithStateWithMatchersTest < Test::Unit::TestCase
     assert_not_nil @state.matcher
     assert @state.matches?(1)
     assert !@state.matches?(nil)
-  end
-  
-  def test_should_be_in_state_if_value_matches
-    assert @machine.state?(@object, :parked)
-  end
-  
-  def test_should_not_be_in_state_if_value_does_not_match
-    @object.state = nil
-    assert !@machine.state?(@object, :parked)
-  end
-  
-  def test_should_find_state_for_object_if_value_is_known
-    assert_equal @state, @machine.state_for(@object)
   end
 end
 
@@ -1131,10 +1073,6 @@ class MachineWithEventsTest < Test::Unit::TestCase
     event = @machine.event(:ignite)
     assert_equal [event], @machine.events.to_a
   end
-  
-  def test_should_not_have_events_for_an_object
-    assert_equal [], @machine.events_for(@klass.new)
-  end
 end
 
 class MachineWithExistingEventTest < Test::Unit::TestCase
@@ -1186,54 +1124,6 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
     
     assert_equal [:parked, :idling, :stalled, :first_gear], @machine.states.map {|state| state.name}
   end
-  
-  def test_should_only_include_valid_events_for_an_object
-    object = @klass.new
-    object.state = 'parked'
-    assert_equal [@event], @machine.events_for(object)
-    
-    object.state = 'stalled'
-    assert_equal [@event], @machine.events_for(object)
-    
-    object.state = 'idling'
-    assert_equal [], @machine.events_for(object)
-  end
-  
-  def test_should_only_include_valid_transitions_for_an_object
-    object = @klass.new
-    object.state = 'parked'
-    assert_equal [{:object => object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}], @machine.transitions_for(object).map {|transition| transition.attributes}
-    
-    object.state = 'stalled'
-    assert_equal [{:object => object, :attribute => :state, :event => :ignite, :from => 'stalled', :to => 'idling'}], @machine.transitions_for(object).map {|transition| transition.attributes}
-    
-    object.state = 'idling'
-    assert_equal [], @machine.transitions_for(object)
-  end
-  
-  def test_should_include_no_op_loopback_transition_if_specified
-    object = @klass.new
-    object.state = 'parked'
-    
-    assert_equal [
-      {:object => object, :attribute => :state, :event => nil, :from => 'parked', :to => 'parked'},
-      {:object => object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}
-    ], @machine.transitions_for(object, true).map {|transition| transition.attributes}
-  end
-  
-  def test_should_not_include_no_op_loopback_transition_if_loopback_is_valid
-    @machine.event :park do
-      transition all => :parked
-    end
-    
-    object = @klass.new
-    object.state = 'parked'
-    
-    assert_equal [
-      {:object => object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'},
-      {:object => object, :attribute => :state, :event => :park, :from => 'parked', :to => 'parked'}
-    ], @machine.transitions_for(object, true).map {|transition| transition.attributes}
-  end
 end
 
 class MachineWithMultipleEventsTest < Test::Unit::TestCase
@@ -1263,12 +1153,6 @@ class MachineWithMultipleEventsTest < Test::Unit::TestCase
     object.state = 'first_gear'
     object.shift_down
     assert_equal 'parked', object.state
-  end
-  
-  def test_should_only_include_all_valid_events_for_an_object
-    object = @klass.new
-    object.state = 'first_gear'
-    assert_equal [@park, @shift_down], @machine.events_for(object)
   end
 end
 

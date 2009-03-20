@@ -9,6 +9,10 @@ class NodeCollectionByDefaultTest < Test::Unit::TestCase
     assert_equal 0, @collection.length
   end
   
+  def test_should_not_have_a_machine
+    assert_nil @collection.machine
+  end
+  
   def test_should_index_by_name
     @collection << object = Struct.new(:name).new(:parked)
     assert_equal object, @collection[:parked]
@@ -131,9 +135,11 @@ class NodeCollectionWithNodesTest < Test::Unit::TestCase
   def setup
     @collection = StateMachine::NodeCollection.new
     
-    @klass = Struct.new(:name)
-    @parked = @klass.new(:parked)
-    @idling = @klass.new(:idling)
+    @machine = StateMachine::Machine.new(Class.new)
+    
+    @klass = Struct.new(:name, :machine)
+    @parked = @klass.new(:parked, @machine)
+    @idling = @klass.new(:idling, @machine)
     
     @collection << @parked
     @collection << @idling
@@ -149,6 +155,10 @@ class NodeCollectionWithNodesTest < Test::Unit::TestCase
   def test_should_be_able_to_access_by_index
     assert_equal @parked, @collection.at(0)
     assert_equal @idling, @collection.at(1)
+  end
+  
+  def test_should_have_a_machine
+    assert_equal @machine, @collection.machine
   end
 end
 

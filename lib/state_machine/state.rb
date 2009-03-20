@@ -156,7 +156,7 @@ module StateMachine
           # not possible with lambdas in Ruby 1.8.6.
           owner_class.class_eval <<-end_eval, __FILE__, __LINE__
             def #{method}(*args, &block)
-              self.class.state_machines[#{attribute.inspect}].state_for(self).call(self, #{method.inspect}, *args, &block)
+              self.class.state_machines[#{attribute.inspect}].states.match(self).call(self, #{method.inspect}, *args, &block)
             end
           end_eval
         end
@@ -186,7 +186,7 @@ module StateMachine
         context_method.bind(object).call(*args, &block)
       else
         # Raise exception as if the method never existed on the original object
-        raise NoMethodError, "undefined method '#{method}' for #{object} in state #{machine.state_for(object).name.inspect}"
+        raise NoMethodError, "undefined method '#{method}' for #{object} in state #{machine.states.match(object).name.inspect}"
       end
     end
     
@@ -232,7 +232,7 @@ module StateMachine
         
         # Checks whether the current value matches this state
         machine.define_instance_method("#{qualified_name}?") do |machine, object|
-          machine.state?(object, name)
+          machine.states.matches?(object, name)
         end
       end
   end

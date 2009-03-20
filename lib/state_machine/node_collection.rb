@@ -33,6 +33,11 @@ module StateMachine
       nodes.each {|node| self << node.dup}
     end
     
+    # Gets the machine used by nodes stored in this collection
+    def machine
+      @nodes.first && @nodes.first.machine
+    end
+    
     # Changes the current machine associated with the collection.  In turn, this
     # will change the state machine associated with each node in the collection.
     def machine=(new_machine)
