@@ -170,7 +170,7 @@ module StateMachine
         end
         
         # Skips defining reader/writer methods since this is done automatically
-        def define_attribute_accessor
+        def define_state_accessor
         end
         
         # Creates a scope for finding records *with* a particular state or

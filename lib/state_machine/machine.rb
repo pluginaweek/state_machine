@@ -300,7 +300,7 @@ module StateMachine
       
       # Set integration-specific configurations
       @action = options.include?(:action) ? options[:action] : default_action
-      define_attribute_helpers
+      define_helpers
       define_scopes(options[:plural])
       
       # Call after hook for integration-specific extensions
@@ -866,6 +866,78 @@ module StateMachine
     end
     alias_method :on, :event
     
+    # Gets the list of events that can be fired on the given object
+    # 
+    # == Examples
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       event :park do
+    #         transition :idling => :parked
+    #       end
+    #       
+    #       event :ignite do
+    #         transition :parked => :idling
+    #       end
+    #     end
+    #   end
+    #   
+    #   machine = Vehicle.state_machines[:state]
+    #   
+    #   vehicle = Vehicle.new         # => #<Vehicle:0xb7c464b0 @state="parked">
+    #   machine.events_for(vehicle)   # => [#<StateMachine::Event name=:ignite transitions=[:parked => :idling]>]
+    #   
+    #   vehicle.state = 'idling'
+    #   machine.events_for(vehicle)   # => [#<StateMachine::Event name=:park transitions=[:idling => :parked]>]
+    def events_for(object)
+      events.select {|event| event.can_fire?(object)}
+    end
+    
+    # Gets the list of transitions that can be run on the given object.  This
+    # can also always include a no-op loopback transition in cases where the
+    # states that can be transitioned to is being given as a list of options.
+    # 
+    # == Examples
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       event :park do
+    #         transition :idling => :parked
+    #       end
+    #       
+    #       event :ignite do
+    #         transition :parked => :idling
+    #       end
+    #     end
+    #   end
+    #   
+    #   machine = Vehicle.state_machines[:state]
+    #   
+    #   vehicle = Vehicle.new             # => #<Vehicle:0xb7c464b0 @state="parked">
+    #   machine.transitions_for(vehicle)  # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
+    #   
+    #   vehicle.state = 'idling'
+    #   machine.transitions_for(vehicle)  # => [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
+    #   
+    #   # Always include a loopback
+    #   machine.transitions_for(vehicle, true)  #=> [#<StateMachine::Transition attribute=:state event=nil from="idling" from_name=:idling to="idling" to_name=:idling>,
+    #                                                #<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
+    def transitions_for(object, include_no_op = false)
+      # Get the possible transitions for this object
+      transitions = events.collect {|event| event.next_transition(object)}.compact
+      
+      if include_no_op
+        state = state_for(object)
+        
+        # Add the no-op loopback transition unless a loopback is already included
+        unless transitions.any? {|transition| transition.to_name == state.name}
+          transitions.unshift(Transition.new(object, self, nil, state.name, state.name))
+        end
+      end
+      
+      transitions
+    end
+    
     # Creates a callback that will be invoked *before* a transition is
     # performed so long as the given requirements match the transition.
     # 
@@ -1121,11 +1193,12 @@ module StateMachine
       def default_action
       end
       
-      # Adds helper methods for interacting with this state machine's attribute,
-      # including reader, writer, and predicate methods
-      def define_attribute_helpers
-        define_attribute_accessor
-        define_attribute_predicate
+      # Adds helper methods for interacting with the state machine, including
+      # for states, events, and transitions
+      def define_helpers
+        define_state_accessor
+        define_state_predicate
+        define_event_helpers
         
         # Gets the state name for the current value
         define_instance_method("#{attribute}_name") do |machine, object|
@@ -1133,8 +1206,8 @@ module StateMachine
         end
       end
       
-      # Adds reader/writer methods for accessing the attribute
-      def define_attribute_accessor
+      # Adds reader/writer methods for accessing the state attribute
+      def define_state_accessor
         attribute = self.attribute
         
         @instance_helper_module.class_eval do
@@ -1145,9 +1218,24 @@ module StateMachine
       
       # Adds predicate method to the owner class for determining the name of the
       # current state
-      def define_attribute_predicate
+      def define_state_predicate
         define_instance_method("#{attribute}?") do |machine, object, state|
           machine.state?(object, state)
+        end
+      end
+      
+      # Adds helper methods for getting information about this state machine's
+      # events
+      def define_event_helpers
+        # Gets the events that are allowed to fire on the current object
+        define_instance_method("#{attribute}_events") do |machine, object|
+          machine.events_for(object).map {|event| event.name}
+        end
+        
+        # Gets the next possible transitions that can be run on the current
+        # object
+        define_instance_method("#{attribute}_transitions") do |machine, object, *args|
+          machine.transitions_for(object, *args)
         end
       end
       

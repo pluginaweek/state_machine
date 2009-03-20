@@ -169,6 +169,8 @@ like so:
   vehicle.parked?                 # => true
   vehicle.can_ignite?             # => true
   vehicle.next_ignite_transition  # => #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>
+  vehicle.state_events            # => [:ignite]
+  vehicle.state_transitions       # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
   vehicle.speed                   # => 0
   
   vehicle.ignite                  # => true

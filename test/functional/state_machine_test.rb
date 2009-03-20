@@ -267,6 +267,14 @@ class VehicleUnsavedTest < Test::Unit::TestCase
     assert_equal @vehicle, transition.object
   end
   
+  def test_should_have_a_list_of_possible_events
+    assert_equal [:ignite], @vehicle.state_events
+  end
+  
+  def test_should_have_a_list_of_possible_transitions
+    assert_equal [{:object => @vehicle, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}], @vehicle.state_transitions.map {|transition| transition.attributes}
+  end
+  
   def test_should_allow_ignite
     assert @vehicle.ignite
     assert_equal 'idling', @vehicle.state

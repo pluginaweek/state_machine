@@ -27,6 +27,14 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert !@machine.events.any?
   end
   
+  def test_should_not_have_any_events_for_an_object
+    assert @machine.events_for(@object).empty?
+  end
+  
+  def test_should_not_have_any_transitions_for_an_object
+    assert @machine.transitions_for(@object).empty?
+  end
+  
   def test_should_not_have_any_before_callbacks
     assert @machine.callbacks[:before].empty?
   end
@@ -77,6 +85,14 @@ class MachineByDefaultTest < Test::Unit::TestCase
   
   def test_should_define_a_name_reader_for_the_attribute
     assert @object.respond_to?(:state_name)
+  end
+  
+  def test_should_define_an_event_reader_for_the_attribute
+    assert @object.respond_to?(:state_events)
+  end
+  
+  def test_should_define_a_transition_reader_for_the_attribute
+    assert @object.respond_to?(:state_transitions)
   end
   
   def test_should_not_define_singular_with_scope
@@ -134,6 +150,14 @@ class MachineWithCustomAttributeTest < Test::Unit::TestCase
   
   def test_should_define_a_name_reader_for_the_attribute
     assert @object.respond_to?(:status_name)
+  end
+  
+  def test_should_define_an_event_reader_for_the_attribute
+    assert @object.respond_to?(:status_events)
+  end
+  
+  def test_should_define_a_transition_reader_for_the_attribute
+    assert @object.respond_to?(:status_transitions)
   end
 end
 
@@ -667,6 +691,14 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
       def state_name
         :parked
       end
+      
+      def state_events
+        [:ignite]
+      end
+      
+      def state_transitions
+        [{:parked => :idling}]
+      end
     end
     
     StateMachine::Integrations.const_set('Custom', Module.new do
@@ -717,6 +749,14 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
     assert_equal :parked, @object.state_name
   end
   
+  def test_should_not_redefine_attribute_events_reader
+    assert_equal [:ignite], @object.state_events
+  end
+  
+  def test_should_not_redefine_attribute_transitions_reader
+    assert_equal [{:parked => :idling}], @object.state_transitions
+  end
+  
   def test_should_allow_super_chaining
     @klass.class_eval do
       def self.with_state(*states)
@@ -753,6 +793,14 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
       def state_name
         super == :parked ? 1 : 0
       end
+      
+      def state_events
+        super == []
+      end
+      
+      def state_transitions
+        super == []
+      end
     end
     
     assert_equal true, @klass.with_state
@@ -765,6 +813,8 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
     assert_equal 'idling', @object.status
     assert_equal 0, @object.state?(:parked)
     assert_equal 0, @object.state_name
+    assert_equal true, @object.state_events
+    assert_equal true, @object.state_transitions
   end
   
   def teardown
@@ -1050,7 +1100,8 @@ end
 
 class MachineWithEventsTest < Test::Unit::TestCase
   def setup
-    @machine = StateMachine::Machine.new(Class.new)
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
   end
   
   def test_should_return_the_created_event
@@ -1079,6 +1130,10 @@ class MachineWithEventsTest < Test::Unit::TestCase
   def test_should_have_events
     event = @machine.event(:ignite)
     assert_equal [event], @machine.events.to_a
+  end
+  
+  def test_should_not_have_events_for_an_object
+    assert_equal [], @machine.events_for(@klass.new)
   end
 end
 
@@ -1131,6 +1186,54 @@ class MachineWithEventsWithTransitionsTest < Test::Unit::TestCase
     
     assert_equal [:parked, :idling, :stalled, :first_gear], @machine.states.map {|state| state.name}
   end
+  
+  def test_should_only_include_valid_events_for_an_object
+    object = @klass.new
+    object.state = 'parked'
+    assert_equal [@event], @machine.events_for(object)
+    
+    object.state = 'stalled'
+    assert_equal [@event], @machine.events_for(object)
+    
+    object.state = 'idling'
+    assert_equal [], @machine.events_for(object)
+  end
+  
+  def test_should_only_include_valid_transitions_for_an_object
+    object = @klass.new
+    object.state = 'parked'
+    assert_equal [{:object => object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}], @machine.transitions_for(object).map {|transition| transition.attributes}
+    
+    object.state = 'stalled'
+    assert_equal [{:object => object, :attribute => :state, :event => :ignite, :from => 'stalled', :to => 'idling'}], @machine.transitions_for(object).map {|transition| transition.attributes}
+    
+    object.state = 'idling'
+    assert_equal [], @machine.transitions_for(object)
+  end
+  
+  def test_should_include_no_op_loopback_transition_if_specified
+    object = @klass.new
+    object.state = 'parked'
+    
+    assert_equal [
+      {:object => object, :attribute => :state, :event => nil, :from => 'parked', :to => 'parked'},
+      {:object => object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}
+    ], @machine.transitions_for(object, true).map {|transition| transition.attributes}
+  end
+  
+  def test_should_not_include_no_op_loopback_transition_if_loopback_is_valid
+    @machine.event :park do
+      transition all => :parked
+    end
+    
+    object = @klass.new
+    object.state = 'parked'
+    
+    assert_equal [
+      {:object => object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'},
+      {:object => object, :attribute => :state, :event => :park, :from => 'parked', :to => 'parked'}
+    ], @machine.transitions_for(object, true).map {|transition| transition.attributes}
+  end
 end
 
 class MachineWithMultipleEventsTest < Test::Unit::TestCase
@@ -1160,6 +1263,12 @@ class MachineWithMultipleEventsTest < Test::Unit::TestCase
     object.state = 'first_gear'
     object.shift_down
     assert_equal 'parked', object.state
+  end
+  
+  def test_should_only_include_all_valid_events_for_an_object
+    object = @klass.new
+    object.state = 'first_gear'
+    assert_equal [@park, @shift_down], @machine.events_for(object)
   end
 end
 

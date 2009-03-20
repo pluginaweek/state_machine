@@ -1,5 +1,7 @@
 == master
 
+* Add #state_transitions for getting the list of transitions that can be run on an object
+* Add #state_events for getting the list of events that can be fired on an object
 * Use generated non-bang event when running bang version so that overriding one affects the other
 * Provide access to arguments passed into an event from transition callbacks via Transition#args
 

@@ -231,13 +231,13 @@ module StateMachine
         end
         
         # Skips defining reader/writer methods since this is done automatically
-        def define_attribute_accessor
+        def define_state_accessor
         end
         
         # Adds support for defining the attribute predicate, while providing
         # compatibility with the default predicate which determines whether
         # *anything* is set for the attribute's value
-        def define_attribute_predicate
+        def define_state_predicate
           attribute = self.attribute
           
           # Still use class_eval here instance of define_instance_method since
