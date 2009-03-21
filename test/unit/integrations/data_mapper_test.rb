@@ -208,16 +208,10 @@ begin
         @record = @resource.new
       end
       
-      def test_should_not_define_a_reader_attribute_for_the_attribute
-        assert !@record.respond_to?(:status)
-      end
-      
-      def test_should_not_define_a_writer_attribute_for_the_attribute
-        assert !@record.respond_to?(:status=)
-      end
-      
-      def test_should_define_an_attribute_predicate
-        assert @record.respond_to?(:status?)
+      def test_should_define_a_new_property_for_the_attribute
+        assert_not_nil @resource.properties[:status]
+        assert @record.respond_to?(:status)
+        assert @record.respond_to?(:status=)
       end
     end
     

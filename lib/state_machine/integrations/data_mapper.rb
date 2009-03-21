@@ -201,6 +201,7 @@ module StateMachine
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
+          owner_class.property(attribute, String) unless owner_class.properties.has_property?(attribute)
         end
         
         # Creates a scope for finding records *with* a particular state or
