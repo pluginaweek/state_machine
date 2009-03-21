@@ -1,5 +1,6 @@
 == master
 
+* Add Transition#qualified_event, #qualified_from_name, and #qualified_to_name
 * Add #fire_events / #fire_events! for running events on multiple state machines in parallel
 * Rename next_#{event}_transition to #{event}_transition
 * Add #{attribute}_transitions for getting the list of transitions that can be run on an object

@@ -413,6 +413,7 @@ class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
     
     @machine = StateMachine::Machine.new(@klass, :integration => :custom)
     @machine.state :parked, :idling
+    @machine.event :ignite
     
     @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition(:parked => :idling)
@@ -464,6 +465,7 @@ class EventWithTransitionWithoutToStateTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @machine.state :parked
+    @machine.event :park
     
     @event = StateMachine::Event.new(@machine, :park)
     @event.transition(:from => :parked)
@@ -498,8 +500,8 @@ class EventWithTransitionWithNilToStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @machine.state nil
-    @machine.state :idling
+    @machine.state nil, :idling
+    @machine.event :park
     
     @event = StateMachine::Event.new(@machine, :park)
     @event.transition(:idling => nil)
@@ -535,6 +537,7 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @machine.state :parked, :idling
+    @machine.event :ignite
     
     @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition(:idling => :idling)

@@ -46,6 +46,7 @@ class EventCollectionWithEventsWithTransitionsTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @machine.state :idling, :stalled
+    @machine.event :ignite
     
     @events << @ignite = StateMachine::Event.new(@machine, :ignite)
     @ignite.transition :parked => :idling
@@ -87,6 +88,8 @@ class EventCollectionWithEventsWithTransitionsTest < Test::Unit::TestCase
   end
   
   def test_should_not_include_no_op_loopback_transition_if_loopback_is_valid
+    @machine.event :park
+    
     @events << @park = StateMachine::Event.new(@machine, :park)
     @park.transition StateMachine::AllMatcher.instance => :parked
     
@@ -107,6 +110,7 @@ class EventCollectionWithMultipleEventsTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @machine.state :first_gear
+    @machine.event :park, :shift_down
     
     @events << @park = StateMachine::Event.new(@machine, :park)
     @park.transition :first_gear => :parked

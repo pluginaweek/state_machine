@@ -63,17 +63,26 @@ module StateMachine
     # The event that triggered the transition
     attr_reader :event
     
+    # The fully-qualified name of the event that triggered the transition
+    attr_reader :qualified_event
+    
     # The original state value *before* the transition
     attr_reader :from
     
     # The original state name *before* the transition
     attr_reader :from_name
     
+    # The original fully-qualified state name *before* transition
+    attr_reader :qualified_from_name
+    
     # The new state value *after* the transition
     attr_reader :to
     
     # The new state name *after* the transition
     attr_reader :to_name
+    
+    # The new fully-qualified state name *after* the transition
+    attr_reader :qualified_to_name
     
     # The arguments passed in to the event that triggered the transition
     # (does not include the +run_action+ boolean argument if specified)
@@ -83,11 +92,24 @@ module StateMachine
     def initialize(object, machine, event, from_name, to_name) #:nodoc:
       @object = object
       @machine = machine
-      @event = event
+      
+      # Event information
+      if event = machine.events[event]
+        @event = event.name
+        @qualified_event = event.qualified_name
+      end
+      
+      # From state information
+      from_state = machine.states.fetch(from_name)
       @from = object.send(machine.attribute)
-      @from_name = from_name
-      @to = machine.states[to_name].value
-      @to_name = to_name
+      @from_name = from_state.name
+      @qualified_from_name = from_state.qualified_name
+      
+      # To state information
+      to_state = machine.states.fetch(to_name)
+      @to = to_state.value
+      @to_name = to_state.name
+      @qualified_to_name = to_state.qualified_name
     end
     
     # The attribute which this transition's machine is defined for

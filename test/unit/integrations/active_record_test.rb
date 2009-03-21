@@ -343,6 +343,7 @@ begin
         @model = new_model
         @machine = StateMachine::Machine.new(@model, :initial => :parked)
         @machine.other_states :idling
+        @machine.event :ignite
         
         @record = @model.new(:state => 'parked')
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -451,6 +452,7 @@ begin
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
         @machine.state :parked, :idling
+        @machine.event :ignite
         @machine.before_transition(lambda {@before_count += 1; false})
         @machine.before_transition(lambda {@before_count += 1})
         
@@ -484,6 +486,7 @@ begin
         
         @machine = StateMachine::Machine.new(@model)
         @machine.state :parked, :idling
+        @machine.event :ignite
         @record = @model.new(:state => 'parked')
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         @result = @transition.perform
@@ -538,6 +541,7 @@ begin
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
         @machine.state :parked, :idling
+        @machine.event :ignite
         @machine.after_transition(lambda {@after_count += 1; false})
         @machine.after_transition(lambda {@after_count += 1})
         
@@ -568,6 +572,7 @@ begin
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
         @machine.state :parked, :idling
+        @machine.event :ignite
         @record = @model.new(:state => 'parked')
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
@@ -654,6 +659,7 @@ begin
         @model = new_model
         @machine = StateMachine::Machine.new(@model, :namespace => 'car')
         @machine.state :parked, :idling
+        @machine.event :ignite
         @record = @model.new(:state => 'parked')
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
@@ -688,6 +694,7 @@ begin
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
         @machine.state :parked, :idling
+        @machine.event :ignite
         @record = @model.new(:state => 'parked')
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         

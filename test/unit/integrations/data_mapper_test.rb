@@ -256,6 +256,7 @@ begin
         @resource = new_resource
         @machine = StateMachine::Machine.new(@resource)
         @machine.state :parked, :idling
+        @machine.event :ignite
         @record = @resource.new(:state => 'parked')
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
@@ -351,6 +352,7 @@ begin
           @resource = new_resource
           @machine = StateMachine::Machine.new(@resource)
           @machine.state :parked, :idling
+          @machine.event :ignite
           @record = @resource.new(:state => 'parked')
           @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         end
@@ -471,6 +473,7 @@ begin
           @resource = new_resource
           @machine = StateMachine::Machine.new(@resource)
           @machine.state :parked, :idling
+          @machine.event :ignite
           @record = @resource.new(:state => 'parked')
           @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
           

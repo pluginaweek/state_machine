@@ -244,6 +244,7 @@ begin
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
         @machine.state :parked, :idling
+        @machine.event :ignite
         @record = @model.new(:state => 'parked')
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
