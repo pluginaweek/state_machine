@@ -45,6 +45,7 @@ Some brief, high-level features include:
 * State-driven instance / class behavior
 * State values of any data type
 * Dynamically-generated state values
+* Event parallelization
 * Inheritance
 * Internationalization
 * GraphViz visualization creator
@@ -63,6 +64,7 @@ Below is an example of many of the features offered by this plugin, including:
 * Conditional transitions
 * State-driven instance behavior
 * Customized state values
+* Parallel events
 
 Class definition:
 
@@ -191,7 +193,7 @@ like so:
   vehicle.park!                   # => StateMachine::InvalidTransition: Cannot transition state via :park from :second_gear
   
   # Generic state predicates can raise exceptions if the value does not exist
-  vehicle.state?(:parked)         # => true
+  vehicle.state?(:parked)         # => false
   vehicle.state?(:invalid)        # => ArgumentError: :invalid is an invalid name
   
   # Namespaced machines have uniquely-generated methods
@@ -206,6 +208,13 @@ like so:
   
   vehicle.hood_opened?            # => true
   vehicle.hood_closed?            # => false
+  
+  # Events can be fired in parallel
+  vehicle.fire_events(:shift_down, :close_hood)   # => true
+  vehicle.state_name                              # => :first_gear
+  vehicle.hood_state_name                         # => :closed
+  
+  vehicle.fire_events!(:ignite, :close_hood)      # => StateMachine::InvalidTransition: Cannot run events in parallel: ignite, close_hood
 
 *Note* the comment made on the +initialize+ method in the class.  In order for
 state machine attributes to be properly initialized, <tt>super()</tt> must be called.

@@ -10,6 +10,50 @@ module StateMachine
   # * A starting state
   # * An ending state
   class Transition
+    class << self
+      # Runs one or more transitions in parallel.  All transitions will run
+      # through the following steps:
+      # * Before callbacks
+      # * Persist state
+      # * Invoke action
+      # * After callbacks
+      # 
+      # See StateMachine::InstanceMethods#run_events for more information.
+      def perform(transitions, run_action = true)
+        # Validate that the transitions are for separate machines / attributes
+        attributes = transitions.map {|transition| transition.attribute}.uniq
+        raise ArgumentError, 'Cannot perform multiple transitions in parallel for the same state machine / attribute' if attributes.length != transitions.length
+        
+        result = false
+        
+        # Grab any transition for wrapping flow within a transaction
+        transitions.first.within_transaction do
+          catch(:halt) do
+            # Run before callbacks.  If any callback halts, then the entire
+            # chain is halted for every transition.
+            transitions.each {|transition| transition.before}
+            
+            # Persist the new state for each attribute
+            transitions.each {|transition| transition.persist}
+            
+            # Run the actions associated with each machine
+            actions = transitions.map {|transition| transition.action}.uniq.compact
+            object = transitions.first.object
+            result = !run_action || actions.all? {|action| object.send(action) != false}
+            
+            # Always run after callbacks regardless of whether the actions failed
+            transitions.each {|transition| transition.after(result)}
+          end
+          
+          # Make sure the transaction gets the correct return value for determining
+          # whether it should rollback or not
+          result = result != false
+        end
+
+        result
+      end
+    end
+    
     # The object being transitioned
     attr_reader :object
     
@@ -33,7 +77,7 @@ module StateMachine
     
     # The arguments passed in to the event that triggered the transition
     # (does not include the +run_action+ boolean argument if specified)
-    attr_reader :args
+    attr_accessor :args
     
     # Creates a new, specific transition
     def initialize(object, machine, event, from_name, to_name) #:nodoc:
@@ -46,13 +90,18 @@ module StateMachine
       @to_name = to_name
     end
     
-    # Gets the attribute which this transition's machine is defined for
+    # The attribute which this transition's machine is defined for
     def attribute
       machine.attribute
     end
     
-    # Gets a hash of all the core attributes defined for this transition with
-    # their names as keys and values of the attributes as values.
+    # The action that will be run when this transition is performed
+    def action
+      machine.action
+    end
+    
+    # A hash of all the core attributes defined for this transition with their
+    # names as keys and values of the attributes as values.
     # 
     # == Example
     # 
@@ -81,30 +130,89 @@ module StateMachine
     #   transition.perform(false)   # => Only sets the state attribute
     def perform(*args)
       run_action = [true, false].include?(args.last) ? args.pop : true
-      @args = args
+      self.args = args
       
-      result = false
-      
+      # Run the transition
+      self.class.perform([self], run_action)
+    end
+    
+    # Runs a block within a transaction for the object being transitioned.
+    # By default, transactions are a no-op unless otherwise defined by the
+    # machine's integration.
+    def within_transaction
       machine.within_transaction(object) do
-        catch(:halt) do
-          # Run before callbacks
-          callback(:before)
-          
-          # Updates the object's attribute to the ending state
-          object.send("#{attribute}=", to)
-          result = run_action && machine.action ? object.send(machine.action) != false : true
-          
-          # Always run after callbacks regardless of whether the action failed.
-          # Result is included in case the callback depends on this value
-          callback(:after, result)
-        end
-        
-        # Make sure the transaction gets the correct return value for determining
-        # whether it should rollback or not
-        result = result != false
+        yield
       end
-      
-      result
+    end
+    
+    # Runs the machine's +before+ callbacks for this transition.  Only
+    # callbacks that are configured to match the event, from state, and to
+    # state will be invoked.
+    # 
+    # == Example
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       before_transition :on => :ignite, :do => lambda {|vehicle| ...}
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new
+    #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
+    #   transition.before
+    def before
+      callback(:before)
+    end
+    
+    # Transitions the current value of the state to that specified by the
+    # transition.
+    # 
+    # == Example
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       ...
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new
+    #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
+    #   transition.persist
+    #   
+    #   vehicle.state   # => 'idling'
+    def persist
+      object.send("#{attribute}=", to)
+    end
+    
+    # Runs the machine's +after+ callbacks for this transition.  Only
+    # callbacks that are configured to match the event, from state, and to
+    # state will be invoked.
+    # 
+    # The result is used to indicate whether the associated machine action
+    # was executed successfully.
+    # 
+    # == Halting
+    # 
+    # If any callback throws a <tt>:halt</tt> exception, it will be caught
+    # and the callback chain will be automatically stopped.  However, this
+    # exception will not bubble up to the caller since +after+ callbacks
+    # should never halt the execution of a +perform+.
+    # 
+    # == Example
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       after_transition :on => :ignite, :do => lambda {|vehicle| ...}
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new
+    #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
+    #   transition.after(true)
+    def after(result)
+      catch(:halt) do
+        callback(:after, result)
+      end
     end
     
     # Generates a nicely formatted description of this transitions's contents.

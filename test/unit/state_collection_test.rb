@@ -35,6 +35,18 @@ class StateCollectionTest < Test::Unit::TestCase
     @object = @klass.new
   end
   
+  def test_should_index_by_name
+    assert_equal @parked, @states[:parked, :name]
+  end
+  
+  def test_should_index_by_name_by_default
+    assert_equal @parked, @states[:parked]
+  end
+  
+  def test_should_index_by_value
+    assert_equal @parked, @states['parked', :value]
+  end
+  
   def test_should_not_match_if_value_does_not_match
     assert !@states.matches?(@object, :parked)
     assert !@states.matches?(@object, :idling)
