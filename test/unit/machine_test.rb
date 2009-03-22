@@ -902,6 +902,23 @@ class MachineWithCustomInitializeTest < Test::Unit::TestCase
   end
 end
 
+class MachinePersistenceTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+    @object = @klass.new
+  end
+  
+  def test_should_allow_reading_state
+    assert_equal 'parked', @machine.read(@object)
+  end
+  
+  def test_should_allow_writing_state
+    @machine.write(@object, 'idling')
+    assert_equal 'idling', @object.state
+  end
+end
+
 class MachineWithStatesTest < Test::Unit::TestCase
   def setup
     @klass = Class.new

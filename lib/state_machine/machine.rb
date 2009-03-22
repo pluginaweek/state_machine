@@ -715,6 +715,39 @@ module StateMachine
     end
     alias_method :other_states, :state
     
+    # Gets the current value stored in the given object's state
+    # 
+    # For example,
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       ...
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new                 # => #<Vehicle:0xb7d94ab0 @state="parked">
+    #   Vehicle.state_machine.read(vehicle)   # => "parked"
+    def read(object)
+      object.send(attribute)
+    end
+    
+    # Sets a new value in the given object's state
+    # 
+    # For example,
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       ...
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new   # => #<Vehicle:0xb7d94ab0 @state="parked">
+    #   Vehicle.state_machine.write(vehicle, 'idling')
+    #   vehicle.state           # => "idling"
+    def write(object, value)
+      object.send("#{attribute}=", value)
+    end
+    
     # Defines one or more events for the machine and the transitions that can
     # be performed when those events are run.
     # 

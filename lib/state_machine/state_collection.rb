@@ -27,7 +27,7 @@ module StateMachine
     #   states.matches?(vehicle, :idling)   # => false
     #   states.matches?(vehicle, :invalid)  # => ArgumentError: :invalid is an invalid key for :name index
     def matches?(object, name)
-      fetch(name).matches?(object.send(machine.attribute))
+      fetch(name).matches?(machine.read(object))
     end
     
     # Determines the current state of the given object as configured by this
@@ -56,7 +56,7 @@ module StateMachine
     def match(object)
       raise ArgumentError, 'No states available to match' unless machine = self.machine
       
-      value = object.send(machine.attribute)
+      value = machine.read(object)
       state = self[value, :value] || detect {|state| state.matches?(value)}
       raise ArgumentError, "#{value.inspect} is not a known #{machine.attribute} value" unless state
       

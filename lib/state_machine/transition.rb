@@ -101,7 +101,7 @@ module StateMachine
       
       # From state information
       from_state = machine.states.fetch(from_name)
-      @from = object.send(machine.attribute)
+      @from = machine.read(object)
       @from_name = from_state.name
       @qualified_from_name = from_state.qualified_name
       
@@ -203,7 +203,7 @@ module StateMachine
     #   
     #   vehicle.state   # => 'idling'
     def persist
-      object.send("#{attribute}=", to)
+      machine.write(object, to)
     end
     
     # Runs the machine's +after+ callbacks for this transition.  Only

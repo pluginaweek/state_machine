@@ -6,8 +6,8 @@ module StateMachine
       each do |attribute, machine|
         # Set the initial value of the machine's attribute unless it already
         # exists (which must mean the defaults are being skipped)
-        value = object.send(attribute)
-        object.send("#{attribute}=", machine.initial_state(object).value) if value.nil? || value.respond_to?(:empty?) && value.empty?
+        value = machine.read(object)
+        machine.write(object, machine.initial_state(object).value) if value.nil? || value.respond_to?(:empty?) && value.empty?
       end
     end
     
