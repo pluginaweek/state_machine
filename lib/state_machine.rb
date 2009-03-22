@@ -269,18 +269,18 @@ module StateMachine
     #       end
     #     end
     #     
-    #     state_machine :hood_state, :initial => :closed, :namespace => 'hood' do
-    #       event :open do
-    #         transition all => :opened
+    #     state_machine :alarm_state, :initial => :active, :namespace => 'alarm' do
+    #       event :turn_on do
+    #         transition all => :active
     #       end
     #       
-    #       event :close do
-    #         transition all => :closed
+    #       event :turn_off do
+    #         transition all => :off
     #       end
     #     end
     #   end
     # 
-    # The above class defines two state machines: +heater_state+ and +hood_state+.
+    # The above class defines two state machines: +heater_state+ and +alarm_state+.
     # For the +heater_state+ machine, the following methods are generated since
     # it's namespaced by "heater":
     # * <tt>can_turn_on_heater?</tt>
@@ -293,15 +293,15 @@ module StateMachine
     # * <tt>heater_on?</tt>
     # 
     # As shown, each method is unique to the state machine so that the states
-    # and events don't conflict.  The same goes for the +hood_state+ machine:
-    # * <tt>can_open_hood?</tt>
-    # * <tt>open_hood</tt>
+    # and events don't conflict.  The same goes for the +alarm_state+ machine:
+    # * <tt>can_turn_on_alarm?</tt>
+    # * <tt>turn_on_alarm</tt>
     # * ...
-    # * <tt>can_close_hood?</tt>
-    # * <tt>close_hood</tt>
+    # * <tt>can_turn_off_alarm?</tt>
+    # * <tt>turn_off_alarm</tt>
     # * ..
-    # * <tt>hood_open?</tt>
-    # * <tt>hood_closed?</tt>
+    # * <tt>alarm_active?</tt>
+    # * <tt>alarm_off?</tt>
     # 
     # == Scopes
     # 

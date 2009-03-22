@@ -1112,8 +1112,7 @@ module StateMachine
         attribute = self.attribute
         
         @instance_helper_module.class_eval do
-          attr_reader attribute
-          attr_writer attribute
+          attr_accessor attribute
         end
       end
       

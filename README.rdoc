@@ -127,17 +127,17 @@ Class definition:
       end
     end
     
-    state_machine :hood_state, :initial => :closed, :namespace => 'hood' do
-      event :open do
-        transition all => :opened
+    state_machine :alarm_state, :initial => :active, :namespace => 'alarm' do
+      event :enable do
+        transition all => :active
       end
       
-      event :close do
-        transition all => :closed
+      event :disable do
+        transition all => :off
       end
       
-      state :opened, :value => 1
-      state :closed, :value => 0
+      state :active, :value => 1
+      state :off, :value => 0
     end
     
     def initialize
@@ -197,24 +197,24 @@ like so:
   vehicle.state?(:invalid)        # => ArgumentError: :invalid is an invalid name
   
   # Namespaced machines have uniquely-generated methods
-  vehicle.hood_state              # => 0
-  vehicle.hood_state_name         # => :closed
+  vehicle.alarm_state             # => 1
+  vehicle.alarm_state_name        # => :active
   
-  vehicle.can_open_hood?          # => true
-  vehicle.open_hood               # => true
-  vehicle.hood_state              # => 1
-  vehicle.hood_state_name         # => :opened
-  vehicle.can_close_hood?         # => true
+  vehicle.can_disable_alarm?      # => true
+  vehicle.disable_alarm           # => true
+  vehicle.alarm_state             # => 0
+  vehicle.alarm_state_name        # => :off
+  vehicle.can_enable_alarm?       # => true
   
-  vehicle.hood_opened?            # => true
-  vehicle.hood_closed?            # => false
+  vehicle.alarm_disabled?         # => true
+  vehicle.alarm_enabled?          # => false
   
   # Events can be fired in parallel
-  vehicle.fire_events(:shift_down, :close_hood)   # => true
+  vehicle.fire_events(:shift_down, :enable_alarm) # => true
   vehicle.state_name                              # => :first_gear
-  vehicle.hood_state_name                         # => :closed
+  vehicle.alarm_state_name                        # => :active
   
-  vehicle.fire_events!(:ignite, :close_hood)      # => StateMachine::InvalidTransition: Cannot run events in parallel: ignite, close_hood
+  vehicle.fire_events!(:ignite, :enable_alarm)    # => StateMachine::InvalidTransition: Cannot run events in parallel: ignite
 
 *Note* the comment made on the +initialize+ method in the class.  In order for
 state machine attributes to be properly initialized, <tt>super()</tt> must be called.

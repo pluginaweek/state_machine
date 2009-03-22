@@ -1302,44 +1302,44 @@ end
 class MachineWithNamespaceTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass, :namespace => 'car', :initial => :parked) do
-      event :ignite do
-        transition :parked => :idling
+    @machine = StateMachine::Machine.new(@klass, :namespace => 'alarm', :initial => :active) do
+      event :enable do
+        transition :off => :active
       end
       
-      event :park do
-        transition :idling => :parked
+      event :disable do
+        transition :active => :off
       end
     end
     @object = @klass.new
   end
   
   def test_should_namespace_state_predicates
-    [:car_parked?, :car_idling?].each do |name|
+    [:alarm_active?, :alarm_off?].each do |name|
       assert @object.respond_to?(name)
     end
   end
   
   def test_should_namespace_event_checks
-    [:can_ignite_car?, :can_park_car?].each do |name|
+    [:can_enable_alarm?, :can_disable_alarm?].each do |name|
       assert @object.respond_to?(name)
     end
   end
   
   def test_should_namespace_event_transition_readers
-    [:ignite_car_transition, :park_car_transition].each do |name|
+    [:enable_alarm_transition, :disable_alarm_transition].each do |name|
       assert @object.respond_to?(name)
     end
   end
   
   def test_should_namespace_events
-    [:ignite_car, :park_car].each do |name|
+    [:enable_alarm, :disable_alarm].each do |name|
       assert @object.respond_to?(name)
     end
   end
   
   def test_should_namespace_bang_events
-    [:ignite_car!, :park_car!].each do |name|
+    [:enable_alarm!, :disable_alarm!].each do |name|
       assert @object.respond_to?(name)
     end
   end

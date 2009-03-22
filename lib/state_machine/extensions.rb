@@ -1,8 +1,10 @@
+require 'state_machine/machine_collection'
+
 module StateMachine
   module ClassMethods
     def self.extended(base) #:nodoc:
       base.class_eval do
-        @state_machines = {}
+        @state_machines = MachineCollection.new
       end
     end
     
@@ -78,58 +80,36 @@ module StateMachine
     #       end
     #     end
     #     
-    #     state_machine :hood_state, :namespace => 'hood', :initial => :closed do
-    #       event :open do
-    #         transition all => :opened
+    #     state_machine :alarm_state, :namespace => 'alarm', :initial => :on do
+    #       event :enable do
+    #         transition all => :active
     #       end
     #       
-    #       event :close do
-    #         transition all => :closed
+    #       event :disable do
+    #         transition all => :off
     #       end
     #     end
     #   end
     #   
-    #   vehicle = Vehicle.new                       # => #<Vehicle:0xb7c02850 @state="parked", @hood_state="closed">
-    #   vehicle.state                               # => "parked"
-    #   vehicle.hood_state                          # => "closed"
+    #   vehicle = Vehicle.new                         # => #<Vehicle:0xb7c02850 @state="parked", @alarm_state="active">
+    #   vehicle.state                                 # => "parked"
+    #   vehicle.alarm_state                           # => "active"
     #   
-    #   vehicle.fire_events(:ignite, :open_hood)    # => true
-    #   vehicle.state                               # => "idling"
-    #   vehicle.hood_state                          # => "opened"
+    #   vehicle.fire_events(:ignite, :disable_alarm)  # => true
+    #   vehicle.state                                 # => "idling"
+    #   vehicle.alarm_state                           # => "off"
     #   
     #   # If any event fails, the entire event chain fails
-    #   vehicle.fire_events(:ignite, :close_hood)   # => false
-    #   vehicle.state                               # => "idling"
-    #   vehicle.hood_state                          # => "opened"
+    #   vehicle.fire_events(:ignite, :enable_alarm)   # => false
+    #   vehicle.state                                 # => "idling"
+    #   vehicle.alarm_state                           # => "off"
     #   
     #   # Exception raised on invalid event
-    #   vehicle.fire_events(:park, :invalid)        # => ArgumentError: :invalid is an unknown event
-    #   vehicle.state                               # => "idling"
-    #   vehicle.hood_state                          # => "opened"
+    #   vehicle.fire_events(:park, :invalid)          # => StateMachine::InvalidEvent: :invalid is an unknown event
+    #   vehicle.state                                 # => "idling"
+    #   vehicle.alarm_state                           # => "off"
     def fire_events(*events)
-      run_action = [true, false].include?(events.last) ? events.pop : true
-      
-      # Generate the transitions to run for each event
-      transitions = events.collect do |name|
-        # Find the actual event being run
-        event = nil
-        self.class.state_machines.detect do |attribute, machine|
-          event ||= machine.events[name, :qualified_name]
-        end
-        
-        raise ArgumentError, "#{name.inspect} is an unknown state machine event" unless event
-        
-        # Get the transition that will be performed for the event
-        unless transition = event.transition_for(self)
-          event.machine.invalidate(self, event)
-        end
-        
-        transition
-      end.compact
-      
-      # Run the events in parallel only if valid transitions were found for
-      # all of them
-      events.length == transitions.length ? StateMachine::Transition.perform(transitions, run_action) : false
+      self.class.state_machines.fire_events(self, *events)
     end
     
     # Run one or more events in parallel.  If any event fails to run, then
@@ -150,21 +130,21 @@ module StateMachine
     #       end
     #     end
     #     
-    #     state_machine :hood_state, :namespace => 'hood', :initial => :closed do
-    #       event :open do
-    #         transition all => :opened
+    #     state_machine :alarm_state, :namespace => 'alarm', :initial => :on do
+    #       event :enable do
+    #         transition all => :active
     #       end
     #       
-    #       event :close do
-    #         transition all => :closed
+    #       event :disable do
+    #         transition all => :off
     #       end
     #     end
     #   end
     #   
-    #   vehicle = Vehicle.new                       # => #<Vehicle:0xb7c02850 @state="parked", @hood_state="closed">
-    #   vehicle.fire_events(:ignite, :open_hood)    # => true
+    #   vehicle = Vehicle.new                         # => #<Vehicle:0xb7c02850 @state="parked", @alarm_state="active">
+    #   vehicle.fire_events(:ignite, :disable_alarm)  # => true
     #   
-    #   vehicle.fire_events!(:ignite, :open_hood)   # => 
+    #   vehicle.fire_events!(:ignite, :disable_alarm) # => StateMachine::InvalidTranstion: Cannot run events in parallel: ignite, disable_alarm
     def fire_events!(*events)
       run_action = [true, false].include?(events.last) ? events.pop : true
       fire_events(*(events + [run_action])) || raise(StateMachine::InvalidTransition, "Cannot run events in parallel: #{events * ', '}")
@@ -172,12 +152,7 @@ module StateMachine
     
     protected
       def initialize_state_machines #:nodoc:
-        self.class.state_machines.each do |attribute, machine|
-          # Set the initial value of the machine's attribute unless it already
-          # exists (which must mean the defaults are being skipped)
-          value = send(attribute)
-          send("#{attribute}=", machine.initial_state(self).value) if value.nil? || value.respond_to?(:empty?) && value.empty?
-        end
+        self.class.state_machines.initialize_states(self)
       end
   end
 end

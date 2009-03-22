@@ -4,6 +4,10 @@ require 'state_machine/assertions'
 require 'state_machine/matcher_helpers'
 
 module StateMachine
+  # An invalid event was specified
+  class InvalidEvent < StandardError
+  end
+  
   # An event defines an action that transitions an attribute from one state to
   # another.  The state that an attribute is transitioned to depends on the
   # guards configured for the event.

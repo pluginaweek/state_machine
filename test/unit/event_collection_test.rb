@@ -22,20 +22,20 @@ class EventCollectionTest < Test::Unit::TestCase
   def setup
     @events = StateMachine::EventCollection.new
     
-    @machine = StateMachine::Machine.new(Class.new, :namespace => 'hood')
-    @events << @open = StateMachine::Event.new(@machine, :open)
+    @machine = StateMachine::Machine.new(Class.new, :namespace => 'alarm')
+    @events << @open = StateMachine::Event.new(@machine, :enable)
   end
   
   def test_should_index_by_name
-    assert_equal @open, @events[:open, :name]
+    assert_equal @open, @events[:enable, :name]
   end
   
   def test_should_index_by_name_by_default
-    assert_equal @open, @events[:open]
+    assert_equal @open, @events[:enable]
   end
   
   def test_should_index_by_qualified_name
-    assert_equal @open, @events[:open_hood, :qualified_name]
+    assert_equal @open, @events[:enable_alarm, :qualified_name]
   end
 end
 

@@ -374,21 +374,21 @@ end
 class StateWithNamespaceTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass, :namespace => 'gear')
-    @state = StateMachine::State.new(@machine, :parked)
+    @machine = StateMachine::Machine.new(@klass, :namespace => 'alarm')
+    @state = StateMachine::State.new(@machine, :active)
     @object = @klass.new
   end
   
   def test_should_have_a_name
-    assert_equal :parked, @state.name
+    assert_equal :active, @state.name
   end
   
   def test_should_have_a_qualified_name
-    assert_equal :gear_parked, @state.qualified_name
+    assert_equal :alarm_active, @state.qualified_name
   end
   
   def test_should_namespace_predicate
-    assert @object.respond_to?(:gear_parked?)
+    assert @object.respond_to?(:alarm_active?)
   end
 end
 

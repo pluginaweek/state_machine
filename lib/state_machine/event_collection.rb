@@ -1,4 +1,3 @@
-
 module StateMachine
   # Represents a collection of states in a state machine
   class EventCollection < NodeCollection
