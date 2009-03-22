@@ -5,9 +5,7 @@ module StateMachine
       super(:index => [:name, :qualified_name])
     end
     
-    # Gets the list of events that can be fired on the given object.  This
-    # will return their *unqalified* names (i.e. will not included the
-    # machine's namespace).
+    # Gets the list of events that can be fired on the given object.
     # 
     # == Examples
     # 
