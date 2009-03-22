@@ -184,7 +184,7 @@ module StateMachine
       
       # Resets an errors previously added when invalidating the given object
       def reset(object)
-        object.errors.clear
+        object.errors.clear if object.respond_to?(:errors)
       end
       
       # Runs a new database transaction, rolling back any changes if the

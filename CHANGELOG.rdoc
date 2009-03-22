@@ -1,5 +1,6 @@
 == master
 
+* Fix assumptions that dm-validations is always available in DataMapper integration
 * Automatically define DataMapper properties for machine attributes if they don't exist
 * Add Transition#qualified_event, #qualified_from_name, and #qualified_to_name
 * Add #fire_events / #fire_events! for running events on multiple state machines in parallel
