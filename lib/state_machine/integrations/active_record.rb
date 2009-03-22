@@ -244,7 +244,7 @@ module StateMachine
           # we need to be able to call +super+
           owner_class.class_eval do
             define_method("#{attribute}?") do |*args|
-              args.empty? ? super(*args) : self.class.state_machines[attribute].states.matches?(self, *args)
+              args.empty? ? super(*args) : self.class.state_machine(attribute).states.matches?(self, *args)
             end
           end
         end
@@ -288,7 +288,7 @@ module StateMachine
           # Created the scope and then override it with state translation
           owner_class.named_scope(name)
           owner_class.scopes[name] = lambda do |klass, *states|
-            machine_states = klass.state_machines[attribute].states
+            machine_states = klass.state_machine(attribute).states
             values = states.flatten.map {|state| machine_states.fetch(state).value}
             
             ::ActiveRecord::NamedScope::Scope.new(klass, scope.call(values))

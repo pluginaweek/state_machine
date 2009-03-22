@@ -5,7 +5,9 @@ module StateMachine
       super(:index => [:name, :qualified_name])
     end
     
-    # Gets the list of events that can be fired on the given object
+    # Gets the list of events that can be fired on the given object.  This
+    # will return their *unqalified* names (i.e. will not included the
+    # machine's namespace).
     # 
     # == Examples
     # 
@@ -21,7 +23,7 @@ module StateMachine
     #     end
     #   end
     #   
-    #   events = Vehicle.state_machines[:state].events
+    #   events = Vehicle.state_machine(:state).events
     #   
     #   vehicle = Vehicle.new               # => #<Vehicle:0xb7c464b0 @state="parked">
     #   events.valid_for(vehicle)           # => [#<StateMachine::Event name=:ignite transitions=[:parked => :idling]>]
@@ -50,7 +52,7 @@ module StateMachine
     #     end
     #   end
     #   
-    #   events = Vehicle.state_machines[:state].events
+    #   events = Vehicle.state_machine.events
     #   
     #   vehicle = Vehicle.new                   # => #<Vehicle:0xb7c464b0 @state="parked">
     #   events.transitions_for(vehicle)         # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]

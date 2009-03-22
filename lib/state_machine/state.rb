@@ -156,7 +156,7 @@ module StateMachine
           # not possible with lambdas in Ruby 1.8.6.
           owner_class.class_eval <<-end_eval, __FILE__, __LINE__
             def #{method}(*args, &block)
-              self.class.state_machines[#{attribute.inspect}].states.match(self).call(self, #{method.inspect}, *args, &block)
+              self.class.state_machine(#{attribute.inspect}).states.match(self).call(self, #{method.inspect}, *args, &block)
             end
           end_eval
         end

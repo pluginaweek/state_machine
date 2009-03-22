@@ -1406,7 +1406,7 @@ class MachineFinderWithExistingMachineOnSuperclassTest < Test::Unit::TestCase
     @base_machine.after_transition(lambda {})
     
     @klass = Class.new(@base_class)
-    @machine = StateMachine::Machine.find_or_create(@klass, :status)
+    @machine = StateMachine::Machine.find_or_create(@klass, :status) {}
   end
   
   def test_should_accept_a_block
@@ -1418,7 +1418,20 @@ class MachineFinderWithExistingMachineOnSuperclassTest < Test::Unit::TestCase
     assert called
   end
   
-  def test_should_create_a_new_machine
+  def test_should_not_create_a_new_machine_if_no_block_or_options
+    machine = StateMachine::Machine.find_or_create(Class.new(@base_class), :status)
+    
+    assert_same machine, @base_machine
+  end
+  
+  def test_should_create_a_new_machine_if_given_options
+    machine = StateMachine::Machine.find_or_create(@klass, :status, :initial => :parked)
+    
+    assert_not_nil machine
+    assert_not_same machine, @base_machine
+  end
+  
+  def test_should_create_a_new_machine_if_given_block
     assert_not_nil @machine
     assert_not_same @machine, @base_machine
   end

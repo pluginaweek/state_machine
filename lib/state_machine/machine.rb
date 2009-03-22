@@ -138,7 +138,7 @@ module StateMachine
   #   end
   #   
   #   [Vehicle, Switch, Project].each do |klass|
-  #     klass.state_machines.each do |machine|
+  #     klass.state_machines.each do |attribute, machine|
   #       machine.before_transition klass.method(:before_transition)
   #     end
   #   end
@@ -216,10 +216,11 @@ module StateMachine
         options = args.last.is_a?(Hash) ? args.pop : {}
         attribute = args.first || :state
         
-        # Attempts to find an existing machine
+        # Find an existing machine
         if owner_class.respond_to?(:state_machines) && machine = owner_class.state_machines[attribute]
-          # Create a copy of the state machine if it's being created by a subclass
-          unless machine.owner_class == owner_class
+          # Only create a new copy if changes are being made to the machine in
+          # a subclass
+          if machine.owner_class != owner_class && (options.any? || block_given?)
             machine = machine.clone
             machine.initial_state = options[:initial] if options.include?(:initial)
             machine.owner_class = owner_class
@@ -406,7 +407,7 @@ module StateMachine
       
       @instance_helper_module.class_eval do
         define_method(method) do |*args|
-          block.call(self.class.state_machines[attribute], self, *args)
+          block.call(self.class.state_machine(attribute), self, *args)
         end
       end
     end
@@ -430,7 +431,7 @@ module StateMachine
       
       @class_helper_module.class_eval do
         define_method(method) do |*args|
-          block.call(self.state_machines[attribute], self, *args)
+          block.call(self.state_machine(attribute), self, *args)
         end
       end
     end
@@ -450,7 +451,7 @@ module StateMachine
     #   end
     #   
     #   vehicle = Vehicle.new
-    #   Vehicle.state_machines[:state].initial_state(vehicle)   # => #<StateMachine::State name=:parked value="parked" initial=true>
+    #   Vehicle.state_machine.initial_state(vehicle)  # => #<StateMachine::State name=:parked value="parked" initial=true>
     # 
     # With a dynamic initial state:
     # 
@@ -465,10 +466,10 @@ module StateMachine
     #   vehicle = Vehicle.new
     #   
     #   vehicle.force_idle = true
-    #   Vehicle.state_machines[:state].initial_state(vehicle)   # => #<StateMachine::State name=:idling value="idling" initial=false>
+    #   Vehicle.state_machine.initial_state(vehicle)  # => #<StateMachine::State name=:idling value="idling" initial=false>
     #   
     #   vehicle.force_idle = false
-    #   Vehicle.state_machines[:state].initial_state(vehicle)   # => #<StateMachine::State name=:parked value="parked" initial=false>
+    #   Vehicle.state_machine.initial_state(vehicle)  # => #<StateMachine::State name=:parked value="parked" initial=false>
     def initial_state(object)
       states.fetch(@initial_state.is_a?(Proc) ? @initial_state.call(object) : @initial_state)
     end

@@ -20,7 +20,7 @@ module StateMachine
     #     end
     #   end
     #   
-    #   states = Vehicle.state_machines[:state].states
+    #   states = Vehicle.state_machine.states
     #   vehicle = Vehicle.new               # => #<Vehicle:0xb7c464b0 @state="parked">
     #   
     #   states.matches?(vehicle, :parked)   # => true
@@ -43,7 +43,7 @@ module StateMachine
     #     end
     #   end
     #   
-    #   states = Vehicle.state_machines[:state].states
+    #   states = Vehicle.state_machine.states
     #   
     #   vehicle = Vehicle.new         # => #<Vehicle:0xb7c464b0 @state="parked">
     #   states.match(vehicle)         # => #<StateMachine::State name=:parked value="parked" initial=true>

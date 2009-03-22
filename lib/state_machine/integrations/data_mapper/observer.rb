@@ -169,7 +169,7 @@ module StateMachine
             
             # Add the transition callback to each class being observed
             observing.each do |klass|
-              state_machines = attribute ? [klass.state_machines[attribute]] : klass.state_machines.values
+              state_machines = attribute ? [klass.state_machine(attribute)] : klass.state_machines.values
               state_machines.each {|machine| machine.send("#{type}_transition", *transition_args, &block)}
             end if observing
           end
