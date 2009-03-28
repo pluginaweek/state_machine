@@ -1,5 +1,6 @@
 == master
 
+* Allow machine options to be set on an integration-wide basis
 * Turn transactions off by default in DataMapper integrations
 * Add support for configuring the use of transactions
 * Simplify reading/writing of attributes

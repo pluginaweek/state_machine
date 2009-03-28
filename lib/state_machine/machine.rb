@@ -313,6 +313,15 @@ module StateMachine
       options = args.last.is_a?(Hash) ? args.pop : {}
       assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration, :invalid_message, :use_transactions)
       
+      # Find an integration that matches this machine's owner class
+      if integration = options[:integration] ? StateMachine::Integrations.find(options[:integration]) : StateMachine::Integrations.match(owner_class)
+        extend integration
+        options = integration.defaults.merge(options) if integration.respond_to?(:defaults)
+      end
+      
+      # Add machine-wide defaults
+      options = {:use_transactions => true}.merge(options)
+      
       # Set machine configuration
       @attribute = args.first || :state
       @events = EventCollection.new(self)
@@ -320,18 +329,13 @@ module StateMachine
       @callbacks = {:before => [], :after => []}
       @namespace = options[:namespace]
       @invalid_message = options[:invalid_message]
+      @action = options[:action]
+      @use_transactions = options[:use_transactions]
       
       self.owner_class = owner_class
       self.initial_state = options[:initial]
       
-      # Find an integration that matches this machine's owner class
-      if integration = options[:integration] ? StateMachine::Integrations.find(options[:integration]) : StateMachine::Integrations.match(owner_class)
-        extend integration
-      end
-      
-      # Set integration-specific configurations
-      @action = options.include?(:action) ? options[:action] : default_action
-      @use_transactions = options.include?(:use_transactions) ? options[:use_transactions] : default_use_transactions
+      # Define class integration
       define_helpers
       define_scopes(options[:plural])
       
@@ -1128,18 +1132,6 @@ module StateMachine
     protected
       # Runs additional initialization hooks.  By default, this is a no-op.
       def after_initialize
-      end
-      
-      # The default action that should be invoked when performing a transition
-      # on the attribute for this machine.  This may change depending on the
-      # configured integration for the owner class.
-      def default_action
-      end
-      
-      # The default configuration for whether to use database transactions
-      # when integrated with an ORM
-      def default_use_transactions
-        true
       end
       
       # Adds helper methods for interacting with the state machine, including

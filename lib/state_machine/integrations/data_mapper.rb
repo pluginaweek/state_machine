@@ -168,6 +168,10 @@ module StateMachine
     # support for DataMapper observers.  See StateMachine::Integrations::DataMapper::Observer
     # for more information.
     module DataMapper
+      # The default options to use for state machines using this integration
+      class << self; attr_reader :defaults; end
+      @defaults = {:action => :save, :use_transactions => false}
+        
       # Should this integration be used for state machines in the given class?
       # Classes that include DataMapper::Resource will automatically use the
       # DataMapper integration.
@@ -192,16 +196,6 @@ module StateMachine
       end
       
       protected
-        # Sets the default action for all DataMapper state machines to +save+
-        def default_action
-          :save
-        end
-        
-        # Sets the default transaction usage to false
-        def default_use_transactions
-          false
-        end
-        
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
           owner_class.property(attribute, String) unless owner_class.properties.has_property?(attribute)

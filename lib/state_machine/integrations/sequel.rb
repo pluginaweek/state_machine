@@ -147,6 +147,10 @@ module StateMachine
     # Note, also, that the transition can be accessed by simply defining
     # additional arguments in the callback block.
     module Sequel
+      # The default options to use for state machines using this integration
+      class << self; attr_reader :defaults; end
+      @defaults = {:action => :save}
+      
       # Should this integration be used for state machines in the given class?
       # Classes that include Sequel::Model will automatically use the Sequel
       # integration.
@@ -166,11 +170,6 @@ module StateMachine
       end
       
       protected
-        # Sets the default action for all Sequel state machines to +save+
-        def default_action
-          :save
-        end
-        
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
         end

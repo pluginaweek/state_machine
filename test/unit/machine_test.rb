@@ -238,9 +238,8 @@ end
 class MachineWithNilActionTest < Test::Unit::TestCase
   def setup
     integration = Module.new do
-      def default_action
-        :save
-      end
+      class << self; attr_reader :defaults; end
+      @defaults = {:action => :save}
     end
     StateMachine::Integrations.const_set('Custom', integration)
     @machine = StateMachine::Machine.new(Class.new, :action => nil, :integration => :custom)
@@ -297,19 +296,14 @@ end
 
 class MachineWithIntegrationTest < Test::Unit::TestCase
   def setup
-    StateMachine::Integrations.const_set('Custom', Module.new do      
+    StateMachine::Integrations.const_set('Custom', Module.new do  
+      class << self; attr_reader :defaults; end
+      @defaults = {:action => :save, :use_transactions => false}
+          
       attr_reader :initialized, :with_scopes, :without_scopes, :ran_transaction
       
       def after_initialize
         @initialized = true
-      end
-      
-      def default_action
-        :save
-      end
-      
-      def default_use_transactions
-        false
       end
       
       def create_with_scope(name)

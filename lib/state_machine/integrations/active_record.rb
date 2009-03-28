@@ -185,6 +185,10 @@ module StateMachine
     #     end
     #   end
     module ActiveRecord
+      # The default options to use for state machines using this integration
+      class << self; attr_reader :defaults; end
+      @defaults = {:action => :save}
+      
       # Should this integration be used for state machines in the given class?
       # Classes that inherit from ActiveRecord::Base will automatically use
       # the ActiveRecord integration.
@@ -224,11 +228,6 @@ module StateMachine
           # Observer callbacks never halt the chain; result is ignored
           callbacks[:before] << Callback.new {|object, transition| notify(:before, object, transition)}
           callbacks[:after] << Callback.new {|object, transition, result| notify(:after, object, transition)}
-        end
-        
-        # Sets the default action for all ActiveRecord state machines to +save+
-        def default_action
-          :save
         end
         
         # Skips defining reader/writer methods since this is done automatically
