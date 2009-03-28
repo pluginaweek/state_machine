@@ -28,11 +28,9 @@ module StateMachine
         
         # Grab any transition for wrapping flow within a transaction
         transitions.first.within_transaction do
-          catch(:halt) do
-            # Run before callbacks.  If any callback halts, then the entire
-            # chain is halted for every transition.
-            transitions.each {|transition| transition.before}
-            
+          # Run before callbacks.  If any callback halts, then the entire
+          # chain is halted for every transition.
+          if transitions.all? {|transition| transition.before}
             # Persist the new state for each attribute
             transitions.each {|transition| transition.persist}
             
@@ -45,9 +43,8 @@ module StateMachine
             transitions.each {|transition| transition.after(result)}
           end
           
-          # Make sure the transaction gets the correct return value for determining
-          # whether it should rollback or not
-          result = result != false
+          # Allow the transaction to rollback based on the result
+          result
         end
 
         result
@@ -183,7 +180,14 @@ module StateMachine
     #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
     #   transition.before
     def before
-      callback(:before)
+      result = false
+      
+      catch(:halt) do
+        callback(:before)
+        result = true
+      end
+      
+      result
     end
     
     # Transitions the current value of the state to that specified by the
@@ -235,6 +239,8 @@ module StateMachine
       catch(:halt) do
         callback(:after, result)
       end
+      
+      true
     end
     
     # Generates a nicely formatted description of this transitions's contents.

@@ -194,8 +194,9 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
   
   def test_should_run_before_callbacks_on_before
     @machine.before_transition(lambda {|object| @run = true})
-    @transition.before
+    result = @transition.before
     
+    assert_equal true, result
     assert_equal true, @run
   end
   
@@ -228,10 +229,12 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     assert_equal [@object, @transition], @args
   end
   
-  def test_should_not_catch_halted_before_callbacks
+  def test_should_catch_halted_before_callbacks
     @machine.before_transition(lambda {throw :halt})
     
-    assert_throws(:halt) { @transition.before }
+    result = nil
+    assert_nothing_thrown { result = @transition.before }
+    assert_equal false, result
   end
   
   def test_should_run_before_callbacks_on_perform_before_changing_the_state
@@ -243,8 +246,9 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
   
   def test_should_run_after_callbacks_on_after
     @machine.after_transition(lambda {|object| @run = true})
-    @transition.after(true)
+    result = @transition.after(true)
     
+    assert_equal true, result
     assert_equal true, @run
   end
   
@@ -283,7 +287,9 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
   def test_should_catch_halted_after_callbacks
     @machine.after_transition(lambda {throw :halt})
     
-    assert_nothing_thrown { @transition.after(true) }
+    result = nil
+    assert_nothing_thrown { result = @transition.after(true) }
+    assert_equal true, result
   end
   
   def test_should_run_after_callbacks_on_perform_after_running_the_action
@@ -553,11 +559,16 @@ class TransitionHaltedDuringActionTest < Test::Unit::TestCase
     @object = @klass.new
     @object.state = 'parked'
     @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
-    @result = @transition.perform
+    
+    @halted = true
+    catch(:halt) do
+      @transition.perform
+      @halted = false
+    end
   end
   
-  def test_should_not_be_successful
-    assert !@result
+  def test_should_not_catch_halt
+    assert @halted
   end
   
   def test_should_change_current_state
@@ -570,10 +581,6 @@ class TransitionHaltedDuringActionTest < Test::Unit::TestCase
   
   def test_should_not_run_after_callbacks
     assert_equal 0, @after_count
-  end
-  
-  def test_should_cancel_the_transaction
-    assert @klass.cancelled_transaction
   end
 end
 
@@ -780,36 +787,6 @@ class TransitionsInParallelTest < Test::Unit::TestCase
     assert_equal [:state, :status], @before_callbacks
     assert_equal [], @object.persisted
     assert_equal [], @object.actions
-    assert_equal [], @after_callbacks
-  end
-  
-  def test_should_halt_if_action_halted_for_first_transition
-    @klass.class_eval do
-      def save_state
-        @actions << :save_state
-        throw :halt
-      end
-    end
-    
-    assert_equal false, perform
-    assert_equal [:state, :status], @before_callbacks
-    assert_equal ['idling', 'second_gear'], @object.persisted
-    assert_equal [:save_state], @object.actions
-    assert_equal [], @after_callbacks
-  end
-  
-  def test_should_halt_if_action_halted_for_second_transition
-    @klass.class_eval do
-      def save_status
-        @actions << :save_status
-        throw :halt
-      end
-    end
-    
-    assert_equal false, perform
-    assert_equal [:state, :status], @before_callbacks
-    assert_equal ['idling', 'second_gear'], @object.persisted
-    assert_equal [:save_state, :save_status], @object.actions
     assert_equal [], @after_callbacks
   end
   
