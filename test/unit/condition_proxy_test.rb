@@ -31,10 +31,10 @@ class ConditionProxyTest < Test::Unit::TestCase
   def test_should_pass_object_into_proxy_condition
     condition_args = []
     condition_proxy = StateMachine::ConditionProxy.new(Validateable, lambda {|*args| condition_args = args})
-    validation = condition_proxy.validate(:name)
+    options = *condition_proxy.validate
     
     object = Validateable.new
-    validation.last[:if].call(object)
+    options[:if].call(object)
     
     assert_equal [object], condition_args
   end
@@ -49,10 +49,10 @@ class ConditionProxyTest < Test::Unit::TestCase
     end
     
     condition_proxy = StateMachine::ConditionProxy.new(klass, :callback)
-    validation = condition_proxy.validate(:name)
+    options = *condition_proxy.validate
     
     object = klass.new
-    validation.last[:if].call(object)
+    options[:if].call(object)
     
     assert object.callback_called
   end
@@ -63,10 +63,10 @@ class ConditionProxyTest < Test::Unit::TestCase
     end
     
     condition_proxy = StateMachine::ConditionProxy.new(klass, '@callback_called = true')
-    validation = condition_proxy.validate(:name)
+    options = *condition_proxy.validate
     
     object = klass.new
-    validation.last[:if].call(object)
+    options[:if].call(object)
     
     assert object.callback_called
   end
@@ -78,8 +78,7 @@ class ConditionProxyWithoutConditionsTest < Test::Unit::TestCase
     condition_proxy = StateMachine::ConditionProxy.new(Validateable, lambda {@proxy_result})
     
     @object = Validateable.new
-    @validation = condition_proxy.validate(:name)
-    @options = @validation.last
+    @options = *condition_proxy.validate
   end
   
   def test_should_have_options_configuration
@@ -114,8 +113,7 @@ class ConditionProxyWithIfConditionTest < Test::Unit::TestCase
     @object = Validateable.new
     
     @condition_result = nil
-    @validation = condition_proxy.validate(:name, :if => lambda {@condition_result})
-    @options = @validation.pop
+    @options = *condition_proxy.validate(:if => lambda {@condition_result})
   end
   
   def test_should_have_if_option
@@ -144,8 +142,7 @@ class ConditionProxyWithIfConditionTest < Test::Unit::TestCase
     end
     
     condition_proxy = StateMachine::ConditionProxy.new(klass, lambda {true})
-    validation = condition_proxy.validate(:name, :if => :callback)
-    options = validation.last
+    options = *condition_proxy.validate(:if => :callback)
     
     object = klass.new
     object.callback = false
@@ -161,8 +158,7 @@ class ConditionProxyWithIfConditionTest < Test::Unit::TestCase
     end
     
     condition_proxy = StateMachine::ConditionProxy.new(klass, lambda {true})
-    validation = condition_proxy.validate(:name, :if => '@callback')
-    options = validation.last
+    options = *condition_proxy.validate(:if => '@callback')
     
     object = klass.new
     object.callback = false
@@ -175,15 +171,13 @@ end
 
 class ConditionProxyWithMultipleIfConditionsTest < Test::Unit::TestCase
   def setup
-    @proxy_result = true
-    condition_proxy = StateMachine::ConditionProxy.new(Validateable, lambda {@proxy_result})
+    condition_proxy = StateMachine::ConditionProxy.new(Validateable, lambda {true})
     
     @object = Validateable.new
     
     @first_condition_result = nil
     @second_condition_result = nil
-    @validation = condition_proxy.validate(:name, :if => [lambda {@first_condition_result}, lambda {@second_condition_result}])
-    @options = @validation.pop
+    @options = *condition_proxy.validate(:if => [lambda {@first_condition_result}, lambda {@second_condition_result}])
   end
   
   def test_should_be_true_if_all_conditions_are_true
@@ -211,8 +205,7 @@ class ConditionProxyWithUnlessConditionTest < Test::Unit::TestCase
     @object = Validateable.new
     
     @condition_result = nil
-    @validation = condition_proxy.validate(:name, :unless => lambda {@condition_result})
-    @options = @validation.pop
+    @options = *condition_proxy.validate(:unless => lambda {@condition_result})
   end
   
   def test_should_have_if_option
@@ -241,8 +234,7 @@ class ConditionProxyWithUnlessConditionTest < Test::Unit::TestCase
     end
     
     condition_proxy = StateMachine::ConditionProxy.new(klass, lambda {true})
-    validation = condition_proxy.validate(:name, :unless => :callback)
-    options = validation.last
+    options = *condition_proxy.validate(:unless => :callback)
     
     object = klass.new
     object.callback = true
@@ -258,8 +250,7 @@ class ConditionProxyWithUnlessConditionTest < Test::Unit::TestCase
     end
     
     condition_proxy = StateMachine::ConditionProxy.new(klass, lambda {true})
-    validation = condition_proxy.validate(:name, :unless => '@callback')
-    options = validation.last
+    options = *condition_proxy.validate(:unless => '@callback')
     
     object = klass.new
     object.callback = true
@@ -272,15 +263,13 @@ end
 
 class ConditionProxyWithMultipleUnlessConditionsTest < Test::Unit::TestCase
   def setup
-    @proxy_result = true
-    condition_proxy = StateMachine::ConditionProxy.new(Validateable, lambda {@proxy_result})
+    condition_proxy = StateMachine::ConditionProxy.new(Validateable, lambda {true})
     
     @object = Validateable.new
     
     @first_condition_result = nil
     @second_condition_result = nil
-    @validation = condition_proxy.validate(:name, :unless => [lambda {@first_condition_result}, lambda {@second_condition_result}])
-    @options = @validation.pop
+    @options = *condition_proxy.validate(:unless => [lambda {@first_condition_result}, lambda {@second_condition_result}])
   end
   
   def test_should_be_true_if_all_conditions_are_false
@@ -297,5 +286,43 @@ class ConditionProxyWithMultipleUnlessConditionsTest < Test::Unit::TestCase
     @first_condition_result = false
     @second_condition_result = true
     assert !@options[:if].call(@object)
+  end
+end
+
+class ConditionProxyWithIfAndUnlessConditionsTest < Test::Unit::TestCase
+  def setup
+    condition_proxy = StateMachine::ConditionProxy.new(Validateable, lambda {true})
+    
+    @object = Validateable.new
+    
+    @if_condition_result = nil
+    @unless_condition_result = nil
+    @options = *condition_proxy.validate(:if => lambda {@if_condition_result}, :unless => lambda {@unless_condition_result})
+  end
+  
+  def test_should_be_false_if_if_condition_is_false
+    @if_condition_result = false
+    @unless_condition_result = false
+    assert !@options[:if].call(@object)
+    
+    @if_condition_result = false
+    @unless_condition_result = true
+    assert !@options[:if].call(@object)
+  end
+  
+  def test_should_be_false_if_unless_condition_is_true
+    @if_condition_result = false
+    @unless_condition_result = true
+    assert !@options[:if].call(@object)
+    
+    @if_condition_result = true
+    @unless_condition_result = true
+    assert !@options[:if].call(@object)
+  end
+  
+  def test_should_be_true_if_if_condition_is_true_and_unless_condition_is_false
+    @if_condition_result = true
+    @unless_condition_result = false
+    assert @options[:if].call(@object)
   end
 end
