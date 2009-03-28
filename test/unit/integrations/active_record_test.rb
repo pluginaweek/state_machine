@@ -233,6 +233,23 @@ begin
       end
     end
     
+    class MachineWithConflictingPredicateTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model do
+          def state?(*args)
+            true
+          end
+        end
+        
+        @machine = StateMachine::Machine.new(@model)
+        @record = @model.new
+      end
+      
+      def test_should_not_define_attribute_predicate
+        assert @record.state?
+      end
+    end
+    
     class MachineWithColumnStateAttributeTest < ActiveRecord::TestCase
       def setup
         @model = new_model

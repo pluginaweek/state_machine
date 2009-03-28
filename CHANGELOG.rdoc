@@ -1,5 +1,6 @@
 == master
 
+* Fix ActiveRecord predicates being overwritten if they're already defined in the class
 * Allow machine options to be set on an integration-wide basis
 * Turn transactions off by default in DataMapper integrations
 * Add support for configuring the use of transactions

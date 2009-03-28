@@ -242,7 +242,7 @@ module StateMachine
           
           # Still use class_eval here instance of define_instance_method since
           # we need to be able to call +super+
-          owner_class.class_eval do
+          @instance_helper_module.class_eval do
             define_method("#{attribute}?") do |*args|
               args.empty? ? super(*args) : self.class.state_machine(attribute).states.matches?(self, *args)
             end
