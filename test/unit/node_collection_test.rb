@@ -141,9 +141,9 @@ class NodeCollectionWithNodesTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(Class.new)
     @collection = StateMachine::NodeCollection.new(machine)
     
-    @klass = Struct.new(:name)
-    @parked = @klass.new(:parked)
-    @idling = @klass.new(:idling)
+    @klass = Struct.new(:name, :machine)
+    @parked = @klass.new(:parked, machine)
+    @idling = @klass.new(:idling, machine)
     
     @collection << @parked
     @collection << @idling
@@ -159,6 +159,15 @@ class NodeCollectionWithNodesTest < Test::Unit::TestCase
   def test_should_be_able_to_access_by_index
     assert_equal @parked, @collection.at(0)
     assert_equal @idling, @collection.at(1)
+  end
+  
+  def test_should_deep_copy_machine_changes
+    new_machine = StateMachine::Machine.new(Class.new)
+    @collection.machine = new_machine
+    
+    assert_equal new_machine, @collection.machine
+    assert_equal new_machine, @parked.machine
+    assert_equal new_machine, @idling.machine
   end
 end
 
@@ -194,23 +203,5 @@ class NodeCollectionAfterUpdateTest < Test::Unit::TestCase
   def test_should_remove_each_old_indexed_key
     assert_nil @collection[:parked]
     assert_nil @collection[1, :value]
-  end
-end
-
-class NodeCollectionChangingMachineTest < Test::Unit::TestCase
-  def setup
-    machine = StateMachine::Machine.new(Class.new)
-    @collection = StateMachine::NodeCollection.new(machine)
-    
-    @klass = Struct.new(:name, :machine)
-    @collection << @parked = @klass.new(:parked, machine)
-    @collection << @idling = @klass.new(:idling, machine)
-    
-    @collection.machine = :machine
-  end
-  
-  def test_should_update_each_node_machine
-    assert_equal :machine, @parked.machine
-    assert_equal :machine, @idling.machine
   end
 end

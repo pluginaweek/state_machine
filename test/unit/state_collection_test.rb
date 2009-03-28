@@ -2,12 +2,16 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class StateCollectionByDefaultTest < Test::Unit::TestCase
   def setup
-    machine = StateMachine::Machine.new(Class.new)
-    @states = StateMachine::StateCollection.new(machine)
+    @machine = StateMachine::Machine.new(Class.new)
+    @states = StateMachine::StateCollection.new(@machine)
   end
   
   def test_should_not_have_any_nodes
     assert_equal 0, @states.length
+  end
+  
+  def test_should_have_a_machine
+    assert_equal @machine, @states.machine
   end
   
   def test_should_be_empty_by_priority
