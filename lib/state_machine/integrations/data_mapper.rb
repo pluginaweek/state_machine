@@ -41,9 +41,10 @@ module StateMachine
     # 
     # == Transactions
     # 
-    # In order to ensure that any changes made during transition callbacks
-    # are rolled back during a failed attempt, every transition is wrapped
-    # within a transaction.
+    # By default, the use of transactions during an event transition is
+    # turned off to be consistent with DataMapper.  This means that if
+    # changes are made to the database during a before callback, but the the
+    # transition fails to complete, those changes will *not* be rolled back.
     # 
     # For example,
     # 
@@ -63,12 +64,15 @@ module StateMachine
     #   
     #   vehicle = Vehicle.create      # => #<Vehicle id=1 name=nil state="parked">
     #   vehicle.ignite                # => false
-    #   Message.all.count             # => 0
+    #   Message.all.count             # => 1
     # 
-    # *Note* that only before callbacks that halt the callback chain and
-    # failed attempts to save the record will result in the transaction being
-    # rolled back.  If an after callback halts the chain, the previous result
-    # still applies and the transaction is *not* rolled back.
+    # To turn on transactions:
+    # 
+    #   class Vehicle < ActiveRecord::Base
+    #     state_machine :initial => :parked, :use_transactions => true do
+    #       ...
+    #     end
+    #   end
     # 
     # == Validation errors
     # 
@@ -187,16 +191,15 @@ module StateMachine
         object.errors.clear if object.respond_to?(:errors)
       end
       
-      # Runs a new database transaction, rolling back any changes if the
-      # yielded block fails (i.e. returns false).
-      def within_transaction(object)
-        object.class.transaction {|t| t.rollback unless yield}
-      end
-      
       protected
         # Sets the default action for all DataMapper state machines to +save+
         def default_action
           :save
+        end
+        
+        # Sets the default transaction usage to false
+        def default_use_transactions
+          false
         end
         
         # Skips defining reader/writer methods since this is done automatically
@@ -216,6 +219,12 @@ module StateMachine
         def create_without_scope(name)
           attribute = self.attribute
           lambda {|resource, values| resource.all(attribute.to_sym.not => values)}
+        end
+        
+        # Runs a new database transaction, rolling back any changes if the
+        # yielded block fails (i.e. returns false).
+        def transaction(object)
+          object.class.transaction {|t| t.rollback unless yield}
         end
         
         # Creates a new callback in the callback chain, always ensuring that

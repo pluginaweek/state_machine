@@ -60,6 +60,14 @@ module StateMachine
     # rolled back.  If an after callback halts the chain, the previous result
     # still applies and the transaction is *not* rolled back.
     # 
+    # To turn off transactions:
+    # 
+    #   class Vehicle < Sequel::Model
+    #     state_machine :initial => :parked, :use_transactions => false do
+    #       ...
+    #     end
+    #   end
+    # 
     # == Validation errors
     # 
     # If an event fails to successfully fire because there are no matching
@@ -157,12 +165,6 @@ module StateMachine
         object.errors.clear
       end
       
-      # Runs a new database transaction, rolling back any changes if the
-      # yielded block fails (i.e. returns false).
-      def within_transaction(object)
-        object.db.transaction {raise ::Sequel::Error::Rollback unless yield}
-      end
-      
       protected
         # Sets the default action for all Sequel state machines to +save+
         def default_action
@@ -185,6 +187,12 @@ module StateMachine
         def create_without_scope(name)
           attribute = self.attribute
           lambda {|model, values| model.filter(~{attribute.to_sym => values})}
+        end
+        
+        # Runs a new database transaction, rolling back any changes if the
+        # yielded block fails (i.e. returns false).
+        def transaction(object)
+          object.db.transaction {raise ::Sequel::Error::Rollback unless yield}
         end
         
         # Creates a new callback in the callback chain, always ensuring that

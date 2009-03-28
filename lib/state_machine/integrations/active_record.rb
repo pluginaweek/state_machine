@@ -60,6 +60,14 @@ module StateMachine
     # rolled back.  If an after callback halts the chain, the previous result
     # still applies and the transaction is *not* rolled back.
     # 
+    # To turn off transactions:
+    # 
+    #   class Vehicle < ActiveRecord::Base
+    #     state_machine :initial => :parked, :use_transactions => false do
+    #       ...
+    #     end
+    #   end
+    # 
     # == Validation errors
     # 
     # If an event fails to successfully fire because there are no matching
@@ -209,13 +217,6 @@ module StateMachine
         object.errors.clear
       end
       
-      # Runs a new database transaction, rolling back any changes by raising
-      # an ActiveRecord::Rollback exception if the yielded block fails
-      # (i.e. returns false).
-      def within_transaction(object)
-        object.class.transaction {raise ::ActiveRecord::Rollback unless yield}
-      end
-      
       protected
         # Adds the default callbacks for notifying ActiveRecord observers
         # before/after a transition has been performed.
@@ -261,6 +262,13 @@ module StateMachine
         def create_without_scope(name)
           attribute = self.attribute
           define_scope(name, lambda {|values| {:conditions => ["#{attribute} NOT IN (?)", values]}})
+        end
+        
+        # Runs a new database transaction, rolling back any changes by raising
+        # an ActiveRecord::Rollback exception if the yielded block fails
+        # (i.e. returns false).
+        def transaction(object)
+          object.class.transaction {raise ::ActiveRecord::Rollback unless yield}
         end
         
         # Creates a new callback in the callback chain, always inserting it

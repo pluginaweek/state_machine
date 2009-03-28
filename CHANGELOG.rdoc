@@ -1,5 +1,6 @@
 == master
 
+* Add support for configuring the use of transactions
 * Simplify reading/writing of attributes
 * Simplify access to state machines via #state_machine(:attribute) without generating dupes
 * Fix assumptions that dm-validations is always available in DataMapper integration

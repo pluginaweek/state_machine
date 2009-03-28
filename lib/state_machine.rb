@@ -26,6 +26,9 @@ module StateMachine
     #   library-specific behavior to the machine.  Built-in integrations include
     #   :data_mapper, :active_record, and :sequel.  By default, this is
     #   determined automatically.
+    # * <tt>:use_transactions</tt> - Whether transacitons should be used when
+    #   firing events.  Default is true unless otherwise specified by the
+    #   configured integration.
     # 
     # This also expects a block which will be used to actually configure the
     # states, events and transitions for the state machine.  *Note* that this

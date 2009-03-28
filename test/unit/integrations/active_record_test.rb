@@ -69,6 +69,10 @@ begin
         assert_equal :save, @machine.action
       end
       
+      def test_should_use_transactions
+        assert_equal true, @machine.use_transactions
+      end
+      
       def test_should_create_notifier_before_callback
         assert_equal 1, @machine.callbacks[:before].size
       end

@@ -64,6 +64,10 @@ begin
       def test_should_use_save_as_action
         assert_equal :save, @machine.action
       end
+      
+      def test_should_not_use_transactions
+        assert_equal false, @machine.use_transactions
+      end
     end
     
     class MachineTest < BaseTestCase
@@ -125,13 +129,13 @@ begin
         assert_equal [idling], @resource.without_state(:parked).with_state(:idling)
       end
       
-      def test_should_rollback_transaction_if_false
+      def test_should_not_rollback_transaction_if_false
         @machine.within_transaction(@resource.new) do
           @resource.create
           false
         end
         
-        assert_equal 0, @resource.all.size
+        assert_equal 1, @resource.all.size
       end
       
       def test_should_not_rollback_transaction_if_true

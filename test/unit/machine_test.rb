@@ -39,6 +39,10 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert_nil @machine.action
   end
   
+  def test_should_use_tranactions
+    assert_equal true, @machine.use_transactions
+  end
+  
   def test_should_not_have_a_namespace
     assert_nil @machine.namespace
   end
@@ -293,37 +297,42 @@ end
 
 class MachineWithIntegrationTest < Test::Unit::TestCase
   def setup
-    @integration = Module.new do
-      class << self; attr_accessor :initialized, :with_scopes, :without_scopes; end
-      @initialized = false
-      @with_scopes = []
-      @without_scopes = []
+    StateMachine::Integrations.const_set('Custom', Module.new do      
+      attr_reader :initialized, :with_scopes, :without_scopes, :ran_transaction
       
       def after_initialize
-        StateMachine::Integrations::Custom.initialized = true
+        @initialized = true
       end
       
       def default_action
         :save
       end
       
+      def default_use_transactions
+        false
+      end
+      
       def create_with_scope(name)
-        StateMachine::Integrations::Custom.with_scopes << name
+        (@with_scopes ||= []) << name
         lambda {}
       end
       
       def create_without_scope(name)
-        StateMachine::Integrations::Custom.without_scopes << name
+        (@without_scopes ||= []) << name
         lambda {}
       end
-    end
+      
+      def transaction(object)
+        @ran_transaction = true
+        yield
+      end
+    end)
     
-    StateMachine::Integrations.const_set('Custom', @integration)
     @machine = StateMachine::Machine.new(Class.new, :integration => :custom)
   end
   
   def test_should_call_after_initialize_hook
-    assert @integration.initialized
+    assert @machine.initialized
   end
   
   def test_should_use_the_default_action
@@ -335,12 +344,21 @@ class MachineWithIntegrationTest < Test::Unit::TestCase
     assert_equal :save!, machine.action
   end
   
+  def test_should_use_the_default_use_transactions
+    assert_equal false, @machine.use_transactions
+  end
+  
+  def test_should_use_the_custom_use_transactions_if_specified
+    machine = StateMachine::Machine.new(Class.new, :integration => :custom, :use_transactions => true)
+    assert_equal true, machine.use_transactions
+  end
+  
   def test_should_define_a_singular_and_plural_with_scope
-    assert_equal %w(with_state with_states), @integration.with_scopes
+    assert_equal %w(with_state with_states), @machine.with_scopes
   end
   
   def test_should_define_a_singular_and_plural_without_scope
-    assert_equal %w(without_state without_states), @integration.without_scopes
+    assert_equal %w(without_state without_states), @machine.without_scopes
   end
   
   def teardown

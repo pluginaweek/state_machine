@@ -305,10 +305,13 @@ module StateMachine
     # depending on the context.
     attr_reader :namespace
     
+    # Whether the machine will use transactions when firing events
+    attr_reader :use_transactions
+    
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration, :invalid_message)
+      assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration, :invalid_message, :use_transactions)
       
       # Set machine configuration
       @attribute = args.first || :state
@@ -328,6 +331,7 @@ module StateMachine
       
       # Set integration-specific configurations
       @action = options.include?(:action) ? options[:action] : default_action
+      @use_transactions = options.include?(:use_transactions) ? options[:use_transactions] : default_use_transactions
       define_helpers
       define_scopes(options[:plural])
       
@@ -1053,7 +1057,11 @@ module StateMachine
     # default, this will not run any transactions, since the changes aren't
     # taking place within the context of a database.
     def within_transaction(object)
-      yield
+      if use_transactions
+        transaction(object) { yield }
+      else
+        yield
+      end
     end
     
     # Draws a directed graph of the machine for visualizing the various events,
@@ -1122,10 +1130,16 @@ module StateMachine
       def after_initialize
       end
       
-      # Gets the default action that should be invoked when performing a
-      # transition on the attribute for this machine.  This may change
-      # depending on the configured integration for the owner class.
+      # The default action that should be invoked when performing a transition
+      # on the attribute for this machine.  This may change depending on the
+      # configured integration for the owner class.
       def default_action
+      end
+      
+      # The default configuration for whether to use database transactions
+      # when integrated with an ORM
+      def default_use_transactions
+        true
       end
       
       # Adds helper methods for interacting with the state machine, including
@@ -1212,6 +1226,11 @@ module StateMachine
       # 
       # This is only applicable to specific integrations.
       def create_without_scope(name)
+      end
+      
+      # Always yields
+      def transaction(object)
+        yield
       end
       
       # Adds a new transition callback of the given type.
