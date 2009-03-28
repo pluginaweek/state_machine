@@ -53,6 +53,13 @@ module StateMachine
       #     end
       #   end
       attr_accessor :bind_to_object
+      
+      # The application-wide terminator to use for callbacks when not
+      # explicitly defined.  Terminators determine whether to cancel a
+      # callback chain based on the return value of the callback.
+      # 
+      # See StateMachine::Callback#terminator for more information.
+      attr_accessor :terminator
     end
     
     # An optional block for determining whether to cancel the callback chain
@@ -117,10 +124,12 @@ module StateMachine
       # The actual method to invoke must be defined
       raise ArgumentError, ':do callback must be specified' unless @method
       
+      # Add defaults
+      options = {:bind_to_object => self.class.bind_to_object, :terminator => self.class.terminator}.merge(options)
+      
       # Proxy the method so that it's bound to the object.  Note that this only
       # applies to lambda callbacks.  All other callbacks ignore this option.
-      bind_to_object = !options.include?(:bind_to_object) && self.class.bind_to_object || options.delete(:bind_to_object)
-      @method = bound_method(@method) if @method.is_a?(Proc) && bind_to_object
+      @method = bound_method(@method) if options.delete(:bind_to_object) && @method.is_a?(Proc)
       @terminator = options.delete(:terminator)
       
       @guard = Guard.new(options)
