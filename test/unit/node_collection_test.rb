@@ -2,15 +2,16 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class NodeCollectionByDefaultTest < Test::Unit::TestCase
   def setup
-    @collection = StateMachine::NodeCollection.new
+    @machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(@machine)
   end
   
   def test_should_not_have_any_nodes
     assert_equal 0, @collection.length
   end
   
-  def test_should_not_have_a_machine
-    assert_nil @collection.machine
+  def test_should_have_a_machine
+    assert_equal @machine, @collection.machine
   end
   
   def test_should_index_by_name
@@ -21,11 +22,12 @@ end
 
 class NodeCollectionTest < Test::Unit::TestCase
   def setup
-    @collection = StateMachine::NodeCollection.new
+    @machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(@machine)
   end
   
   def test_should_raise_exception_if_invalid_option_specified
-    exception = assert_raise(ArgumentError) { StateMachine::NodeCollection.new(:invalid => true) }
+    exception = assert_raise(ArgumentError) { StateMachine::NodeCollection.new(@machine, :invalid => true) }
     assert_equal 'Invalid key(s): invalid', exception.message
   end
   
@@ -42,7 +44,8 @@ end
 
 class NodeCollectionAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
-    @collection = StateMachine::NodeCollection.new
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine)
     @collection << @parked = Struct.new(:name).new(:parked)
     
     @copied_collection = @collection.dup
@@ -66,7 +69,8 @@ end
 
 class NodeCollectionWithoutIndicesTest < Test::Unit::TestCase
   def setup
-    @collection = StateMachine::NodeCollection.new(:index => {})
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine, :index => {})
   end
   
   def test_should_allow_adding_node
@@ -94,7 +98,8 @@ end
 
 class NodeCollectionWithIndicesTest < Test::Unit::TestCase
   def setup
-    @collection = StateMachine::NodeCollection.new(:index => [:name, :value])
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :value])
     
     @object = Struct.new(:name, :value).new(:parked, 1)
     @collection << @object
@@ -133,13 +138,12 @@ end
 
 class NodeCollectionWithNodesTest < Test::Unit::TestCase
   def setup
-    @collection = StateMachine::NodeCollection.new
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine)
     
-    @machine = StateMachine::Machine.new(Class.new)
-    
-    @klass = Struct.new(:name, :machine)
-    @parked = @klass.new(:parked, @machine)
-    @idling = @klass.new(:idling, @machine)
+    @klass = Struct.new(:name)
+    @parked = @klass.new(:parked)
+    @idling = @klass.new(:idling)
     
     @collection << @parked
     @collection << @idling
@@ -156,15 +160,12 @@ class NodeCollectionWithNodesTest < Test::Unit::TestCase
     assert_equal @parked, @collection.at(0)
     assert_equal @idling, @collection.at(1)
   end
-  
-  def test_should_have_a_machine
-    assert_equal @machine, @collection.machine
-  end
 end
 
 class NodeCollectionAfterUpdateTest < Test::Unit::TestCase
   def setup
-    @collection = StateMachine::NodeCollection.new(:index => [:name, :value])
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :value])
     
     @klass = Struct.new(:name, :value)
     @parked = @klass.new(:parked, 1)
@@ -198,11 +199,12 @@ end
 
 class NodeCollectionChangingMachineTest < Test::Unit::TestCase
   def setup
-    @collection = StateMachine::NodeCollection.new
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine)
     
     @klass = Struct.new(:name, :machine)
-    @collection << @parked = @klass.new(:parked)
-    @collection << @idling = @klass.new(:idling)
+    @collection << @parked = @klass.new(:parked, machine)
+    @collection << @idling = @klass.new(:idling, machine)
     
     @collection.machine = :machine
   end

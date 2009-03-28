@@ -1,8 +1,8 @@
 module StateMachine
   # Represents a collection of states in a state machine
   class EventCollection < NodeCollection
-    def initialize #:nodoc:
-      super(:index => [:name, :qualified_name])
+    def initialize(machine) #:nodoc:
+      super(machine, :index => [:name, :qualified_name])
     end
     
     # Gets the list of events that can be fired on the given object.
@@ -65,7 +65,7 @@ module StateMachine
       # Get the possible transitions for this object
       transitions = collect {|event| event.transition_for(object)}.compact
       
-      if include_no_op && machine = self.machine
+      if include_no_op
         state = machine.states.match(object)
         
         # Add the no-op loopback transition unless a loopback is already included

@@ -315,8 +315,8 @@ module StateMachine
       
       # Set machine configuration
       @attribute = args.first || :state
-      @events = EventCollection.new
-      @states = StateCollection.new
+      @events = EventCollection.new(self)
+      @states = StateCollection.new(self)
       @callbacks = {:before => [], :after => []}
       @namespace = options[:namespace]
       @invalid_message = options[:invalid_message]

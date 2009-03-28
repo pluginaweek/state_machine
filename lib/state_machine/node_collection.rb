@@ -6,6 +6,9 @@ module StateMachine
     include Enumerable
     include Assertions
     
+    # The machine associated with the nodes
+    attr_reader :machine
+    
     # Creates a new collection of nodes for the given state machine.  By default,
     # the collection is empty.
     # 
@@ -13,10 +16,11 @@ module StateMachine
     # * <tt>:index</tt> - One or more attributes to automatically generate
     #   hashed indices for in order to perform quick lookups.  Default is to
     #   index by the :name attribute
-    def initialize(options = {})
+    def initialize(machine, options = {})
       assert_valid_keys(options, :index)
       options = {:index => :name}.merge(options)
       
+      @machine = machine
       @nodes = []
       @indices = Array(options[:index]).inject({}) {|indices, attribute| indices[attribute] = {}; indices}
       @default_index = Array(options[:index]).first
@@ -33,14 +37,10 @@ module StateMachine
       nodes.each {|node| self << node.dup}
     end
     
-    # Gets the machine used by nodes stored in this collection
-    def machine
-      @nodes.first && @nodes.first.machine
-    end
-    
     # Changes the current machine associated with the collection.  In turn, this
     # will change the state machine associated with each node in the collection.
     def machine=(new_machine)
+      @machine = new_machine
       each {|node| node.machine = new_machine}
     end
     

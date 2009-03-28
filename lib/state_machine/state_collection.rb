@@ -3,8 +3,8 @@ require 'state_machine/node_collection'
 module StateMachine
   # Represents a collection of states in a state machine
   class StateCollection < NodeCollection
-    def initialize #:nodoc:
-      super(:index => [:name, :value])
+    def initialize(machine) #:nodoc:
+      super(machine, :index => [:name, :value])
     end
     
     # Determines whether the given object is in a specific state.  If the
@@ -54,8 +54,6 @@ module StateMachine
     #   vehicle.state = 'invalid'
     #   states.match(vehicle)         # => ArgumentError: "invalid" is not a known state value
     def match(object)
-      raise ArgumentError, 'No states available to match' unless machine = self.machine
-      
       value = machine.read(object)
       state = self[value, :value] || detect {|state| state.matches?(value)}
       raise ArgumentError, "#{value.inspect} is not a known #{machine.attribute} value" unless state
@@ -74,8 +72,6 @@ module StateMachine
     # 
     # This order will determine how the GraphViz visualizations are rendered.
     def by_priority
-      return [] unless machine = self.machine
-      
       order = select {|state| state.initial}.map {|state| state.name}
       
       machine.events.each {|event| order += event.known_states}

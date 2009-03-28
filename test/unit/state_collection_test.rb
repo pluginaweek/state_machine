@@ -2,19 +2,12 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class StateCollectionByDefaultTest < Test::Unit::TestCase
   def setup
-    @states = StateMachine::StateCollection.new
+    machine = StateMachine::Machine.new(Class.new)
+    @states = StateMachine::StateCollection.new(machine)
   end
   
   def test_should_not_have_any_nodes
     assert_equal 0, @states.length
-  end
-  
-  def test_should_raise_exception_when_matching_state
-    assert_raise(ArgumentError) { @states.matches?(Object.new, :parked) }
-  end
-  
-  def test_should_raise_exception_when_finding_state_for_object
-    assert_raise(ArgumentError) { @states.match(Object.new) }
   end
   
   def test_should_be_empty_by_priority
@@ -24,10 +17,10 @@ end
 
 class StateCollectionTest < Test::Unit::TestCase
   def setup
-    @states = StateMachine::StateCollection.new
-    
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
+    @states = StateMachine::StateCollection.new(@machine)
+    
     @states << @nil = StateMachine::State.new(@machine, nil)
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
@@ -74,10 +67,10 @@ end
 
 class StateCollectionWithCustomStateValuesTest < Test::Unit::TestCase
   def setup
-    @states = StateMachine::StateCollection.new
-    
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
+    @states = StateMachine::StateCollection.new(@machine)
+    
     @states << @state = StateMachine::State.new(@machine, :parked, :value => 1)
     
     @object = @klass.new
@@ -100,10 +93,10 @@ end
 
 class StateCollectionWithStateMatchersTest < Test::Unit::TestCase
   def setup
-    @states = StateMachine::StateCollection.new
-    
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
+    @states = StateMachine::StateCollection.new(@machine)
+    
     @states << @state = StateMachine::State.new(@machine, :parked, :if => lambda {|value| !value.nil?})
     
     @object = @klass.new
@@ -127,8 +120,8 @@ end
 class StateCollectionWithInitialStateTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
+    @states = StateMachine::StateCollection.new(@machine)
     
-    @states = StateMachine::StateCollection.new
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
     
@@ -164,8 +157,8 @@ end
 class StateCollectionWithStateBehaviorsTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
+    @states = StateMachine::StateCollection.new(@machine)
     
-    @states = StateMachine::StateCollection.new
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
     
@@ -201,8 +194,8 @@ end
 class StateCollectionWithEventTransitionsTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
+    @states = StateMachine::StateCollection.new(@machine)
     
-    @states = StateMachine::StateCollection.new
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
     
@@ -238,8 +231,8 @@ end
 class StateCollectionWithTransitionCallbacksTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
+    @states = StateMachine::StateCollection.new(@machine)
     
-    @states = StateMachine::StateCollection.new
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
     
