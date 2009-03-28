@@ -88,7 +88,7 @@ module StateMachine
     #   state.  If the name is not a known state, then an ArgumentError is raised.
     # * <tt>state_name</tt> - Gets the name of the state for the current value
     # * <tt>state_events</tt> - Gets the list of events that can be fired on
-    #   the current object's state (will use the *unqalified* event names)
+    #   the current object's state (will use the *unqualified* event names)
     # * <tt>state_transitions(include_no_op = false)</tt> - Gets the
     #   list of possible transitions that can be made on the current object's
     #   state
