@@ -1,6 +1,6 @@
 module StateMachine
-  # Provides a set of helper methods for making assertions about the content of
-  # various objects
+  # Provides a set of helper methods for making assertions about the content
+  # of various objects
   module Assertions
     # Validates that all keys in the given hash *only* includes the specified
     # valid keys.  If any invalid keys are found, an ArgumentError will be

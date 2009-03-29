@@ -373,28 +373,6 @@ begin
           assert !called
         end
         
-        def test_should_allow_targeting_specific_machine
-          @second_machine = StateMachine::Machine.new(@resource, :status)
-          
-          called_state = false
-          called_status = false
-          
-          observer = new_observer(@resource) do
-            before_transition :state, :from => :parked do
-              called_state = true
-            end
-            
-            before_transition :status, :from => :parked do
-              called_status = true
-            end
-          end
-          
-          @transition.perform
-          
-          assert called_state
-          assert !called_status
-        end
-        
         def test_should_pass_transition_to_before_callbacks
           callback_args = nil
           
@@ -445,6 +423,60 @@ begin
           
           @transition.perform
           assert_equal [@transition], callback_args
+        end
+        
+        def test_should_raise_exception_if_targeting_specific_machine
+          assert_raise(IndexError) do
+            new_observer(@resource) do
+              before_transition :invalid, :from => :parked do
+              end
+            end
+          end
+        end
+        
+        def test_should_allow_targeting_specific_machine
+          @second_machine = StateMachine::Machine.new(@resource, :status)
+          @resource.auto_migrate!
+          
+          called_state = false
+          called_status = false
+          
+          observer = new_observer(@resource) do
+            before_transition :state, :from => :parked do
+              called_state = true
+            end
+            
+            before_transition :status, :from => :parked do
+              called_status = true
+            end
+          end
+          
+          @transition.perform
+          
+          assert called_state
+          assert !called_status
+        end
+        
+        def test_should_allow_targeting_multiple_specific_machines
+          @second_machine = StateMachine::Machine.new(@resource, :status)
+          @second_machine.state :parked, :idling
+          @second_machine.event :ignite
+          @resource.auto_migrate!
+          
+          called_attribute = nil
+          
+          attributes = []
+          observer = new_observer(@resource) do
+            before_transition :state, :status, :from => :parked do |transition|
+              called_attribute = transition.attribute
+            end
+          end
+          
+          @transition.perform
+          assert_equal :state, called_attribute
+          
+          StateMachine::Transition.new(@record, @second_machine, :ignite, :parked, :idling).perform
+          assert_equal :status, called_attribute
         end
       end
       

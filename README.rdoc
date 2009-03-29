@@ -318,8 +318,8 @@ callbacks, validation errors, and observers.  For example,
     end
     
     # Generic transition callback *before* the transition is performed
-    after_transition do |transition, saved|
-      Audit.log(self, transition) if saved # self is the record
+    after_transition do |transition|
+      Audit.log(self, transition) # self is the record
     end
   end
 
