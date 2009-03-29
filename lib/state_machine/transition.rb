@@ -89,6 +89,7 @@ module StateMachine
     def initialize(object, machine, event, from_name, to_name) #:nodoc:
       @object = object
       @machine = machine
+      @args = []
       
       # Event information
       if event = machine.events[event]

@@ -1,5 +1,6 @@
 == master
 
+* Fix transition args not being set when run in parallel
 * Allow callback terminators to be set on an application-wide basis
 * Only catch :halt during before / after transition callbacks
 * Fix ActiveRecord predicates being overwritten if they're already defined in the class

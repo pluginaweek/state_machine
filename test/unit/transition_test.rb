@@ -66,8 +66,8 @@ class TransitionTest < Test::Unit::TestCase
     assert_equal expected, @transition.attributes
   end
   
-  def test_should_not_have_any_args
-    assert_nil @transition.args
+  def test_should_have_empty_args
+    assert_equal [], @transition.args
   end
   
   def test_should_use_pretty_inspect
@@ -830,6 +830,14 @@ class TransitionsInParallelTest < Test::Unit::TestCase
     assert_equal ['idling', 'second_gear'], @object.persisted
     assert_equal [:save_state, :save_status], @object.actions
     assert_equal [:state, :status], @after_callbacks
+  end
+  
+  def test_should_have_args_in_transitions
+    args = nil
+    @state.before_transition lambda {|object, transition| args = transition.args}
+    
+    perform
+    assert_equal [], args
   end
   
   private
