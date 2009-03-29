@@ -130,7 +130,7 @@ module StateMachine
     #       end
     #     end
     #     
-    #     state_machine :alarm_state, :namespace => 'alarm', :initial => :on do
+    #     state_machine :alarm_state, :namespace => 'alarm', :initial => :active do
     #       event :enable do
     #         transition all => :active
     #       end
