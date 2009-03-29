@@ -378,7 +378,7 @@ begin
         assert called
       end
       
-      def test_should_pass_record_into_before_callbacks_with_one_argument
+      def test_should_pass_record_to_before_callbacks_with_one_argument
         record = nil
         @machine.before_transition(lambda {|arg| record = arg})
         
@@ -386,7 +386,7 @@ begin
         assert_equal @record, record
       end
       
-      def test_should_pass_record_and_transition_into_before_callbacks_with_multiple_arguments
+      def test_should_pass_record_and_transition_to_before_callbacks_with_multiple_arguments
         callback_args = nil
         @machine.before_transition(lambda {|*args| callback_args = args})
         
@@ -410,7 +410,7 @@ begin
         assert called
       end
       
-      def test_should_pass_record_into_after_callbacks_with_one_argument
+      def test_should_pass_record_to_after_callbacks_with_one_argument
         record = nil
         @machine.after_transition(lambda {|arg| record = arg})
         
@@ -418,7 +418,7 @@ begin
         assert_equal @record, record
       end
       
-      def test_should_pass_record_and_transition_into_after_callbacks_with_multiple_arguments
+      def test_should_pass_record_and_transition_to_after_callbacks_with_multiple_arguments
         callback_args = nil
         @machine.after_transition(lambda {|*args| callback_args = args})
         

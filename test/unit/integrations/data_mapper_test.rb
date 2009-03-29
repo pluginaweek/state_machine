@@ -249,7 +249,7 @@ begin
         assert called
       end
       
-      def test_should_pass_transition_into_before_callbacks_with_one_argument
+      def test_should_pass_transition_to_before_callbacks_with_one_argument
         transition = nil
         @machine.before_transition(lambda {|arg| transition = arg})
         
@@ -257,7 +257,7 @@ begin
         assert_equal @transition, transition
       end
       
-      def test_should_pass_transition_into_before_callbacks_with_multiple_arguments
+      def test_should_pass_transition_to_before_callbacks_with_multiple_arguments
         callback_args = nil
         @machine.before_transition(lambda {|*args| callback_args = args})
         
@@ -281,7 +281,7 @@ begin
         assert called
       end
       
-      def test_should_pass_transition_into_after_callbacks_with_multiple_arguments
+      def test_should_pass_transition_to_after_callbacks_with_multiple_arguments
         callback_args = nil
         @machine.after_transition(lambda {|*args| callback_args = args})
         
@@ -434,7 +434,7 @@ begin
           assert !called
         end
         
-        def test_should_pass_transition_after_before_callbacks
+        def test_should_pass_transition_to_after_callbacks
           callback_args = nil
           
           observer = new_observer(@resource) do
