@@ -598,19 +598,35 @@ begin
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
       
-      def test_should_call_before_event_method
+      def test_should_call_all_transition_callback_permutations
+        callbacks = [
+          :before_ignite_from_parked_to_idling,
+          :before_ignite_from_parked,
+          :before_ignite_to_idling,
+          :before_ignite,
+          :before_transition_state_from_parked_to_idling,
+          :before_transition_state_from_parked,
+          :before_transition_state_to_idling,
+          :before_transition_state,
+          :before_transition
+        ]
+        
+        notified = false
         observer = new_observer(@model) do
-          def before_ignite(*args)
-            notifications << args
+          callbacks.each do |callback|
+            define_method(callback) do
+              notifications << callback
+            end
           end
         end
+        
         instance = observer.instance
         
         @transition.perform
-        assert_equal [[@record, @transition]], instance.notifications
+        assert_equal callbacks, instance.notifications
       end
       
-      def test_should_call_before_transition_method
+      def test_should_pass_record_and_transition_to_before_callbacks
         observer = new_observer(@model) do
           def before_transition(*args)
             notifications << args
@@ -622,19 +638,7 @@ begin
         assert_equal [[@record, @transition]], instance.notifications
       end
       
-      def test_should_call_after_event_method
-        observer = new_observer(@model) do
-          def after_ignite(*args)
-            notifications << args
-          end
-        end
-        instance = observer.instance
-        
-        @transition.perform
-        assert_equal [[@record, @transition]], instance.notifications
-      end
-      
-      def test_should_call_after_transition_method
+      def test_should_pass_record_and_transition_to_after_callbacks
         observer = new_observer(@model) do
           def after_transition(*args)
             notifications << args
@@ -644,22 +648,6 @@ begin
         
         @transition.perform
         assert_equal [[@record, @transition]], instance.notifications
-      end
-      
-      def test_should_call_event_method_before_transition_method
-        observer = new_observer(@model) do
-          def before_ignite(*args)
-            notifications << :before_ignite
-          end
-          
-          def before_transition(*args)
-            notifications << :before_transition
-          end
-        end
-        instance = observer.instance
-        
-        @transition.perform
-        assert_equal [:before_ignite, :before_transition], instance.notifications
       end
       
       def test_should_call_methods_outside_the_context_of_the_record

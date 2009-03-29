@@ -146,9 +146,21 @@ module StateMachine
     # In addition to support for ActiveRecord-like hooks, there is additional
     # support for ActiveRecord observers.  Because of the way ActiveRecord
     # observers are designed, there is less flexibility around the specific
-    # transitions that can be hooked in.  As a result, observers can only
-    # hook into before/after callbacks for events and generic transitions
-    # like so:
+    # transitions that can be hooked in.  However, a large number of hooks
+    # *are* supported.  For example, if a transition for a record's +state+
+    # attribute changes the state from +parked+ to +idling+ via the +ignite+
+    # event, the following observer methods are supported:
+    # * before/after_ignite_from_parked_to_idling
+    # * before/after_ignite_from_parked
+    # * before/after_ignite_to_idling
+    # * before/after_ignite
+    # * before/after_transition_state_from_parked_to_idling
+    # * before/after_transition_state_from_parked
+    # * before/after_transition_state_to_idling
+    # * before/after_transition_state
+    # * before/after_transition
+    # 
+    # The following class shows an example of some of these hooks:
     # 
     #   class VehicleObserver < ActiveRecord::Observer
     #     def before_save(vehicle)
@@ -307,17 +319,37 @@ module StateMachine
         # Notifies observers on the given object that a callback occurred
         # involving the given transition.  This will attempt to call the
         # following methods on observers:
-        # * #{type}_#{event}
+        # * #{type}_#{qualified_event}_from_#{from}_to_#{to}
+        # * #{type}_#{qualified_event}_from_#{from}
+        # * #{type}_#{qualified_event}_to_#{to}
+        # * #{type}_#{qualified_event}
+        # * #{type}_transition_#{attribute}_from_#{from}_to_#{to}
+        # * #{type}_transition_#{attribute}_from_#{from}
+        # * #{type}_transition_#{attribute}_to_#{to}
+        # * #{type}_transition_#{attribute}
         # * #{type}_transition
         # 
         # This will always return true regardless of the results of the
         # callbacks.
         def notify(type, object, transition)
-          qualified_event = namespace ? "#{transition.event}_#{namespace}" : transition.event
-          ["#{type}_#{qualified_event}", "#{type}_transition"].each do |method|
-            object.class.changed
-            object.class.notify_observers(method, object, transition)
+          attribute = transition.attribute
+          event = transition.qualified_event
+          from = transition.from_name
+          to = transition.to_name
+          
+          # Machine-specific updates
+          ["#{type}_#{event}", "#{type}_transition_#{attribute}"].each do |event_segment|
+            ["_from_#{from}", nil].each do |from_segment|
+              ["_to_#{to}", nil].each do |to_segment|
+                object.class.changed
+                object.class.notify_observers([event_segment, from_segment, to_segment].join, object, transition)
+              end
+            end
           end
+          
+          # Generic updates
+          object.class.changed
+          object.class.notify_observers("#{type}_transition", object, transition)
           
           true
         end
