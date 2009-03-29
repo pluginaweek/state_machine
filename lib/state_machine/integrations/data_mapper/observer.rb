@@ -18,8 +18,8 @@ module StateMachine
       #     
       #     observe Vehicle, Switch, Project
       #     
-      #     after_transition do |transition, saved|
-      #       Audit.log(self, transition) if saved
+      #     after_transition do |transition|
+      #       Audit.log(self, transition)
       #     end
       #   end
       # 
@@ -138,8 +138,8 @@ module StateMachine
         #     end
         #     
         #     # Target all state machines without requirements
-        #     after_transition do |transition, saved|
-        #       if saved
+        #     after_transition do |transition|
+        #       if transition.result
         #         # log message
         #       end
         #     end

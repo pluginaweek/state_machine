@@ -1,5 +1,7 @@
 == master
 
+* Don't pass the result of the action as an argument to callbacks (access via Transition#result)
+* Fix incorrect results being used when running transitions in parallel
 * Fix transition args not being set when run in parallel
 * Allow callback terminators to be set on an application-wide basis
 * Only catch :halt during before / after transition callbacks

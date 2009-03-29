@@ -61,6 +61,10 @@ class TransitionTest < Test::Unit::TestCase
     assert_nil @transition.action
   end
   
+  def test_should_not_have_a_result
+    assert_nil @transition.result
+  end
+  
   def test_should_generate_attributes
     expected = {:object => @object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}
     assert_equal expected, @transition.attributes
@@ -150,6 +154,10 @@ class TransitionWithActionTest < Test::Unit::TestCase
   
   def test_should_have_an_action
     assert_equal :save, @transition.action
+  end
+  
+  def test_should_not_have_a_result
+    assert_nil @transition.result
   end
 end
 
@@ -252,6 +260,14 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     assert_equal true, @run
   end
   
+  def test_should_set_result_on_after
+    @transition.after
+    assert_nil @transition.result
+    
+    @transition.after(1)
+    assert_equal 1, @transition.result
+  end
+  
   def test_should_run_after_callbacks_in_the_order_they_were_defined
     @callbacks = []
     @machine.after_transition(lambda {@callbacks << 1})
@@ -274,14 +290,16 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     assert_equal 1, @count
   end
   
-  def test_should_pass_transition_and_action_result_to_after_callbacks
+  def test_should_pass_transition_to_after_callbacks
     @machine.after_transition(lambda {|*args| @args = args})
     
     @transition.after(true)
-    assert_equal [@object, @transition, true], @args
+    assert_equal [@object, @transition], @args
+    assert_equal true, @transition.result
     
     @transition.after(false)
-    assert_equal [@object, @transition, false], @args
+    assert_equal [@object, @transition], @args
+    assert_equal false, @transition.result
   end
   
   def test_should_catch_halted_after_callbacks
@@ -325,6 +343,10 @@ class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
     assert_equal [], @transition.args
   end
   
+  def test_should_have_a_result
+    assert_equal true, @transition.result
+  end
+  
   def test_should_be_successful
     assert_equal true, @result
   end
@@ -364,6 +386,10 @@ class TransitionWithoutRunningActionTest < Test::Unit::TestCase
   
   def test_should_have_empty_args
     assert_equal [], @transition.args
+  end
+  
+  def test_should_not_have_a_result
+    assert_nil @transition.result
   end
   
   def test_should_be_successful
@@ -714,10 +740,12 @@ class TransitionsInParallelTest < Test::Unit::TestCase
       
       def save_state
         @actions << :save_state
+        :save_state
       end
       
       def save_status
         @actions << :save_status
+        :save_status
       end
     end
     
@@ -763,6 +791,12 @@ class TransitionsInParallelTest < Test::Unit::TestCase
   def test_should_run_actions_in_order
     perform
     assert_equal [:save_state, :save_status], @object.actions
+  end
+  
+  def test_should_store_action_specific_results
+    perform
+    assert_equal :save_state, @state_transition.result
+    assert_equal :save_status, @status_transition.result
   end
   
   def test_should_run_after_callbacks_in_order

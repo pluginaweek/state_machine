@@ -24,7 +24,7 @@ module StateMachine
         attributes = transitions.map {|transition| transition.attribute}.uniq
         raise ArgumentError, 'Cannot perform multiple transitions in parallel for the same state machine / attribute' if attributes.length != transitions.length
         
-        result = false
+        success = false
         
         # Grab any transition for wrapping flow within a transaction
         transitions.first.within_transaction do
@@ -35,19 +35,22 @@ module StateMachine
             transitions.each {|transition| transition.persist}
             
             # Run the actions associated with each machine
-            actions = transitions.map {|transition| transition.action}.uniq.compact
+            results = {}
             object = transitions.first.object
-            result = !run_action || actions.all? {|action| object.send(action) != false}
+            success = !run_action || transitions.all? do |transition|
+              action = transition.action
+              action && !results.include?(action) ? results[action] = object.send(action) : true
+            end
             
             # Always run after callbacks regardless of whether the actions failed
-            transitions.each {|transition| transition.after(result)}
+            transitions.each {|transition| transition.after(results[transition.action])}
           end
           
           # Allow the transaction to rollback based on the result
-          result
+          success
         end
-
-        result
+        
+        success
       end
     end
     
@@ -84,6 +87,9 @@ module StateMachine
     # The arguments passed in to the event that triggered the transition
     # (does not include the +run_action+ boolean argument if specified)
     attr_accessor :args
+    
+    # The result of invoking the action associated with the machine
+    attr_reader :result
     
     # Creates a new, specific transition
     def initialize(object, machine, event, from_name, to_name) #:nodoc:
@@ -236,9 +242,11 @@ module StateMachine
     #   vehicle = Vehicle.new
     #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
     #   transition.after(true)
-    def after(result)
+    def after(result = nil)
+      @result = result
+      
       catch(:halt) do
-        callback(:after, result)
+        callback(:after)
       end
       
       true
@@ -273,9 +281,9 @@ module StateMachine
       # 
       # Additional callback parameters can be specified.  By default, this
       # transition is also passed into callbacks.
-      def callback(type, *args)
+      def callback(type)
         machine.callbacks[type].each do |callback|
-          callback.call(object, context, self, *args)
+          callback.call(object, context, self)
         end
       end
   end

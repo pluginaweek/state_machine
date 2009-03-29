@@ -418,12 +418,12 @@ begin
         assert_equal @record, record
       end
       
-      def test_should_pass_record_transition_and_result_into_after_callbacks_with_multiple_arguments
+      def test_should_pass_record_and_transition_into_after_callbacks_with_multiple_arguments
         callback_args = nil
         @machine.after_transition(lambda {|*args| callback_args = args})
         
         @transition.perform
-        assert_equal [@record, @transition, true], callback_args
+        assert_equal [@record, @transition], callback_args
       end
       
       def test_should_run_after_callbacks_outside_the_context_of_the_record

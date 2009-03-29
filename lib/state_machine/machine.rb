@@ -114,7 +114,7 @@ module StateMachine
   #       logger.info "#{vehicle} instructed to #{transition.event}... #{transition.attribute} is: #{transition.from}, #{transition.attribute} will be: #{transition.to}"
   #     end
   #     
-  #     def self.after_transition(vehicle, transition, result)
+  #     def self.after_transition(vehicle, transition)
   #       logger.info "#{vehicle} instructed to #{transition.event}... #{transition.attribute} was: #{transition.from}, #{transition.attribute} is: #{transition.to}"
   #     end
   #   end
