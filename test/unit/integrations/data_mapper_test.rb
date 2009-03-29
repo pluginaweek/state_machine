@@ -425,7 +425,7 @@ begin
           assert_equal [@transition], callback_args
         end
         
-        def test_should_raise_exception_if_targeting_specific_machine
+        def test_should_raise_exception_if_targeting_invalid_machine
           assert_raise(IndexError) do
             new_observer(@resource) do
               before_transition :invalid, :from => :parked do
