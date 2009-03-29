@@ -271,7 +271,7 @@ class MachineWithoutIntegrationTest < Test::Unit::TestCase
   end
   
   def test_invalidation_should_do_nothing
-    assert_nil @machine.invalidate(@object, StateMachine::Event.new(@machine, :park))
+    assert_nil @machine.invalidate(@object, :state, :invalid_transition, [[:event, :park]])
   end
   
   def test_reset_should_do_nothing
@@ -398,8 +398,8 @@ end
 class MachineWithCustomInvalidationTest < Test::Unit::TestCase
   def setup
     @integration = Module.new do
-      def invalidate(object, event)
-        object.error = invalid_message(object, event)
+      def invalidate(object, attribute, message, values)
+        object.error = generate_message(message, values)
       end
     end
     StateMachine::Integrations.const_set('Custom', @integration)
@@ -408,7 +408,7 @@ class MachineWithCustomInvalidationTest < Test::Unit::TestCase
       attr_accessor :error
     end
     
-    @machine = StateMachine::Machine.new(@klass, :integration => :custom, :invalid_message => 'cannot %s when %s')
+    @machine = StateMachine::Machine.new(@klass, :integration => :custom, :messages => {:invalid_transition => 'cannot %s'})
     @machine.state :parked
     
     @object = @klass.new
@@ -416,8 +416,8 @@ class MachineWithCustomInvalidationTest < Test::Unit::TestCase
   end
   
   def test_use_custom_message
-    @machine.invalidate(@object, StateMachine::Event.new(@machine, :park))
-    assert_equal 'cannot park when parked', @object.error
+    @machine.invalidate(@object, :state, :invalid_transition, [[:event, :park]])
+    assert_equal 'cannot park', @object.error
   end
   
   def teardown
@@ -430,8 +430,8 @@ class MachineTest < Test::Unit::TestCase
     assert_raise(ArgumentError) {StateMachine::Machine.new(Class.new, :invalid => true)}
   end
   
-  def test_should_not_raise_exception_if_custom_invalid_message_specified
-    assert_nothing_raised {StateMachine::Machine.new(Class.new, :invalid_message => 'custom')}
+  def test_should_not_raise_exception_if_custom_messages_specified
+    assert_nothing_raised {StateMachine::Machine.new(Class.new, :messages => {:invalid_transition => 'custom'})}
   end
   
   def test_should_evaluate_a_block_during_initialization

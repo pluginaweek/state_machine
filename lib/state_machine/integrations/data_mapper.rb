@@ -85,7 +85,7 @@ module StateMachine
     # 
     #   vehicle = Vehicle.create(:state => 'idling')  # => #<Vehicle id=1 name=nil state="idling">
     #   vehicle.ignite                                # => false
-    #   vehicle.errors.full_messages                  # => ["cannot be transitioned via :ignite from :idling"]
+    #   vehicle.errors.full_messages                  # => ["cannot transition via \"ignite\""]
     # 
     # If an event fails to fire because of a validation error on the record and
     # *not* because a matching transition was not available, no error messages
@@ -186,8 +186,8 @@ module StateMachine
       
       # Adds a validation error to the given object after failing to fire a
       # specific event
-      def invalidate(object, event)
-        object.errors.add(attribute, invalid_message(object, event)) if object.respond_to?(:errors)
+      def invalidate(object, attribute, message, values)
+        object.errors.add(attribute, generate_message(message, values)) if object.respond_to?(:errors)
       end
       
       # Resets an errors previously added when invalidating the given object

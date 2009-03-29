@@ -1,5 +1,7 @@
 == master
 
+* Use :messages instead of :invalid_message for customizing validation errors
+* Use more human-readable validation errors
 * Add support for more ActiveRecord observer hooks
 * Add support for targeting multiple specific state machines in DataMapper observer hooks
 * Don't pass the result of the action as an argument to callbacks (access via Transition#result)

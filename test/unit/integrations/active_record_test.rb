@@ -165,10 +165,10 @@ begin
         record = @model.new
         record.state = 'parked'
         
-        @machine.invalidate(record, StateMachine::Event.new(@machine, :park))
+        @machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
         
         assert record.errors.invalid?(:state)
-        assert_equal 'cannot be transitioned via :park from :parked', record.errors.on(:state)
+        assert_equal 'cannot transition via "park"', record.errors.on(:state)
       end
       
       def test_should_clear_errors_on_reset
@@ -767,7 +767,7 @@ begin
             :activerecord => {
               :errors => {
                 :messages => {
-                  :invalid_transition => 'cannot {{event}} when {{value}}'
+                  :invalid_transition => 'cannot {{event}}'
                 }
               }
             }
@@ -779,8 +779,8 @@ begin
           
           record = @model.new(:state => 'idling')
           
-          machine.invalidate(record, event)
-          assert_equal 'cannot ignite when idling', record.errors.on(:state)
+          machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+          assert_equal 'cannot ignite', record.errors.on(:state)
         end
         
         def test_should_invalidate_using_customized_i18n_key_if_specified
@@ -788,32 +788,30 @@ begin
             :activerecord => {
               :errors => {
                 :messages => {
-                  :bad_transition => 'cannot {{event}} when {{value}}'
+                  :bad_transition => 'cannot {{event}}'
                 }
               }
             }
           })
           
-          machine = StateMachine::Machine.new(@model, :invalid_message => :bad_transition)
+          machine = StateMachine::Machine.new(@model, :messages => {:invalid_transition => :bad_transition})
           machine.state :parked, :idling
-          event = StateMachine::Event.new(machine, :ignite)
           
           record = @model.new(:state => 'idling')
           
-          machine.invalidate(record, event)
-          assert_equal 'cannot ignite when idling', record.errors.on(:state)
+          machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+          assert_equal 'cannot ignite', record.errors.on(:state)
         end
       end
       
       def test_should_invalidate_using_customized_i18n_string_if_specified
-        machine = StateMachine::Machine.new(@model, :invalid_message => 'cannot {{event}} when {{value}}')
+        machine = StateMachine::Machine.new(@model, :messages => {:invalid_transition => 'cannot {{event}}'})
         machine.state :parked, :idling
-        event = StateMachine::Event.new(machine, :ignite)
         
         record = @model.new(:state => 'idling')
         
-        machine.invalidate(record, event)
-        assert_equal 'cannot ignite when idling', record.errors.on(:state)
+        machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+        assert_equal 'cannot ignite', record.errors.on(:state)
       end
     else
       $stderr.puts 'Skipping ActiveRecord I18n tests. `gem install active_record` >= v2.2.0 and try again.'

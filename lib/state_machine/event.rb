@@ -190,7 +190,7 @@ module StateMachine
       if transition = transition_for(object)
         transition.perform(*args)
       else
-        machine.invalidate(object, self)
+        machine.invalidate(object, machine.attribute, :invalid_transition, [[:event, name]])
         false
       end
     end

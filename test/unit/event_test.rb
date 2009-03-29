@@ -338,8 +338,8 @@ end
 class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
   def setup
     StateMachine::Integrations.const_set('Custom', Module.new do
-      def invalidate(object, event)
-        (object.errors ||= []) << invalid_message(object, event)
+      def invalidate(object, attribute, message, values)
+        (object.errors ||= []) << generate_message(message, values)
       end
       
       def reset(object)
@@ -380,14 +380,14 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
   
   def test_should_invalidate_the_state
     @event.fire(@object)
-    assert_equal ['cannot be transitioned via :ignite from :parked'], @object.errors
+    assert_equal ['cannot transition via "ignite"'], @object.errors
   end
   
   def test_should_reset_existing_error
     @object.errors = ['invalid']
     
     @event.fire(@object)
-    assert_equal ['cannot be transitioned via :ignite from :parked'], @object.errors
+    assert_equal ['cannot transition via "ignite"'], @object.errors
   end
   
   def teardown
@@ -398,8 +398,8 @@ end
 class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
   def setup
     StateMachine::Integrations.const_set('Custom', Module.new do
-      def invalidate(object, event)
-        (object.errors ||= []) << invalid_message(object, event)
+      def invalidate(object, attribute, message, values)
+        (object.errors ||= []) << generate_message(message, values)
       end
       
       def reset(object)

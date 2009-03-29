@@ -197,10 +197,6 @@ module StateMachine
     include MatcherHelpers
     
     class << self
-      # The default message to use when invalidating objects that fail to
-      # transition when triggering an event
-      attr_accessor :default_invalid_message
-      
       # Attempts to find or create a state machine for the given class.  For
       # example,
       # 
@@ -268,8 +264,11 @@ module StateMachine
       end
     end
     
-    # Set defaults
-    self.default_invalid_message = 'cannot be transitioned via :%s from :%s'
+    # Default messages to use for validation errors in ORM integrations
+    class << self; attr_accessor :default_messages; end
+    @default_messages = {
+      :invalid_transition => 'cannot transition via "%s"'
+    }
     
     # The class that the machine is defined in
     attr_accessor :owner_class
@@ -311,7 +310,7 @@ module StateMachine
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration, :invalid_message, :use_transactions)
+      assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration, :messages, :use_transactions)
       
       # Find an integration that matches this machine's owner class
       if integration = options[:integration] ? StateMachine::Integrations.find(options[:integration]) : StateMachine::Integrations.match(owner_class)
@@ -328,7 +327,7 @@ module StateMachine
       @states = StateCollection.new(self)
       @callbacks = {:before => [], :after => []}
       @namespace = options[:namespace]
-      @invalid_message = options[:invalid_message]
+      @messages = options[:messages] || {}
       @action = options[:action]
       @use_transactions = options[:use_transactions]
       
@@ -1046,7 +1045,7 @@ module StateMachine
     # given event.
     # 
     # By default, this is a no-op.
-    def invalidate(object, event)
+    def invalidate(object, attribute, message, values)
     end
     
     # Resets an errors previously added when invalidating the given object
@@ -1246,8 +1245,8 @@ module StateMachine
       
       # Generates the message to use when invalidating the given object after
       # failing to transition on a specific event
-      def invalid_message(object, event)
-        (@invalid_message || self.class.default_invalid_message) % [event.name, states.match(object).name]
+      def generate_message(name, values)
+        (@messages[name] || self.class.default_messages[name]) % values.map {|value| value.last}
       end
   end
 end

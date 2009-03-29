@@ -28,7 +28,8 @@ module StateMachine
         
         # Get the transition that will be performed for the event
         unless transition = event.transition_for(object)
-          event.machine.invalidate(object, event)
+          machine = event.machine
+          machine.invalidate(object, machine.attribute, :invalid_transition, [[:event, name]])
         end
         
         transition

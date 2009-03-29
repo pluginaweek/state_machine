@@ -538,9 +538,9 @@ begin
           record = @resource.new
           record.state = 'parked'
           
-          @machine.invalidate(record, StateMachine::Event.new(@machine, :park))
+          @machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
           
-          assert_equal ['cannot be transitioned via :park from :parked'], record.errors.on(:state)
+          assert_equal ['cannot transition via "park"'], record.errors.on(:state)
         end
         
         def test_should_clear_errors_on_reset

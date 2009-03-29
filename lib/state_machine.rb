@@ -16,9 +16,6 @@ module StateMachine
     # * <tt>:action</tt> - The instance method to invoke when an object
     #   transitions. Default is nil unless otherwise specified by the
     #   configured integration.
-    # * <tt>:plural</tt> - The pluralized name of the attribute.  By default,
-    #   this will attempt to call +pluralize+ on the attribute, otherwise
-    #   an "s" is appended.  This is used for generating scopes.
     # * <tt>:namespace</tt> - The name to use for namespacing all generated
     #   instance methods (e.g. "heater" would generate :turn_on_heater and
     #   :turn_off_heater for the :turn_on/:turn_off events).  Default is nil.
@@ -26,6 +23,14 @@ module StateMachine
     #   library-specific behavior to the machine.  Built-in integrations include
     #   :data_mapper, :active_record, and :sequel.  By default, this is
     #   determined automatically.
+    # 
+    # Configuration options relevant to ORM integrations:
+    # * <tt>:plural</tt> - The pluralized name of the attribute.  By default,
+    #   this will attempt to call +pluralize+ on the attribute, otherwise
+    #   an "s" is appended.  This is used for generating scopes.
+    # * <tt>:messages</tt> - The error messages to use when invalidating
+    #   objects due to failed transitions.  Messages include:
+    #   * <tt>:invalid_transition</tt>
     # * <tt>:use_transactions</tt> - Whether transacitons should be used when
     #   firing events.  Default is true unless otherwise specified by the
     #   configured integration.
