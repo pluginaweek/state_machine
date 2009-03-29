@@ -26,12 +26,13 @@ module StateMachine
     # 
     # Configuration options relevant to ORM integrations:
     # * <tt>:plural</tt> - The pluralized name of the attribute.  By default,
-    #   this will attempt to call +pluralize+ on the attribute, otherwise
-    #   an "s" is appended.  This is used for generating scopes.
+    #   this will attempt to call +pluralize+ on the attribute.  If this
+    #   method is not available, an "s" is appended.  This is used for
+    #   generating scopes.
     # * <tt>:messages</tt> - The error messages to use when invalidating
     #   objects due to failed transitions.  Messages include:
     #   * <tt>:invalid_transition</tt>
-    # * <tt>:use_transactions</tt> - Whether transacitons should be used when
+    # * <tt>:use_transactions</tt> - Whether transactions should be used when
     #   firing events.  Default is true unless otherwise specified by the
     #   configured integration.
     # 
@@ -93,7 +94,7 @@ module StateMachine
     #   state.  If the name is not a known state, then an ArgumentError is raised.
     # * <tt>state_name</tt> - Gets the name of the state for the current value
     # * <tt>state_events</tt> - Gets the list of events that can be fired on
-    #   the current object's state (will use the *unqualified* event names)
+    #   the current object's state (uses the *unqualified* event names)
     # * <tt>state_transitions(include_no_op = false)</tt> - Gets the
     #   list of possible transitions that can be made on the current object's
     #   state
@@ -239,11 +240,6 @@ module StateMachine
     # Each predicate method will return true if it matches the object's
     # current state.  Otherwise, it will return false.
     # 
-    # When a namespace is configured for a state machine, the name will be
-    # prepended to each state predicate like so:
-    # * <tt>car_parked?</tt>
-    # * <tt>car_idling?</tt>
-    # 
     # == Events and Transitions
     # 
     # For more information about how to configure an event and its associated
@@ -258,8 +254,8 @@ module StateMachine
     # 
     # == Namespaces
     # 
-    # When a namespace is configured for a state machine, the name provided will
-    # be used in generating the instance methods for interacting with
+    # When a namespace is configured for a state machine, the name provided
+    # will be used in generating the instance methods for interacting with
     # events/states in the machine.  This is particularly useful when a class
     # has multiple state machines and it would be difficult to differentiate
     # between the various states / events.

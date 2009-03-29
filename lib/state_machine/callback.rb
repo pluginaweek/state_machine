@@ -2,14 +2,14 @@ require 'state_machine/guard'
 require 'state_machine/eval_helpers'
 
 module StateMachine
-  # Callbacks represent hooks into objects that allow you to trigger logic
+  # Callbacks represent hooks into objects that allow logic to be triggered
   # before or after a specific transition occurs.
   class Callback
     include EvalHelpers
     
     class << self
-      # Determines whether to automatically bind the callback to the object being
-      # transitioned.  This only applies to callbacks that are defined as
+      # Determines whether to automatically bind the callback to the object
+      # being transitioned.  This only applies to callbacks that are defined as
       # lambda blocks (or Procs).  Some integrations, such as DataMapper, handle
       # callbacks by executing them bound to the object involved, while other
       # integrations, such as ActiveRecord, pass the object as an argument to

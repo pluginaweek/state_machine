@@ -56,7 +56,7 @@ module StateMachine
       @condition = condition
     end
     
-    # Hooks in condition merging to methods that don't exist in this module
+    # Hooks in condition-merging to methods that don't exist in this module
     def method_missing(*args, &block)
       # Get the configuration
       if args.last.is_a?(Hash)

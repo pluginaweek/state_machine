@@ -62,8 +62,8 @@ module StateMachine
     #   transition :parked => :idling, :idling => :first_gear
     # 
     # In this case, when the event is fired, this transition will cause the
-    # state to be +idling+ if it's current state is +parked+ or +first_gear+ if
-    # it's current state is +idling+.
+    # state to be +idling+ if it's current state is +parked+ or +first_gear+
+    # if it's current state is +idling+.
     # 
     # To help defining these implicit transitions, a set of helpers are available
     # for defining slightly more complex matching:
