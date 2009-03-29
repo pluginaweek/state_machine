@@ -13,10 +13,10 @@ module StateMachine
     class << self
       # Runs one or more transitions in parallel.  All transitions will run
       # through the following steps:
-      # * Before callbacks
-      # * Persist state
-      # * Invoke action
-      # * After callbacks
+      # 1. Before callbacks
+      # 2. Persist state
+      # 3. Invoke action
+      # 4. After callbacks
       # 
       # See StateMachine::InstanceMethods#run_events for more information.
       def perform(transitions, run_action = true)
