@@ -28,10 +28,10 @@ module StateMachine
     # 
     # For example,
     # 
-    #   vehicle = Vehicle.create          # => #<Vehicle id=1 name=nil state="parked">
+    #   vehicle = Vehicle.create          # => #<Vehicle @values={:state=>"parked", :name=>nil, :id=>1}>
     #   vehicle.name = 'Ford Explorer'
     #   vehicle.ignite                    # => true
-    #   vehicle.refresh                   # => #<Vehicle id=1 name="Ford Explorer" state="idling">
+    #   vehicle.refresh                   # => #<Vehicle @values={:state=>"idling", :name=>"Ford Explorer", :id=>1}>
     # 
     # == Transactions
     # 
@@ -51,7 +51,7 @@ module StateMachine
     #     end
     #   end
     #   
-    #   vehicle = Vehicle.create      # => #<Vehicle id=1 name=nil state="parked">
+    #   vehicle = Vehicle.create      # => #<Vehicle @values={:state=>"parked", :name=>nil, :id=>1}>
     #   vehicle.ignite                # => false
     #   Message.count                 # => 0
     # 
@@ -77,7 +77,7 @@ module StateMachine
     # 
     # For example,
     # 
-    #   vehicle = Vehicle.create(:state => 'idling')  # => #<Vehicle id=1 name=nil state="idling">
+    #   vehicle = Vehicle.create(:state => 'idling')  # => #<Vehicle @values={:state=>"parked", :name=>nil, :id=>1}>
     #   vehicle.ignite                                # => false
     #   vehicle.errors.full_messages                  # => ["state cannot transition via \"ignite\""]
     # 
@@ -158,9 +158,8 @@ module StateMachine
         defined?(::Sequel::Model) && klass <= ::Sequel::Model
       end
       
-      # Adds a validation error to the given object after failing to fire a
-      # specific event
-      def invalidate(object, attribute, message, values)
+      # Adds a validation error to the given object
+      def invalidate(object, attribute, message, values = [])
         object.errors.add(attribute, generate_message(message, values))
       end
       

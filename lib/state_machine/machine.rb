@@ -771,7 +771,7 @@ module StateMachine
     end
     alias_method :other_states, :state
     
-    # Gets the current value stored in the given object's state
+    # Gets the current value stored in the given object's state.
     # 
     # For example,
     # 
@@ -787,7 +787,7 @@ module StateMachine
       object.send(attribute)
     end
     
-    # Sets a new value in the given object's state
+    # Sets a new value in the given object's state.
     # 
     # For example,
     # 
@@ -1090,11 +1090,10 @@ module StateMachine
       add_callback(:after, options.is_a?(Hash) ? options : {:do => options}, &block)
     end
     
-    # Marks the given object as invalid after failing to transition via the
-    # given event.
+    # Marks the given object as invalid with the given message.
     # 
     # By default, this is a no-op.
-    def invalidate(object, attribute, message, values)
+    def invalidate(object, attribute, message, values = [])
     end
     
     # Resets an errors previously added when invalidating the given object

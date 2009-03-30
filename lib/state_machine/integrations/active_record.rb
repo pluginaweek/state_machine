@@ -214,9 +214,8 @@ module StateMachine
         I18n.load_path << "#{File.dirname(__FILE__)}/active_record/locale.rb" if Object.const_defined?(:I18n)
       end
       
-      # Adds a validation error to the given object after failing to fire a
-      # specific event
-      def invalidate(object, attribute, message, values)
+      # Adds a validation error to the given object 
+      def invalidate(object, attribute, message, values = [])
         if Object.const_defined?(:I18n)
           options = values.inject({}) {|options, (key, value)| options[key] = value; options}
           object.errors.add(attribute, message, options.merge(

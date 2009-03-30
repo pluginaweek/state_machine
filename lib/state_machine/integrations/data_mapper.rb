@@ -184,9 +184,8 @@ module StateMachine
         require 'state_machine/integrations/data_mapper/observer' if ::DataMapper.const_defined?('Observer')
       end
       
-      # Adds a validation error to the given object after failing to fire a
-      # specific event
-      def invalidate(object, attribute, message, values)
+      # Adds a validation error to the given object
+      def invalidate(object, attribute, message, values = [])
         object.errors.add(attribute, generate_message(message, values)) if object.respond_to?(:errors)
       end
       
