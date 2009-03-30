@@ -1,5 +1,6 @@
 == master
 
+* Rollback state changes when the action fails
 * Use :messages instead of :invalid_message for customizing validation errors
 * Use more human-readable validation errors
 * Add support for more ActiveRecord observer hooks

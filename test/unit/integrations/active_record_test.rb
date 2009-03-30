@@ -517,8 +517,8 @@ begin
         assert !@result
       end
       
-      def test_should_change_current_state
-        assert_equal 'idling', @record.state
+      def test_should_not_change_current_state
+        assert_equal 'parked', @record.state
       end
       
       def test_should_not_save_record

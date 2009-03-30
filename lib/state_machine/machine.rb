@@ -19,6 +19,55 @@ module StateMachine
   # they are referenced *somewhere* in the state machine definition.  As a result,
   # any unused states should be defined with the +other_states+ or +state+ helper.
   # 
+  # == Actions
+  # 
+  # When an action is configured to a state machine, it is invoked when an
+  # object transitions via an event.  The success of the event becomes
+  # dependent on the success of the action.  If the action is successful, then
+  # the transitioned state remains persisted.  However, if the action fails
+  # (by returning false), the transitioned state will be rolled back.
+  # 
+  # For example,
+  # 
+  #   class Vehicle
+  #     attr_accessor :fail, :saving_state
+  #     
+  #     state_machine :initial => :parked, :action => :save do
+  #       event :ignite do
+  #         transition :parked => :idling
+  #       end
+  #       
+  #       event :park do
+  #         transition :idling => :parked
+  #       end
+  #     end
+  #     
+  #     def save
+  #       @saving_state = state
+  #       fail != true
+  #     end
+  #   end
+  #   
+  #   vehicle = Vehicle.new     # => #<Vehicle:0xb7c27024 @state="parked">
+  #   vehicle.save              # => true
+  #   vehicle.saving_state      # => "parked" # The state was "parked" was save was called
+  #   
+  #   # Successful event
+  #   vehicle.ignite            # => true
+  #   vehicle.saving_state      # => "idling" # The state was "idling" when save was called
+  #   vehicle.state             # => "idling"
+  #   
+  #   # Failed event
+  #   vehicle.fail = true
+  #   vehicle.park              # => false
+  #   vehicle.saving_state      # => "parked"
+  #   vehicle.state             # => "idling"
+  # 
+  # As shown, even though the state is set prior to calling the +save+ action
+  # on the object, it will be rolled back to the original state if the action
+  # fails.  *Note* that this will also be the case if an exception is raised
+  # while calling the action.
+  # 
   # == Callbacks
   # 
   # Callbacks are supported for hooking before and after every possible
@@ -34,7 +83,7 @@ module StateMachine
   # 
   # For example,
   # 
-  #   class Vehicle < ActiveRecord::Base
+  #   class Vehicle
   #     state_machine :initial => :parked do
   #       after_transition all => :parked do
   #         raise ArgumentError

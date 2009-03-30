@@ -17,8 +17,9 @@ module StateMachine
       # 2. Persist state
       # 3. Invoke action
       # 4. After callbacks
+      # 5. Rollback if action is unsuccessful
       # 
-      # See StateMachine::InstanceMethods#run_events for more information.
+      # See StateMachine::InstanceMethods#fire_events for more information.
       def perform(transitions, run_action = true)
         # Validate that the transitions are for separate machines / attributes
         attributes = transitions.map {|transition| transition.attribute}.uniq
@@ -35,15 +36,24 @@ module StateMachine
             transitions.each {|transition| transition.persist}
             
             # Run the actions associated with each machine
-            results = {}
-            object = transitions.first.object
-            success = !run_action || transitions.all? do |transition|
-              action = transition.action
-              action && !results.include?(action) ? results[action] = object.send(action) : true
+            begin
+              results = {}
+              object = transitions.first.object
+              success = !run_action || transitions.all? do |transition|
+                action = transition.action
+                action && !results.include?(action) ? results[action] = object.send(action) : true
+              end
+            rescue Exception
+              # Action failed: rollback 
+              transitions.each {|transition| transition.rollback}
+              raise
             end
             
             # Always run after callbacks regardless of whether the actions failed
             transitions.each {|transition| transition.after(results[transition.action])}
+            
+            # Rollback the transitions if the transaction was unsuccessul
+            transitions.each {|transition| transition.rollback} unless success
           end
           
           # Allow the transaction to rollback based on the result
@@ -204,12 +214,14 @@ module StateMachine
     # 
     #   class Vehicle
     #     state_machine do
-    #       ...
+    #       event :ignite do
+    #         transition :parked => :idling
+    #       end
     #     end
     #   end
     #   
     #   vehicle = Vehicle.new
-    #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
+    #   transition = StateMachine::Transition.new(vehicle, Vehicle.state_machine, :ignite, :parked, :idling)
     #   transition.persist
     #   
     #   vehicle.state   # => 'idling'
@@ -236,11 +248,15 @@ module StateMachine
     #   class Vehicle
     #     state_machine do
     #       after_transition :on => :ignite, :do => lambda {|vehicle| ...}
+    #       
+    #       event :ignite do
+    #         transition :parked => :idling
+    #       end
     #     end
     #   end
     #   
     #   vehicle = Vehicle.new
-    #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
+    #   transition = StateMachine::Transition.new(vehicle, Vehicle.state_machine, :ignite, :parked, :idling)
     #   transition.after(true)
     def after(result = nil)
       @result = result
@@ -250,6 +266,34 @@ module StateMachine
       end
       
       true
+    end
+    
+    # Rolls back changes made to the object's state via this transition.  This
+    # will revert the state back to the +from+ value.
+    # 
+    # == Example
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       event :ignite do
+    #         transition :parked => :idling
+    #       end
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new     # => #<Vehicle:0xb7b7f568 @state="parked">
+    #   transition = StateMachine::Transition.new(vehicle, Vehicle.state_machine, :ignite, :parked, :idling)
+    #   
+    #   # Persist the new state
+    #   vehicle.state             # => "parked"
+    #   transition.persist
+    #   vehicle.state             # => "idling"
+    #   
+    #   # Roll back to the original state
+    #   transition.rollback
+    #   vehicle.state             # => "parked"
+    def rollback
+      machine.write(object, from)
     end
     
     # Generates a nicely formatted description of this transitions's contents.
