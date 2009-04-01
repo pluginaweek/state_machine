@@ -211,7 +211,7 @@ class VehicleUnsavedTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_checking_invalid_state
-    assert_raise(ArgumentError) { @vehicle.state?(:invalid) }
+    assert_raise(IndexError) { @vehicle.state?(:invalid) }
   end
   
   def test_should_raise_exception_if_getting_name_of_invalid_state

@@ -54,7 +54,7 @@ class StateCollectionTest < Test::Unit::TestCase
   end
   
   def test_raise_exception_if_matching_invalid_state
-    assert_raise(ArgumentError) { @states.matches?(@object, :invalid) }
+    assert_raise(IndexError) { @states.matches?(@object, :invalid) }
   end
   
   def test_should_find_state_for_object_if_value_is_known

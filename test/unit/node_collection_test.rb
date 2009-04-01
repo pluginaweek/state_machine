@@ -125,13 +125,13 @@ class NodeCollectionWithIndicesTest < Test::Unit::TestCase
   
   def test_should_use_first_index_by_default_on_fetch
     assert_equal @object, @collection.fetch(:parked)
-    exception = assert_raise(ArgumentError) { @collection.fetch(1) }
+    exception = assert_raise(IndexError) { @collection.fetch(1) }
     assert_equal '1 is an invalid name', exception.message
   end
   
   def test_should_allow_customizing_index_on_fetch
     assert_equal @object, @collection.fetch(1, :value)
-    exception = assert_raise(ArgumentError) { @collection.fetch(:parked, :value) }
+    exception = assert_raise(IndexError) { @collection.fetch(:parked, :value) }
     assert_equal ':parked is an invalid value', exception.message
   end
 end

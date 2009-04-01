@@ -133,7 +133,7 @@ module StateMachine
     # 
     #   collection['invalid', :value]   # => IndexError: "invalid" is an invalid value
     def fetch(key, index_name = @default_index)
-      self[key, index_name] || raise(ArgumentError, "#{key.inspect} is an invalid #{index_name}")
+      self[key, index_name] || raise(IndexError, "#{key.inspect} is an invalid #{index_name}")
     end
     
     private

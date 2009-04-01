@@ -279,7 +279,7 @@ begin
       end
       
       def test_should_raise_exception_for_predicate_if_invalid_state_specified
-        assert_raise(ArgumentError) { @record.state?(:invalid) }
+        assert_raise(IndexError) { @record.state?(:invalid) }
       end
     end
     
@@ -336,7 +336,7 @@ begin
       end
       
       def test_should_raise_exception_for_predicate_if_invalid_state_specified
-        assert_raise(ArgumentError) { @record.status?(:invalid) }
+        assert_raise(IndexError) { @record.status?(:invalid) }
       end
       
       def test_should_set_initial_state_on_created_object
