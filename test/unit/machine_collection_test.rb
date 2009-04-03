@@ -359,8 +359,13 @@ class MachineCollectionFireImplicitWithTransitionTest < MachineCollectionFireImp
   def setup
     super
     
+    @state_event = nil
+    
     @object.state_event = 'ignite'
-    @result = @machines.fire_attribute_events(@object, :save) { @saved = true }
+    @result = @machines.fire_attribute_events(@object, :save) do
+      @state_event = @object.state_event
+      @saved = true
+    end
   end
   
   def test_should_be_successful
@@ -369,6 +374,10 @@ class MachineCollectionFireImplicitWithTransitionTest < MachineCollectionFireImp
   
   def test_should_run_action
     assert @saved
+  end
+  
+  def test_should_not_have_event_while_running_action
+    assert_nil @state_event
   end
   
   def test_should_transition_state
@@ -430,7 +439,7 @@ class MachineCollectionFireImplicitWithActionErrorTest < MachineCollectionFireIm
   end
 end
 
-class MachineCollectionFireImplicitStartTest < MachineCollectionFireImplicitTest
+class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTest
   def setup
     super
     
@@ -439,8 +448,13 @@ class MachineCollectionFireImplicitStartTest < MachineCollectionFireImplicitTest
     @machine.before_transition { @ran_before_callback = true }
     @machine.after_transition { @ran_after_callback = true }
     
+    @state_event = nil
+    
     @object.state_event = 'ignite'
-    @result = @machines.fire_attribute_events(@object, :save, false) { true }
+    @result = @machines.fire_attribute_events(@object, :save, false) do
+      @state_event = @object.state_event
+      true
+    end
   end
   
   def test_should_run_before_callbacks
@@ -453,6 +467,10 @@ class MachineCollectionFireImplicitStartTest < MachineCollectionFireImplicitTest
   
   def test_should_be_successful
     assert @result
+  end
+  
+  def test_should_not_have_event_while_running_action
+    assert_nil @state_event
   end
   
   def test_should_transition_state

@@ -46,8 +46,8 @@ module StateMachine
     
     # Runs one or more attribute events in parallel during the invocation of
     # an action on the given object.  After transition callbacks can be
-    # optionally disabled if the events are being "test"-fired (for example,
-    # when validating records in ORM integrations).
+    # optionally disabled if the events are being only partially fired (for
+    # example, when validating records in ORM integrations).
     # 
     # The attribute events that will be fired are based on which machines
     # match the action that is being invoked.
@@ -96,7 +96,7 @@ module StateMachine
     #   vehicle.alarm_state_event                     # => nil
     #   vehicle.errors                                # => #<DataMapper::Validate::ValidationErrors:0xb7af9abc @errors={"state_event"=>["is invalid"]}>
     # 
-    # With skipping after callbacks:
+    # With partial firing:
     # 
     #   vehicle = Vehicle.create                      # => #<Vehicle id=1 state="parked" alarm_state="active">
     #   vehicle.state_event = 'ignite'
@@ -104,32 +104,38 @@ module StateMachine
     #   Vehicle.state_machines.fire_attribute_events(vehicle, :save, false) { true }
     #   vehicle.state                                 # => "idling"
     #   vehicle.state_event                           # => "ignite"
-    #   vehicle.state_event_transition                # => 
-    def fire_attribute_events(object, action, run_after_callbacks = true)
+    #   vehicle.state_event_transition                # => #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>
+    def fire_attribute_events(object, action, complete = true)
       # Get the transitions to fire for each applicable machine
       transitions = map {|attribute, machine| machine.action == action ? machine.events.attribute_transition_for(object, true) : nil}.compact
       return yield if transitions.empty?
       
+      # Make sure all events were valid
       if result = transitions.all? {|transition| transition != false}
-        # All events were valid
         begin
-          result = Transition.perform(transitions, :after => run_after_callbacks) { yield }
+          result = Transition.perform(transitions, :after => complete) do
+            # Prevent events from being evaluated multiple times if actions are nested
+            transitions.each {|transition| object.send("#{transition.attribute}_event=", nil)}
+            yield
+          end
         rescue Exception
-          transitions.each {|transition| object.send("#{transition.attribute}_event_transition=", nil)} if run_after_callbacks
+          # Revert attribute modifications
+          transitions.each do |transition|
+            object.send("#{transition.attribute}_event=", transition.event.to_s)
+            object.send("#{transition.attribute}_event_transition=", nil) if complete
+          end
+          
           raise
         end
         
         transitions.each do |transition|
           attribute = transition.attribute
           
-          if run_after_callbacks
-            # Reset the event attribute so that it doesn't trigger again
-            object.send("#{attribute}_event_transition=", nil)
-            object.send("#{attribute}_event=", nil) if result
-          elsif result
-            # Track the transition for the next invocation
-            object.send("#{attribute}_event_transition=", transition)
-          end
+          # Revert event unless transition was successful
+          object.send("#{attribute}_event=", transition.event.to_s) unless complete && result
+          
+          # Track transition if partial transition completed successfully
+          object.send("#{attribute}_event_transition=", !complete && result ? transition : nil)
         end
       end
       
