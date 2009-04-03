@@ -130,3 +130,124 @@ class EventCollectionWithMultipleEventsTest < Test::Unit::TestCase
     assert_equal [@park, @shift_down], @events.valid_for(object)
   end
 end
+
+class EventCollectionWithoutMachineActionTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+    @events = StateMachine::EventCollection.new(@machine)
+    
+    @machine.event :ignite
+    @events << StateMachine::Event.new(@machine, :ignite)
+    
+    @object = @klass.new
+  end
+  
+  def test_should_not_have_an_attribute_transition
+    assert_nil @events.attribute_transition_for(@object)
+  end
+end
+
+class EventCollectionAttributeWithMachineActionTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def save
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @events = StateMachine::EventCollection.new(@machine)
+    
+    @machine.event :ignite
+    @machine.state :parked, :idling
+    @events << @ignite = StateMachine::Event.new(@machine, :ignite)
+    
+    @object = @klass.new
+  end
+  
+  def test_should_not_have_transition_if_nil
+    @object.state_event = nil
+    assert_nil @events.attribute_transition_for(@object)
+  end
+  
+  def test_should_not_have_transition_if_empty
+    @object.state_event = ''
+    assert_nil @events.attribute_transition_for(@object)
+  end
+  
+  def test_should_have_invalid_transition_if_invalid_event_specified
+    @object.state_event = 'invalid'
+    assert_equal false, @events.attribute_transition_for(@object)
+  end
+  
+  def test_should_have_invalid_transition_if_event_cannot_be_fired
+    @object.state_event = 'ignite'
+    assert_equal false, @events.attribute_transition_for(@object)
+  end
+  
+  def test_should_have_valid_transition_if_event_can_be_fired
+    @ignite.transition :parked => :idling
+    @object.state_event = 'ignite'
+    
+    assert_instance_of StateMachine::Transition, @events.attribute_transition_for(@object)
+  end
+end
+
+class EventCollectionWithValidationsTest < Test::Unit::TestCase
+  def setup
+    StateMachine::Integrations.const_set('Custom', Module.new do
+      def invalidate(object, attribute, message, values = [])
+        (object.errors ||= []) << generate_message(message, values)
+      end
+      
+      def reset(object)
+        object.errors = []
+      end
+    end)
+    
+    @klass = Class.new do
+      attr_accessor :errors
+      
+      def initialize
+        @errors = []
+        super
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save, :integration => :custom)
+    @events = StateMachine::EventCollection.new(@machine)
+    
+    @machine.event :ignite
+    @machine.state :parked, :idling
+    @events << @ignite = StateMachine::Event.new(@machine, :ignite)
+    
+    @object = @klass.new
+  end
+  
+  def test_should_invalidate_if_invalid_event_specified
+    @object.state_event = 'invalid'
+    @events.attribute_transition_for(@object, true)
+    
+    assert_equal ['is invalid'], @object.errors
+  end
+  
+  def test_should_invalidate_if_event_cannot_be_fired
+    @object.state = 'idling'
+    @object.state_event = 'ignite'
+    @events.attribute_transition_for(@object, true)
+    
+    assert_equal ['cannot transition when idling'], @object.errors
+  end
+  
+  def test_should_not_invalidate_event_can_be_fired
+    @ignite.transition :parked => :idling
+    @object.state_event = 'ignite'
+    @events.attribute_transition_for(@object, true)
+    
+    assert_equal [], @object.errors
+  end
+  
+  def teardown
+    StateMachine::Integrations.send(:remove_const, 'Custom')
+  end
+end

@@ -25,6 +25,7 @@ begin
           end if auto_migrate
           model = Class.new(Sequel::Model(:foo)) do
             self.raise_on_save_failure = false
+            plugin :validation_class_methods
             
             def self.name; 'SequelTest::Foo'; end
           end
@@ -361,6 +362,57 @@ begin
       def test_should_be_valid_if_validation_succeeds_within_state_scope
         record = @model.new(:state => 'first_gear', :seatbelt => true)
         assert record.valid?
+      end
+    end
+    
+    class MachineWithEventAttributesOnValidationTest < BaseTestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model)
+        @machine.event :ignite do
+          transition :parked => :idling
+        end
+        
+        @record = @model.new
+        @record.state = 'parked'
+        @record.state_event = 'ignite'
+      end
+      
+      def test_should_fail_if_event_is_invalid
+        @record.state_event = 'invalid'
+        assert !@record.valid?
+        assert_equal ['state_event is invalid'], @record.errors.full_messages
+      end
+      
+      def test_should_fail_if_event_has_no_transition
+        @record.state = 'idling'
+        assert !@record.valid?
+        assert_equal ['state_event cannot transition when idling'], @record.errors.full_messages
+      end
+      
+      def test_should_be_successful_if_event_has_transition
+        assert @record.valid?
+      end
+      
+      def test_should_run_before_callbacks
+        ran_callback = false
+        @machine.before_transition { ran_callback = true }
+        
+        @record.valid?
+        assert ran_callback
+      end
+      
+      def test_should_persist_new_state
+        @record.valid?
+        assert_equal 'idling', @record.state
+      end
+      
+      def test_should_not_run_after_callbacks
+        ran_callback = false
+        @machine.after_transition { ran_callback = true }
+        
+        @record.valid?
+        assert !ran_callback
       end
     end
   end

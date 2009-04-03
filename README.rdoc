@@ -46,6 +46,7 @@ Some brief, high-level features include:
 * State values of any data type
 * Dynamically-generated state values
 * Event parallelization
+* Attribute-based event transitions
 * Inheritance
 * Internationalization
 * GraphViz visualization creator

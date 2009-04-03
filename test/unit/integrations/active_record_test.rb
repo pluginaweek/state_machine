@@ -588,6 +588,57 @@ begin
       end
     end
     
+    class MachineWithEventAttributesOnValidationTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model)
+        @machine.event :ignite do
+          transition :parked => :idling
+        end
+        
+        @record = @model.new
+        @record.state = 'parked'
+        @record.state_event = 'ignite'
+      end
+      
+      def test_should_fail_if_event_is_invalid
+        @record.state_event = 'invalid'
+        assert !@record.valid?
+        assert_equal ['State event is invalid'], @record.errors.full_messages
+      end
+      
+      def test_should_fail_if_event_has_no_transition
+        @record.state = 'idling'
+        assert !@record.valid?
+        assert_equal ['State event cannot transition when idling'], @record.errors.full_messages
+      end
+      
+      def test_should_be_successful_if_event_has_transition
+        assert @record.valid?
+      end
+      
+      def test_should_run_before_callbacks
+        ran_callback = false
+        @machine.before_transition { ran_callback = true }
+        
+        @record.valid?
+        assert ran_callback
+      end
+      
+      def test_should_persist_new_state
+        @record.valid?
+        assert_equal 'idling', @record.state
+      end
+      
+      def test_should_not_run_after_callbacks
+        ran_callback = false
+        @machine.after_transition { ran_callback = true }
+        
+        @record.valid?
+        assert !ran_callback
+      end
+    end
+    
     class MachineWithObserversTest < ActiveRecord::TestCase
       def setup
         @model = new_model
@@ -614,7 +665,7 @@ begin
         notified = false
         observer = new_observer(@model) do
           callbacks.each do |callback|
-            define_method(callback) do
+            define_method(callback) do |*args|
               notifications << callback
             end
           end

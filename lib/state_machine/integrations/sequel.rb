@@ -33,6 +33,37 @@ module StateMachine
     #   vehicle.ignite                    # => true
     #   vehicle.refresh                   # => #<Vehicle @values={:state=>"idling", :name=>"Ford Explorer", :id=>1}>
     # 
+    # == Events
+    # 
+    # As described in StateMachine::InstanceMethods#state_machine, event
+    # attributes are created for every machine that allow transitions to be
+    # performed automatically when the object's action (in this case, :save)
+    # is called.
+    # 
+    # In Sequel, these automated events are run in the following order:
+    # * before validation - Run before callbacks and persist new states, then validate
+    # * before save - If validation was skipped, run before callbacks and persist new states, then save
+    # * after save - Run after callbacks
+    # 
+    # For example,
+    # 
+    #   vehicle = Vehicle.create          # => #<Vehicle @values={:state=>"parked", :name=>nil, :id=>1}>
+    #   vehicle.state_event               # => nil
+    #   vehicle.state_event = 'invalid'
+    #   vehicle.valid?                    # => false
+    #   vehicle.errors.full_messages      # => ["state_event is invalid"]
+    #   
+    #   vehicle.state_event = 'ignite'
+    #   vehicle.valid?                    # => true
+    #   vehicle.save                      # => #<Vehicle @values={:state=>"idling", :name=>nil, :id=>1}>
+    #   vehicle.state                     # => "idling"
+    #   vehicle.state_event               # => nil
+    # 
+    # Note that this can also be done on a mass-assignment basis:
+    # 
+    #   vehicle = Vehicle.create(:state_event => 'ignite')  # => #<Vehicle @values={:state=>"idling", :name=>nil, :id=>1}>
+    #   vehicle.state                                       # => "idling"
+    # 
     # == Transactions
     # 
     # In order to ensure that any changes made during transition callbacks
@@ -171,6 +202,17 @@ module StateMachine
       protected
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
+        end
+        
+        # Adds hooks into validation for automatically firing events
+        def define_action_helpers
+          if super && action == :save
+            @instance_helper_module.class_eval do
+              define_method(:valid?) do |*args|
+                self.class.state_machines.fire_attribute_events(self, :save, false) { super(*args) }
+              end
+            end
+          end
         end
         
         # Creates a scope for finding records *with* a particular state or

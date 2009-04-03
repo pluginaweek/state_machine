@@ -338,7 +338,7 @@ end
 class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
   def setup
     StateMachine::Integrations.const_set('Custom', Module.new do
-      def invalidate(object, attribute, message, values)
+      def invalidate(object, attribute, message, values = [])
         (object.errors ||= []) << generate_message(message, values)
       end
       
@@ -398,7 +398,7 @@ end
 class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
   def setup
     StateMachine::Integrations.const_set('Custom', Module.new do
-      def invalidate(object, attribute, message, values)
+      def invalidate(object, attribute, message, values = [])
         (object.errors ||= []) << generate_message(message, values)
       end
       

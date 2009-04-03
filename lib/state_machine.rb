@@ -31,6 +31,8 @@ module StateMachine
     #   generating scopes.
     # * <tt>:messages</tt> - The error messages to use when invalidating
     #   objects due to failed transitions.  Messages include:
+    #   * <tt>:invalid</tt>
+    #   * <tt>:invalid_event</tt>
     #   * <tt>:invalid_transition</tt>
     # * <tt>:use_transactions</tt> - Whether transactions should be used when
     #   firing events.  Default is true unless otherwise specified by the
@@ -241,6 +243,47 @@ module StateMachine
     # current state.  Otherwise, it will return false.
     # 
     # == Events and Transitions
+    # 
+    # Events defined on the machine are the interface to transitioning
+    # states an object.  Events can be fired either directly (through the
+    # method generated for the event) or indirectly (through attributes
+    # defined on the machine).
+    # 
+    # For example,
+    # 
+    #   class Vehicle
+    #     include DataMapper::Resource
+    #     property :id, Integer, :serial => true
+    #     
+    #     state_machine :initial => :parked do
+    #       event :ignite do
+    #         transition :parked => :idling
+    #       end
+    #     end
+    #     
+    #     state_machine :alarm_state, :initial => :active do
+    #       event :disable do
+    #         transition all => :off
+    #       end
+    #     end
+    #   end
+    #   
+    #   # Fire +ignite+ event directly
+    #   vehicle = Vehicle.create    # => #<Vehicle id=1 state="parked" alarm_state="active">
+    #   vehicle.ignite              # => true
+    #   vehicle.state               # => "idling"
+    #   vehicle.alarm_state         # => "active"
+    #   
+    #   # Fire +disable+ event automatically
+    #   vehicle.alarm_state_event = 'disable'
+    #   vehicle.save                # => true
+    #   vehicle.alarm_state         # => "off"
+    # 
+    # In the above example, the +state+ attribute is transitioned using the
+    # +ignite+ action that's generated from the state machine.  On the other
+    # hand, the +alarm_state+ attribute is transitioned using the +alarm_state_event+
+    # attribute that automatically gets fired when the machine's action (+save)
+    # is invoked.
     # 
     # For more information about how to configure an event and its associated
     # transitions, see StateMachine::Machine#event.

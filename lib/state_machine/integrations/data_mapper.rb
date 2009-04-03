@@ -39,6 +39,37 @@ module StateMachine
     #   vehicle.ignite                    # => true
     #   vehicle.reload                    # => #<Vehicle id=1 name="Ford Explorer" state="idling">
     # 
+    # == Events
+    # 
+    # As described in StateMachine::InstanceMethods#state_machine, event
+    # attributes are created for every machine that allow transitions to be
+    # performed automatically when the object's action (in this case, :save)
+    # is called.
+    # 
+    # In DataMapper, these automated events are run in the following order:
+    # * before validation - If validation feature loaded, run before callbacks and persist new states, then validate
+    # * before save - If validation feature was skipped/not loaded, run before callbacks and persist new states, then save
+    # * after save - Run after callbacks
+    # 
+    # For example,
+    # 
+    #   vehicle = Vehicle.create          # => #<Vehicle id=1 name=nil state="parked">
+    #   vehicle.state_event               # => nil
+    #   vehicle.state_event = 'invalid'
+    #   vehicle.valid?                    # => false
+    #   vehicle.errors                    # => #<DataMapper::Validate::ValidationErrors:0xb7a48b54 @errors={"state_event"=>["is invalid"]}>
+    #   
+    #   vehicle.state_event = 'ignite'
+    #   vehicle.valid?                    # => true
+    #   vehicle.save                      # => true
+    #   vehicle.state                     # => "idling"
+    #   vehicle.state_event               # => nil
+    # 
+    # Note that this can also be done on a mass-assignment basis:
+    # 
+    #   vehicle = Vehicle.create(:state_event => 'ignite')  # => #<Vehicle id=1 name=nil state="idling">
+    #   vehicle.state                                       # => "idling"
+    # 
     # == Transactions
     # 
     # By default, the use of transactions during an event transition is
@@ -198,6 +229,17 @@ module StateMachine
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
           owner_class.property(attribute, String) unless owner_class.properties.has_property?(attribute)
+        end
+        
+        # Adds hooks into validation for automatically firing events
+        def define_action_helpers
+          if super && action == :save
+            @instance_helper_module.class_eval do
+              define_method(:valid?) do |*args|
+                self.class.state_machines.fire_attribute_events(self, :save, false) { super(*args) }
+              end
+            end
+          end
         end
         
         # Creates a scope for finding records *with* a particular state or

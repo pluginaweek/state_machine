@@ -316,6 +316,8 @@ module StateMachine
     # Default messages to use for validation errors in ORM integrations
     class << self; attr_accessor :default_messages; end
     @default_messages = {
+      :invalid => 'is invalid',
+      :invalid_event => 'cannot transition when %s',
       :invalid_transition => 'cannot transition via "%s"'
     }
     
@@ -379,15 +381,12 @@ module StateMachine
       @messages = options[:messages] || {}
       @action = options[:action]
       @use_transactions = options[:use_transactions]
-      
       self.owner_class = owner_class
       self.initial_state = options[:initial]
       
       # Define class integration
       define_helpers
       define_scopes(options[:plural])
-      
-      # Call after hook for integration-specific extensions
       after_initialize
       
       # Evaluate DSL caller block
@@ -1187,6 +1186,7 @@ module StateMachine
         define_state_accessor
         define_state_predicate
         define_event_helpers
+        define_action_helpers if action
         
         # Gets the state name for the current value
         define_instance_method("#{attribute}_name") do |machine, object|
@@ -1223,6 +1223,46 @@ module StateMachine
         # object
         define_instance_method("#{attribute}_transitions") do |machine, object, *args|
           machine.events.transitions_for(object, *args)
+        end
+        
+        # Add helpers for interacting with the action
+        if action
+          attribute = self.attribute
+          
+          # Tracks the event / transition to invoke when the action is called
+          @instance_helper_module.class_eval do
+            attr_writer "#{attribute}_event"
+            attr_accessor "#{attribute}_event_transition"
+          end
+          
+          # Interpret non-blank events as present
+          define_instance_method("#{attribute}_event") do |machine, object|
+            event = object.instance_variable_get("@#{attribute}_event")
+            event && !(event.respond_to?(:empty?) && event.empty?) ? event : nil
+          end
+        end
+      end
+      
+      # Adds helper methods for automatically firing events when an action
+      # is invoked
+      def define_action_helpers
+        action = self.action
+        
+        if owner_class.method_defined?(action) && !owner_class.state_machines.any? {|attribute, machine| machine.action == action && machine != self}
+          # Action is defined and hasn't already been overridden by another machine
+          @instance_helper_module.class_eval do
+            # Override the default action to invoke the before / after hooks
+            define_method(action) do |*args|
+              value = nil
+              result = self.class.state_machines.fire_attribute_events(self, action) { value = super(*args) }
+              value.nil? ? result : value
+            end
+          end
+          
+          true
+        else
+          # Action already defined: don't add integration-specific hooks
+          false
         end
       end
       

@@ -426,7 +426,7 @@ begin
         end
         
         def test_should_raise_exception_if_targeting_invalid_machine
-          assert_raise(IndexError) do
+          assert_raise(RUBY_VERSION < '1.9' ? IndexError : KeyError) do
             new_observer(@resource) do
               before_transition :invalid, :from => :parked do
               end
@@ -579,6 +579,57 @@ begin
         def test_should_be_valid_if_validation_succeeds_within_state_scope
           record = @resource.new(:state => 'second_gear', :seatbelt => true)
           assert record.valid?
+        end
+      end
+      
+      class MachineWithEventAttributesOnValidationTest < BaseTestCase
+        def setup
+          @resource = new_resource
+          @machine = StateMachine::Machine.new(@resource)
+          @machine.event :ignite do
+            transition :parked => :idling
+          end
+          
+          @record = @resource.new
+          @record.state = 'parked'
+          @record.state_event = 'ignite'
+        end
+        
+        def test_should_fail_if_event_is_invalid
+          @record.state_event = 'invalid'
+          assert !@record.valid?
+          assert_equal ['is invalid'], @record.errors.full_messages
+        end
+        
+        def test_should_fail_if_event_has_no_transition
+          @record.state = 'idling'
+          assert !@record.valid?
+          assert_equal ['cannot transition when idling'], @record.errors.full_messages
+        end
+        
+        def test_should_be_successful_if_event_has_transition
+          assert @record.valid?
+        end
+        
+        def test_should_run_before_callbacks
+          ran_callback = false
+          @machine.before_transition { ran_callback = true }
+          
+          @record.valid?
+          assert ran_callback
+        end
+        
+        def test_should_persist_new_state
+          @record.valid?
+          assert_equal 'idling', @record.state
+        end
+        
+        def test_should_not_run_after_callbacks
+          ran_callback = false
+          @machine.after_transition { ran_callback = true }
+          
+          @record.valid?
+          assert !ran_callback
         end
       end
     rescue LoadError

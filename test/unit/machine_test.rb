@@ -91,6 +91,22 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert @object.respond_to?(:state_transitions)
   end
   
+  def test_should_not_define_an_event_attribute_reader
+    assert !@object.respond_to?(:state_event)
+  end
+  
+  def test_should_not_define_an_event_attribute_writer
+    assert !@object.respond_to?(:state_event=)
+  end
+  
+  def test_should_not_define_an_event_transition_attribute_reader
+    assert !@object.respond_to?(:state_event_transition)
+  end
+  
+  def test_should_not_define_an_event_transition_attribute_writer
+    assert !@object.respond_to?(:state_event_transition=)
+  end
+  
   def test_should_not_define_singular_with_scope
     assert !@klass.respond_to?(:with_state)
   end
@@ -360,6 +376,62 @@ class MachineWithIntegrationTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithActionTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def save
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @object = @klass.new
+  end
+  
+  def test_should_define_an_event_attribute_reader
+    assert @object.respond_to?(:state_event)
+  end
+  
+  def test_should_define_an_event_attribute_writer
+    assert @object.respond_to?(:state_event=)
+  end
+  
+  def test_should_define_an_event_transition_attribute_reader
+    assert @object.respond_to?(:state_event_transition)
+  end
+  
+  def test_should_define_an_event_transition_attribute_writer
+    assert @object.respond_to?(:state_event_transition=)
+  end
+end
+
+class MachineWithActionUndefinedTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @object = @klass.new
+  end
+  
+  def test_should_define_an_event_attribute_reader
+    assert @object.respond_to?(:state_event)
+  end
+  
+  def test_should_define_an_event_attribute_writer
+    assert @object.respond_to?(:state_event=)
+  end
+  
+  def test_should_define_an_event_transition_attribute_reader
+    assert @object.respond_to?(:state_event_transition)
+  end
+  
+  def test_should_define_an_event_transition_attribute_writer
+    assert @object.respond_to?(:state_event_transition=)
+  end
+  
+  def test_should_not_define_action
+    assert !@object.respond_to?(:save)
+  end
+end
+
 class MachineWithCustomPluralTest < Test::Unit::TestCase
   def setup
     @integration = Module.new do
@@ -398,7 +470,7 @@ end
 class MachineWithCustomInvalidationTest < Test::Unit::TestCase
   def setup
     @integration = Module.new do
-      def invalidate(object, attribute, message, values)
+      def invalidate(object, attribute, message, values = [])
         object.error = generate_message(message, values)
       end
     end

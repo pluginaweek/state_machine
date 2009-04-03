@@ -16,48 +16,70 @@ module StateMachine
       # 1. Before callbacks
       # 2. Persist state
       # 3. Invoke action
-      # 4. After callbacks
+      # 4. After callbacks if configured
       # 5. Rollback if action is unsuccessful
       # 
-      # See StateMachine::InstanceMethods#fire_events for more information.
-      def perform(transitions, run_action = true)
+      # Configuration options:
+      # * <tt>:action</tt> - Whether to run the action configured for each transition
+      # * <tt>:after</tt> - Whether to run after callbacks
+      # 
+      # If a block is passed to this method, that block will be called instead
+      # of invoking each transition's action.
+      def perform(transitions, options = {})
         # Validate that the transitions are for separate machines / attributes
         attributes = transitions.map {|transition| transition.attribute}.uniq
-        raise ArgumentError, 'Cannot perform multiple transitions in parallel for the same state machine / attribute' if attributes.length != transitions.length
+        raise ArgumentError, 'Cannot perform multiple transitions in parallel for the same state machine attribute' if attributes.length != transitions.length
         
         success = false
         
-        # Grab any transition for wrapping flow within a transaction
-        transitions.first.within_transaction do
-          # Run before callbacks.  If any callback halts, then the entire
-          # chain is halted for every transition.
-          if transitions.all? {|transition| transition.before}
-            # Persist the new state for each attribute
-            transitions.each {|transition| transition.persist}
-            
-            # Run the actions associated with each machine
-            begin
-              results = {}
-              object = transitions.first.object
-              success = !run_action || transitions.all? do |transition|
-                action = transition.action
-                action && !results.include?(action) ? results[action] = object.send(action) : true
+        # Run before callbacks.  If any callback halts, then the entire chain
+        # is halted for every transition.
+        if transitions.all? {|transition| transition.before}
+          # Persist the new state for each attribute
+          transitions.each {|transition| transition.persist}
+          
+          # Run the actions associated with each machine
+          begin
+            results = {}
+            success =
+              if block_given?
+                # Block was given: use the result for each transition
+                result = yield
+                transitions.each {|transition| results[transition.action] = result}
+                result
+              elsif options[:action] == false
+                # Skip the action
+                true
+              else
+                # Run each transition's action (only once)
+                object = transitions.first.object
+                transitions.all? do |transition|
+                  action = transition.action
+                  action && !results.include?(action) ? results[action] = object.send(action) : true
+                end
               end
-            rescue Exception
-              # Action failed: rollback 
-              transitions.each {|transition| transition.rollback}
-              raise
-            end
-            
-            # Always run after callbacks regardless of whether the actions failed
-            transitions.each {|transition| transition.after(results[transition.action])}
-            
-            # Rollback the transitions if the transaction was unsuccessul
-            transitions.each {|transition| transition.rollback} unless success
+          rescue Exception
+            # Action failed: rollback 
+            transitions.each {|transition| transition.rollback}
+            raise
           end
           
-          # Allow the transaction to rollback based on the result
-          success
+          # Always run after callbacks regardless of whether the actions failed
+          transitions.each {|transition| transition.after(results[transition.action])} unless options[:after] == false
+          
+          # Rollback the transitions if the transaction was unsuccessul
+          transitions.each {|transition| transition.rollback} unless success
+        end
+        
+        success
+      end
+      
+      # Runs one or more transitions within a transaction.  See StateMachine::Transition.perform
+      # for more information.
+      def perform_within_transaction(transitions, options = {})
+        success = false
+        transitions.first.within_transaction do
+          success = perform(transitions, options)
         end
         
         success
@@ -107,8 +129,9 @@ module StateMachine
       @machine = machine
       @args = []
       
-      # Event information
-      if event = machine.events[event]
+      # Event information (no-ops don't have events)
+      if event
+        event = machine.events.fetch(event)
         @event = event.name
         @qualified_event = event.qualified_name
       end
@@ -169,7 +192,7 @@ module StateMachine
       self.args = args
       
       # Run the transition
-      self.class.perform([self], run_action)
+      self.class.perform_within_transaction([self], :action => run_action)
     end
     
     # Runs a block within a transaction for the object being transitioned.

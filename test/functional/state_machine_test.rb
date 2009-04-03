@@ -32,7 +32,14 @@ class AutoShop
   end
 end
 
-class Vehicle
+class ModelBase
+  def save
+    @saved = true
+    self
+  end
+end
+
+class Vehicle < ModelBase
   attr_accessor :auto_shop, :seatbelt_on, :insurance_premium, :force_idle, :callbacks, :saved
   
   def initialize(attributes = {})
@@ -103,7 +110,7 @@ class Vehicle
   end
   
   def save
-    @saved = true
+    super
   end
   
   def new_record?
@@ -695,6 +702,34 @@ class VehicleWithParallelEventsTest < Test::Unit::TestCase
   def test_should_not_save_if_skipping_action_on_bang
     assert @vehicle.fire_events!(:ignite, :buy_insurance, false)
     assert !@vehicle.saved
+  end
+end
+
+class VehicleWithEventAttributesTest < Test::Unit::TestCase
+  def setup
+    @vehicle = Vehicle.new
+    @vehicle.state_event = 'ignite'
+  end
+  
+  def test_should_fail_if_event_is_invalid
+    @vehicle.state_event = 'invalid'
+    assert !@vehicle.save
+    assert_equal 'parked', @vehicle.state
+  end
+  
+  def test_should_fail_if_event_has_no_transition
+    @vehicle.state_event = 'park'
+    assert !@vehicle.save
+    assert_equal 'parked', @vehicle.state
+  end
+  
+  def test_should_return_original_action_value_on_success
+    assert_equal @vehicle, @vehicle.save
+  end
+  
+  def test_should_transition_state_on_success
+    @vehicle.save
+    assert_equal 'idling', @vehicle.state
   end
 end
 
