@@ -172,22 +172,34 @@ class TrafficLight
     end
     
     state :stop do
-      def color
-        'red'
+      def color(transform)
+        value = 'red'
+        
+        if block_given?
+          yield value
+        else
+          value.send(transform)
+        end
+        
+        value
       end
     end
     
     state :proceed do
-      def color
+      def color(transform)
         'green'
       end
     end
     
     state :caution do
-      def color
+      def color(transform)
         'yellow'
       end
     end
+  end
+  
+  def color(transform = :to_s)
+    super
   end
 end
 
@@ -859,6 +871,15 @@ class TrafficLightStopTest < Test::Unit::TestCase
   
   def test_should_use_stop_color
     assert_equal 'red', @light.color
+  end
+  
+  def test_should_pass_arguments_through
+    assert_equal 'RED', @light.color(:upcase!)
+  end
+  
+  def test_should_pass_block_through
+    color = @light.color {|value| value.upcase!}
+    assert_equal 'RED', color
   end
 end
 

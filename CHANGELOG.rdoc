@@ -1,5 +1,6 @@
 == master
 
+* Make it easier to override state-driven behaviors
 * Rollback state changes when the action fails during transitions
 * Use :messages instead of :invalid_message for customizing validation errors
 * Use more human-readable validation errors

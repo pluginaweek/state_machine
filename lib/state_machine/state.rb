@@ -145,32 +145,20 @@ module StateMachine
       # Evaluate the method definitions
       context = ConditionProxy.new(owner_class, lambda {|object| object.send("#{attribute}_name") == name})
       context.class_eval(&block)
-      
-      # Define all of the methods that were created in the module so that they
-      # don't override the core behavior (i.e. calling the state method)
       context.instance_methods.each do |method|
-        unless owner_class.instance_methods.include?(method)
-          # Calls the method defined by the current state of the machine.  This
-          # is done using string evaluation so that any block passed into the
-          # method can then be passed to the state's context method, which is
-          # not possible with lambdas in Ruby 1.8.6.
-          owner_class.class_eval <<-end_eval, __FILE__, __LINE__
-            def #{method}(*args, &block)
-              self.class.state_machine(#{attribute.inspect}).states.match(self).call(self, #{method.inspect}, *args, &block)
-            end
-          end_eval
-        end
-        
-        # Track the method defined for the context so that it can be invoked
-        # at a later point in time
         methods[method.to_sym] = context.instance_method(method)
+        
+        # Calls the method defined by the current state of the machine
+        context.class_eval <<-end_eval, __FILE__, __LINE__
+          def #{method}(*args, &block)
+            self.class.state_machine(#{attribute.inspect}).states.match(self).call(self, #{method.inspect}, *args, &block)
+          end
+        end_eval
       end
       
       # Include the context so that it can be bound to the owner class (the
       # context is considered an ancestor, so it's allowed to be bound)
-      owner_class.class_eval do
-        include context
-      end
+      owner_class.class_eval { include context }
       
       context
     end
