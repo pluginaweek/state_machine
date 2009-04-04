@@ -121,7 +121,7 @@ module StateMachine
         rescue Exception
           # Revert attribute modifications
           transitions.each do |transition|
-            object.send("#{transition.attribute}_event=", transition.event.to_s)
+            object.send("#{transition.attribute}_event=", transition.event)
             object.send("#{transition.attribute}_event_transition=", nil) if complete
           end
           
@@ -132,7 +132,7 @@ module StateMachine
           attribute = transition.attribute
           
           # Revert event unless transition was successful
-          object.send("#{attribute}_event=", transition.event.to_s) unless complete && result
+          object.send("#{attribute}_event=", transition.event) unless complete && result
           
           # Track transition if partial transition completed successfully
           object.send("#{attribute}_event_transition=", !complete && result ? transition : nil)

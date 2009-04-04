@@ -317,7 +317,7 @@ class MachineCollectionFireImplicitWithInvalidEventTest < MachineCollectionFireI
   end
   
   def test_should_not_reset_event_attribute
-    assert_equal 'invalid', @object.state_event
+    assert_equal :invalid, @object.state_event
   end
   
   def test_should_not_have_event_transition
@@ -347,7 +347,7 @@ class MachineCollectionFireImplicitWithoutTransitionTest < MachineCollectionFire
   end
   
   def test_should_not_reset_event_attribute
-    assert_equal 'ignite', @object.state_event
+    assert_equal :ignite, @object.state_event
   end
   
   def test_should_not_have_event_transition
@@ -416,7 +416,7 @@ class MachineCollectionFireImplicitWithActionFailureTest < MachineCollectionFire
   end
   
   def test_should_not_reset_event_attribute
-    assert_equal 'ignite', @object.state_event
+    assert_equal :ignite, @object.state_event
   end
   
   def test_should_not_have_event_transition
@@ -437,7 +437,7 @@ class MachineCollectionFireImplicitWithActionErrorTest < MachineCollectionFireIm
   end
   
   def test_should_not_reset_event_attribute
-    assert_equal 'ignite', @object.state_event
+    assert_equal :ignite, @object.state_event
   end
   
   def test_should_not_have_event_transition
@@ -490,7 +490,7 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
   end
   
   def test_should_not_reset_event_attribute
-    assert_equal 'ignite', @object.state_event
+    assert_equal :ignite, @object.state_event
   end
   
   def test_should_have_event_transition
@@ -507,14 +507,14 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
   def test_should_rollback_all_attributes_after_next_fire_on_failure
     assert !@machines.fire_attribute_events(@object, :save) { false }
     assert_equal 'parked', @object.state
-    assert_equal 'ignite', @object.state_event
+    assert_equal :ignite, @object.state_event
     assert_nil @object.state_event_transition
   end
   
   def test_should_rollback_all_attributes_after_next_fire_on_error
     assert_raise(ArgumentError) { @machines.fire_attribute_events(@object, :save) { raise ArgumentError } }
     assert_equal 'parked', @object.state
-    assert_equal 'ignite', @object.state_event
+    assert_equal :ignite, @object.state_event
     assert_nil @object.state_event_transition
   end
 end
@@ -583,7 +583,7 @@ class MachineCollectionFireImplicitWithDifferentActionsTest < MachineCollectionF
   end
   
   def test_should_not_reset_event_attributes_for_other_actions
-    assert_equal 'disable', @object.alarm_state_event
+    assert_equal :disable, @object.alarm_state_event
   end
 end
 

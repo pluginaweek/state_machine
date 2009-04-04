@@ -1230,7 +1230,7 @@ module StateMachine
           # Interpret non-blank events as present
           define_instance_method("#{attribute}_event") do |machine, object|
             event = object.instance_variable_get("@#{attribute}_event")
-            event && !(event.respond_to?(:empty?) && event.empty?) ? event : nil
+            event && !(event.respond_to?(:empty?) && event.empty?) ? event.to_sym : nil
           end
         end
       end
