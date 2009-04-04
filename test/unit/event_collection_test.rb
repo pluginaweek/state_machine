@@ -81,31 +81,6 @@ class EventCollectionWithEventsWithTransitionsTest < Test::Unit::TestCase
     object.state = 'idling'
     assert_equal [], @events.transitions_for(object)
   end
-  
-  def test_should_include_no_op_loopback_transition_if_specified
-    object = @klass.new
-    object.state = 'parked'
-    
-    assert_equal [
-      {:object => object, :attribute => :state, :event => nil, :from => 'parked', :to => 'parked'},
-      {:object => object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}
-    ], @events.transitions_for(object, true).map {|transition| transition.attributes}
-  end
-  
-  def test_should_not_include_no_op_loopback_transition_if_loopback_is_valid
-    @machine.event :park
-    
-    @events << @park = StateMachine::Event.new(@machine, :park)
-    @park.transition StateMachine::AllMatcher.instance => :parked
-    
-    object = @klass.new
-    object.state = 'parked'
-    
-    assert_equal [
-      {:object => object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'},
-      {:object => object, :attribute => :state, :event => :park, :from => 'parked', :to => 'parked'}
-    ], @events.transitions_for(object, true).map {|transition| transition.attributes}
-  end
 end
 
 class EventCollectionWithMultipleEventsTest < Test::Unit::TestCase
