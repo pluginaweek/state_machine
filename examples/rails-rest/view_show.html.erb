@@ -1,0 +1,17 @@
+<p>
+  <b>Name:</b>
+  <%=h @user.name %>
+</p>
+
+<p>
+  <b>State:</b>
+  <%=h @user.state %>
+</p>
+
+<p>
+  <b>Access State:</b>
+  <%=h @user.access_state %>
+</p>
+
+<%= link_to 'Edit', edit_user_path(@user) %> |
+<%= link_to 'Back', users_path %>
