@@ -1,5 +1,7 @@
 == master
 
+== 0.7.0 / 2009-04-03
+
 * Add #{attribute}_event for automatically firing events when the object's action is called
 * Make it easier to override state-driven behaviors
 * Rollback state changes when the action fails during transitions
@@ -28,7 +30,7 @@
 * Use generated non-bang event when running bang version so that overriding one affects the other
 * Provide access to arguments passed into an event from transition callbacks via Transition#args
 
-== 0.6.3 / 2008-03-10
+== 0.6.3 / 2009-03-10
 
 * Add support for customizing the graph's orientation
 * Use the standard visualizations for initial (open arrow) and final (double circle) states
