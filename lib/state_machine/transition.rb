@@ -159,6 +159,18 @@ module StateMachine
       machine.action
     end
     
+    # Does this transition represent a loopback (i.e. the from and to state
+    # are the same)
+    # 
+    # == Example
+    # 
+    #   machine = StateMachine.new(Vehicle)
+    #   StateMachine::Transition.new(Vehicle.new, machine, :park, :parked, :parked).loopback?   # => true
+    #   StateMachine::Transition.new(Vehicle.new, machine, :park, :idling, :parked).loopback?   # => false
+    def loopback?
+      from_name == to_name
+    end
+    
     # A hash of all the core attributes defined for this transition with their
     # names as keys and values of the attributes as values.
     # 

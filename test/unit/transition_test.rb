@@ -142,6 +142,40 @@ class TransitionWithDynamicToValueTest < Test::Unit::TestCase
   end
 end
 
+class TransitionLoopbackTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked
+    @machine.event :park
+    
+    @object = @klass.new
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :park, :parked, :parked)
+  end
+  
+  def test_should_be_loopback
+    assert @transition.loopback?
+  end
+end
+
+class TransitionWithDifferentStatesTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked, :idling
+    @machine.event :ignite
+    
+    @object = @klass.new
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+  end
+  
+  def test_should_not_be_loopback
+    assert !@transition.loopback?
+  end
+end
+
 class TransitionWithNamespaceTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
