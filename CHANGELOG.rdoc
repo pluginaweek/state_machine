@@ -1,6 +1,6 @@
 == master
 
-== 0.7.0 / 2009-04-03
+== 0.7.0 / 2009-04-04
 
 * Add #{attribute}_event for automatically firing events when the object's action is called
 * Make it easier to override state-driven behaviors
