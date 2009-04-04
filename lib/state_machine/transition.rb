@@ -67,7 +67,7 @@ module StateMachine
           # Always run after callbacks regardless of whether the actions failed
           transitions.each {|transition| transition.after(results[transition.action])} unless options[:after] == false
           
-          # Rollback the transitions if the transaction was unsuccessul
+          # Rollback the transitions if the transaction was unsuccessful
           transitions.each {|transition| transition.rollback} unless success
         end
         

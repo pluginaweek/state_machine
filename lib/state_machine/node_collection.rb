@@ -79,7 +79,7 @@ module StateMachine
     end
     
     # Calls the block once for each element in self, passing that element as a
-    # parameters.
+    # parameter.
     # 
     #   states = StateMachine::NodeCollection.new
     #   states << StateMachine::State.new(machine, :parked)

@@ -29,7 +29,7 @@ module StateMachine
     # 
     # == Examples
     # 
-    #   matcher = StateMachine::AllMatcher.new - [:parked, :idling]
+    #   matcher = StateMachine::AllMatcher.instance - [:parked, :idling]
     #   matcher.matches?(:parked)       # => false
     #   matcher.matches?(:first_gear)   # => true
     def -(blacklist)
@@ -108,7 +108,7 @@ module StateMachine
     # 
     # == Examples
     # 
-    #   matcher = StateMachine::LoopbackMatcher.new
+    #   matcher = StateMachine::LoopbackMatcher.instance
     #   matcher.matches?(:parked, :from => :parked)   # => true
     #   matcher.matches?(:parked, :from => :idling)   # => false
     def matches?(value, context)

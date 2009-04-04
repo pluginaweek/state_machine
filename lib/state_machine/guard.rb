@@ -20,7 +20,7 @@ module StateMachine
     # The requirement for verifying the event being guarded
     attr_reader :event_requirement
     
-    # One or more requrirements for verifying the states being guarded.  All
+    # One or more requirements for verifying the states being guarded.  All
     # requirements contain a mapping of {:from => matcher, :to => matcher}.
     attr_reader :state_requirements
     

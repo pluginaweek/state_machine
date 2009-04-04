@@ -220,7 +220,7 @@ module StateMachine
         object.errors.add(attribute, generate_message(message, values)) if object.respond_to?(:errors)
       end
       
-      # Resets an errors previously added when invalidating the given object
+      # Resets any errors previously added when invalidating the given object
       def reset(object)
         object.errors.clear if object.respond_to?(:errors)
       end

@@ -194,7 +194,7 @@ module StateMachine
         object.errors.add(attribute, generate_message(message, values))
       end
       
-      # Resets an errors previously added when invalidating the given object
+      # Resets any errors previously added when invalidating the given object
       def reset(object)
         object.errors.clear
       end

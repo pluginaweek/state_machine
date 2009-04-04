@@ -257,7 +257,7 @@ module StateMachine
         end
       end
       
-      # Resets an errors previously added when invalidating the given object
+      # Resets any errors previously added when invalidating the given object
       def reset(object)
         object.errors.clear
       end
@@ -266,9 +266,8 @@ module StateMachine
         # Adds the default callbacks for notifying ActiveRecord observers
         # before/after a transition has been performed.
         def after_initialize
-          # Observer callbacks never halt the chain; result is ignored
           callbacks[:before] << Callback.new {|object, transition| notify(:before, object, transition)}
-          callbacks[:after] << Callback.new {|object, transition, result| notify(:after, object, transition)}
+          callbacks[:after] << Callback.new {|object, transition| notify(:after, object, transition)}
         end
         
         # Skips defining reader/writer methods since this is done automatically

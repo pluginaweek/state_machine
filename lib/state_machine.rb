@@ -20,9 +20,9 @@ module StateMachine
     #   instance methods (e.g. "heater" would generate :turn_on_heater and
     #   :turn_off_heater for the :turn_on/:turn_off events).  Default is nil.
     # * <tt>:integration</tt> - The name of the integration to use for adding
-    #   library-specific behavior to the machine.  Built-in integrations include
-    #   :data_mapper, :active_record, and :sequel.  By default, this is
-    #   determined automatically.
+    #   library-specific behavior to the machine.  Built-in integrations
+    #   include :data_mapper, :active_record, and :sequel.  By default, this
+    #   is determined automatically.
     # 
     # Configuration options relevant to ORM integrations:
     # * <tt>:plural</tt> - The pluralized name of the attribute.  By default,
@@ -244,10 +244,10 @@ module StateMachine
     # 
     # == Events and Transitions
     # 
-    # Events defined on the machine are the interface to transitioning
-    # states an object.  Events can be fired either directly (through the
-    # method generated for the event) or indirectly (through attributes
-    # defined on the machine).
+    # Events defined on the machine are the interface to transitioning states
+    # for an object.  Events can be fired either directly (through the method
+    # generated for the event) or indirectly (through attributes defined on
+    # the machine).
     # 
     # For example,
     # 
@@ -282,7 +282,7 @@ module StateMachine
     # In the above example, the +state+ attribute is transitioned using the
     # +ignite+ action that's generated from the state machine.  On the other
     # hand, the +alarm_state+ attribute is transitioned using the +alarm_state_event+
-    # attribute that automatically gets fired when the machine's action (+save)
+    # attribute that automatically gets fired when the machine's action (+save+)
     # is invoked.
     # 
     # For more information about how to configure an event and its associated
@@ -358,11 +358,11 @@ module StateMachine
     # 
     # For example,
     # 
-    #   Vehicle.with_state(:parked) # => Finds all vehicles where the state is parked
-    #   Vehicle.with_states(:parked, :idling) # => Finds all vehicles where the state is either parked or idling
+    #   Vehicle.with_state(:parked)               # => All vehicles where the state is parked
+    #   Vehicle.with_states(:parked, :idling)     # => All vehicles where the state is either parked or idling
     #   
-    #   Vehicle.without_state(:parked) # => Finds all vehicles where the state is *not* parked
-    #   Vehicle.without_states(:parked, :idling) # => Finds all vehicles where the state is *not* parked or idling
+    #   Vehicle.without_state(:parked)            # => All vehicles where the state is *not* parked
+    #   Vehicle.without_states(:parked, :idling)  # => All vehicles where the state is *not* parked or idling
     # 
     # *Note* that if class methods already exist with those names (i.e.
     # :with_state, :with_states, :without_state, or :without_states), then a

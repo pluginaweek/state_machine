@@ -60,7 +60,7 @@ module StateMachine
       @value = options.include?(:value) ? options[:value] : name && name.to_s
       @matcher = options[:if]
       @methods = {}
-      @initial = options.include?(:initial) && options[:initial]
+      @initial = options[:initial] == true
       
       add_predicate
     end
@@ -132,11 +132,11 @@ module StateMachine
       matcher ? matcher.call(other_value) : other_value == value
     end
     
-    # Defines a context for the state which will be enabled on instances of the
-    # owner class when the machine is in this state.
+    # Defines a context for the state which will be enabled on instances of
+    # the owner class when the machine is in this state.
     # 
-    # This can be called multiple times.  Each time a new context is created, a
-    # new module will be included in the owner class.
+    # This can be called multiple times.  Each time a new context is created,
+    # a new module will be included in the owner class.
     def context(&block)
       owner_class = machine.owner_class
       attribute = machine.attribute
@@ -183,8 +183,8 @@ module StateMachine
     # * +label+ - The human-friendly description of the state.
     # * +width+ - The width of the node.  Always 1.
     # * +height+ - The height of the node.  Always 1.
-    # * +shape+ - The actual shape of the node.  If the state is the initial
-    #   state, then "doublecircle", otherwise "circle".
+    # * +shape+ - The actual shape of the node.  If the state is a final
+    #   state, then "doublecircle", otherwise "ellipse".
     # 
     # The actual node generated on the graph will be returned.
     def draw(graph)

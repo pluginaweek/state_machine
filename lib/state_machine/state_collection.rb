@@ -9,7 +9,7 @@ module StateMachine
     
     # Determines whether the given object is in a specific state.  If the
     # object's current value doesn't match the state, then this will return
-    # false, otherwise true.  If the given state is unknown, then an ArgumentError
+    # false, otherwise true.  If the given state is unknown, then an IndexError
     # will be raised.
     # 
     # == Examples
@@ -25,7 +25,7 @@ module StateMachine
     #   
     #   states.matches?(vehicle, :parked)   # => true
     #   states.matches?(vehicle, :idling)   # => false
-    #   states.matches?(vehicle, :invalid)  # => ArgumentError: :invalid is an invalid key for :name index
+    #   states.matches?(vehicle, :invalid)  # => IndexError: :invalid is an invalid key for :name index
     def matches?(object, name)
       fetch(name).matches?(machine.read(object))
     end

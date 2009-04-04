@@ -1,5 +1,5 @@
 module StateMachine
-  # Represents a collection of states in a state machine
+  # Represents a collection of events in a state machine
   class EventCollection < NodeCollection
     def initialize(machine) #:nodoc:
       super(machine, :index => [:name, :qualified_name])
@@ -61,9 +61,12 @@ module StateMachine
     #   # Always include a loopback
     #   events.transitions_for(vehicle, true)   #=> [#<StateMachine::Transition attribute=:state event=nil from="idling" from_name=:idling to="idling" to_name=:idling>,
     #                                                #<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
+    # 
+    # Note that in the loopback transition, no event is given and the from / to
+    # states are the same.
     def transitions_for(object, include_no_op = false)
       # Get the possible transitions for this object
-      transitions = collect {|event| event.transition_for(object)}.compact
+      transitions = map {|event| event.transition_for(object)}.compact
       
       if include_no_op
         state = machine.states.match(object)
