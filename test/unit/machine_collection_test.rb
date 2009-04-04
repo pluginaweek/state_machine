@@ -360,10 +360,12 @@ class MachineCollectionFireImplicitWithTransitionTest < MachineCollectionFireImp
     super
     
     @state_event = nil
+    @state_event_transition = nil
     
     @object.state_event = 'ignite'
     @result = @machines.fire_attribute_events(@object, :save) do
       @state_event = @object.state_event
+      @state_event_transition = @object.state_event_transition
       @saved = true
     end
   end
@@ -378,6 +380,10 @@ class MachineCollectionFireImplicitWithTransitionTest < MachineCollectionFireImp
   
   def test_should_not_have_event_while_running_action
     assert_nil @state_event
+  end
+  
+  def test_should_not_have_event_transition_while_running_action
+    assert_nil @state_event_transition
   end
   
   def test_should_transition_state
@@ -449,10 +455,12 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
     @machine.after_transition { @ran_after_callback = true }
     
     @state_event = nil
+    @state_event_transition = nil
     
     @object.state_event = 'ignite'
     @result = @machines.fire_attribute_events(@object, :save, false) do
       @state_event = @object.state_event
+      @state_event_transition = @object.state_event_transition
       true
     end
   end
@@ -471,6 +479,10 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
   
   def test_should_not_have_event_while_running_action
     assert_nil @state_event
+  end
+  
+  def test_should_not_have_event_transition_while_running_action
+    assert_nil @state_event_transition
   end
   
   def test_should_transition_state
@@ -503,6 +515,40 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
     assert_raise(ArgumentError) { @machines.fire_attribute_events(@object, :save) { raise ArgumentError } }
     assert_equal 'parked', @object.state
     assert_equal 'ignite', @object.state_event
+    assert_nil @object.state_event_transition
+  end
+end
+
+class MachineCollectionFireImplicitNestedPartialTest < MachineCollectionFireImplicitTest
+  def setup
+    super
+    
+    @partial_result = nil
+    
+    @object.state_event = 'ignite'
+    @result = @machines.fire_attribute_events(@object, :save) do
+      @partial_result = @machines.fire_attribute_events(@object, :save, false) { true }
+      true
+    end
+  end
+  
+  def test_should_be_successful
+    assert @result
+  end
+  
+  def test_should_have_successful_partial_fire
+    assert @partial_result
+  end
+  
+  def test_should_transition_state
+    assert_equal 'idling', @object.state
+  end
+  
+  def test_should_reset_event_attribute
+    assert_nil @object.state_event
+  end
+  
+  def test_should_not_have_event_transition
     assert_nil @object.state_event_transition
   end
 end
