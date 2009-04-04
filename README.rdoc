@@ -195,7 +195,7 @@ like so:
   
   # Generic state predicates can raise exceptions if the value does not exist
   vehicle.state?(:parked)         # => false
-  vehicle.state?(:invalid)        # => ArgumentError: :invalid is an invalid name
+  vehicle.state?(:invalid)        # => IndexError: :invalid is an invalid name
   
   # Namespaced machines have uniquely-generated methods
   vehicle.alarm_state             # => 1
@@ -207,15 +207,15 @@ like so:
   vehicle.alarm_state_name        # => :off
   vehicle.can_enable_alarm?       # => true
   
-  vehicle.alarm_disabled?         # => true
-  vehicle.alarm_enabled?          # => false
+  vehicle.alarm_off?              # => true
+  vehicle.alarm_active?           # => false
   
   # Events can be fired in parallel
   vehicle.fire_events(:shift_down, :enable_alarm) # => true
   vehicle.state_name                              # => :first_gear
   vehicle.alarm_state_name                        # => :active
   
-  vehicle.fire_events!(:ignite, :enable_alarm)    # => StateMachine::InvalidTransition: Cannot run events in parallel: ignite
+  vehicle.fire_events!(:ignite, :enable_alarm)    # => StateMachine::InvalidTransition: Cannot run events in parallel: ignite, enable_alarm
 
 *Note* the comment made on the +initialize+ method in the class.  In order for
 state machine attributes to be properly initialized, <tt>super()</tt> must be called.
