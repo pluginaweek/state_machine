@@ -97,9 +97,8 @@ module StateMachine
     # * <tt>state_name</tt> - Gets the name of the state for the current value
     # * <tt>state_events</tt> - Gets the list of events that can be fired on
     #   the current object's state (uses the *unqualified* event names)
-    # * <tt>state_transitions(include_no_op = false)</tt> - Gets the
-    #   list of possible transitions that can be made on the current object's
-    #   state
+    # * <tt>state_transitions</tt> - Gets the list of possible transitions
+    #   that can be made on the current object's state
     # 
     # For example,
     # 
