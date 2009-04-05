@@ -1,5 +1,7 @@
 == master
 
+* Fix machines failing to generate graphs when run from Merb tasks
+
 == 0.7.0 / 2009-04-04
 
 * Add #{attribute}_event for automatically firing events when the object's action is called
