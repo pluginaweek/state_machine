@@ -163,6 +163,10 @@ Class definition:
     end
   end
 
+*Note* the comment made on the +initialize+ method in the class.  In order for
+state machine attributes to be properly initialized, <tt>super()</tt> must be called.
+See StateMachine::MacroMethods for more information about this.
+
 Using the above class as an example, you can interact with the state machine
 like so:
 
@@ -217,10 +221,6 @@ like so:
   
   vehicle.fire_events!(:ignite, :enable_alarm)    # => StateMachine::InvalidTransition: Cannot run events in parallel: ignite, enable_alarm
 
-*Note* the comment made on the +initialize+ method in the class.  In order for
-state machine attributes to be properly initialized, <tt>super()</tt> must be called.
-See StateMachine::MacroMethods for more information about this.
-
 == Integrations
 
 In addition to being able to define state machines on all Ruby classes, a set of
@@ -267,7 +267,7 @@ saving the record, named scopes, validation errors, and observers.  For example,
       # log message
     end
     
-    # Generic transition callback *before* the transition is performed
+    # Generic transition callback *after* the transition is performed
     def after_transition(vehicle, transition)
       Audit.log(vehicle, transition)
     end
@@ -318,7 +318,7 @@ callbacks, validation errors, and observers.  For example,
       # log message (self is the record)
     end
     
-    # Generic transition callback *before* the transition is performed
+    # Generic transition callback *after* the transition is performed
     after_transition do |transition|
       Audit.log(self, transition) # self is the record
     end
