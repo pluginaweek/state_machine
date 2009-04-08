@@ -1224,7 +1224,9 @@ module StateMachine
           # Tracks the event / transition to invoke when the action is called
           @instance_helper_module.class_eval do
             attr_writer "#{attribute}_event"
-            attr_accessor "#{attribute}_event_transition"
+            
+            protected
+              attr_accessor "#{attribute}_event_transition"
           end
           
           # Interpret non-blank events as present

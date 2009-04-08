@@ -1,5 +1,7 @@
 == master
 
+* Fix event attribute transitions being publicly accessible
+
 == 0.7.1 / 2009-04-05
 
 * Fix machines failing to generate graphs when run from Merb tasks
