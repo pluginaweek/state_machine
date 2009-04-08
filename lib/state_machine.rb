@@ -133,10 +133,6 @@ module StateMachine
     #   vehicle.state_transitions         # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
     #   vehicle.ignite
     #   vehicle.state_transitions         # => [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
-    #   
-    #   # Include a "no-op" transition for a loopback
-    #   vehicle.state_transitions(true)   # => [#<StateMachine::Transition attribute=:state event=nil from="idling" from_name=:idling to="idling" to_name=:idling>,
-    #                                           #<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
     # 
     # == Attribute initialization
     # 

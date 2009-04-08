@@ -79,27 +79,6 @@ class TransitionTest < Test::Unit::TestCase
   end
 end
 
-class TransitionWithoutEventTest < Test::Unit::TestCase
-  def setup
-    @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass)
-    @machine.state :parked, :idling
-    
-    @object = @klass.new
-    @object.state = 'parked'
-    
-    @transition = StateMachine::Transition.new(@object, @machine, nil, :parked, :idling)
-  end
-  
-  def test_should_not_have_an_event
-    assert_nil @transition.event
-  end
-  
-  def test_should_not_have_a_qualified_event
-    assert_nil @transition.qualified_event
-  end
-end
-
 class TransitionWithInvalidNodesTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
@@ -109,6 +88,10 @@ class TransitionWithInvalidNodesTest < Test::Unit::TestCase
     
     @object = @klass.new
     @object.state = 'parked'
+  end
+  
+  def test_should_raise_exception_without_event
+    assert_raise(IndexError) { StateMachine::Transition.new(@object, @machine, nil, :parked, :idling) }
   end
   
   def test_should_raise_exception_with_invalid_event

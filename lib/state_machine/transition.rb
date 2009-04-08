@@ -129,12 +129,10 @@ module StateMachine
       @machine = machine
       @args = []
       
-      # Event information (no-ops don't have events)
-      if event
-        event = machine.events.fetch(event)
-        @event = event.name
-        @qualified_event = event.qualified_name
-      end
+      # Event information
+      event = machine.events.fetch(event)
+      @event = event.name
+      @qualified_event = event.qualified_name
       
       # From state information
       from_state = machine.states.fetch(from_name)
