@@ -64,6 +64,41 @@ module StateMachine
     #   vehicle = Vehicle.create(:state_event => 'ignite')  # => #<Vehicle @values={:state=>"idling", :name=>nil, :id=>1}>
     #   vehicle.state                                       # => "idling"
     # 
+    # === Security implications
+    # 
+    # Beware that public event attributes mean that events can be fired
+    # whenever mass-assignment is being used.  If you want to prevent malicious
+    # users from tampering with events through URLs / forms, the attribute
+    # should be protected like so:
+    # 
+    #   class Vehicle < Sequel::Model
+    #     set_restricted_columns :state_event
+    #     # set_allowed_columns ... # Alternative technique
+    #     
+    #     state_machine do
+    #       ...
+    #     end
+    #   end
+    # 
+    # If you want to only have *some* events be able to fire via mass-assignment,
+    # you can build two state machines (one public and one protected) like so:
+    # 
+    #   class Vehicle < Sequel::Model
+    #     # Allow both machines to share the same state
+    #     alias_method :public_state, :state
+    #     alias_method :public_state=, :state=
+    #     
+    #     set_restricted_columns :state_event # Prevent access to events in the first machine
+    #     
+    #     state_machine do
+    #       # Define private events here
+    #     end
+    #     
+    #     state_machine :public_state do
+    #       # Define public events here
+    #     end
+    #   end
+    # 
     # == Transactions
     # 
     # In order to ensure that any changes made during transition callbacks
