@@ -112,21 +112,22 @@ module StateMachine
     # 
     # More information about how those options affect the behavior of the
     # callback can be found in their attribute definitions.
-    def initialize(options = {}, &block)
-      if options.is_a?(Hash)
-        @method = options.delete(:do) || block
-      else
-        # Only the callback was configured
-        @method = options
-        options = {}
-      end
+    def initialize(*args, &block)
+      options = args.last.is_a?(Hash) ? args.pop : {}
+      @methods = args
+      @methods.concat(Array(options.delete(:do)))
+      @methods << block if block_given?
       
-      raise ArgumentError, ':do callback must be specified' unless @method
+      raise ArgumentError, 'Method(s) for callback must be specified' unless @methods.any?
       
       options = {:bind_to_object => self.class.bind_to_object, :terminator => self.class.terminator}.merge(options)
       
       # Proxy lambda blocks so that they're bound to the object
-      @method = bound_method(@method) if options.delete(:bind_to_object) && @method.is_a?(Proc)
+      bind_to_object = options.delete(:bind_to_object)
+      @methods.map! do |method|
+        bind_to_object && method.is_a?(Proc) ? bound_method(method) : method
+      end
+      
       @terminator = options.delete(:terminator)
       
       @guard = Guard.new(options)
@@ -140,18 +141,19 @@ module StateMachine
     
     # Runs the callback as long as the transition context matches the guard
     # requirements configured for this callback.
+    # 
+    # If a terminator has been configured and it matches the result from
+    # the evaluated method, then the callback chain should be halted
     def call(object, context = {}, *args)
-      # Only evaluate the method if the guard passes
       if @guard.matches?(object, context)
-        result = evaluate_method(object, @method, *args)
-        
-        # If a terminator has been configured and it matches the result from
-        # the evaluated method, then the callback chain should be halted
-        if @terminator && @terminator.call(result)
-          throw :halt
-        else
-          result
+        @methods.each do |method|
+          result = evaluate_method(object, method, *args)
+          throw :halt if @terminator && @terminator.call(result)
         end
+        
+        true
+      else
+        false
       end
     end
     

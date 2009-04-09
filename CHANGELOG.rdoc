@@ -1,5 +1,7 @@
 == master
 
+* Add support for running multiple methods in a callback without using blocks
+* Add more flexibility around how callbacks are defined
 * Add security documentation around mass-assignment in ORM integrations
 * Fix event attribute transitions being publicly accessible
 

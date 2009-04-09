@@ -925,19 +925,38 @@ module StateMachine
     # 
     # == The callback
     # 
-    # Callbacks must be defined as either the only argument, in the :do option,
-    # or as a block.  For example,
+    # Callbacks must be defined as either an argument, in the :do option, or
+    # as a block.  For example,
     # 
     #   class Vehicle
     #     state_machine do
     #       before_transition :set_alarm
-    #       before_transition all => :parked :do => :set_alarm
+    #       before_transition :set_alarm, all => :parked
+    #       before_transition all => :parked, :do => :set_alarm
     #       before_transition all => :parked do |vehicle, transition|
     #         vehicle.set_alarm
     #       end
     #       ...
     #     end
     #   end
+    # 
+    # Notice that the first three callbacks are the same in terms of how the
+    # methods to invoke are defined.  However, using the <tt>:do</tt> can
+    # provide for a more fluid DSL.
+    # 
+    # In addition, multiple callbacks can be defined like so:
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       before_transition :set_alarm, :lock_doors, all => :parked
+    #       before_transition all => :parked, :do => [:set_alarm, :lock_doors]
+    #       before_transition :set_alarm do |vehicle, transition|
+    #         vehicle.lock_doors
+    #       end
+    #     end
+    #   end
+    # 
+    # Notice that the different ways of configuring methods can be mixed.
     # 
     # == State requirements
     # 
@@ -1017,8 +1036,8 @@ module StateMachine
     # 
     # Examples:
     # 
-    #   before_transition :parked => :idling, :if => :moving?
-    #   before_transition :on => :ignite, :unless => :seatbelt_on?
+    #   before_transition :parked => :idling, :if => :moving?, :do => ...
+    #   before_transition :on => :ignite, :unless => :seatbelt_on?, :do => ...
     # 
     # === Accessing the transition
     # 
@@ -1031,10 +1050,14 @@ module StateMachine
     # 
     #   class Vehicle
     #     # Only specifies one parameter (the object being transitioned)
-    #     before_transition :to => :parked, :do => lambda {|vehicle| vehicle.set_alarm}
+    #     before_transition :to => :parked do |vehicle|
+    #       vehicle.set_alarm
+    #     end
     #     
     #     # Specifies 2 parameters (object being transitioned and actual transition)
-    #     before_transition :to => :parked, :do => lambda {|vehicle, transition| vehicle.set_alarm(transition)}
+    #     before_transition :to => :parked do |vehicle, transition|
+    #       vehicle.set_alarm(transition)
+    #     end
     #   end
     # 
     # *Note* that the object in the callback will only be passed in as an
