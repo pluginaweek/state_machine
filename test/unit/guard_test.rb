@@ -6,7 +6,7 @@ class GuardTest < Test::Unit::TestCase
   end
   
   def test_should_not_raise_exception_if_implicit_option_specified
-    assert_nothing_raised { StateMachine::Guard.new(:invalid => true) }
+    assert_nothing_raised { StateMachine::Guard.new(:invalid => :valid) }
   end
   
   def test_should_not_have_an_if_condition

@@ -1273,7 +1273,7 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   end
   
   def test_should_not_raise_exception_if_implicit_option_specified
-    assert_nothing_raised {@machine.before_transition :invalid => true, :do => lambda {}}
+    assert_nothing_raised {@machine.before_transition :invalid => :valid, :do => lambda {}}
   end
   
   def test_should_raise_exception_if_method_not_specified

@@ -19,7 +19,7 @@ class CallbackTest < Test::Unit::TestCase
   end
   
   def test_should_not_raise_exception_if_implicit_option_specified
-    assert_nothing_raised { StateMachine::Callback.new(:do => :run, :invalid => true) }
+    assert_nothing_raised { StateMachine::Callback.new(:do => :run, :invalid => :valid) }
   end
   
   def test_should_not_bind_to_objects

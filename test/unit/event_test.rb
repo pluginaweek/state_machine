@@ -193,7 +193,7 @@ class EventTransitionsTest < Test::Unit::TestCase
   end
   
   def test_should_not_raise_exception_if_implicit_option_specified
-    assert_nothing_raised {@event.transition(:invalid => true)}
+    assert_nothing_raised {@event.transition(:invalid => :valid)}
   end
   
   def test_should_not_allow_on_option
