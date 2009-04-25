@@ -151,7 +151,7 @@ module StateMachine
         # Calls the method defined by the current state of the machine
         context.class_eval <<-end_eval, __FILE__, __LINE__
           def #{method}(*args, &block)
-            self.class.state_machine(#{attribute.inspect}).states.match(self).call(self, #{method.inspect}, *args, &block)
+            self.class.state_machine(#{attribute.inspect}).states.match!(self).call(self, #{method.inspect}, *args, &block)
           end
         end_eval
       end

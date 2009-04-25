@@ -526,6 +526,29 @@ begin
       end
     end
     
+    class MachineWithValidationsTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model)
+        @machine.state :parked
+        
+        @record = @model.new
+      end
+      
+      def test_should_be_valid_if_state_is_known
+        @record.state = 'parked'
+        
+        assert @record.valid?
+      end
+      
+      def test_should_not_be_valid_if_state_is_unknown
+        @record.state = 'invalid'
+        
+        assert !@record.valid?
+        assert_equal ['State is invalid'], @record.errors.full_messages
+      end
+    end
+    
     class MachineWithStateDrivenValidationsTest < ActiveRecord::TestCase
       def setup
         @model = new_model do

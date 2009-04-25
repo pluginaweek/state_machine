@@ -1,5 +1,7 @@
 == master
 
+* Add auto-validation of values allowed for the state attribute in ORM integrations
+
 == 0.7.2 / 2009-04-08
 
 * Add support for running multiple methods in a callback without using blocks

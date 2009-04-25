@@ -32,8 +32,7 @@ module StateMachine
     
     # Determines the current state of the given object as configured by this
     # state machine.  This will attempt to find a known state that matches
-    # the value of the attribute on the object.  If no state is found, then
-    # an ArgumentError will be raised.
+    # the value of the attribute on the object.
     # 
     # == Examples
     # 
@@ -52,13 +51,33 @@ module StateMachine
     #   states.match(vehicle)         # => #<StateMachine::State name=:idling value="idling" initial=true>
     #   
     #   vehicle.state = 'invalid'
-    #   states.match(vehicle)         # => ArgumentError: "invalid" is not a known state value
+    #   states.match(vehicle)         # => nil
     def match(object)
       value = machine.read(object)
-      state = self[value, :value] || detect {|state| state.matches?(value)}
-      raise ArgumentError, "#{value.inspect} is not a known #{machine.attribute} value" unless state
-      
-      state
+      self[value, :value] || detect {|state| state.matches?(value)}
+    end
+    
+    # Determines the current state of the given object as configured by this
+    # state machine.  If no state is found, then an ArgumentError will be
+    # raised.
+    # 
+    # == Examples
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       other_states :idling
+    #     end
+    #   end
+    #   
+    #   states = Vehicle.state_machine.states
+    #   
+    #   vehicle = Vehicle.new         # => #<Vehicle:0xb7c464b0 @state="parked">
+    #   states.match!(vehicle)        # => #<StateMachine::State name=:parked value="parked" initial=true>
+    #   
+    #   vehicle.state = 'invalid'
+    #   states.match!(vehicle)        # => ArgumentError: "invalid" is not a known state value
+    def match!(object)
+      match(object) || raise(ArgumentError, "#{machine.read(object).inspect} is not a known #{machine.attribute} value")
     end
     
     # Gets the order in which states should be displayed based on where they

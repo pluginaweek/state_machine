@@ -1116,6 +1116,12 @@ module StateMachine
     def reset(object)
     end
     
+    # Generates the message to use when invalidating the given object after
+    # failing to transition on a specific event
+    def generate_message(name, values = [])
+      (@messages[name] || self.class.default_messages[name]) % values.map {|value| value.last}
+    end
+    
     # Runs a transaction, rolling back any changes if the yielded block fails.
     # 
     # This is only applicable to integrations that involve databases.  By
@@ -1205,7 +1211,7 @@ module StateMachine
         
         # Gets the state name for the current value
         define_instance_method("#{attribute}_name") do |machine, object|
-          machine.states.match(object).name
+          machine.states.match!(object).name
         end
       end
       
@@ -1343,12 +1349,6 @@ module StateMachine
           
           state
         end
-      end
-      
-      # Generates the message to use when invalidating the given object after
-      # failing to transition on a specific event
-      def generate_message(name, values)
-        (@messages[name] || self.class.default_messages[name]) % values.map {|value| value.last}
       end
   end
 end

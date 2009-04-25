@@ -55,6 +55,12 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert @machine.state(nil).initial
   end
   
+  def test_should_generate_default_messages
+    assert_equal 'is invalid', @machine.generate_message(:invalid)
+    assert_equal 'cannot transition when parked', @machine.generate_message(:invalid_event, [[:state, :parked]])
+    assert_equal 'cannot transition via "park"', @machine.generate_message(:invalid_transition, [[:event, :park]])
+  end
+  
   def test_should_not_be_extended_by_the_active_record_integration
     assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::ActiveRecord)
   end
@@ -485,6 +491,10 @@ class MachineWithCustomInvalidationTest < Test::Unit::TestCase
     
     @object = @klass.new
     @object.state = 'parked'
+  end
+  
+  def test_generate_custom_message
+    assert_equal 'cannot park', @machine.generate_message(:invalid_transition, [[:event, :park]])
   end
   
   def test_use_custom_message

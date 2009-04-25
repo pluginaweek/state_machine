@@ -532,24 +532,36 @@ begin
           @resource = new_resource
           @machine = StateMachine::Machine.new(@resource)
           @machine.state :parked
+          
+          @record = @resource.new
         end
         
         def test_should_invalidate_using_errors
-          record = @resource.new
-          record.state = 'parked'
+          @record.state = 'parked'
           
-          @machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
-          
-          assert_equal ['cannot transition via "park"'], record.errors.on(:state)
+          @machine.invalidate(@record, :state, :invalid_transition, [[:event, :park]])
+          assert_equal ['cannot transition via "park"'], @record.errors.on(:state)
         end
         
         def test_should_clear_errors_on_reset
-          record = @resource.new
-          record.state = 'parked'
-          record.errors.add(:state, 'is invalid')
+          @record.state = 'parked'
+          @record.errors.add(:state, 'is invalid')
           
-          @machine.reset(record)
-          assert_nil record.errors.on(:id)
+          @machine.reset(@record)
+          assert_nil @record.errors.on(:id)
+        end
+        
+        def test_should_be_valid_if_state_is_known
+          @record.state = 'parked'
+          
+          assert @record.valid?
+        end
+        
+        def test_should_not_be_valid_if_state_is_unknown
+          @record.state = 'invalid'
+          
+          assert !@record.valid?
+          assert_equal ['is invalid'], @record.errors.on(:state)
         end
       end
       

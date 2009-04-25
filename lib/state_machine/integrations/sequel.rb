@@ -237,6 +237,10 @@ module StateMachine
       protected
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
+          owner_class.validates_each(attribute) do |record, attr, value|
+            machine = record.class.state_machine(attr)
+            machine.invalidate(record, attr, :invalid) unless machine.states.match(record)
+          end
         end
         
         # Adds hooks into validation for automatically firing events
