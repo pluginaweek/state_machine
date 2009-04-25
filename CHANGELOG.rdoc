@@ -1,5 +1,7 @@
 == master
 
+== 0.7.3 / 2009-04-25
+
 * Require DataMapper version be >= 0.9.4
 * Explicitly load Sequel's built-in inflector (>= 2.12.0) for scope names
 * Don't use qualified name for event attributes
