@@ -224,6 +224,11 @@ module StateMachine
         defined?(::Sequel::Model) && klass <= ::Sequel::Model
       end
       
+      # Loads additional files specific to Sequel
+      def self.extended(base) #:nodoc:
+        require 'sequel/extensions/inflector' if ::Sequel.const_defined?('VERSION') && ::Sequel::VERSION >= '2.12.0'
+      end
+      
       # Adds a validation error to the given object
       def invalidate(object, attribute, message, values = [])
         object.errors.add(attribute, generate_message(message, values))

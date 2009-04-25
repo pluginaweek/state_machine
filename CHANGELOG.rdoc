@@ -1,5 +1,6 @@
 == master
 
+* Explicitly load Sequel's built-in inflector (>= 2.12.0) for scope names
 * Don't use qualified name for event attributes
 * Fix #valid? being defined for DataMapper resources when dm-validations isn't loaded
 * Add auto-validation of values allowed for the state attribute in ORM integrations
