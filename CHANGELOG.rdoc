@@ -1,5 +1,6 @@
 == master
 
+* Don't use qualified name for event attributes
 * Fix #valid? being defined for DataMapper resources when dm-validations isn't loaded
 * Add auto-validation of values allowed for the state attribute in ORM integrations
 
