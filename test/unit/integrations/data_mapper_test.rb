@@ -4,7 +4,7 @@ begin
   # Load library
   require 'rubygems'
   
-  gem 'dm-core', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.0'
+  gem 'dm-core', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.4'
   require 'dm-core'
   
   # Establish database connection
@@ -324,7 +324,7 @@ begin
     end
     
     begin
-      gem 'dm-observer', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.0'
+      gem 'dm-observer', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.4'
       require 'dm-observer'
       
       class MachineWithObserversTest < BaseTestCase
@@ -524,7 +524,7 @@ begin
     end
     
     begin
-      gem 'dm-validations', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.0'
+      gem 'dm-validations', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.4'
       require 'dm-validations'
       
       class MachineWithValidationsTest < BaseTestCase
