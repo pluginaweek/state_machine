@@ -662,6 +662,55 @@ begin
       end
     end
     
+    class MachineWithEventAttributesOnSaveBangTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model)
+        @machine.event :ignite do
+          transition :parked => :idling
+        end
+        
+        @record = @model.new
+        @record.state = 'parked'
+        @record.state_event = 'ignite'
+      end
+      
+      def test_should_fail_if_event_is_invalid
+        @record.state_event = 'invalid'
+        assert_raise(ActiveRecord::RecordInvalid) { @record.save! }
+      end
+      
+      def test_should_fail_if_event_has_no_transition
+        @record.state = 'idling'
+        assert_raise(ActiveRecord::RecordInvalid) { @record.save! }
+      end
+      
+      def test_should_be_successful_if_event_has_transition
+        assert @record.save!
+      end
+      
+      def test_should_run_before_callbacks
+        ran_callback = false
+        @machine.before_transition { ran_callback = true }
+        
+        @record.save!
+        assert ran_callback
+      end
+      
+      def test_should_persist_new_state
+        @record.save!
+        assert_equal 'idling', @record.state
+      end
+      
+      def test_should_run_after_callbacks
+        ran_callback = false
+        @machine.after_transition { ran_callback = true }
+        
+        @record.save!
+        assert ran_callback
+      end
+    end
+    
     class MachineWithObserversTest < ActiveRecord::TestCase
       def setup
         @model = new_model
