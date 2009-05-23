@@ -1,5 +1,7 @@
 == master
 
+== 0.7.4 / 2009-05-23
+
 * Fix #save! not firing event attributes properly in ActiveRecord integrations
 * Fix log files being included in gems
 
