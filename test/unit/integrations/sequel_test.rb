@@ -438,6 +438,40 @@ begin
         assert !ran_callback
       end
     end
+    
+    class MachineWithCustomActionTest < BaseTestCase
+      def setup
+        @superclass = new_model do
+          def persist
+            save
+          end
+        end
+        @model = Class.new(@superclass)
+        @machine = StateMachine::Machine.new(@model, :action => :persist)
+        @machine.event :ignite do
+          transition :parked => :idling
+        end
+        
+        @record = @model.new
+        @record.state = 'parked'
+        @record.state_event = 'ignite'
+      end
+      
+      def test_should_not_transition_on_valid?
+        @record.valid?
+        assert_equal 'parked', @record.state
+      end
+      
+      def test_should_not_transition_on_save
+        @record.save
+        assert_equal 'parked', @record.state
+      end
+      
+      def test_should_transition_on_custom_action
+        @record.persist
+        assert_equal 'idling', @record.state
+      end
+    end
   end
 rescue LoadError
   $stderr.puts "Skipping Sequel tests. `gem install sequel#{" -v #{ENV['SEQUEL_VERSION']}" if ENV['SEQUEL_VERSION']}` and try again."

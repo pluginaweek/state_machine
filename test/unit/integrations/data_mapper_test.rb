@@ -644,6 +644,40 @@ begin
           assert !ran_callback
         end
       end
+      
+      class MachineWithCustomActionTest < BaseTestCase
+        def setup
+          @superclass = new_resource do
+            def persist
+              save
+            end
+          end
+          @resource = Class.new(@superclass)
+          @machine = StateMachine::Machine.new(@resource, :action => :persist)
+          @machine.event :ignite do
+            transition :parked => :idling
+          end
+          
+          @record = @resource.new
+          @record.state = 'parked'
+          @record.state_event = 'ignite'
+        end
+        
+        def test_should_not_transition_on_valid?
+          @record.valid?
+          assert_equal 'parked', @record.state
+        end
+        
+        def test_should_not_transition_on_save
+          @record.save
+          assert_equal 'parked', @record.state
+        end
+        
+        def test_should_transition_on_custom_action
+          @record.persist
+          assert_equal 'idling', @record.state
+        end
+      end
     rescue LoadError
       $stderr.puts "Skipping DataMapper Validation tests. `gem install dm-validations#{" -v #{ENV['DM_VERSION']}" if ENV['DM_VERSION']}` and try again."
     end

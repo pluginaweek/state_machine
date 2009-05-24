@@ -327,12 +327,16 @@ module StateMachine
         
         # Adds hooks into validation for automatically firing events
         def define_action_helpers
-          if super(:create_or_update) && action == :save
-            @instance_helper_module.class_eval do
-              define_method(:valid?) do |*args|
-                self.class.state_machines.fire_attribute_events(self, :save, false) { super(*args) }
+          if action == :save
+            if super(:create_or_update)
+              @instance_helper_module.class_eval do
+                define_method(:valid?) do |*args|
+                  self.class.state_machines.fire_attribute_events(self, :save, false) { super(*args) }
+                end
               end
             end
+          else
+            super
           end
         end
         

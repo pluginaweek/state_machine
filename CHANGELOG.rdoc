@@ -1,5 +1,7 @@
 == master
 
+* Fix #save/save! running transitions in ActiveRecord integrations even when a machine's action is not :save
+
 == 0.7.4 / 2009-05-23
 
 * Fix #save! not firing event attributes properly in ActiveRecord integrations
