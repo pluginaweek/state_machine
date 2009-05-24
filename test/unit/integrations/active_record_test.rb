@@ -686,7 +686,7 @@ begin
       end
       
       def test_should_be_successful_if_event_has_transition
-        assert @record.save!
+        assert_equal true, @record.save!
       end
       
       def test_should_run_before_callbacks
@@ -711,7 +711,7 @@ begin
       end
     end
     
-    class MachineWithCustomActionTest < ActiveRecord::TestCase
+    class MachineWithEventAttributesOnCustomActionTest < ActiveRecord::TestCase
       def setup
         @superclass = new_model do
           def persist

@@ -645,7 +645,7 @@ begin
         end
       end
       
-      class MachineWithCustomActionTest < BaseTestCase
+      class MachineWithEventAttributesOnCustomActionTest < BaseTestCase
         def setup
           @superclass = new_resource do
             def persist

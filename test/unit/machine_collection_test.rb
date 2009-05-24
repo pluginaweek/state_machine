@@ -251,7 +251,7 @@ class MachineCollectionFireImplicitWithoutEventTest < MachineCollectionFireImpli
     super
     
     @object.state_event = nil
-    @result = @machines.fire_attribute_events(@object, :save) { @saved = true }
+    @result = @machines.fire_event_attributes(@object, :save) { @saved = true }
   end
   
   def test_should_be_successful
@@ -276,7 +276,7 @@ class MachineCollectionFireImplicitWithBlankEventTest < MachineCollectionFireImp
     super
     
     @object.state_event = ''
-    @result = @machines.fire_attribute_events(@object, :save) { @saved = true }
+    @result = @machines.fire_event_attributes(@object, :save) { @saved = true }
   end
   
   def test_should_be_successful
@@ -301,7 +301,7 @@ class MachineCollectionFireImplicitWithInvalidEventTest < MachineCollectionFireI
     super
     
     @object.state_event = 'invalid'
-    @result = @machines.fire_attribute_events(@object, :save) { @saved = true }
+    @result = @machines.fire_event_attributes(@object, :save) { @saved = true }
   end
   
   def test_should_not_be_successful
@@ -327,7 +327,7 @@ class MachineCollectionFireImplicitWithoutTransitionTest < MachineCollectionFire
     
     @object.state = 'idling'
     @object.state_event = 'ignite'
-    @result = @machines.fire_attribute_events(@object, :save) { @saved = true }
+    @result = @machines.fire_event_attributes(@object, :save) { @saved = true }
   end
   
   def test_should_not_be_successful
@@ -354,7 +354,7 @@ class MachineCollectionFireImplicitWithTransitionTest < MachineCollectionFireImp
     @state_event = nil
     
     @object.state_event = 'ignite'
-    @result = @machines.fire_attribute_events(@object, :save) do
+    @result = @machines.fire_event_attributes(@object, :save) do
       @state_event = @object.state_event
       @saved = true
     end
@@ -382,7 +382,33 @@ class MachineCollectionFireImplicitWithTransitionTest < MachineCollectionFireImp
   
   def test_should_not_be_successful_if_fired_again
     @object.state_event = 'ignite'
-    assert !@machines.fire_attribute_events(@object, :save) { true }
+    assert !@machines.fire_event_attributes(@object, :save) { true }
+  end
+end
+
+class MachineCollectionFireImplicitWithNonBooleanResultTest < MachineCollectionFireImplicitTest
+  def setup
+    super
+    
+    @action_value = Object.new
+    
+    @object.state_event = 'ignite'
+    @result = @machines.fire_event_attributes(@object, :save) do
+      @saved = true
+      @action_value
+    end
+  end
+  
+  def test_should_be_successful
+    assert_equal @action_value, @result
+  end
+  
+  def test_should_run_action
+    assert @saved
+  end
+  
+  def test_should_transition_state
+    assert_equal 'idling', @object.state
   end
 end
 
@@ -391,7 +417,7 @@ class MachineCollectionFireImplicitWithActionFailureTest < MachineCollectionFire
     super
     
     @object.state_event = 'ignite'
-    @result = @machines.fire_attribute_events(@object, :save) { false }
+    @result = @machines.fire_event_attributes(@object, :save) { false }
   end
   
   def test_should_not_be_successful
@@ -412,7 +438,7 @@ class MachineCollectionFireImplicitWithActionErrorTest < MachineCollectionFireIm
     super
     
     @object.state_event = 'ignite'
-    assert_raise(ArgumentError) { @machines.fire_attribute_events(@object, :save) { raise ArgumentError } }
+    assert_raise(ArgumentError) { @machines.fire_event_attributes(@object, :save) { raise ArgumentError } }
   end
   
   def test_should_not_transition_state
@@ -436,7 +462,7 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
     @state_event = nil
     
     @object.state_event = 'ignite'
-    @result = @machines.fire_attribute_events(@object, :save, false) do
+    @result = @machines.fire_event_attributes(@object, :save, false) do
       @state_event = @object.state_event
       true
     end
@@ -467,49 +493,49 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
   end
   
   def test_should_reset_event_attributes_after_next_fire_on_success
-    assert @machines.fire_attribute_events(@object, :save) { true }
+    assert @machines.fire_event_attributes(@object, :save) { true }
     assert_equal 'idling', @object.state
     assert_nil @object.state_event
   end
   
   def test_should_guard_transition_after_next_fire_on_success
-    @machines.fire_attribute_events(@object, :save) { true }
+    @machines.fire_event_attributes(@object, :save) { true }
     
     @object.state = 'idling'
     @object.state_event = 'ignite'
-    assert !@machines.fire_attribute_events(@object, :save) { true }
+    assert !@machines.fire_event_attributes(@object, :save) { true }
   end
   
   def test_should_rollback_all_attributes_after_next_fire_on_failure
-    assert !@machines.fire_attribute_events(@object, :save) { false }
+    assert !@machines.fire_event_attributes(@object, :save) { false }
     assert_equal 'parked', @object.state
     assert_equal :ignite, @object.state_event
     
     @object.state = 'idling'
-    assert !@machines.fire_attribute_events(@object, :save) { false }
+    assert !@machines.fire_event_attributes(@object, :save) { false }
   end
   
   def test_should_guard_transition_after_next_fire_on_failure
-    @machines.fire_attribute_events(@object, :save) { false }
+    @machines.fire_event_attributes(@object, :save) { false }
     
     @object.state = 'idling'
-    assert !@machines.fire_attribute_events(@object, :save) { true }
+    assert !@machines.fire_event_attributes(@object, :save) { true }
   end
   
   def test_should_rollback_all_attributes_after_next_fire_on_error
-    assert_raise(ArgumentError) { @machines.fire_attribute_events(@object, :save) { raise ArgumentError } }
+    assert_raise(ArgumentError) { @machines.fire_event_attributes(@object, :save) { raise ArgumentError } }
     assert_equal 'parked', @object.state
     assert_equal :ignite, @object.state_event
   end
   
   def test_should_guard_transition_after_next_fire_on_error
     begin
-      @machines.fire_attribute_events(@object, :save) { raise ArgumentError }
+      @machines.fire_event_attributes(@object, :save) { raise ArgumentError }
     rescue ArgumentError
     end
     
     @object.state = 'idling'
-    assert !@machines.fire_attribute_events(@object, :save) { true }
+    assert !@machines.fire_event_attributes(@object, :save) { true }
   end
 end
 
@@ -520,8 +546,8 @@ class MachineCollectionFireImplicitNestedPartialTest < MachineCollectionFireImpl
     @partial_result = nil
     
     @object.state_event = 'ignite'
-    @result = @machines.fire_attribute_events(@object, :save) do
-      @partial_result = @machines.fire_attribute_events(@object, :save, false) { true }
+    @result = @machines.fire_event_attributes(@object, :save) do
+      @partial_result = @machines.fire_event_attributes(@object, :save, false) { true }
       true
     end
   end
@@ -557,7 +583,7 @@ class MachineCollectionFireImplicitWithDifferentActionsTest < MachineCollectionF
     @object.state_event = 'ignite'
     @object.alarm_state_event = 'disable'
     
-    @machines.fire_attribute_events(@object, :save) { true }
+    @machines.fire_event_attributes(@object, :save) { true }
   end
   
   def test_should_transition_states_for_action
@@ -591,7 +617,7 @@ class MachineCollectionFireImplicitWithSameActionsTest < MachineCollectionFireIm
     @object.state_event = 'ignite'
     @object.alarm_state_event = 'disable'
     
-    @machines.fire_attribute_events(@object, :save) { true }
+    @machines.fire_event_attributes(@object, :save) { true }
   end
   
   def test_should_transition_all_states_for_action
@@ -637,7 +663,7 @@ class MachineCollectionFireImplicitWithValidationsTest < Test::Unit::TestCase
   
   def test_should_invalidate_if_event_is_invalid
     @object.state_event = 'invalid'
-    @machines.fire_attribute_events(@object, :save) { true }
+    @machines.fire_event_attributes(@object, :save) { true }
     
     assert !@object.errors.empty?
   end
@@ -645,14 +671,14 @@ class MachineCollectionFireImplicitWithValidationsTest < Test::Unit::TestCase
   def test_should_invalidate_if_no_transition_exists
     @object.state = 'idling'
     @object.state_event = 'ignite'
-    @machines.fire_attribute_events(@object, :save) { true }
+    @machines.fire_event_attributes(@object, :save) { true }
     
     assert !@object.errors.empty?
   end
   
   def test_should_not_invalidate_if_transition_exists
     @object.state_event = 'ignite'
-    @machines.fire_attribute_events(@object, :save) { true }
+    @machines.fire_event_attributes(@object, :save) { true }
     
     assert @object.errors.empty?
   end

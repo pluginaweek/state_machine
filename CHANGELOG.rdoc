@@ -1,5 +1,6 @@
 == master
 
+* Make it easier to use event attributes for actions defined in the same class as the state machine
 * Fix #save/save! running transitions in ActiveRecord integrations even when a machine's action is not :save
 
 == 0.7.4 / 2009-05-23

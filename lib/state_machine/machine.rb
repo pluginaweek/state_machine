@@ -69,6 +69,46 @@ module StateMachine
   # fails.  *Note* that this will also be the case if an exception is raised
   # while calling the action.
   # 
+  # === Indirect transitions
+  # 
+  # In addition to the action being run as the _result_ of an event, the action
+  # can also be used to run events itself.  For example, using the above as an
+  # example:
+  # 
+  #   vehicle = Vehicle.new           # => #<Vehicle:0xb7c27024 @state="parked">
+  #   
+  #   vehicle.state_event = 'ignite'
+  #   vehicle.save                    # => true
+  #   vehicle.state                   # => "idling"
+  #   vehicle.state_event             # => nil
+  # 
+  # As can be seen, the +save+ action automatically invokes the event stored in
+  # the +state_event+ attribute (<tt>:ignite</tt> in this case).
+  # 
+  # One important note about using this technique for running transitions is
+  # that if the class in which the state machine is defined *also* defines the
+  # action being invoked (and not a superclass), then it must manually run the
+  # StateMachine hook that checks for event attributes.
+  # 
+  # For example, in ActiveRecord, DataMapper, and Sequel, the default action
+  # (+save+) is already defined in a base class.  As a result, when a state
+  # machine is defined in a model / resource, StateMachine can automatically
+  # hook into the +save+ action.
+  # 
+  # On the other hand, the Vehicle class from above defined its own +save+
+  # method (and there is no +save+ method in its superclass).  As a result, it
+  # must be modified like so:
+  # 
+  #     def save
+  #       self.class.state_machines.fire_event_attributes(self, :save) do
+  #         @saving_state = state
+  #         fail != true
+  #       end
+  #     end
+  # 
+  # This will add in the functionality for firing the event stored in the
+  # +state_event+ attribute.
+  # 
   # == Callbacks
   # 
   # Callbacks are supported for hooking before and after every possible
@@ -1277,9 +1317,7 @@ module StateMachine
           @instance_helper_module.class_eval do
             # Override the default action to invoke the before / after hooks
             define_method(action_hook) do |*args|
-              value = nil
-              result = self.class.state_machines.fire_attribute_events(self, action) { value = super(*args) }
-              value.nil? ? result : value
+              self.class.state_machines.fire_event_attributes(self, action) { super(*args) }
             end
             
             private action_hook if private_method

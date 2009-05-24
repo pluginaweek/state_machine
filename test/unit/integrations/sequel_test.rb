@@ -439,7 +439,7 @@ begin
       end
     end
     
-    class MachineWithCustomActionTest < BaseTestCase
+    class MachineWithEventAttributesOnCustomActionTest < BaseTestCase
       def setup
         @superclass = new_model do
           def persist

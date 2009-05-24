@@ -287,7 +287,7 @@ module StateMachine
           if super && action == :save && supports_validations?
             @instance_helper_module.class_eval do
               define_method(:valid?) do |*args|
-                self.class.state_machines.fire_attribute_events(self, :save, false) { super(*args) }
+                self.class.state_machines.fire_event_attributes(self, :save, false) { super(*args) }
               end
             end
           end
