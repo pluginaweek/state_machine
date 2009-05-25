@@ -1067,6 +1067,28 @@ class MachineWithStatesWithCustomValuesTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithStatesWithRuntimeDependenciesTest < Test::Unit::TestCase
+  def setup
+    @state_class = Class.new do
+      def self.lookup(id)
+        raise ArgumentError, 'State value not lazy-evaluated'
+      end
+    end
+    
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked, :idling
+  end
+  
+  def test_should_not_evaluate_value_during_definition
+    assert_nothing_raised { @machine.state :parked, :value => lambda {@state_class.lookup(:parked)} }
+  end
+  
+  def test_should_not_evaluate_if_not_initial_state
+    assert_nothing_raised { @klass.new }
+  end
+end
+
 class MachineWithStateWithMatchersTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
