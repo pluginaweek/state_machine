@@ -1,5 +1,6 @@
 == master
 
+* Add built-in caching for dynamic state values when the value only needs to be generated once
 * Fix flawed example for using record ids as state values
 * Don't evaluate state values until they're actually used in an object instance
 * Make it easier to use event attributes for actions defined in the same class as the state machine

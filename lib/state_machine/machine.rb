@@ -567,6 +567,8 @@ module StateMachine
     # Configuration options:
     # * <tt>:value</tt> - The actual value to store when an object transitions
     #   to the state.  Default is the name (stringified).
+    # * <tt>:cache</tt> - If a dynamic value (via a lambda block) is being used,
+    #   then setting this to true will cache the evaluated result
     # * <tt>:if</tt> - Determines whether an object's value matches the state
     #   (e.g. :value => lambda {Time.now}, :if => lambda {|state| !state.nil?}).
     #   By default, the configured value is matched.
@@ -620,7 +622,7 @@ module StateMachine
     #       end
     #       
     #       states.each do |state|
-    #         self.state(state.name, :value => lambda { VehicleState.find_by_name(state.name.to_s).id })
+    #         self.state(state.name, :value => lambda { VehicleState.find_by_name(state.name.to_s).id }, :cache => true)
     #       end
     #     end
     #   end
@@ -632,8 +634,9 @@ module StateMachine
     # data (i.e. no VehicleState records available).
     # 
     # One caveat to the above example is to keep performance in mind.  To avoid
-    # constant db hits for looking up the VehicleState ids, an in-memory cache
-    # should be used like so:
+    # constant db hits for looking up the VehicleState ids, the value is cached
+    # by specifying the <tt>:cache</tt> option.  Alternatively, a custom
+    # caching strategy can be used like so:
     # 
     #   class VehicleState < ActiveRecord::Base
     #     cattr_accessor :cache_store
@@ -803,7 +806,7 @@ module StateMachine
     # options hash which contains at least <tt>:if</tt> condition support.
     def state(*names, &block)
       options = names.last.is_a?(Hash) ? names.pop : {}
-      assert_valid_keys(options, :value, :if)
+      assert_valid_keys(options, :value, :cache, :if)
       
       states = add_states(names)
       states.each do |state|
@@ -812,6 +815,7 @@ module StateMachine
           self.states.update(state)
         end
         
+        state.cache = options[:cache] if options.include?(:cache)
         state.matcher = options[:if] if options.include?(:if)
         state.context(&block) if block_given?
       end

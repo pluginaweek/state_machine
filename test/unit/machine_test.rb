@@ -1101,6 +1101,24 @@ class MachineWithStateWithMatchersTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithCachedStateTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+    @state = @machine.state :parked, :value => lambda {Object.new}, :cache => true
+    
+    @object = @klass.new
+  end
+  
+  def test_should_use_evaluated_value
+    assert_instance_of Object, @object.state
+  end
+  
+  def test_use_same_value_across_multiple_objects
+    assert_equal @object.state, @klass.new.state
+  end
+end
+
 class MachineWithStatesWithBehaviorsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new

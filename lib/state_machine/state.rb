@@ -27,6 +27,9 @@ module StateMachine
     # transitions into this state
     attr_writer :value
     
+    # Whether this state's value should be cached after being evaluated
+    attr_accessor :cache
+    
     # Whether or not this state is the initial state to use for new objects
     attr_accessor :initial
     alias_method :initial?, :initial
@@ -48,16 +51,19 @@ module StateMachine
     #   machine. Default is false.
     # * <tt>:value</tt> - The value to store when an object transitions to this
     #   state.  Default is the name (stringified).
+    # * <tt>:cache</tt> - If a dynamic value (via a lambda block) is being used,
+    #   then setting this to true will cache the evaluated result
     # * <tt>:if</tt> - Determines whether a value matches this state
     #   (e.g. :value => lambda {Time.now}, :if => lambda {|state| !state.nil?}).
     #   By default, the configured value is matched.
     def initialize(machine, name, options = {}) #:nodoc:
-      assert_valid_keys(options, :initial, :value, :if)
+      assert_valid_keys(options, :initial, :value, :cache, :if)
       
       @machine = machine
       @name = name
       @qualified_name = name && machine.namespace ? :"#{machine.namespace}_#{name}" : name
       @value = options.include?(:value) ? options[:value] : name && name.to_s
+      @cache = options[:cache]
       @matcher = options[:if]
       @methods = {}
       @initial = options[:initial] == true
@@ -111,7 +117,15 @@ module StateMachine
     #   State.new(machine, :parked, :value => lambda {Time.now}).value        # => Tue Jan 01 00:00:00 UTC 2008
     #   State.new(machine, :parked, :value => lambda {Time.now}).value(false) # => <Proc:0xb6ea7ca0@...>
     def value(eval = true)
-      @value.is_a?(Proc) && eval ? @value.call : @value
+      if @value.is_a?(Proc) && eval
+        if cache_value?
+          instance_variable_defined?('@cached_value') ? @cached_value : @cached_value = @value.call
+        else
+          @value.call
+        end
+      else
+        @value
+      end
     end
     
     # Determines whether this state matches the given value.  If no matcher is
@@ -214,6 +228,11 @@ module StateMachine
     end
     
     private
+      # Should the value be cached after it's evaluated for the first time?
+      def cache_value?
+        @cache
+      end
+      
       # Adds a predicate method to the owner class so long as a name has
       # actually been configured for the state
       def add_predicate
