@@ -275,6 +275,23 @@ class StateWithCachedLambdaValueTest < Test::Unit::TestCase
   end
 end
 
+class StateWithoutCachedLambdaValueTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @state = StateMachine::State.new(@machine, :parked, :value => lambda {Object.new})
+  end
+  
+  def test_should_not_be_caching
+    assert !@state.cache
+  end
+  
+  def test_should_evaluate_value_each_time
+    value = @state.value
+    assert_not_same value, @state.value
+  end
+end
+
 class StateWithMatcherTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
