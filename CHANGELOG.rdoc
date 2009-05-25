@@ -1,5 +1,7 @@
 == master
 
+* Fix flawed example for using record ids as state values
+* Don't evaluate state values until they're actually used in an object instance
 * Make it easier to use event attributes for actions defined in the same class as the state machine
 * Fix #save/save! running transitions in ActiveRecord integrations even when a machine's action is not :save
 

@@ -223,11 +223,16 @@ class StateWithLambdaValueTest < Test::Unit::TestCase
     @klass = Class.new
     @args = nil
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked, :value => lambda {|*args| @args = args; :parked})
+    @value = lambda {|*args| @args = args; :parked}
+    @state = StateMachine::State.new(@machine, :parked, :value => @value)
   end
   
-  def test_should_use_evaluated_value
+  def test_should_use_evaluated_value_by_default
     assert_equal :parked, @state.value
+  end
+  
+  def test_should_allow_access_to_original_value
+    assert_equal @value, @state.value(false)
   end
   
   def test_should_include_masked_value_in_description
@@ -242,6 +247,10 @@ class StateWithLambdaValueTest < Test::Unit::TestCase
   def test_should_define_predicate
     object = @klass.new
     assert object.respond_to?(:parked?)
+  end
+  
+  def test_should_match_evaluated_value
+    assert @state.matches?(:parked)
   end
 end
 

@@ -26,6 +26,7 @@ class MachineCollectionStateInitializationTest < Test::Unit::TestCase
     
     @machines[:state] = StateMachine::Machine.new(@klass, :state, :initial => :parked)
     @machines[:alarm_state] = StateMachine::Machine.new(@klass, :alarm_state, :initial => :active)
+    @machines[:alarm_state].state :active, :value => lambda {'active'}
   end
   
   def test_should_set_states_if_nil

@@ -619,12 +619,30 @@ module StateMachine
     #         transition :parked => :idling
     #       end
     #       
-    #       states.each {|state| self.state(state.name, :value => VehicleState.find_by_name(state.name.to_s).id)}
+    #       states.each do |state|
+    #         self.state(state.name, :value => lambda { VehicleState.find_by_name(state.name.to_s).id })
+    #       end
     #     end
     #   end
     # 
     # In the above example, each known state is configured to store it's
-    # associated database id in the +state_id+ attribute.
+    # associated database id in the +state_id+ attribute.  Also, notice that a
+    # lambda block is used to define the state's value.  This is required in
+    # situations (like testing) where the model is loaded without any existing
+    # data (i.e. no VehicleState records available).
+    # 
+    # One caveat to the above example is to keep performance in mind.  To avoid
+    # constant db hits for looking up the VehicleState ids, an in-memory cache
+    # should be used like so:
+    # 
+    #   class VehicleState < ActiveRecord::Base
+    #     cattr_accessor :cache_store
+    #     self.cache_store = ActiveSupport::Cache::MemoryStore.new
+    #     
+    #     def self.find_by_name(name)
+    #       cache_store.fetch(name) { find(:first, :conditions => {:name => name}) }
+    #     end
+    #   end
     # 
     # === Dynamic values
     # 

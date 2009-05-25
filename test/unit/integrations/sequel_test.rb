@@ -63,7 +63,8 @@ begin
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
-        @machine.state :parked, :idling, :first_gear
+        @machine.state :parked, :first_gear
+        @machine.state :idling, :value => lambda {'idling'}
       end
       
       def test_should_create_singular_with_scope

@@ -58,7 +58,7 @@ module StateMachine
     # the configured indices.
     def <<(node)
       @nodes << node
-      @indices.each {|attribute, index| index[node.send(attribute)] = node}
+      @indices.each {|attribute, index| index[value(node, attribute)] = node}
       self
     end
     
@@ -68,7 +68,7 @@ module StateMachine
     def update(node)
       @indices.each do |attribute, index|
         old_key = RUBY_VERSION < '1.9' ? index.index(node) : index.key(node)
-        new_key = node.send(attribute)
+        new_key = value(node, attribute)
         
         # Only replace the key if it's changed
         if old_key != new_key
@@ -142,6 +142,11 @@ module StateMachine
       def index(name)
         raise ArgumentError, 'No indices configured' unless @indices.any?
         @indices[name] || raise(ArgumentError, "Invalid index: #{name.inspect}")
+      end
+      
+      # Gets the value for the given attribute on the node
+      def value(node, attribute)
+        node.send(attribute)
       end
   end
 end

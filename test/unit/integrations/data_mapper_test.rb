@@ -74,7 +74,8 @@ begin
       def setup
         @resource = new_resource
         @machine = StateMachine::Machine.new(@resource)
-        @machine.state :parked, :idling, :first_gear
+        @machine.state :parked, :first_gear
+        @machine.state :idling, :value => lambda {'idling'}
       end
       
       def test_should_create_singular_with_scope

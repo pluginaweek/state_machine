@@ -101,16 +101,17 @@ module StateMachine
       description
     end
     
-    # The value that represents this state.  If the value is a lambda block,
-    # then it will be evaluated at this time.  Otherwise, the static value is
+    # The value that represents this state.  This will optionally evaluate the
+    # original block if it's a lambda block.  Otherwise, the static value is
     # returned.
     # 
     # For example,
     # 
-    #   State.new(machine, :parked, :value => 1).value                  # => 1
-    #   State.new(machine, :parked, :value => lambda {Time.now}).value  # => Tue Jan 01 00:00:00 UTC 2008
-    def value
-      @value.is_a?(Proc) ? @value.call : @value
+    #   State.new(machine, :parked, :value => 1).value                        # => 1
+    #   State.new(machine, :parked, :value => lambda {Time.now}).value        # => Tue Jan 01 00:00:00 UTC 2008
+    #   State.new(machine, :parked, :value => lambda {Time.now}).value(false) # => <Proc:0xb6ea7ca0@...>
+    def value(eval = true)
+      @value.is_a?(Proc) && eval ? @value.call : @value
     end
     
     # Determines whether this state matches the given value.  If no matcher is

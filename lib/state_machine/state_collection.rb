@@ -102,5 +102,11 @@ module StateMachine
       order.map! {|name| self[name]}
       order
     end
+    
+    private
+      # Gets the value for the given attribute on the node
+      def value(node, attribute)
+        attribute == :value ? node.value(false) : super
+      end
   end
 end
