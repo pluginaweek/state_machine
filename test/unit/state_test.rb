@@ -258,7 +258,8 @@ class StateWithCachedLambdaValueTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked, :value => lambda {Object.new}, :cache => true)
+    @dynamic_value = lambda {'value'}
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :value => @dynamic_value, :cache => true)
   end
   
   def test_should_be_caching
@@ -266,12 +267,18 @@ class StateWithCachedLambdaValueTest < Test::Unit::TestCase
   end
   
   def test_should_evaluate_value
-    assert_instance_of Object, @state.value
+    assert_equal 'value', @state.value
   end
   
   def test_should_only_evaluate_value_once
     value = @state.value
     assert_same value, @state.value
+  end
+  
+  def test_should_update_value_index_for_state_collection
+    @state.value
+    assert_equal @state, @machine.states['value', :value]
+    assert_nil @machine.states[@dynamic_value, :value]
   end
 end
 
@@ -279,7 +286,8 @@ class StateWithoutCachedLambdaValueTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked, :value => lambda {Object.new})
+    @dynamic_value = lambda {'value'}
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :value => @dynamic_value)
   end
   
   def test_should_not_be_caching
@@ -289,6 +297,12 @@ class StateWithoutCachedLambdaValueTest < Test::Unit::TestCase
   def test_should_evaluate_value_each_time
     value = @state.value
     assert_not_same value, @state.value
+  end
+  
+  def test_should_not_update_value_index_for_state_collection
+    @state.value
+    assert_nil @machine.states['value', :value]
+    assert_equal @state, @machine.states[@dynamic_value, :value]
   end
 end
 

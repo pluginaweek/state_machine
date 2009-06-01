@@ -119,7 +119,9 @@ module StateMachine
     def value(eval = true)
       if @value.is_a?(Proc) && eval
         if cache_value?
-          instance_variable_defined?('@cached_value') ? @cached_value : @cached_value = @value.call
+          @value = @value.call
+          machine.states.update(self)
+          @value
         else
           @value.call
         end
