@@ -2,9 +2,8 @@ module StateMachine
   # Provides a set of helper methods for making assertions about the content
   # of various objects
   module Assertions
-    # Validates that all keys in the given hash *only* includes the specified
-    # valid keys.  If any invalid keys are found, an ArgumentError will be
-    # raised.
+    # Validates that the given hash *only* includes the specified valid keys.
+    # If any invalid keys are found, an ArgumentError will be raised.
     #
     # == Examples
     # 
@@ -18,8 +17,8 @@ module StateMachine
       raise ArgumentError, "Invalid key(s): #{invalid_keys.join(', ')}" unless invalid_keys.empty?
     end
     
-    # Validates that at *most* one of a set of exclusive keys is included in
-    # the given hash.  If more than one key is found, an ArgumentError will be
+    # Validates that the given hash only includes at *most* one of a set of
+    # exclusive keys.  If more than one key is found, an ArgumentError will be
     # raised.
     # 
     # == Examples
