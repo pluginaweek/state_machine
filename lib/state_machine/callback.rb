@@ -106,9 +106,9 @@ module StateMachine
     # * <tt>:bind_to_object</tt> - Whether to bind the callback to the object involved.
     #   If set to false, the object will be passed as a parameter instead.
     #   Default is integration-specific or set to the application default.
-    # * <tt>:terminator</tt> - A block/proc that determines what callback results
-    #   should cause the callback chain to halt (if not using the default
-    #   <tt>throw :halt</tt> technique).
+    # * <tt>:terminator</tt> - A block/proc that determines what callback
+    #   results should cause the callback chain to halt (if not using the
+    #   default <tt>throw :halt</tt> technique).
     # 
     # More information about how those options affect the behavior of the
     # callback can be found in their attribute definitions.
@@ -129,7 +129,6 @@ module StateMachine
       end
       
       @terminator = options.delete(:terminator)
-      
       @guard = Guard.new(options)
     end
     
@@ -142,8 +141,8 @@ module StateMachine
     # Runs the callback as long as the transition context matches the guard
     # requirements configured for this callback.
     # 
-    # If a terminator has been configured and it matches the result from
-    # the evaluated method, then the callback chain should be halted
+    # If a terminator has been configured and it matches the result from the
+    # evaluated method, then the callback chain should be halted
     def call(object, context = {}, *args)
       if @guard.matches?(object, context)
         @methods.each do |method|
@@ -161,22 +160,29 @@ module StateMachine
       # Generates a method that can be bound to the object being transitioned
       # when the callback is invoked
       def bound_method(block)
-        # Generate a thread-safe unbound method that can be used on any object
-        # This is essentially a workaround for not having Ruby 1.9's instance_exec
-        unbound_method = Object.class_eval do
-          time = Time.now
-          method_name = "__bind_#{time.to_i}_#{time.usec}"
-          define_method(method_name, &block)
-          method = instance_method(method_name)
-          remove_method(method_name)
-          method
-        end
-        arity = unbound_method.arity
+        arity = block.arity
         
-        # Proxy calls to the method so that the method can be bound *and*
-        # the arguments are adjusted
-        lambda do |object, *args|
-          unbound_method.bind(object).call(*(arity == 0 ? [] : args))
+        if RUBY_VERSION >= '1.9'
+          lambda do |object, *args|
+            object.instance_exec(*(arity == 0 ? [] : args), &block)
+          end
+        else
+          # Generate a thread-safe unbound method that can be used on any object.
+          # This is a workaround for not having Ruby 1.9's instance_exec
+          unbound_method = Object.class_eval do
+            time = Time.now
+            method_name = "__bind_#{time.to_i}_#{time.usec}"
+            define_method(method_name, &block)
+            method = instance_method(method_name)
+            remove_method(method_name)
+            method
+          end
+          
+          # Proxy calls to the method so that the method can be bound *and*
+          # the arguments are adjusted
+          lambda do |object, *args|
+            unbound_method.bind(object).call(*(arity == 0 ? [] : args))
+          end
         end
       end
   end
