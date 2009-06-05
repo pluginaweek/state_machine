@@ -1,5 +1,6 @@
 == master
 
+* Fix locale for ActiveRecord getting added to the i18n load path multiple times [Reiner Dieterich]
 * Fix callbacks, guards, and state-driven behaviors not always working on tainted classes [Brandon Dimcheff]
 * Use Ruby 1.9's built-in Object#instance_exec for bound callbacks when it's available
 * Improve performance of cached dynamic state lookups by 25%

@@ -965,16 +965,25 @@ begin
           machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
           assert_equal 'cannot ignite', record.errors.on(:state)
         end
-      end
-      
-      def test_should_invalidate_using_customized_i18n_string_if_specified
-        machine = StateMachine::Machine.new(@model, :messages => {:invalid_transition => 'cannot {{event}}'})
-        machine.state :parked, :idling
         
-        record = @model.new(:state => 'idling')
+        def test_should_invalidate_using_customized_i18n_string_if_specified
+          machine = StateMachine::Machine.new(@model, :messages => {:invalid_transition => 'cannot {{event}}'})
+          machine.state :parked, :idling
+          
+          record = @model.new(:state => 'idling')
+          
+          machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+          assert_equal 'cannot ignite', record.errors.on(:state)
+        end
         
-        machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
-        assert_equal 'cannot ignite', record.errors.on(:state)
+        def test_should_only_add_locale_once_in_load_path
+          assert_equal 1, I18n.load_path.select {|path| path =~ %r{state_machine/integrations/active_record/locale\.rb$}}.length
+          
+          # Create another ActiveRecord model that will triger the i18n feature
+          new_model
+          
+          assert_equal 1, I18n.load_path.select {|path| path =~ %r{state_machine/integrations/active_record/locale\.rb$}}.length
+        end
       end
     else
       $stderr.puts 'Skipping ActiveRecord I18n tests. `gem install active_record` >= v2.2.0 and try again.'
