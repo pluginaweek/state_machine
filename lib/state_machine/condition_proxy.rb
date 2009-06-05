@@ -2,7 +2,7 @@ require 'state_machine/eval_helpers'
 
 module StateMachine
   # Represents a type of module in which class-level methods are proxied to
-  # another class, injecting a custom :if condition along with method.
+  # another class, injecting a custom <tt>:if</tt> condition along with method.
   # 
   # This is used for being able to automatically include conditionals which
   # check the current state in class-level methods that have configuration

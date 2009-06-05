@@ -24,6 +24,7 @@ module StateMachine
     # are known:
     # * +parked+
     # * +stalled+
+    # * +idling+
     def all
       AllMatcher.instance
     end
