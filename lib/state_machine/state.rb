@@ -160,7 +160,7 @@ module StateMachine
       name = self.name
       
       # Evaluate the method definitions
-      context = ConditionProxy.new(owner_class, lambda {|object| object.send("#{attribute}_name") == name})
+      context = ConditionProxy.new(owner_class, lambda {|object| object.class.state_machine(attribute).states.matches?(object, name)})
       context.class_eval(&block)
       context.instance_methods.each do |method|
         methods[method.to_sym] = context.instance_method(method)
