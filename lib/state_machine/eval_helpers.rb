@@ -53,8 +53,7 @@ module StateMachine
     def evaluate_method(object, method, *args)
       case method
         when Symbol
-          method = object.method(method)
-          method.arity == 0 ? method.call : method.call(*args)
+          object.method(method).arity == 0 ? object.send(method) : object.send(method, *args)
         when Proc, Method
           args.unshift(object)
           [0, 1].include?(method.arity) ? method.call(*args.slice(0, method.arity)) : method.call(*args)

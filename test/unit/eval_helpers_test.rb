@@ -45,6 +45,24 @@ class EvalHelpersSymbolWithArgumentsTest < Test::Unit::TestCase
   end
 end
 
+class EvalHelpersSymbolTaintedMethodTest < Test::Unit::TestCase
+  include StateMachine::EvalHelpers
+  
+  def setup
+    class << (@object = Object.new)
+      def callback
+        true
+      end
+      
+      taint
+    end
+  end
+  
+  def test_should_not_raise_security_error
+    assert_nothing_raised { evaluate_method(@object, :callback, 1, 2, 3) }
+  end
+end
+
 class EvalHelpersStringTest < Test::Unit::TestCase
   include StateMachine::EvalHelpers
   
