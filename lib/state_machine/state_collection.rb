@@ -27,7 +27,7 @@ module StateMachine
     #   states.matches?(vehicle, :idling)   # => false
     #   states.matches?(vehicle, :invalid)  # => IndexError: :invalid is an invalid key for :name index
     def matches?(object, name)
-      fetch(name).matches?(machine.read(object))
+      fetch(name).matches?(machine.read(object, :state))
     end
     
     # Determines the current state of the given object as configured by this
@@ -53,7 +53,7 @@ module StateMachine
     #   vehicle.state = 'invalid'
     #   states.match(vehicle)         # => nil
     def match(object)
-      value = machine.read(object)
+      value = machine.read(object, :state)
       self[value, :value] || detect {|state| state.matches?(value)}
     end
     
@@ -77,7 +77,7 @@ module StateMachine
     #   vehicle.state = 'invalid'
     #   states.match!(vehicle)        # => ArgumentError: "invalid" is not a known state value
     def match!(object)
-      match(object) || raise(ArgumentError, "#{machine.read(object).inspect} is not a known #{machine.attribute} value")
+      match(object) || raise(ArgumentError, "#{machine.read(object, :state).inspect} is not a known #{machine.name} value")
     end
     
     # Gets the order in which states should be displayed based on where they

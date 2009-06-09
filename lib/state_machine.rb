@@ -16,9 +16,14 @@ module StateMachine
     # * <tt>:action</tt> - The instance method to invoke when an object
     #   transitions. Default is nil unless otherwise specified by the
     #   configured integration.
+    # * <tt>:as</tt> - The name to use for prefixing all generated machine
+    #   instance / class methods (e.g. if the attribute is +state_id+, then
+    #   "state" would generate :state_name, :state_transitions, etc. instead of
+    #   :state_id_name and :state_id_transitions)
     # * <tt>:namespace</tt> - The name to use for namespacing all generated
-    #   instance methods (e.g. "heater" would generate :turn_on_heater and
-    #   :turn_off_heater for the :turn_on/:turn_off events).  Default is nil.
+    #   state / event instance methods (e.g. "heater" would generate
+    #   :turn_on_heater and :turn_off_heater for the :turn_on/:turn_off events).
+    #   Default is nil.
     # * <tt>:integration</tt> - The name of the integration to use for adding
     #   library-specific behavior to the machine.  Built-in integrations
     #   include :data_mapper, :active_record, and :sequel.  By default, this
@@ -290,6 +295,50 @@ module StateMachine
     # see StateMachine::Machine#before_transition and
     # StateMachine::Machine#after_transition.
     # 
+    # == Attribute aliases
+    # 
+    # When a state machine is defined, several methods are generated scoped by
+    # the name of the attribute, such as (if the attribute were "state"):
+    # * <tt>state_name</tt>
+    # * <tt>state_event</tt>
+    # * <tt>state_transitions</tt>
+    # * etc.
+    # 
+    # If the attribute for the machine were something less common, such as
+    # "state_id" or "state_value", this makes for more awkward scoped methods.
+    # 
+    # Rather than scope based on the attribute, these methods can be customized
+    # using the <tt>:as</tt> option as essentially an alias.
+    # 
+    # For example,
+    # 
+    #   class Vehicle
+    #     state_machine :state_id, :as => :state do
+    #       event :turn_on do
+    #         transition all => :on
+    #       end
+    #       
+    #       event :turn_off do
+    #         transition all => :off
+    #       end
+    #       
+    #       state :on, :value => 1
+    #       state :off, :value => 2
+    #     end
+    #   end
+    # 
+    # ...will generate the following methods:
+    # * <tt>state_name</tt>
+    # * <tt>state_event</tt>
+    # * <tt>state_transitions</tt>
+    # 
+    # ...instead of:
+    # * <tt>state_id_name</tt>
+    # * <tt>state_id_event</tt>
+    # * <tt>state_id_transitions</tt>
+    # 
+    # However, it will continue to read and write to the +state_id+ attribute.
+    # 
     # == Namespaces
     # 
     # When a namespace is configured for a state machine, the name provided
@@ -301,7 +350,7 @@ module StateMachine
     # For example,
     # 
     #   class Vehicle
-    #     state_machine :heater_state, :initial => :off :namespace => 'heater' do
+    #     state_machine :heater_state, :initial => :off, :namespace => 'heater' do
     #       event :turn_on do
     #         transition all => :on
     #       end

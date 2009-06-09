@@ -6,8 +6,8 @@ module StateMachine
     # (which must mean the defaults are being skipped)
     def initialize_states(object)
       each do |attribute, machine|
-        value = machine.read(object)
-        machine.write(object, machine.initial_state(object).value) if value.nil? || value.respond_to?(:empty?) && value.empty?
+        value = machine.read(object, :state)
+        machine.write(object, :state, machine.initial_state(object).value) if value.nil? || value.respond_to?(:empty?) && value.empty?
       end
     end
     
@@ -118,27 +118,25 @@ module StateMachine
         begin
           result = Transition.perform(transitions, :after => complete) do
             # Prevent events from being evaluated multiple times if actions are nested
-            transitions.each {|transition| object.send("#{transition.attribute}_event=", nil)}
+            transitions.each {|transition| transition.machine.write(object, :event, nil)}
             action_value = yield
           end
         rescue Exception
           # Revert attribute modifications
           transitions.each do |transition|
-            object.send("#{transition.attribute}_event=", transition.event)
-            object.send("#{transition.attribute}_event_transition=", nil) if complete
+            transition.machine.write(object, :event, transition.event)
+            transition.machine.write(object, :event_transition, nil) if complete
           end
           
           raise
         end
         
         transitions.each do |transition|
-          attribute = transition.attribute
-          
           # Revert event unless transition was successful
-          object.send("#{attribute}_event=", transition.event) unless complete && result
+          transition.machine.write(object, :event, transition.event) unless complete && result
           
           # Track transition if partial transition completed successfully
-          object.send("#{attribute}_event_transition=", !complete && result ? transition : nil)
+          transition.machine.write(object, :event_transition, !complete && result ? transition : nil)
         end
       end
       

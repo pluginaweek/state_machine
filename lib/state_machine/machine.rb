@@ -368,6 +368,10 @@ module StateMachine
     # The attribute for which the machine is being defined
     attr_reader :attribute
     
+    # The name of the machine, used for scoping methods generated for the
+    # machine as a whole (not states or events)
+    attr_reader :name
+    
     # The events that trigger transitions.  These are sorted, by default, in
     # the order in which they were defined.
     attr_reader :events
@@ -402,7 +406,7 @@ module StateMachine
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :initial, :action, :plural, :namespace, :integration, :messages, :use_transactions)
+      assert_valid_keys(options, :as, :initial, :action, :plural, :namespace, :integration, :messages, :use_transactions)
       
       # Find an integration that matches this machine's owner class
       if integration = options[:integration] ? StateMachine::Integrations.find(options[:integration]) : StateMachine::Integrations.match(owner_class)
@@ -415,6 +419,7 @@ module StateMachine
       
       # Set machine configuration
       @attribute = args.first || :state
+      @name = options[:as] || @attribute
       @events = EventCollection.new(self)
       @states = StateCollection.new(self)
       @callbacks = {:before => [], :after => []}
@@ -484,13 +489,18 @@ module StateMachine
       states.each {|state| state.initial = (state.name == @initial_state)}
     end
     
+    # Gets the actual name of the attribute on the machine's owner class that
+    # stores data with the given name.
+    def attribute(name = :state)
+      name == :state ? @attribute : :"#{self.name}_#{name}"
+    end
+    
     # Defines a new instance method with the given name on the machine's owner
     # class.  If the method is already defined in the class, then this will not
     # override it.
     # 
     # Example:
     # 
-    #   attribute = machine.attribute
     #   machine.define_instance_method(:state_name) do |machine, object|
     #     machine.states.match(object)
     #   end
@@ -616,7 +626,7 @@ module StateMachine
     #   end
     #   
     #   class Vehicle < ActiveRecord::Base
-    #     state_machine :state_id, :initial => :parked do
+    #     state_machine :state_id, :as => 'state', :initial => :parked do
     #       event :ignite do
     #         transition :parked => :idling
     #       end
@@ -824,7 +834,7 @@ module StateMachine
     end
     alias_method :other_states, :state
     
-    # Gets the current value stored in the given object's state.
+    # Gets the current value stored in the given object's attribute.
     # 
     # For example,
     # 
@@ -834,10 +844,12 @@ module StateMachine
     #     end
     #   end
     #   
-    #   vehicle = Vehicle.new                 # => #<Vehicle:0xb7d94ab0 @state="parked">
-    #   Vehicle.state_machine.read(vehicle)   # => "parked"
-    def read(object)
-      object.send(attribute)
+    #   vehicle = Vehicle.new                           # => #<Vehicle:0xb7d94ab0 @state="parked">
+    #   Vehicle.state_machine.read(vehicle, :state)     # => "parked" # Equivalent to vehicle.state
+    #   Vehicle.state_machine.read(vehicle, :event)     # => nil      # Equivalent to vehicle.state_event
+    def read(object, attribute, ivar = false)
+      attribute = self.attribute(attribute)
+      ivar ? object.instance_variable_get("@#{attribute}") : object.send(attribute)
     end
     
     # Sets a new value in the given object's state.
@@ -853,8 +865,8 @@ module StateMachine
     #   vehicle = Vehicle.new   # => #<Vehicle:0xb7d94ab0 @state="parked">
     #   Vehicle.state_machine.write(vehicle, 'idling')
     #   vehicle.state           # => "idling"
-    def write(object, value)
-      object.send("#{attribute}=", value)
+    def write(object, attribute, value)
+      object.send("#{self.attribute(attribute)}=", value)
     end
     
     # Defines one or more events for the machine and the transitions that can
@@ -1272,7 +1284,7 @@ module StateMachine
         define_action_helpers if action
         
         # Gets the state name for the current value
-        define_instance_method("#{attribute}_name") do |machine, object|
+        define_instance_method(attribute(:name)) do |machine, object|
           machine.states.match!(object).name
         end
       end
@@ -1289,7 +1301,7 @@ module StateMachine
       # Adds predicate method to the owner class for determining the name of the
       # current state
       def define_state_predicate
-        define_instance_method("#{attribute}?") do |machine, object, state|
+        define_instance_method("#{name}?") do |machine, object, state|
           machine.states.matches?(object, state)
         end
       end
@@ -1298,31 +1310,33 @@ module StateMachine
       # events
       def define_event_helpers
         # Gets the events that are allowed to fire on the current object
-        define_instance_method("#{attribute}_events") do |machine, object|
+        define_instance_method(attribute(:events)) do |machine, object|
           machine.events.valid_for(object).map {|event| event.name}
         end
         
         # Gets the next possible transitions that can be run on the current
         # object
-        define_instance_method("#{attribute}_transitions") do |machine, object, *args|
+        define_instance_method(attribute(:transitions)) do |machine, object, *args|
           machine.events.transitions_for(object, *args)
         end
         
         # Add helpers for interacting with the action
         if action
-          attribute = self.attribute
+          name = self.name
           
           # Tracks the event / transition to invoke when the action is called
+          event_attribute = attribute(:event)
+          event_transition_attribute = attribute(:event_transition)
           @instance_helper_module.class_eval do
-            attr_writer "#{attribute}_event"
+            attr_writer event_attribute
             
             protected
-              attr_accessor "#{attribute}_event_transition"
+              attr_accessor event_transition_attribute
           end
           
           # Interpret non-blank events as present
-          define_instance_method("#{attribute}_event") do |machine, object|
-            event = object.instance_variable_get("@#{attribute}_event")
+          define_instance_method(attribute(:event)) do |machine, object|
+            event = machine.read(object, :event, true)
             event && !(event.respond_to?(:empty?) && event.empty?) ? event.to_sym : nil
           end
         end
@@ -1358,9 +1372,9 @@ module StateMachine
       # automatically determined by either calling +pluralize+ on the attribute
       # name or adding an "s" to the end of the name.
       def define_scopes(custom_plural = nil)
-        plural = custom_plural || (attribute.to_s.respond_to?(:pluralize) ? attribute.to_s.pluralize : "#{attribute}s")
+        plural = custom_plural || (name.to_s.respond_to?(:pluralize) ? name.to_s.pluralize : "#{name}s")
         
-        [attribute, plural].uniq.each do |name|
+        [name, plural].uniq.each do |name|
           [:with, :without].each do |kind|
             method = "#{kind}_#{name}"
             

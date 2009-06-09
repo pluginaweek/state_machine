@@ -136,7 +136,7 @@ module StateMachine
       
       # From state information
       from_state = machine.states.fetch(from_name)
-      @from = machine.read(object)
+      @from = machine.read(object, :state)
       @from_name = from_state.name
       @qualified_from_name = from_state.qualified_name
       
@@ -259,7 +259,7 @@ module StateMachine
     #   
     #   vehicle.state   # => 'idling'
     def persist
-      machine.write(object, to)
+      machine.write(object, :state, to)
     end
     
     # Runs the machine's +after+ callbacks for this transition.  Only
@@ -326,7 +326,7 @@ module StateMachine
     #   transition.rollback
     #   vehicle.state             # => "parked"
     def rollback
-      machine.write(object, from)
+      machine.write(object, :state, from)
     end
     
     # Generates a nicely formatted description of this transitions's contents.

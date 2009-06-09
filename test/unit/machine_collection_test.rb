@@ -688,3 +688,23 @@ class MachineCollectionFireImplicitWithValidationsTest < Test::Unit::TestCase
     StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
+
+class MachineCollectionFireImplicitWithCustomMachineNameTest < MachineCollectionFireImplicitTest
+  def setup
+    super
+    
+    @object.state_event = 'ignite'
+  end
+  
+  def test_should_be_successful_on_complete_file
+    assert @machines.fire_event_attributes(@object, :save) { true }
+    assert_equal 'idling', @object.state
+    assert_nil @object.state_event
+  end
+  
+  def test_should_be_successful_on_partial_fire
+    @machines.fire_event_attributes(@object, :save, false) { true }
+    assert_equal 'idling', @object.state
+    assert_equal :ignite, @object.state_event
+  end
+end

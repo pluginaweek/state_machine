@@ -283,6 +283,8 @@ module StateMachine
       
       # Adds a validation error to the given object 
       def invalidate(object, attribute, message, values = [])
+        attribute = self.attribute(attribute)
+        
         if Object.const_defined?(:I18n)
           options = values.inject({}) {|options, (key, value)| options[key] = value; options}
           object.errors.add(attribute, message, options.merge(
@@ -318,12 +320,13 @@ module StateMachine
         # compatibility with the default predicate which determines whether
         # *anything* is set for the attribute's value
         def define_state_predicate
+          name = self.name
           attribute = self.attribute
           
           # Still use class_eval here instance of define_instance_method since
           # we need to be able to call +super+
           @instance_helper_module.class_eval do
-            define_method("#{attribute}?") do |*args|
+            define_method("#{name}?") do |*args|
               args.empty? ? super(*args) : self.class.state_machine(attribute).states.matches?(self, *args)
             end
           end
@@ -415,13 +418,13 @@ module StateMachine
         # This will always return true regardless of the results of the
         # callbacks.
         def notify(type, object, transition)
-          attribute = transition.attribute
+          name = self.name
           event = transition.qualified_event
           from = transition.from_name
           to = transition.to_name
           
           # Machine-specific updates
-          ["#{type}_#{event}", "#{type}_transition_#{attribute}"].each do |event_segment|
+          ["#{type}_#{event}", "#{type}_transition_#{name}"].each do |event_segment|
             ["_from_#{from}", nil].each do |from_segment|
               ["_to_#{to}", nil].each do |to_segment|
                 object.class.changed

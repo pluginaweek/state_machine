@@ -261,3 +261,33 @@ class EventCollectionWithValidationsTest < Test::Unit::TestCase
     StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
+
+class EventCollectionWithCustomMachineNameTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def save
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :state_id, :as => 'state', :initial => :parked, :action => :save)
+    @events = StateMachine::EventCollection.new(@machine)
+    
+    @machine.event :ignite
+    @machine.state :parked, :idling
+    @events << @ignite = StateMachine::Event.new(@machine, :ignite)
+    
+    @object = @klass.new
+  end
+  
+  def test_should_not_have_transition_if_nil
+    @object.state_event = nil
+    assert_nil @events.attribute_transition_for(@object)
+  end
+  
+  def test_should_have_valid_transition_if_event_can_be_fired
+    @ignite.transition :parked => :idling
+    @object.state_event = 'ignite'
+    
+    assert_instance_of StateMachine::Transition, @events.attribute_transition_for(@object)
+  end
+end

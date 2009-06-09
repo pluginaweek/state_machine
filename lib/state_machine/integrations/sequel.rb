@@ -231,7 +231,7 @@ module StateMachine
       
       # Adds a validation error to the given object
       def invalidate(object, attribute, message, values = [])
-        object.errors.add(attribute, generate_message(message, values))
+        object.errors.add(self.attribute(attribute), generate_message(message, values))
       end
       
       # Resets any errors previously added when invalidating the given object

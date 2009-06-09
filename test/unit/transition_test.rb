@@ -197,6 +197,33 @@ class TransitionWithNamespaceTest < Test::Unit::TestCase
   end
 end
 
+class TransitionWithCustomMachineNameTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :state_id, :as => 'state')
+    @machine.state :off, :value => 1
+    @machine.state :active, :value => 2
+    @machine.event :activate
+    
+    @object = @klass.new
+    @object.state_id = 1
+    
+    @transition = StateMachine::Transition.new(@object, @machine, :activate, :off, :active)
+  end
+  
+  def test_should_persist
+    @transition.persist
+    assert_equal 2, @object.state_id
+  end
+  
+  def test_should_rollback
+    @object.state_id = 2
+    @transition.rollback
+    
+    assert_equal 1, @object.state_id
+  end
+end
+
 class TransitionWithActionTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do

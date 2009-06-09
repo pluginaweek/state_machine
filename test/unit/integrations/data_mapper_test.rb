@@ -544,6 +544,12 @@ begin
           assert_equal ['cannot transition via "park"'], @record.errors.on(:state)
         end
         
+        def test_should_auto_prefix_custom_attributes_on_invalidation
+          @machine.invalidate(@record, :event, :invalid)
+          
+          assert_equal ['is invalid'], @record.errors.on(:state_event)
+        end
+        
         def test_should_clear_errors_on_reset
           @record.state = 'parked'
           @record.errors.add(:state, 'is invalid')

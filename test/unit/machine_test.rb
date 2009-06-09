@@ -11,8 +11,16 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert_equal @klass, @machine.owner_class
   end
   
+  def test_should_have_a_name
+    assert_equal :state, @machine.name
+  end
+  
   def test_should_have_an_attribute
     assert_equal :state, @machine.attribute
+  end
+  
+  def test_should_prefix_custom_attributes_with_attribute
+    assert_equal :state_event, @machine.attribute(:event)
   end
   
   def test_should_have_an_initial_state
@@ -150,8 +158,16 @@ class MachineWithCustomAttributeTest < Test::Unit::TestCase
     @object = @klass.new
   end
   
+  def test_should_use_custom_attribute_for_name
+    assert_equal :status, @machine.name
+  end
+  
   def test_should_use_custom_attribute
     assert_equal :status, @machine.attribute
+  end
+  
+  def test_should_prefix_custom_attributes_with_custom_attribute
+    assert_equal :status_event, @machine.attribute(:event)
   end
   
   def test_should_define_a_reader_attribute_for_the_attribute
@@ -998,20 +1014,45 @@ end
 
 class MachinePersistenceTest < Test::Unit::TestCase
   def setup
-    @klass = Class.new
+    @klass = Class.new do
+      attr_accessor :state_event
+    end
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @object = @klass.new
   end
   
   def test_should_allow_reading_state
-    assert_equal 'parked', @machine.read(@object)
+    assert_equal 'parked', @machine.read(@object, :state)
+  end
+  
+  def test_should_allow_reading_custom_attributes
+    assert_nil @machine.read(@object, :event)
+    
+    @object.state_event = 'ignite'
+    assert_equal 'ignite', @machine.read(@object, :event)
+  end
+  
+  def test_should_allow_reading_custom_instance_variables
+    @klass.class_eval do
+      attr_writer :state_value
+    end
+    
+    @object.state_value = 1
+    assert_raise(NoMethodError) { @machine.read(@object, :value) }
+    assert_equal 1, @machine.read(@object, :value, true)
   end
   
   def test_should_allow_writing_state
-    @machine.write(@object, 'idling')
+    @machine.write(@object, :state, 'idling')
     assert_equal 'idling', @object.state
   end
+  
+  def test_should_allow_writing_custom_attributes
+    @machine.write(@object, :event, 'ignite')
+    assert_equal 'ignite', @object.state_event
+  end
 end
+
 
 class MachineWithStatesTest < Test::Unit::TestCase
   def setup
@@ -1488,6 +1529,75 @@ class MachineWithNamespaceTest < Test::Unit::TestCase
     [:enable_alarm!, :disable_alarm!].each do |name|
       assert @object.respond_to?(name)
     end
+  end
+end
+
+class MachineWithCustomNameTest < Test::Unit::TestCase
+  def setup
+    StateMachine::Integrations.const_set('Custom', Module.new do  
+      class << self; attr_reader :defaults; end
+      @defaults = {:action => :save, :use_transactions => false}
+      
+      def create_with_scope(name)
+        lambda {}
+      end
+      
+      def create_without_scope(name)
+        lambda {}
+      end
+    end)
+    
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :state_id, :as => 'state', :initial => :active, :integration => :custom) do
+      event :ignite do
+        transition :parked => :idling
+      end
+    end
+    @object = @klass.new
+  end
+  
+  def test_should_not_define_a_reader_attribute_for_the_attribute
+    assert !@object.respond_to?(:state)
+  end
+  
+  def test_should_not_define_a_writer_attribute_for_the_attribute
+    assert !@object.respond_to?(:state=)
+  end
+  
+  def test_should_define_a_predicate_for_the_attribute
+    assert @object.respond_to?(:state?)
+  end
+  
+  def test_should_define_a_name_reader_for_the_attribute
+    assert @object.respond_to?(:state_name)
+  end
+  
+  def test_should_define_an_event_reader_for_the_attribute
+    assert @object.respond_to?(:state_events)
+  end
+  
+  def test_should_define_a_transition_reader_for_the_attribute
+    assert @object.respond_to?(:state_transitions)
+  end
+  
+  def test_should_define_singular_with_scope
+    assert @klass.respond_to?(:with_state)
+  end
+  
+  def test_should_define_singular_without_scope
+    assert @klass.respond_to?(:without_state)
+  end
+  
+  def test_should_define_plural_with_scope
+    assert @klass.respond_to?(:with_states)
+  end
+  
+  def test_should_define_plural_without_scope
+    assert @klass.respond_to?(:without_states)
+  end
+  
+  def teardown
+    StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 
