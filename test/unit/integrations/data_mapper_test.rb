@@ -258,6 +258,31 @@ begin
       end
     end
     
+    class MachineWithTransactionsTest < BaseTestCase
+      def setup
+        @resource = new_resource
+        @machine = StateMachine::Machine.new(@resource, :use_transactions => true)
+      end
+      
+      def test_should_rollback_transaction_if_false
+        @machine.within_transaction(@resource.new) do
+          @resource.create
+          false
+        end
+        
+        assert_equal 0, @resource.all.size
+      end
+      
+      def test_should_not_rollback_transaction_if_true
+        @machine.within_transaction(@resource.new) do
+          @resource.create
+          true
+        end
+        
+        assert_equal 1, @resource.all.size
+      end
+    end
+    
     class MachineWithCallbacksTest < BaseTestCase
       def setup
         @resource = new_resource
