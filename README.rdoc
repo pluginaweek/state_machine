@@ -412,7 +412,7 @@ To generate multiple state machine graphs:
 
 *Note* that this will generate a different file for every state machine defined
 in the class.  The generated files will use an output filename of the format
-#{class_name}_#{attribute}.#{format}.
+#{class_name}_#{machine_name}.#{format}.
 
 For examples of actual images generated using this task, see those under the
 examples folder.
