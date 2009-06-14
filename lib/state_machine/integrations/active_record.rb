@@ -84,14 +84,14 @@ module StateMachine
     # you can build two state machines (one public and one protected) like so:
     # 
     #   class Vehicle < ActiveRecord::Base
-    #     alias_attribute :public_state # Allow both machines to share the same state
     #     attr_protected :state_event # Prevent access to events in the first machine
     #     
     #     state_machine do
     #       # Define private events here
     #     end
     #     
-    #     state_machine :public_state do
+    #     # Public machine targets the same state as the private machine
+    #     state_machine :public_state, :attribute => :state do
     #       # Define public events here
     #     end
     #   end
@@ -310,8 +310,10 @@ module StateMachine
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
+          name = self.name
+          
           owner_class.validates_each(attribute) do |record, attr, value|
-            machine = record.class.state_machine(attr)
+            machine = record.class.state_machine(name)
             machine.invalidate(record, attr, :invalid) unless machine.states.match(record)
           end
         end
@@ -321,13 +323,12 @@ module StateMachine
         # *anything* is set for the attribute's value
         def define_state_predicate
           name = self.name
-          attribute = self.attribute
           
           # Still use class_eval here instance of define_instance_method since
           # we need to be able to call +super+
           @instance_helper_module.class_eval do
             define_method("#{name}?") do |*args|
-              args.empty? ? super(*args) : self.class.state_machine(attribute).states.matches?(self, *args)
+              args.empty? ? super(*args) : self.class.state_machine(name).states.matches?(self, *args)
             end
           end
         end
@@ -388,17 +389,18 @@ module StateMachine
         # inheritance is respected properly.
         def define_scope(name, scope)
           name = name.to_sym
-          attribute = self.attribute
+          machine_name = self.name
           
-          # Created the scope and then override it with state translation
+          # Create the scope and then override it with state translation
           owner_class.named_scope(name)
           owner_class.scopes[name] = lambda do |klass, *states|
-            machine_states = klass.state_machine(attribute).states
+            machine_states = klass.state_machine(machine_name).states
             values = states.flatten.map {|state| machine_states.fetch(state).value}
             
             ::ActiveRecord::NamedScope::Scope.new(klass, scope.call(values))
           end
           
+          # Prevent the Machine class from wrapping the scope
           false
         end
         
@@ -409,10 +411,10 @@ module StateMachine
         # * #{type}_#{qualified_event}_from_#{from}
         # * #{type}_#{qualified_event}_to_#{to}
         # * #{type}_#{qualified_event}
-        # * #{type}_transition_#{attribute}_from_#{from}_to_#{to}
-        # * #{type}_transition_#{attribute}_from_#{from}
-        # * #{type}_transition_#{attribute}_to_#{to}
-        # * #{type}_transition_#{attribute}
+        # * #{type}_transition_#{machine_name}_from_#{from}_to_#{to}
+        # * #{type}_transition_#{machine_name}_from_#{from}
+        # * #{type}_transition_#{machine_name}_to_#{to}
+        # * #{type}_transition_#{machine_name}
         # * #{type}_transition
         # 
         # This will always return true regardless of the results of the

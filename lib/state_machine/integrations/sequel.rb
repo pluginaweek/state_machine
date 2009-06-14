@@ -84,17 +84,14 @@ module StateMachine
     # you can build two state machines (one public and one protected) like so:
     # 
     #   class Vehicle < Sequel::Model
-    #     # Allow both machines to share the same state
-    #     alias_method :public_state, :state
-    #     alias_method :public_state=, :state=
-    #     
     #     set_restricted_columns :state_event # Prevent access to events in the first machine
     #     
     #     state_machine do
     #       # Define private events here
     #     end
     #     
-    #     state_machine :public_state do
+    #     # Allow both machines to share the same state
+    #     state_machine :public_state, :attribute => :state do
     #       # Define public events here
     #     end
     #   end
@@ -242,8 +239,9 @@ module StateMachine
       protected
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
+          name = self.name
           owner_class.validates_each(attribute) do |record, attr, value|
-            machine = record.class.state_machine(attr)
+            machine = record.class.state_machine(name)
             machine.invalidate(record, attr, :invalid) unless machine.states.match(record)
           end
         end

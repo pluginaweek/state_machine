@@ -197,10 +197,10 @@ class TransitionWithNamespaceTest < Test::Unit::TestCase
   end
 end
 
-class TransitionWithCustomMachineNameTest < Test::Unit::TestCase
+class TransitionWithCustomMachineAttributeTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass, :state_id, :as => 'state')
+    @machine = StateMachine::Machine.new(@klass, :state, :attribute => :state_id)
     @machine.state :off, :value => 1
     @machine.state :active, :value => 2
     @machine.event :activate

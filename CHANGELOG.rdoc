@@ -1,5 +1,7 @@
 == master
 
+* Allow multiple state machines on the same class to target the same attribute
+* Use :attribute to customize the attribute target and remove :as, assuming the name is the first argument of #state_machine
 * Add support for customizing generated methods like #{attribute}_name using :as instead of always prefixing with the attribute name
 * Simplify reading from / writing to machine-related attributes on objects
 * Fix locale for ActiveRecord getting added to the i18n load path multiple times [Reiner Dieterich]

@@ -156,11 +156,11 @@ module StateMachine
     # a new module will be included in the owner class.
     def context(&block)
       owner_class = machine.owner_class
-      attribute = machine.attribute
+      machine_name = machine.name
       name = self.name
       
       # Evaluate the method definitions
-      context = ConditionProxy.new(owner_class, lambda {|object| object.class.state_machine(attribute).states.matches?(object, name)})
+      context = ConditionProxy.new(owner_class, lambda {|object| object.class.state_machine(machine_name).states.matches?(object, name)})
       context.class_eval(&block)
       context.instance_methods.each do |method|
         methods[method.to_sym] = context.instance_method(method)
@@ -168,7 +168,7 @@ module StateMachine
         # Calls the method defined by the current state of the machine
         context.class_eval <<-end_eval, __FILE__, __LINE__
           def #{method}(*args, &block)
-            self.class.state_machine(#{attribute.inspect}).states.match!(self).call(self, #{method.inspect}, *args, &block)
+            self.class.state_machine(#{machine_name.inspect}).states.match!(self).call(self, #{method.inspect}, *args, &block)
           end
         end_eval
       end

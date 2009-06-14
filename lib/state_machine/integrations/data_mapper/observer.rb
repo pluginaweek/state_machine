@@ -109,19 +109,19 @@ module StateMachine
           # state machines for each observed class.
           def add_transition_callback(type, *args, &block)
             if args.any? && !args.first.is_a?(Hash)
-              # Specific attribute(s) being targeted
-              attributes = args
+              # Specific machine(s) being targeted
+              names = args
               args = args.last.is_a?(Hash) ? [args.pop] : []
             else
               # Target all state machines
-              attributes = nil
+              names = nil
             end
             
             # Add the transition callback to each class being observed
             observing.each do |klass|
               state_machines =
-                if attributes
-                  attributes.map {|attribute| klass.state_machines.fetch(attribute)}
+                if names
+                  names.map {|name| klass.state_machines.fetch(name)}
                 else
                   klass.state_machines.values
                 end

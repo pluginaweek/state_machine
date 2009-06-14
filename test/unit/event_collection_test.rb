@@ -262,14 +262,14 @@ class EventCollectionWithValidationsTest < Test::Unit::TestCase
   end
 end
 
-class EventCollectionWithCustomMachineNameTest < Test::Unit::TestCase
+class EventCollectionWithCustomMachineAttributeTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do
       def save
       end
     end
     
-    @machine = StateMachine::Machine.new(@klass, :state_id, :as => 'state', :initial => :parked, :action => :save)
+    @machine = StateMachine::Machine.new(@klass, :state, :attribute => :state_id, :initial => :parked, :action => :save)
     @events = StateMachine::EventCollection.new(@machine)
     
     @machine.event :ignite

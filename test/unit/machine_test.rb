@@ -151,22 +151,22 @@ class MachineByDefaultTest < Test::Unit::TestCase
   end
 end
 
-class MachineWithCustomAttributeTest < Test::Unit::TestCase
+class MachineWithCustomNameTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :status)
     @object = @klass.new
   end
   
-  def test_should_use_custom_attribute_for_name
+  def test_should_use_custom_name
     assert_equal :status, @machine.name
   end
   
-  def test_should_use_custom_attribute
+  def test_should_use_custom_name_for_attribute
     assert_equal :status, @machine.attribute
   end
   
-  def test_should_prefix_custom_attributes_with_custom_attribute
+  def test_should_prefix_custom_attributes_with_custom_name
     assert_equal :status_event, @machine.attribute(:event)
   end
   
@@ -1486,6 +1486,40 @@ class MachineWithExistingMachinesOnOwnerClassTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithExistingMachinesWithSameAttributesOnOwnerClassTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+    @second_machine = StateMachine::Machine.new(@klass, :public_state, :attribute => :state)
+    @object = @klass.new
+  end
+  
+  def test_should_track_each_state_machine
+    expected = {:state => @machine, :public_state => @second_machine}
+    assert_equal expected, @klass.state_machines
+  end
+  
+  def test_should_initialize_based_on_first_available_initial_state
+    assert_equal 'parked', @object.state
+  end
+  
+  def test_should_allow_transitions_on_both_machines
+    @machine.event :ignite do
+      transition :parked => :idling
+    end
+    
+    @second_machine.event :park do
+      transition :idling => :parked
+    end
+    
+    @object.ignite
+    assert_equal 'idling', @object.state
+    
+    @object.park
+    assert_equal 'parked', @object.state
+  end
+end
+
 class MachineWithNamespaceTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
@@ -1532,7 +1566,7 @@ class MachineWithNamespaceTest < Test::Unit::TestCase
   end
 end
 
-class MachineWithCustomNameTest < Test::Unit::TestCase
+class MachineWithCustomAttributeTest < Test::Unit::TestCase
   def setup
     StateMachine::Integrations.const_set('Custom', Module.new do  
       class << self; attr_reader :defaults; end
@@ -1548,7 +1582,7 @@ class MachineWithCustomNameTest < Test::Unit::TestCase
     end)
     
     @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass, :state_id, :as => 'state', :initial => :active, :integration => :custom) do
+    @machine = StateMachine::Machine.new(@klass, :state, :attribute => :state_id, :initial => :active, :integration => :custom) do
       event :ignite do
         transition :parked => :idling
       end
@@ -1556,12 +1590,12 @@ class MachineWithCustomNameTest < Test::Unit::TestCase
     @object = @klass.new
   end
   
-  def test_should_not_define_a_reader_attribute_for_the_attribute
-    assert !@object.respond_to?(:state)
+  def test_should_define_a_reader_attribute_for_the_attribute
+    assert @object.respond_to?(:state_id)
   end
   
-  def test_should_not_define_a_writer_attribute_for_the_attribute
-    assert !@object.respond_to?(:state=)
+  def test_should_define_a_writer_attribute_for_the_attribute
+    assert @object.respond_to?(:state_id=)
   end
   
   def test_should_define_a_predicate_for_the_attribute
@@ -1594,6 +1628,11 @@ class MachineWithCustomNameTest < Test::Unit::TestCase
   
   def test_should_define_plural_without_scope
     assert @klass.respond_to?(:without_states)
+  end
+  
+  def test_should_define_state_machines_reader
+    expected = {:state => @machine}
+    assert_equal expected, @klass.state_machines
   end
   
   def teardown

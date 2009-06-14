@@ -113,14 +113,14 @@ module StateMachine
   # 
   # Callbacks are supported for hooking before and after every possible
   # transition in the machine.  Each callback is invoked in the order in which
-  # it was defined.  See StateMachine::Machine#before_transition
-  # and StateMachine::Machine#after_transition for documentation
-  # on how to define new callbacks.
+  # it was defined.  See StateMachine::Machine#before_transition and
+  # StateMachine::Machine#after_transition for documentation on how to define
+  # new callbacks.
   # 
-  # *Note* that callbacks only get executed within the context of an event.
-  # As a result, if a class has an initial state when it's created, any
-  # callbacks that would normally get executed when the object enters that
-  # state will *not* get triggered.
+  # *Note* that callbacks only get executed within the context of an event.  As
+  # a result, if a class has an initial state when it's created, any callbacks
+  # that would normally get executed when the object enters that state will
+  # *not* get triggered.
   # 
   # For example,
   # 
@@ -229,7 +229,7 @@ module StateMachine
   #   
   #   [Vehicle, Switch, Project].each do |klass|
   #     klass.state_machines.each do |attribute, machine|
-  #       machine.before_transition klass.method(:before_transition)
+  #       machine.before_transition StateMachineObserver.method(:before_transition)
   #     end
   #   end
   # 
@@ -300,10 +300,10 @@ module StateMachine
       # in the new owner class (the original will remain unchanged).
       def find_or_create(owner_class, *args, &block)
         options = args.last.is_a?(Hash) ? args.pop : {}
-        attribute = args.first || :state
+        name = args.first || :state
         
         # Find an existing machine
-        if owner_class.respond_to?(:state_machines) && machine = owner_class.state_machines[attribute]
+        if owner_class.respond_to?(:state_machines) && machine = owner_class.state_machines[name]
           # Only create a new copy if changes are being made to the machine in
           # a subclass
           if machine.owner_class != owner_class && (options.any? || block_given?)
@@ -316,7 +316,7 @@ module StateMachine
           machine.instance_eval(&block) if block_given?
         else
           # No existing machine: create a new one
-          machine = new(owner_class, attribute, options, &block)
+          machine = new(owner_class, name, options, &block)
         end
         
         machine
@@ -347,7 +347,7 @@ module StateMachine
           end
           
           # Draw each of the class's state machines
-          klass.state_machines.each do |name, machine|
+          klass.state_machines.each_value do |machine|
             machine.draw(options)
           end
         end
@@ -364,9 +364,6 @@ module StateMachine
     
     # The class that the machine is defined in
     attr_accessor :owner_class
-    
-    # The attribute for which the machine is being defined
-    attr_reader :attribute
     
     # The name of the machine, used for scoping methods generated for the
     # machine as a whole (not states or events)
@@ -406,7 +403,7 @@ module StateMachine
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :as, :initial, :action, :plural, :namespace, :integration, :messages, :use_transactions)
+      assert_valid_keys(options, :attribute, :initial, :action, :plural, :namespace, :integration, :messages, :use_transactions)
       
       # Find an integration that matches this machine's owner class
       if integration = options[:integration] ? StateMachine::Integrations.find(options[:integration]) : StateMachine::Integrations.match(owner_class)
@@ -418,8 +415,8 @@ module StateMachine
       options = {:use_transactions => true}.merge(options)
       
       # Set machine configuration
-      @attribute = args.first || :state
-      @name = options[:as] || @attribute
+      @name = args.first || :state
+      @attribute = options[:attribute] || @name
       @events = EventCollection.new(self)
       @states = StateCollection.new(self)
       @callbacks = {:before => [], :after => []}
@@ -472,10 +469,9 @@ module StateMachine
         include instance_helper_module
       end
       
-      # Record this machine as matched to the attribute in the current owner
-      # class.  This will override any machines mapped to the same attribute
-      # in any superclasses.
-      owner_class.state_machines[attribute] = self
+      # Record this machine as matched to the name in the current owner class.
+      # This will override any machines mapped to the same name in any superclasses.
+      owner_class.state_machines[name] = self
     end
     
     # Sets the initial state of the machine.  This can be either the static name
@@ -505,11 +501,11 @@ module StateMachine
     #     machine.states.match(object)
     #   end
     def define_instance_method(method, &block)
-      attribute = self.attribute
+      name = self.name
       
       @instance_helper_module.class_eval do
         define_method(method) do |*args|
-          block.call(self.class.state_machine(attribute), self, *args)
+          block.call(self.class.state_machine(name), self, *args)
         end
       end
     end
@@ -525,11 +521,11 @@ module StateMachine
     #     machine.states.keys
     #   end
     def define_class_method(method, &block)
-      attribute = self.attribute
+      name = self.name
       
       @class_helper_module.class_eval do
         define_method(method) do |*args|
-          block.call(self.state_machine(attribute), self, *args)
+          block.call(self.state_machine(name), self, *args)
         end
       end
     end
@@ -626,7 +622,7 @@ module StateMachine
     #   end
     #   
     #   class Vehicle < ActiveRecord::Base
-    #     state_machine :state_id, :as => 'state', :initial => :parked do
+    #     state_machine :attribute => :state_id, :initial => :parked do
     #       event :ignite do
     #         transition :parked => :idling
     #       end
@@ -852,7 +848,7 @@ module StateMachine
       ivar ? object.instance_variable_get("@#{attribute}") : object.send(attribute)
     end
     
-    # Sets a new value in the given object's state.
+    # Sets a new value in the given object's attribute.
     # 
     # For example,
     # 
@@ -862,9 +858,11 @@ module StateMachine
     #     end
     #   end
     #   
-    #   vehicle = Vehicle.new   # => #<Vehicle:0xb7d94ab0 @state="parked">
-    #   Vehicle.state_machine.write(vehicle, 'idling')
-    #   vehicle.state           # => "idling"
+    #   vehicle = Vehicle.new                                   # => #<Vehicle:0xb7d94ab0 @state="parked">
+    #   Vehicle.state_machine.write(vehicle, :state, 'idling')  # => Equivalent to vehicle.state = 'idling'
+    #   Vehicle.state_machine.write(vehicle, :event, 'park')    # => Equivalent to vehicle.state_event = 'park'
+    #   vehicle.state                                           # => "idling"
+    #   vehicle.event                                           # => "park"
     def write(object, attribute, value)
       object.send("#{self.attribute(attribute)}=", value)
     end
@@ -1124,12 +1122,12 @@ module StateMachine
     # 
     #   class Vehicle
     #     # Only specifies one parameter (the object being transitioned)
-    #     before_transition :to => :parked do |vehicle|
+    #     before_transition all => :parked do |vehicle|
     #       vehicle.set_alarm
     #     end
     #     
     #     # Specifies 2 parameters (object being transitioned and actual transition)
-    #     before_transition :to => :parked do |vehicle, transition|
+    #     before_transition all => :parked do |vehicle, transition|
     #       vehicle.set_alarm(transition)
     #     end
     #   end
@@ -1155,7 +1153,7 @@ module StateMachine
     #       before_transition [:first_gear, :idling] => :parked, :on => :park, :do => :take_off_seatbelt
     #       
     #       # With conditional callback:
-    #       before_transition :to => :parked, :do => :take_off_seatbelt, :if => :seatbelt_on?
+    #       before_transition all => :parked, :do => :take_off_seatbelt, :if => :seatbelt_on?
     #       
     #       # Using helpers:
     #       before_transition all - :stalled => same, :on => any - :crash, :do => :update_dashboard
@@ -1217,7 +1215,7 @@ module StateMachine
     # 
     # Configuration options:
     # * <tt>:name</tt> - The name of the file to write to (without the file extension).
-    #   Default is "#{owner_class.name}_#{attribute}"
+    #   Default is "#{owner_class.name}_#{name}"
     # * <tt>:path</tt> - The path to write the graph file to.  Default is the
     #   current directory (".").
     # * <tt>:format</tt> - The image format to generate the graph in.
@@ -1229,7 +1227,7 @@ module StateMachine
     # * <tt>:output</tt> - Whether to generate the output of the graph
     def draw(options = {})
       options = {
-        :name => "#{owner_class.name}_#{attribute}",
+        :name => "#{owner_class.name}_#{name}",
         :path => '.',
         :format => 'png',
         :font => 'Arial',
@@ -1322,8 +1320,6 @@ module StateMachine
         
         # Add helpers for interacting with the action
         if action
-          name = self.name
-          
           # Tracks the event / transition to invoke when the action is called
           event_attribute = attribute(:event)
           event_transition_attribute = attribute(:event_transition)
@@ -1348,7 +1344,7 @@ module StateMachine
         action = self.action
         private_method = owner_class.private_method_defined?(action_hook)
         
-        if (owner_class.method_defined?(action_hook) || private_method) && !owner_class.state_machines.any? {|attribute, machine| machine.action == action && machine != self}
+        if (owner_class.method_defined?(action_hook) || private_method) && !owner_class.state_machines.any? {|name, machine| machine.action == action && machine != self}
           # Action is defined and hasn't already been overridden by another machine
           @instance_helper_module.class_eval do
             # Override the default action to invoke the before / after hooks

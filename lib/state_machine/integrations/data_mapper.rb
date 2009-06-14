@@ -94,16 +94,13 @@ module StateMachine
     #     include DataMapper::Resource
     #     ...
     #     
-    #     # Allow both machines to share the same state
-    #     alias_method :public_state, :state
-    #     alias_method :public_state=, :state=
-    #     
     #     state_machine do
     #       # Define private events here
     #     end
     #     protected :state_event= # Prevent access to events in the first machine
     #     
-    #     state_machine :public_state do
+    #     # Allow both machines to share the same state
+    #     state_machine :public_state, :attribute => :state do
     #       # Define public events here
     #     end
     #   end
@@ -112,7 +109,7 @@ module StateMachine
     # 
     # By default, the use of transactions during an event transition is
     # turned off to be consistent with DataMapper.  This means that if
-    # changes are made to the database during a before callback, but the the
+    # changes are made to the database during a before callback, but the
     # transition fails to complete, those changes will *not* be rolled back.
     # 
     # For example,
@@ -274,9 +271,9 @@ module StateMachine
           owner_class.property(attribute, String) unless owner_class.properties.has_property?(attribute)
           
           if supports_validations?
-            attribute = self.attribute
+            name = self.name
             owner_class.validates_with_block(attribute) do
-              machine = self.class.state_machine(attribute)
+              machine = self.class.state_machine(name)
               machine.states.match(self) ? true : [false, machine.generate_message(:invalid)]
             end
           end
