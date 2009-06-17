@@ -25,10 +25,9 @@ begin
           end if auto_migrate
           model = Class.new(Sequel::Model(:foo)) do
             self.raise_on_save_failure = false
-            plugin :validation_class_methods if respond_to?(:plugin)
-            
             def self.name; 'SequelTest::Foo'; end
           end
+          model.plugin(:validation_class_methods) if model.respond_to?(:plugin)
           model.class_eval(&block) if block_given?
           model
         end
