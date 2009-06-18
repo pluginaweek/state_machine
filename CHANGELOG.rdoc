@@ -1,5 +1,7 @@
 == master
 
+== 0.7.6 / 2009-06-17
+
 * Allow multiple state machines on the same class to target the same attribute
 * Add support for :attribute to customize the attribute target, assuming the name is the first argument of #state_machine
 * Simplify reading from / writing to machine-related attributes on objects
