@@ -1,5 +1,6 @@
 == master
 
+* Use friendly validation errors for nil states
 * Fix states not being validated properly when using custom names in ActiveRecord / DataMapper integrations
 
 == 0.7.6 / 2009-06-17
