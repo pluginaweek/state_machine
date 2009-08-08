@@ -242,7 +242,7 @@ module StateMachine
           name = self.name
           owner_class.validates_each(attribute) do |record, attr, value|
             machine = record.class.state_machine(name)
-            machine.invalidate(record, attr, :invalid) unless machine.states.match(record)
+            machine.invalidate(record, :state, :invalid) unless machine.states.match(record)
           end
         end
         

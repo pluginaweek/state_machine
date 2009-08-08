@@ -1,5 +1,7 @@
 == master
 
+* Fix states not being validated properly when using custom names in ActiveRecord / DataMapper integrations
+
 == 0.7.6 / 2009-06-17
 
 * Allow multiple state machines on the same class to target the same attribute
