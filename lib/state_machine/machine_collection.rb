@@ -4,10 +4,12 @@ module StateMachine
     # Initializes the state of each machine in the given object.  Initial
     # values are only set if the machine's attribute doesn't already exist
     # (which must mean the defaults are being skipped)
-    def initialize_states(object)
+    def initialize_states(object, options = {})
       each_value do |machine|
-        value = machine.read(object, :state)
-        machine.write(object, :state, machine.initial_state(object).value) if value.nil? || value.respond_to?(:empty?) && value.empty?
+        if !options.include?(:dynamic) || machine.dynamic_initial_state? == options[:dynamic]
+          value = machine.read(object, :state)
+          machine.write(object, :state, machine.initial_state(object).value) if value.nil? || value.respond_to?(:empty?) && value.empty?
+        end
       end
     end
     

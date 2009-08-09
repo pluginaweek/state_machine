@@ -22,15 +22,6 @@ module StateMachine
   end
   
   module InstanceMethods
-    # Defines the initial values for state machine attributes.  The values
-    # will be set *after* the original initialize method is invoked.  This is
-    # necessary in order to ensure that the object is initialized before
-    # dynamic initial attributes are evaluated.
-    def initialize(*args, &block)
-      super
-      initialize_state_machines
-    end
-    
     # Runs one or more events in parallel.  All events will run through the
     # following steps:
     # * Before callbacks
@@ -151,8 +142,8 @@ module StateMachine
     end
     
     protected
-      def initialize_state_machines #:nodoc:
-        self.class.state_machines.initialize_states(self)
+      def initialize_state_machines(options = {}) #:nodoc:
+        self.class.state_machines.initialize_states(self, options)
       end
   end
 end

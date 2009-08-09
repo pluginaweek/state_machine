@@ -207,6 +207,10 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
   end
   
+  def test_should_not_have_dynamic_initial_state
+    assert !@machine.dynamic_initial_state?
+  end
+  
   def test_should_have_an_initial_state
     object = @klass.new
     assert_equal 'parked', @machine.initial_state(object).value
@@ -231,6 +235,20 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
     assert_equal 'idling', object.state
   end
   
+  def test_should_set_initial_state_prior_to_initialization
+    base = Class.new do
+      attr_accessor :state_on_init
+      
+      def initialize
+        self.state_on_init = state
+      end
+    end
+    klass = Class.new(base)
+    machine = StateMachine::Machine.new(klass, :initial => :parked)
+    
+    assert_equal 'parked', klass.new.state_on_init
+  end
+  
   def test_should_be_included_in_known_states
     assert_equal [:parked], @machine.states.keys
   end
@@ -246,6 +264,10 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
     @object = @klass.new
   end
   
+  def test_should_have_dynamic_initial_state
+    assert @machine.dynamic_initial_state?
+  end
+  
   def test_should_use_the_record_for_determining_the_initial_state
     @object.initial_state = :parked
     assert_equal :parked, @machine.initial_state(@object).name
@@ -256,6 +278,21 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
   
   def test_should_set_initial_state_on_created_object
     assert_equal 'default', @object.state
+  end
+  
+  def test_should_set_initial_state_after_initialization
+    base = Class.new do
+      attr_accessor :state_on_init
+      
+      def initialize
+        self.state_on_init = state
+      end
+    end
+    klass = Class.new(base)
+    machine = StateMachine::Machine.new(klass, :initial => lambda {|object| :parked})
+    machine.state :parked
+    
+    assert_nil klass.new.state_on_init
   end
   
   def test_should_not_be_included_in_known_states

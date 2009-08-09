@@ -479,7 +479,7 @@ module StateMachine
     # creation time.
     def initial_state=(new_initial_state)
       @initial_state = new_initial_state
-      add_states([@initial_state]) unless @initial_state.is_a?(Proc)
+      add_states([@initial_state]) unless dynamic_initial_state?
       
       # Update all states to reflect the new initial state
       states.each {|state| state.initial = (state.name == @initial_state)}
@@ -565,7 +565,12 @@ module StateMachine
     #   vehicle.force_idle = false
     #   Vehicle.state_machine.initial_state(vehicle)  # => #<StateMachine::State name=:parked value="parked" initial=false>
     def initial_state(object)
-      states.fetch(@initial_state.is_a?(Proc) ? @initial_state.call(object) : @initial_state)
+      states.fetch(dynamic_initial_state? ? @initial_state.call(object) : @initial_state)
+    end
+    
+    # Whether a dynamic initial state is being used in the machine
+    def dynamic_initial_state?
+      @initial_state.is_a?(Proc)
     end
     
     # Customizes the definition of one or more states in the machine.
@@ -1276,6 +1281,7 @@ module StateMachine
       # Adds helper methods for interacting with the state machine, including
       # for states, events, and transitions
       def define_helpers
+        define_state_initializer unless owner_class.state_machines.length > 1 || owner_class.superclass.respond_to?(:state_machines)
         define_state_accessor
         define_state_predicate
         define_event_helpers
@@ -1285,6 +1291,19 @@ module StateMachine
         define_instance_method(attribute(:name)) do |machine, object|
           machine.states.match!(object).name
         end
+      end
+      
+      # Defines the initial values for state machine attributes.  Static values
+      # are set prior to the original initialize method and dynamic values are
+      # set *after* the initialize method in case it is dependent on it.
+      def define_state_initializer
+        @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
+          def initialize(*args)
+            initialize_state_machines(:dynamic => false)
+            super
+            initialize_state_machines(:dynamic => true)
+          end
+        end_eval
       end
       
       # Adds reader/writer methods for accessing the state attribute

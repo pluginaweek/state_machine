@@ -237,6 +237,30 @@ module StateMachine
       end
       
       protected
+        # Defines an initialization hook into the owner class for setting the
+        # initial state of the machine *before* any attributes are set on the
+        # object
+        def define_state_initializer
+          @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
+            def initialize(values = {}, from_db = false, *args)
+              if from_db
+                super
+              else
+                original_values = values
+                values = {}
+                
+                super do |*args|
+                  initialize_state_machines(:dynamic => false)
+                  set(original_values) if original_values
+                  initialize_state_machines(:dynamic => true)
+                  changed_columns.clear
+                  yield *args if block_given?
+                end
+              end
+            end
+          end_eval
+        end
+        
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
           name = self.name

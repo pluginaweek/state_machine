@@ -1,5 +1,7 @@
 == master
 
+* Fix initial states being set when loading records from the database in Sequel integration
+* Allow static initial states to be set earlier in the initialization of an object
 * Use friendly validation errors for nil states
 * Fix states not being validated properly when using custom names in ActiveRecord / DataMapper integrations
 

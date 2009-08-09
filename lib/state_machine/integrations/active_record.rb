@@ -308,6 +308,25 @@ module StateMachine
           callbacks[:after] << Callback.new {|object, transition| notify(:after, object, transition)}
         end
         
+        # Defines an initialization hook into the owner class for setting the
+        # initial state of the machine *before* any attributes are set on the
+        # object
+        def define_state_initializer
+          @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
+            def initialize(attributes = nil, *args)
+              original_attributes = attributes
+              attributes = nil
+              
+              super do |*args|
+                initialize_state_machines(:dynamic => false)
+                self.attributes = original_attributes if original_attributes
+                initialize_state_machines(:dynamic => true)
+                yield *args if block_given?
+              end
+            end
+          end_eval
+        end
+        
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
           name = self.name

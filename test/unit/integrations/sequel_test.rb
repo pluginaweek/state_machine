@@ -184,15 +184,118 @@ begin
       end
     end
     
-    class MachineWithInitialStateTest < BaseTestCase
+    class MachineWithStaticInitialStateTest < BaseTestCase
       def setup
-        @model = new_model
-        @machine = StateMachine::Machine.new(@model, :initial => 'parked')
-        @record = @model.new
+        @model = new_model do
+          attr_accessor :value
+        end
+        @machine = StateMachine::Machine.new(@model, :initial => :parked)
       end
       
       def test_should_set_initial_state_on_created_object
-        assert_equal 'parked', @record.state
+        record = @model.new
+        assert_equal 'parked', record.state
+      end
+      
+      def test_should_still_set_attributes
+        record = @model.new(:value => 1)
+        assert_equal 1, record.value
+      end
+      
+      def test_should_still_allow_initialize_blocks
+        block_args = nil
+        record = @model.new do |*args|
+          block_args = args
+        end
+        
+        assert_equal [record], block_args
+      end
+      
+      def test_should_not_have_any_changed_columns
+        record = @model.new
+        assert record.changed_columns.empty?
+      end
+      
+      def test_should_set_attributes_prior_to_after_initialize_hook
+        state = nil
+        @model.class_eval do
+          define_method(:after_initialize) do
+            state = self.state
+          end
+        end
+        @model.new
+        assert_equal 'parked', state
+      end
+      
+      def test_should_set_initial_state_before_setting_attributes
+        @model.class_eval do
+          attr_accessor :state_on_setting
+          
+          define_method(:value=) do |value|
+            self.state_on_setting = self.state
+          end
+        end
+        
+        record = @model.new(:value => 1)
+        assert_equal 'parked', record.state_on_setting
+      end
+    end
+    
+    class MachineWithDynamicInitialStateTest < BaseTestCase
+      def setup
+        @model = new_model do
+          attr_accessor :value
+        end
+        @machine = StateMachine::Machine.new(@model, :initial => lambda {|object| :parked})
+        @machine.state :parked
+      end
+      
+      def test_should_set_initial_state_on_created_object
+        record = @model.new
+        assert_equal 'parked', record.state
+      end
+      
+      def test_should_still_set_attributes
+        record = @model.new(:value => 1)
+        assert_equal 1, record.value
+      end
+      
+      def test_should_still_allow_initialize_blocks
+        block_args = nil
+        record = @model.new do |*args|
+          block_args = args
+        end
+        
+        assert_equal [record], block_args
+      end
+      
+      def test_should_not_have_any_changed_columns
+        record = @model.new
+        assert record.changed_columns.empty?
+      end
+      
+      def test_should_set_attributes_prior_to_after_initialize_hook
+        state = nil
+        @model.class_eval do
+          define_method(:after_initialize) do
+            state = self.state
+          end
+        end
+        @model.new
+        assert_equal 'parked', state
+      end
+      
+      def test_should_set_initial_state_after_setting_attributes
+        @model.class_eval do
+          attr_accessor :state_on_setting
+          
+          define_method(:value=) do |value|
+            self.state_on_setting = self.state || 'nil'
+          end
+        end
+        
+        record = @model.new(:value => 1)
+        assert_equal 'nil', record.state_on_setting
       end
     end
     

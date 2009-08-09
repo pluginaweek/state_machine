@@ -14,37 +14,60 @@ class MachineCollectionStateInitializationTest < Test::Unit::TestCase
   def setup
     @machines = StateMachine::MachineCollection.new
     
-    @klass = Class.new do
-      def initialize(attributes = {})
-        attributes.each do |attribute, value|
-          self.send("#{attribute}=", value)
-        end
-        
-        super()
+    @klass = Class.new
+    
+    @machines[:state] = StateMachine::Machine.new(@klass, :state, :initial => :parked)
+    @machines[:alarm_state] = StateMachine::Machine.new(@klass, :alarm_state, :initial => lambda {|object| :active})
+    @machines[:alarm_state].state :active, :value => lambda {'active'}
+    
+    # Prevent the auto-initialization hook from firing
+    @klass.class_eval do
+      def initialize
       end
     end
     
-    @machines[:state] = StateMachine::Machine.new(@klass, :state, :initial => :parked)
-    @machines[:alarm_state] = StateMachine::Machine.new(@klass, :alarm_state, :initial => :active)
-    @machines[:alarm_state].state :active, :value => lambda {'active'}
+    @object = @klass.new
+    @object.state = nil
+    @object.alarm_state = nil
   end
   
   def test_should_set_states_if_nil
-    object = @klass.new
-    assert_equal 'parked', object.state
-    assert_equal 'active', object.alarm_state
+    @machines.initialize_states(@object)
+    
+    assert_equal 'parked', @object.state
+    assert_equal 'active', @object.alarm_state
   end
   
   def test_should_set_states_if_empty
-    object = @klass.new(:state => '', :alarm_state => '')
-    assert_equal 'parked', object.state
-    assert_equal 'active', object.alarm_state
+    @object.state = ''
+    @object.alarm_state = ''
+    @machines.initialize_states(@object)
+    
+    assert_equal 'parked', @object.state
+    assert_equal 'active', @object.alarm_state
   end
   
   def test_should_not_set_states_if_not_empty
-    object = @klass.new(:state => 'idling', :alarm_state => 'off')
-    assert_equal 'idling', object.state
-    assert_equal 'off', object.alarm_state
+    @object.state = 'idling'
+    @object.alarm_state = 'off'
+    @machines.initialize_states(@object)
+    
+    assert_equal 'idling', @object.state
+    assert_equal 'off', @object.alarm_state
+  end
+  
+  def test_should_only_initialize_static_states_if_dynamic_disabled
+    @machines.initialize_states(@object, :dynamic => false)
+    
+    assert_equal 'parked', @object.state
+    assert_nil @object.alarm_state
+  end
+  
+  def test_should_only_initialize_dynamic_states_if_dynamic_enabled
+    @machines.initialize_states(@object, :dynamic => true)
+    
+    assert_nil @object.state
+    assert_equal 'active', @object.alarm_state
   end
 end
 
