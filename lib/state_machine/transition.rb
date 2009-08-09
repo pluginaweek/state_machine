@@ -218,6 +218,9 @@ module StateMachine
     # callbacks that are configured to match the event, from state, and to
     # state will be invoked.
     # 
+    # Once the callbacks are run, they cannot be run again until this transition
+    # is reset.
+    # 
     # == Example
     # 
     #   class Vehicle
@@ -233,7 +236,8 @@ module StateMachine
       result = false
       
       catch(:halt) do
-        callback(:before)
+        callback(:before) unless @before_run
+        @before_run = true
         result = true
       end
       
@@ -241,7 +245,8 @@ module StateMachine
     end
     
     # Transitions the current value of the state to that specified by the
-    # transition.
+    # transition.  Once the state is persisted, it cannot be persisted again
+    # until this transition is reset.
     # 
     # == Example
     # 
@@ -259,7 +264,8 @@ module StateMachine
     #   
     #   vehicle.state   # => 'idling'
     def persist
-      machine.write(object, :state, to)
+      machine.write(object, :state, to) unless @persisted
+      @persisted = true
     end
     
     # Runs the machine's +after+ callbacks for this transition.  Only
@@ -268,6 +274,9 @@ module StateMachine
     # 
     # The result is used to indicate whether the associated machine action
     # was executed successfully.
+    # 
+    # Once the callbacks are run, they cannot be run again until this transition
+    # is reset.
     # 
     # == Halting
     # 
@@ -295,7 +304,8 @@ module StateMachine
       @result = result
       
       catch(:halt) do
-        callback(:after, :result => result)
+        callback(:after, :result => result) unless @after_run
+        @after_run = true
       end
       
       true
@@ -326,7 +336,14 @@ module StateMachine
     #   transition.rollback
     #   vehicle.state             # => "parked"
     def rollback
+      reset
       machine.write(object, :state, from)
+    end
+    
+    # Resets any tracking of which callbacks have already been run and whether
+    # the state has already been persisted
+    def reset
+      @before_run = @persisted = @after_run = false
     end
     
     # Generates a nicely formatted description of this transitions's contents.

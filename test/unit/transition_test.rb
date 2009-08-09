@@ -297,6 +297,19 @@ class TransitionAfterBeingPersistedTest < Test::Unit::TestCase
     assert_equal 'idling', @transition.to
   end
   
+  def test_should_not_be_able_to_persist_twice
+    @object.state = 'parked'
+    @transition.persist
+    assert_equal 'parked', @object.state
+  end
+  
+  def test_should_be_able_to_persist_again_after_resetting
+    @object.state = 'parked'
+    @transition.reset
+    @transition.persist
+    assert_equal 'idling', @object.state
+  end
+  
   def test_should_revert_to_from_state_on_rollback
     @transition.rollback
     assert_equal 'parked', @object.state
@@ -409,6 +422,23 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     assert_equal 'parked', @state
   end
   
+  def test_should_not_be_able_to_run_before_callbacks_twice
+    @count = 0
+    @machine.before_transition(lambda {@count += 1})
+    @transition.before
+    @transition.before
+    assert_equal 1, @count
+  end
+  
+  def test_should_be_able_to_run_before_callbacks_again_after_resetting
+    @count = 0
+    @machine.before_transition(lambda {@count += 1})
+    @transition.before
+    @transition.reset
+    @transition.before
+    assert_equal 2, @count
+  end
+  
   def test_should_run_after_callbacks_on_after
     @machine.after_transition(lambda {|object| @run = true})
     result = @transition.after(true)
@@ -472,6 +502,23 @@ class TransitionWithCallbacksTest < Test::Unit::TestCase
     @transition.perform(true)
     
     assert_equal 'idling', @state
+  end
+  
+  def test_should_not_be_able_to_run_after_callbacks_twice
+    @count = 0
+    @machine.after_transition(lambda {@count += 1})
+    @transition.after
+    @transition.after
+    assert_equal 1, @count
+  end
+  
+  def test_should_be_able_to_run_after_callbacks_again_after_resetting
+    @count = 0
+    @machine.after_transition(lambda {@count += 1})
+    @transition.after
+    @transition.reset
+    @transition.after
+    assert_equal 2, @count
   end
 end
 

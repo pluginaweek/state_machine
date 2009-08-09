@@ -1,5 +1,6 @@
 == master
 
+* Fix before_transition callbacks getting run twice when using event attributes in ORM integrations
 * Add the ability to query for the availability of specific transitions on an object
 * Allow after_transitions to be explicitly run on failed attempts
 * By default, don't run after_transition callbacks on failed attempts
