@@ -191,7 +191,7 @@ module StateMachine
         context_method.bind(object).call(*args, &block)
       else
         # Raise exception as if the method never existed on the original object
-        raise NoMethodError, "undefined method '#{method}' for #{object} in state #{machine.states.match(object).name.inspect}"
+        raise NoMethodError, "undefined method '#{method}' for #{object} with #{name || 'nil'} #{machine.name}"
       end
     end
     

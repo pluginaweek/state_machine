@@ -628,7 +628,7 @@ class StateWithInvalidMethodCallTest < Test::Unit::TestCase
   
   def test_should_raise_an_exception
     exception = assert_raise(NoMethodError) { @state.call(@object, :invalid) }
-    assert_equal "undefined method 'invalid' for #{@object} in state nil", exception.message
+    assert_equal "undefined method 'invalid' for #{@object} with idling state", exception.message
   end
 end
 
