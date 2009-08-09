@@ -1412,6 +1412,24 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
     assert_equal %w(before after), @object.callbacks
   end
   
+  def test_should_allow_multiple_callbacks
+    @machine.before_transition lambda {|object| object.callbacks << 'before1'}, lambda {|object| object.callbacks << 'before2'}
+    @machine.after_transition lambda {|object| object.callbacks << 'after1'}, lambda {|object| object.callbacks << 'after2'}
+    
+    @event.fire(@object)
+    assert_equal %w(before1 before2 after1 after2), @object.callbacks
+  end
+  
+  def test_should_allow_multiple_callbacks_with_requirements
+    @machine.before_transition lambda {|object| object.callbacks << 'before_parked1'}, lambda {|object| object.callbacks << 'before_parked2'}, :from => :parked
+    @machine.before_transition lambda {|object| object.callbacks << 'before_idling1'}, lambda {|object| object.callbacks << 'before_idling2'}, :from => :idling
+    @machine.after_transition lambda {|object| object.callbacks << 'after_parked1'}, lambda {|object| object.callbacks << 'after_parked2'}, :from => :parked
+    @machine.after_transition lambda {|object| object.callbacks << 'after_idling1'}, lambda {|object| object.callbacks << 'after_idling2'}, :from => :idling
+    
+    @event.fire(@object)
+    assert_equal %w(before_parked1 before_parked2 after_parked1 after_parked2), @object.callbacks
+  end
+  
   def test_should_support_from_requirement
     @machine.before_transition :from => :parked, :do => lambda {|object| object.callbacks << :parked}
     @machine.before_transition :from => :idling, :do => lambda {|object| object.callbacks << :idling}

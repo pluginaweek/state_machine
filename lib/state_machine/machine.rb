@@ -1168,8 +1168,10 @@ module StateMachine
     # 
     # As can be seen, any number of transitions can be created using various
     # combinations of configuration options.
-    def before_transition(options = {}, &block)
-      add_callback(:before, options.is_a?(Hash) ? options : {:do => options}, &block)
+    def before_transition(*args, &block)
+      options = (args.last.is_a?(Hash) ? args.pop : {})
+      options[:do] = args if args.any?
+      add_callback(:before, options, &block)
     end
     
     # Creates a callback that will be invoked *after* a transition is
@@ -1177,8 +1179,10 @@ module StateMachine
     # 
     # See +before_transition+ for a description of the possible configurations
     # for defining callbacks.
-    def after_transition(options = {}, &block)
-      add_callback(:after, options.is_a?(Hash) ? options : {:do => options}, &block)
+    def after_transition(*args, &block)
+      options = (args.last.is_a?(Hash) ? args.pop : {})
+      options[:do] = args if args.any?
+      add_callback(:after, options, &block)
     end
     
     # Marks the given object as invalid with the given message.
