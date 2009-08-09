@@ -201,6 +201,12 @@ class EventTransitionsTest < Test::Unit::TestCase
     assert_equal 'Invalid key(s): on', exception.message
   end
   
+  def test_should_automatically_set_on_option
+    guard = @event.transition(:to => :idling)
+    assert_instance_of StateMachine::WhitelistMatcher, guard.event_requirement
+    assert_equal [:ignite], guard.event_requirement.values
+  end
+  
   def test_should_not_allow_except_to_option
     exception = assert_raise(ArgumentError) {@event.transition(:except_to => :parked)}
     assert_equal 'Invalid key(s): except_to', exception.message
@@ -542,6 +548,7 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
     @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition(:idling => :idling)
     @event.transition(:parked => :idling) # This one should get used
+    @event.transition(:parked => :parked)
     
     @object = @klass.new
     @object.state = 'parked'
@@ -557,6 +564,32 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
     assert_equal 'parked', transition.from
     assert_equal 'idling', transition.to
     assert_equal :ignite, transition.event
+  end
+  
+  def test_should_allow_specific_transition_selection_using_from
+    transition = @event.transition_for(@object, :from => :idling)
+    
+    assert_not_nil transition
+    assert_equal 'idling', transition.from
+    assert_equal 'idling', transition.to
+    assert_equal :ignite, transition.event
+  end
+  
+  def test_should_allow_specific_transition_selection_using_to
+    transition = @event.transition_for(@object, :from => :parked, :to => :parked)
+    
+    assert_not_nil transition
+    assert_equal 'parked', transition.from
+    assert_equal 'parked', transition.to
+    assert_equal :ignite, transition.event
+  end
+  
+  def test_should_allow_specific_transition_selection_using_on
+    transition = @event.transition_for(@object, :on => :park)
+    assert_nil transition
+    
+    transition = @event.transition_for(@object, :on => :ignite)
+    assert_not_nil transition
   end
   
   def test_should_fire

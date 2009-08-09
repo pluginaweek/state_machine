@@ -55,8 +55,8 @@ module StateMachine
     #   
     #   vehicle.state = 'idling'
     #   events.transitions_for(vehicle)         # => [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
-    def transitions_for(object)
-      map {|event| event.transition_for(object)}.compact
+    def transitions_for(object, requirements = {})
+      map {|event| event.transition_for(object, requirements)}.compact
     end
     
     # Gets the transition that should be performed for the event stored in the

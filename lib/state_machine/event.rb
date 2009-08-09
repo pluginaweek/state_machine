@@ -147,7 +147,7 @@ module StateMachine
       # requirements
       assert_valid_keys(options, :from, :to, :except_from, :if, :unless) if (options.keys - [:from, :to, :on, :except_from, :except_to, :except_on, :if, :unless]).empty?
       
-      guards << guard = Guard.new(options)
+      guards << guard = Guard.new(options.merge(:on => name))
       @known_states |= guard.known_states
       guard
     end
@@ -162,15 +162,16 @@ module StateMachine
     
     # Finds and builds the next transition that can be performed on the given
     # object.  If no transitions can be made, then this will return nil.
-    def transition_for(object)
-      from = machine.states.match(object).name
+    def transition_for(object, requirements = {})
+      requirements[:from] = machine.states.match(object).name unless custom_from_state = requirements.include?(:from)
       
       guards.each do |guard|
-        if match = guard.match(object, :from => from)
+        if match = guard.match(object, requirements)
           # Guard allows for the transition to occur
+          from = requirements[:from]
           to = match[:to].values.empty? ? from : match[:to].values.first
           
-          return Transition.new(object, machine, name, from, to)
+          return Transition.new(object, machine, name, from, to, !custom_from_state)
         end
       end
       

@@ -124,7 +124,7 @@ module StateMachine
     attr_reader :result
     
     # Creates a new, specific transition
-    def initialize(object, machine, event, from_name, to_name) #:nodoc:
+    def initialize(object, machine, event, from_name, to_name, read_state = true) #:nodoc:
       @object = object
       @machine = machine
       @args = []
@@ -136,7 +136,7 @@ module StateMachine
       
       # From state information
       from_state = machine.states.fetch(from_name)
-      @from = machine.read(object, :state)
+      @from = read_state ? machine.read(object, :state) : from_state.value
       @from_name = from_state.name
       @qualified_from_name = from_state.qualified_name
       

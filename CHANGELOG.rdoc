@@ -1,5 +1,6 @@
 == master
 
+* Add the ability to query for the availability of specific transitions on an object
 * Allow after_transitions to be explicitly run on failed attempts
 * By default, don't run after_transition callbacks on failed attempts
 * Fix not allowing multiple methods to be specificed as arguments in callbacks

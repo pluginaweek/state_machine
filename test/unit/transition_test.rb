@@ -224,6 +224,27 @@ class TransitionWithCustomMachineAttributeTest < Test::Unit::TestCase
   end
 end
 
+class TransitionWithoutReadingStateTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked, :idling
+    @machine.event :ignite
+    
+    @object = @klass.new
+    @object.state = 'idling'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling, false)
+  end
+  
+  def test_should_not_read_from_value_from_object
+    assert_equal 'parked', @transition.from
+  end
+  
+  def test_should_have_to_value
+    assert_equal 'idling', @transition.to
+  end
+end
+
 class TransitionWithActionTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do

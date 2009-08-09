@@ -81,6 +81,12 @@ class EventCollectionWithEventsWithTransitionsTest < Test::Unit::TestCase
     object.state = 'idling'
     assert_equal [], @events.transitions_for(object)
   end
+  
+  def test_filter_valid_transitions_for_an_object_if_requirements_specified
+    object = @klass.new
+    assert_equal [{:object => object, :attribute => :state, :event => :ignite, :from => 'stalled', :to => 'idling'}], @events.transitions_for(object, :from => :stalled).map {|transition| transition.attributes}
+    assert_equal [], @events.transitions_for(object, :from => :idling).map {|transition| transition.attributes}
+  end
 end
 
 class EventCollectionWithMultipleEventsTest < Test::Unit::TestCase
