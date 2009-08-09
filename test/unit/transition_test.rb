@@ -770,6 +770,7 @@ class TransitionWithActionFailedTest < Test::Unit::TestCase
     
     @machine.before_transition lambda {@before_count += 1}
     @machine.after_transition lambda {@after_count += 1}
+    @machine.after_transition lambda {@after_count += 1}, :include_failures => true
     
     @object = @klass.new
     @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
@@ -788,7 +789,7 @@ class TransitionWithActionFailedTest < Test::Unit::TestCase
     assert_equal 1, @before_count
   end
   
-  def test_should_run_after_callbacks
+  def test_should_only_run_after_callbacks_that_include_failures
     assert_equal 1, @after_count
   end
   

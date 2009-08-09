@@ -65,7 +65,7 @@ module StateMachine
           end
           
           # Always run after callbacks regardless of whether the actions failed
-          transitions.each {|transition| transition.after(results[transition.action])} unless options[:after] == false
+          transitions.each {|transition| transition.after(results[transition.action])} if options[:after] != false || !success
           
           # Rollback the transitions if the transaction was unsuccessful
           transitions.each {|transition| transition.rollback} unless success
@@ -295,7 +295,7 @@ module StateMachine
       @result = result
       
       catch(:halt) do
-        callback(:after)
+        callback(:after, :result => result)
       end
       
       true
@@ -358,7 +358,9 @@ module StateMachine
       # 
       # Additional callback parameters can be specified.  By default, this
       # transition is also passed into callbacks.
-      def callback(type)
+      def callback(type, context = {})
+        context = self.context.merge(context)
+        
         machine.callbacks[type].each do |callback|
           callback.call(object, context, self)
         end

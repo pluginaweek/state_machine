@@ -1075,6 +1075,17 @@ module StateMachine
     #   before_transition :on => all - :ignite, :do => ...                  # Matches on every event except ignite
     #   before_transition :parked => :idling, :on => :ignite, :do => ...    # Matches from parked to idling on ignite
     # 
+    # == Result requirements
+    # 
+    # By default, after_transition callbacks will only be run if the transition
+    # was performed successfully.  A transition is successful if the machine's
+    # action is not configured or does not return false when it is invoked.
+    # In order to include failed attempts when running an after_transition
+    # callback, the :include_failures option can be specified like so:
+    # 
+    #   after_transition :include_failures => true, :do => ...  # Runs on all attempts to transition, including failures
+    #   after_transition :do => ...                             # Runs only on successful attempts to transition
+    # 
     # == Verbose Requirements
     # 
     # Requirements can also be defined using verbose options rather than the

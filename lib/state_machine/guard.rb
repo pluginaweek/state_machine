@@ -24,6 +24,9 @@ module StateMachine
     # requirements contain a mapping of {:from => matcher, :to => matcher}.
     attr_reader :state_requirements
     
+    # The requirement for verifying the result of the event
+    attr_reader :result_requirement
+    
     # A list of all of the states known to this guard.  This will pull states
     # from the following options (in the same order):
     # * +from+ / +except_from+
@@ -38,6 +41,9 @@ module StateMachine
       
       # Build event requirement
       @event_requirement = build_matcher(options, :on, :except_on)
+      
+      # Build result
+      @result_requirement = options.delete(:include_failures) ? AllMatcher.instance : BlacklistMatcher.new([false])
       
       if (options.keys - [:from, :to, :on, :except_from, :except_to, :except_on]).empty?
         # Explicit from/to requirements specified
@@ -185,9 +191,14 @@ module StateMachine
       def match_query(query)
         query ||= {}
         
-        if match_event(query) && (state_requirement = match_states(query))
+        if match_result(query) && match_event(query) && (state_requirement = match_states(query))
           state_requirement.merge(:on => event_requirement)
         end
+      end
+      
+      # Verifies that the result requirement matches the given query
+      def match_result(query)
+        matches_requirement?(query, :result, result_requirement)
       end
       
       # Verifies that the event requirement matches the given query

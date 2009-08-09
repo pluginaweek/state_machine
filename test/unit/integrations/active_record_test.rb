@@ -664,6 +664,14 @@ begin
         @machine = StateMachine::Machine.new(@model)
         @machine.state :parked, :idling
         @machine.event :ignite
+        
+        @before_transition_called = false
+        @after_transition_called = false
+        @after_transition_with_failures_called = false
+        @machine.before_transition(lambda {@before_transition_called = true})
+        @machine.after_transition(lambda {@after_transition_called = true})
+        @machine.after_transition(lambda {@after_transition_with_failures_called = true}, :include_failures => true)
+        
         @record = @model.new(:state => 'parked')
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
         @result = @transition.perform
@@ -679,6 +687,18 @@ begin
       
       def test_should_not_save_record
         assert @record.new_record?
+      end
+      
+      def test_should_run_before_callback
+        assert @before_transition_called
+      end
+      
+      def test_should_not_run_after_callback_if_not_including_failures
+        assert !@after_transition_called
+      end
+      
+      def test_should_run_after_callback_if_including_failures
+        assert @after_transition_with_failures_called
       end
     end
     
