@@ -602,6 +602,36 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
   end
 end
 
+class EventWithInvalidCurrentStateTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked, :idling
+    @machine.event :ignite
+    
+    @event = StateMachine::Event.new(@machine, :ignite)
+    @event.transition(:parked => :idling)
+    
+    @object = @klass.new
+    @object.state = 'invalid'
+  end
+  
+  def test_should_raise_exception_when_checking_availability
+    exception = assert_raise(ArgumentError) { @event.can_fire?(@object) }
+    assert_equal '"invalid" is not a known state value', exception.message
+  end
+  
+  def test_should_raise_exception_when_finding_transition
+    exception = assert_raise(ArgumentError) { @event.transition_for(@object) }
+    assert_equal '"invalid" is not a known state value', exception.message
+  end
+  
+  def test_should_raise_exception_when_firing
+    exception = assert_raise(ArgumentError) { @event.fire(@object) }
+    assert_equal '"invalid" is not a known state value', exception.message
+  end
+end
+
 begin
   # Load library
   require 'rubygems'

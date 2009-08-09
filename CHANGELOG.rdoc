@@ -1,5 +1,6 @@
 == master
 
+* Fix events not failing with useful errors when an object's state is invalid
 * Use more friendly NoMethodError messages for state-driven behaviors
 * Fix before_transition callbacks getting run twice when using event attributes in ORM integrations
 * Add the ability to query for the availability of specific transitions on an object

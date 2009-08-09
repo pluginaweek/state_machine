@@ -163,7 +163,7 @@ module StateMachine
     # Finds and builds the next transition that can be performed on the given
     # object.  If no transitions can be made, then this will return nil.
     def transition_for(object, requirements = {})
-      requirements[:from] = machine.states.match(object).name unless custom_from_state = requirements.include?(:from)
+      requirements[:from] = machine.states.match!(object).name unless custom_from_state = requirements.include?(:from)
       
       guards.each do |guard|
         if match = guard.match(object, requirements)
@@ -245,7 +245,7 @@ module StateMachine
         
         # Fires the event, raising an exception if it fails
         machine.define_instance_method("#{qualified_name}!") do |machine, object, *args|
-          object.send(qualified_name, *args) || raise(StateMachine::InvalidTransition, "Cannot transition #{machine.name} via :#{name} from #{machine.states.match(object).name.inspect}")
+          object.send(qualified_name, *args) || raise(StateMachine::InvalidTransition, "Cannot transition #{machine.name} via :#{name} from #{machine.states.match!(object).name.inspect}")
         end
       end
   end
