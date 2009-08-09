@@ -4,9 +4,9 @@
 * Use more friendly NoMethodError messages for state-driven behaviors
 * Fix before_transition callbacks getting run twice when using event attributes in ORM integrations
 * Add the ability to query for the availability of specific transitions on an object
-* Allow after_transitions to be explicitly run on failed attempts
+* Allow after_transition callbacks to be explicitly run on failed attempts
 * By default, don't run after_transition callbacks on failed attempts
-* Fix not allowing multiple methods to be specificed as arguments in callbacks
+* Fix not allowing multiple methods to be specified as arguments in callbacks
 * Fix initial states being set when loading records from the database in Sequel integration
 * Allow static initial states to be set earlier in the initialization of an object
 * Use friendly validation errors for nil states
