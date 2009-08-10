@@ -28,6 +28,7 @@ begin
             def self.name; 'SequelTest::Foo'; end
           end
           model.plugin(:validation_class_methods) if model.respond_to?(:plugin)
+          model.plugin(:hook_class_methods) if model.respond_to?(:plugin)
           model.class_eval(&block) if block_given?
           model
         end
@@ -614,6 +615,109 @@ begin
         
         @record.valid?
         assert !ran_callback
+      end
+      
+      def test_should_not_run_after_callbacks_with_failures_disabled_if_validation_fails
+        @model.class_eval do
+          attr_accessor :seatbelt
+          validates_presence_of :seatbelt
+        end
+        
+        ran_callback = false
+        @machine.after_transition { ran_callback = true }
+        
+        @record.valid?
+        assert !ran_callback
+      end
+      
+      def test_should_run_after_callbacks_with_failures_enabled_if_validation_fails
+        @model.class_eval do
+          attr_accessor :seatbelt
+          validates_presence_of :seatbelt
+        end
+        
+        ran_callback = false
+        @machine.after_transition(:include_failures => true) { ran_callback = true }
+        
+        @record.valid?
+        assert ran_callback
+      end
+    end
+    
+    class MachineWithEventAttributesOnSaveTest < BaseTestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model)
+        @machine.event :ignite do
+          transition :parked => :idling
+        end
+        
+        @record = @model.new
+        @record.state = 'parked'
+        @record.state_event = 'ignite'
+      end
+      
+      def test_should_fail_if_event_is_invalid
+        @record.state_event = 'invalid'
+        assert !@record.save
+      end
+      
+      def test_should_fail_if_event_has_no_transition
+        @record.state = 'idling'
+        assert !@record.save
+      end
+      
+      def test_should_be_successful_if_event_has_transition
+        assert @record.save
+      end
+      
+      def test_should_run_before_callbacks
+        ran_callback = false
+        @machine.before_transition { ran_callback = true }
+        
+        @record.save
+        assert ran_callback
+      end
+      
+      def test_should_run_before_callbacks_once
+        before_count = 0
+        @machine.before_transition { before_count += 1 }
+        
+        @record.save
+        assert_equal 1, before_count
+      end
+      
+      def test_should_persist_new_state
+        @record.save
+        assert_equal 'idling', @record.state
+      end
+      
+      def test_should_run_after_callbacks
+        ran_callback = false
+        @machine.after_transition { ran_callback = true }
+        
+        @record.save
+        assert ran_callback
+      end
+      
+      def test_should_not_run_after_callbacks_with_failures_disabled_if_fails
+        @model.before_create {|record| false}
+        
+        ran_callback = false
+        @machine.after_transition { ran_callback = true }
+        
+        @record.save
+        assert !ran_callback
+      end
+      
+      def test_should_run_after_callbacks_with_failures_enabled_if_fails
+        @model.before_create {|record| false}
+        
+        ran_callback = false
+        @machine.after_transition(:include_failures => true) { ran_callback = true }
+        
+        @record.save
+        assert ran_callback
       end
     end
     
