@@ -1,13 +1,13 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
-class AssertionsTest < Test::Unit::TestCase
+class AssertionsBaseTest < Test::Unit::TestCase
   include StateMachine::Assertions
   
   def default_test
   end
 end
 
-class AssertValidKeysTest < AssertionsTest
+class AssertValidKeysTest < AssertionsBaseTest
   def test_should_not_raise_exception_if_key_is_valid
     assert_nothing_raised { assert_valid_keys({:name => 'foo', :value => 'bar'}, :name, :value, :force) }
   end
@@ -18,7 +18,7 @@ class AssertValidKeysTest < AssertionsTest
   end
 end
 
-class AssertExclusiveKeysTest < AssertionsTest
+class AssertExclusiveKeysTest < AssertionsBaseTest
   def test_should_not_raise_exception_if_no_keys_found
     assert_nothing_raised { assert_exclusive_keys({:on => :park}, :only, :except) }
   end

@@ -1,8 +1,13 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
-class EvalHelpersTest < Test::Unit::TestCase
+class EvalHelpersBaseTest < Test::Unit::TestCase
   include StateMachine::EvalHelpers
   
+  def default_test
+  end
+end
+
+class EvalHelpersTest < EvalHelpersBaseTest
   def setup
     @object = Object.new
   end
@@ -13,9 +18,7 @@ class EvalHelpersTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelpersSymbolTest < Test::Unit::TestCase
-  include StateMachine::EvalHelpers
-  
+class EvalHelpersSymbolTest < EvalHelpersBaseTest
   def setup
     class << (@object = Object.new)
       def callback
@@ -29,9 +32,7 @@ class EvalHelpersSymbolTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelpersSymbolWithArgumentsTest < Test::Unit::TestCase
-  include StateMachine::EvalHelpers
-  
+class EvalHelpersSymbolWithArgumentsTest < EvalHelpersBaseTest
   def setup
     class << (@object = Object.new)
       def callback(*args)
@@ -45,9 +46,7 @@ class EvalHelpersSymbolWithArgumentsTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelpersSymbolTaintedMethodTest < Test::Unit::TestCase
-  include StateMachine::EvalHelpers
-  
+class EvalHelpersSymbolTaintedMethodTest < EvalHelpersBaseTest
   def setup
     class << (@object = Object.new)
       def callback
@@ -63,9 +62,7 @@ class EvalHelpersSymbolTaintedMethodTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelpersStringTest < Test::Unit::TestCase
-  include StateMachine::EvalHelpers
-  
+class EvalHelpersStringTest < EvalHelpersBaseTest
   def setup
     @object = Object.new
   end
@@ -84,9 +81,7 @@ class EvalHelpersStringTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelpersProcTest < Test::Unit::TestCase
-  include StateMachine::EvalHelpers
-  
+class EvalHelpersProcTest < EvalHelpersBaseTest
   def setup
     @object = Object.new
     @proc = lambda {|obj| obj}
@@ -97,9 +92,7 @@ class EvalHelpersProcTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelpersProcWithoutArgumentsTest < Test::Unit::TestCase
-  include StateMachine::EvalHelpers
-  
+class EvalHelpersProcWithoutArgumentsTest < EvalHelpersBaseTest
   def setup
     @object = Object.new
     @proc = lambda {|*args| args}
@@ -115,9 +108,7 @@ class EvalHelpersProcWithoutArgumentsTest < Test::Unit::TestCase
   end
 end
 
-class EvalHelpersProcWithArgumentsTest < Test::Unit::TestCase
-  include StateMachine::EvalHelpers
-  
+class EvalHelpersProcWithArgumentsTest < EvalHelpersBaseTest
   def setup
     @object = Object.new
     @proc = lambda {|*args| args}
