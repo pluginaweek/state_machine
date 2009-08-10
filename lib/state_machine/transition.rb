@@ -16,8 +16,8 @@ module StateMachine
       # 1. Before callbacks
       # 2. Persist state
       # 3. Invoke action
-      # 4. After callbacks if configured
-      # 5. Rollback if action is unsuccessful
+      # 4. After callbacks (if configured)
+      # 5. Rollback (if action is unsuccessful)
       # 
       # Configuration options:
       # * <tt>:action</tt> - Whether to run the action configured for each transition
@@ -64,8 +64,9 @@ module StateMachine
             raise
           end
           
-          # Always run after callbacks regardless of whether the actions failed
-          transitions.each {|transition| transition.after(results[transition.action])} if options[:after] != false || !success
+          # Run after callbacks even when the actions failed. The :after option
+          # is ignored if the transitions were unsuccessful.
+          transitions.each {|transition| transition.after(results[transition.action])} unless options[:after] == false && success
           
           # Rollback the transitions if the transaction was unsuccessful
           transitions.each {|transition| transition.rollback} unless success
@@ -236,8 +237,11 @@ module StateMachine
       result = false
       
       catch(:halt) do
-        callback(:before) unless @before_run
-        @before_run = true
+        unless @before_run
+          callback(:before)
+          @before_run = true
+        end
+        
         result = true
       end
       
@@ -264,8 +268,10 @@ module StateMachine
     #   
     #   vehicle.state   # => 'idling'
     def persist
-      machine.write(object, :state, to) unless @persisted
-      @persisted = true
+      unless @persisted
+        machine.write(object, :state, to)
+        @persisted = true
+      end
     end
     
     # Runs the machine's +after+ callbacks for this transition.  Only
@@ -304,8 +310,10 @@ module StateMachine
       @result = result
       
       catch(:halt) do
-        callback(:after, :result => result) unless @after_run
-        @after_run = true
+        unless @after_run
+          callback(:after, :result => result)
+          @after_run = true
+        end
       end
       
       true
