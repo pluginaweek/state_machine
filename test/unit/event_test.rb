@@ -602,6 +602,37 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
   end
 end
 
+class EventWithMachineActionTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      attr_reader :saved
+      
+      def save
+        @saved = true
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @machine.state :parked, :idling
+    
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
+    @event.transition(:parked => :idling)
+    
+    @object = @klass.new
+    @object.state = 'parked'
+  end
+  
+  def test_should_run_action_on_fire
+    @event.fire(@object)
+    assert @object.saved
+  end
+  
+  def test_should_not_run_action_if_configured_to_skip
+    @event.fire(@object, false)
+    assert !@object.saved
+  end
+end
+
 class EventWithInvalidCurrentStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new

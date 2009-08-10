@@ -82,7 +82,7 @@ class EventCollectionWithEventsWithTransitionsTest < Test::Unit::TestCase
     assert_equal [], @events.transitions_for(object)
   end
   
-  def test_filter_valid_transitions_for_an_object_if_requirements_specified
+  def test_should_filter_valid_transitions_for_an_object_if_requirements_specified
     object = @klass.new
     assert_equal [{:object => object, :attribute => :state, :event => :ignite, :from => 'stalled', :to => 'idling'}], @events.transitions_for(object, :from => :stalled).map {|transition| transition.attributes}
     assert_equal [], @events.transitions_for(object, :from => :idling).map {|transition| transition.attributes}
@@ -171,6 +171,13 @@ class EventCollectionAttributeWithMachineActionTest < Test::Unit::TestCase
     @object.state_event = 'ignite'
     
     assert_instance_of StateMachine::Transition, @events.attribute_transition_for(@object)
+  end
+  
+  def test_should_have_valid_transition_if_already_defined_in_transition_cache
+    @object.state_event = nil
+    @object.send(:state_event_transition=, transition = @ignite.transition_for(@object))
+    
+    assert_equal transition, @events.attribute_transition_for(@object)
   end
 end
 
