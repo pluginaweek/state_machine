@@ -242,20 +242,18 @@ module StateMachine
         # object
         def define_state_initializer
           @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
-            def initialize(values = {}, from_db = false, *args)
-              if from_db
-                super
-              else
-                original_values = values
-                values = {}
+            # Hooks in to attribute initialization to set the states *prior*
+            # to the attributes being set
+            def set(*args)
+              if new? && !@initialized_state_machines
+                @initialized_state_machines = true
                 
-                super do |*args|
-                  initialize_state_machines(:dynamic => false)
-                  set(original_values) if original_values
-                  initialize_state_machines(:dynamic => true)
-                  changed_columns.clear
-                  yield *args if block_given?
-                end
+                initialize_state_machines(:dynamic => false)
+                result = super
+                initialize_state_machines(:dynamic => true)
+                result
+              else
+                super
               end
             end
           end_eval

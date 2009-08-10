@@ -268,15 +268,25 @@ begin
       end
       
       def test_should_set_initial_state_before_setting_attributes
-        state = nil
         @model.class_eval do
+          attr_accessor :state_during_setter
+          
           define_method(:value=) do |value|
-            state = self.state
+            self.state_during_setter = state
           end
         end
         
-        @model.new(:value => 1)
-        assert_equal 'parked', state
+        record = @model.new(:value => 1)
+        assert_equal 'parked', record.state_during_setter
+      end
+      
+      def test_should_not_set_initial_state_after_already_initialized
+        record = @model.new(:value => 1)
+        assert_equal 'parked', record.state
+        
+        record.state = 'idling'
+        record.attributes = {}
+        assert_equal 'idling', record.state
       end
     end
     
@@ -320,15 +330,25 @@ begin
       end
       
       def test_should_set_initial_state_after_setting_attributes
-        state = nil
         @model.class_eval do
+          attr_accessor :state_during_setter
+          
           define_method(:value=) do |value|
-            state = self.state || 'nil'
+            self.state_during_setter = state || 'nil'
           end
         end
         
-        @model.new(:value => 1)
-        assert_equal 'nil', state
+        record = @model.new(:value => 1)
+        assert_equal 'nil', record.state_during_setter
+      end
+      
+      def test_should_not_set_initial_state_after_already_initialized
+        record = @model.new(:value => 1)
+        assert_equal 'parked', record.state
+        
+        record.state = 'idling'
+        record.attributes = {}
+        assert_equal 'idling', record.state
       end
     end
     

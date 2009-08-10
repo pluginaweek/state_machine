@@ -313,15 +313,24 @@ module StateMachine
         # object
         def define_state_initializer
           @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
+            # Ensure that the attributes setter gets used to force initialization
+            # of the state machines
             def initialize(attributes = nil, *args)
-              original_attributes = attributes
-              attributes = nil
-              
-              super do |*args|
+              attributes ||= {}
+              super
+            end
+            
+            # Hooks in to attribute initialization to set the states *prior*
+            # to the attributes being set
+            def attributes=(*args)
+              if new_record? && !@initialized_state_machines
+                @initialized_state_machines = true
+                
                 initialize_state_machines(:dynamic => false)
-                self.attributes = original_attributes if original_attributes
+                super
                 initialize_state_machines(:dynamic => true)
-                yield *args if block_given?
+              else
+                super
               end
             end
           end_eval
