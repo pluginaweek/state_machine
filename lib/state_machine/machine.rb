@@ -887,7 +887,10 @@ module StateMachine
     # The following instance methods are generated when a new event is defined
     # (the "park" event is used as an example):
     # * <tt>can_park?</tt> - Checks whether the "park" event can be fired given
-    #   the current state of the object.
+    #   the current state of the object.  This will *not* run validations in
+    #   ORM integrations.  To check whether an event can fire *and* passes
+    #   validations, use event attributes (e.g. state_event) as described in the
+    #   "Events" documentation of each ORM integration.
     # * <tt>park_transition</tt> -  Gets the next transition that would be
     #   performed if the "park" event were to be fired now on the object or nil
     #   if no transitions can be performed.
