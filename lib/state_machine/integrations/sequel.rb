@@ -308,7 +308,7 @@ module StateMachine
           
           # nil is also a failed value for the result requirement in callbacks
           callback = super
-          callback.guard.result_requirement.values << nil if type == :after && options[:include_failures] != false
+          callback.guard.result_requirement.values << nil if options[:include_failures] != true
           callback
         end
     end

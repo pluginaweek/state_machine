@@ -433,6 +433,12 @@ begin
         @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       end
       
+      def test_should_blacklist_nil_for_before_callback_result_requirement
+        callback = @machine.before_transition(lambda {called = true})
+        assert_instance_of StateMachine::BlacklistMatcher, callback.guard.result_requirement
+        assert_equal [false, nil], callback.guard.result_requirement.values
+      end
+      
       def test_should_run_before_callbacks
         called = false
         @machine.before_transition(lambda {called = true})
@@ -463,6 +469,18 @@ begin
         
         @transition.perform
         assert_equal @record, context
+      end
+      
+      def test_should_blacklist_nil_for_after_callback_result_requirement_if_excluding_failures
+        callback = @machine.after_transition(lambda {called = true})
+        assert_instance_of StateMachine::BlacklistMatcher, callback.guard.result_requirement
+        assert_equal [false, nil], callback.guard.result_requirement.values
+      end
+      
+      def test_should_not_modify_after_callback_result_requirement_if_including_failures
+        callback = @machine.after_transition(lambda {called = true}, :include_failures => true)
+        assert_instance_of StateMachine::AllMatcher, callback.guard.result_requirement
+        assert_equal [], callback.guard.result_requirement.values
       end
       
       def test_should_run_after_callbacks
