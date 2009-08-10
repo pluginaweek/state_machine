@@ -47,7 +47,7 @@ module StateMachine
     end
     
     # Runs one or more event attributes in parallel during the invocation of
-    # an action on the given object.  After transition callbacks can be
+    # an action on the given object.  after_transition callbacks can be
     # optionally disabled if the events are being only partially fired (for
     # example, when validating records in ORM integrations).
     # 

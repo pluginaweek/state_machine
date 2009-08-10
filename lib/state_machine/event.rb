@@ -65,8 +65,8 @@ module StateMachine
     # state to be +idling+ if it's current state is +parked+ or +first_gear+
     # if it's current state is +idling+.
     # 
-    # To help defining these implicit transitions, a set of helpers are available
-    # for defining slightly more complex matching:
+    # To help define these implicit transitions, a set of helpers are available
+    # for slightly more complex matching:
     # * <tt>all</tt> - Matches every state in the machine
     # * <tt>all - [:parked, :idling, ...]</tt> - Matches every state except those specified
     # * <tt>any</tt> - An alias for +all+ (matches every state in the machine)

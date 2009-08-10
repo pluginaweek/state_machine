@@ -142,7 +142,7 @@ module StateMachine
     # requirements configured for this callback.
     # 
     # If a terminator has been configured and it matches the result from the
-    # evaluated method, then the callback chain should be halted
+    # evaluated method, then the callback chain should be halted.
     def call(object, context = {}, *args)
       if @guard.matches?(object, context)
         @methods.each do |method|
