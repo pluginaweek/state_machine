@@ -455,18 +455,22 @@ module StateMachine
     def owner_class=(klass)
       @owner_class = klass
       
-      # Add class-/instance-level methods to the owner class for state initialization
-      owner_class.class_eval do
-        extend StateMachine::ClassMethods
-        include StateMachine::InstanceMethods
-      end unless owner_class.included_modules.include?(StateMachine::InstanceMethods)
-      
       # Create modules for extending the class with state/event-specific methods
       class_helper_module = @class_helper_module = Module.new
       instance_helper_module = @instance_helper_module = Module.new
       owner_class.class_eval do
         extend class_helper_module
         include instance_helper_module
+      end
+      
+      # Add class-/instance-level methods to the owner class for state initialization
+      unless owner_class.included_modules.include?(StateMachine::InstanceMethods)
+        owner_class.class_eval do
+          extend StateMachine::ClassMethods
+          include StateMachine::InstanceMethods
+        end
+        
+        define_state_initializer
       end
       
       # Record this machine as matched to the name in the current owner class.
@@ -600,7 +604,7 @@ module StateMachine
     # 
     # In the above state machine, there are two states automatically discovered:
     # :parked and :idling.  These states, by default, will store their stringified
-    # equivalents when an object moves into that states (e.g. "parked" / "idling").
+    # equivalents when an object moves into that state (e.g. "parked" / "idling").
     # 
     # For legacy systems or when tying state machines into existing frameworks,
     # it's oftentimes necessary to need to store a different value for a state
@@ -1202,7 +1206,7 @@ module StateMachine
     def invalidate(object, attribute, message, values = [])
     end
     
-    # Resets an errors previously added when invalidating the given object
+    # Resets any errors previously added when invalidating the given object.
     # 
     # By default, this is a no-op.
     def reset(object)
@@ -1217,7 +1221,7 @@ module StateMachine
     # Runs a transaction, rolling back any changes if the yielded block fails.
     # 
     # This is only applicable to integrations that involve databases.  By
-    # default, this will not run any transactions, since the changes aren't
+    # default, this will not run any transactions since the changes aren't
     # taking place within the context of a database.
     def within_transaction(object)
       if use_transactions
@@ -1296,7 +1300,6 @@ module StateMachine
       # Adds helper methods for interacting with the state machine, including
       # for states, events, and transitions
       def define_helpers
-        define_state_initializer unless owner_class.state_machines.length > 1 || owner_class.superclass.respond_to?(:state_machines)
         define_state_accessor
         define_state_predicate
         define_event_helpers
