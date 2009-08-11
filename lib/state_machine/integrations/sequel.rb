@@ -226,6 +226,14 @@ module StateMachine
         require 'sequel/extensions/inflector' if ::Sequel.const_defined?('VERSION') && ::Sequel::VERSION >= '2.12.0'
       end
       
+      # Forces recognize the change in state to be recognized regardless of
+      # whether the state value actually changed
+      def write(object, attribute, value)
+        result = super
+        object.changed_columns << attribute.to_sym if attribute == :state && owner_class.columns.include?(attribute.to_sym)
+        result
+      end
+      
       # Adds a validation error to the given object
       def invalidate(object, attribute, message, values = [])
         object.errors.add(self.attribute(attribute), generate_message(message, values))

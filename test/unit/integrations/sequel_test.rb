@@ -533,6 +533,36 @@ begin
       end
     end
     
+    class MachineWithLoopbackTest < BaseTestCase
+      def setup
+        @model = new_model do
+          # Simulate timestamps plugin
+          def before_update
+            super
+            self.updated_at = Time.now if changed_columns.any?
+          end
+        end
+        
+        DB.alter_table :foo do
+          add_column :updated_at, :datetime
+        end
+        @model.class_eval { get_db_schema(true) }
+        
+        @machine = StateMachine::Machine.new(@model, :initial => :parked)
+        @machine.event :park
+        
+        @record = @model.create(:updated_at => Time.now - 1)
+        @timestamp = @record.updated_at
+        
+        @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+        @transition.perform
+      end
+      
+      def test_should_update_timestamp
+        assert_not_equal @timestamp, @record.updated_at
+      end
+    end
+    
     class MachineWithValidationsTest < BaseTestCase
       def setup
         @model = new_model

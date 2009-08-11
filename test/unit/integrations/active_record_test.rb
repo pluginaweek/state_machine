@@ -642,6 +642,27 @@ begin
       end
     end
     
+    class MachineWithLoopbackTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model do
+          connection.change_table(:foo) {|t| t.datetime(:updated_at)}
+        end
+        
+        @machine = StateMachine::Machine.new(@model, :initial => :parked)
+        @machine.event :park
+        
+        @record = @model.create(:updated_at => Time.now - 1)
+        @timestamp = @record.updated_at
+        
+        @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+        @transition.perform
+      end
+      
+      def test_should_update_timestamp
+        assert_not_equal @timestamp, @record.updated_at
+      end
+    end
+    
     class MachineWithFailedBeforeCallbacksTest < ActiveRecord::TestCase
       def setup
         @before_count = 0

@@ -250,6 +250,14 @@ module StateMachine
         require 'state_machine/integrations/data_mapper/observer' if ::DataMapper.const_defined?('Observer')
       end
       
+      # Forces recognize the change in state to be recognized regardless of
+      # whether the state value actually changed
+      def write(object, attribute, value)
+        result = super
+        object.original_values[self.attribute] = "#{value}-ignored" if attribute == :state && owner_class.properties.has_property?(attribute)
+        result
+      end
+      
       # Adds a validation error to the given object
       def invalidate(object, attribute, message, values = [])
         object.errors.add(self.attribute(attribute), generate_message(message, values)) if supports_validations?

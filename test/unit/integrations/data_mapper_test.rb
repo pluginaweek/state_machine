@@ -375,6 +375,34 @@ begin
       end
     end
     
+    class MachineWithLoopbackTest < BaseTestCase
+      def setup
+        @resource = new_resource do
+          property :updated_at, DateTime
+          auto_migrate!
+          
+          # Simulate dm-timestamps
+          before :update do
+            return unless dirty?
+            self.updated_at = DateTime.now
+          end
+        end
+        
+        @machine = StateMachine::Machine.new(@resource, :initial => :parked)
+        @machine.event :park
+        
+        @record = @resource.create(:updated_at => Time.now - 1)
+        @timestamp = @record.updated_at
+        
+        @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+        @transition.perform
+      end
+      
+      def test_should_update_timestamp
+        assert_not_equal @timestamp, @record.updated_at
+      end
+    end
+    
     begin
       gem 'dm-observer', ENV['DM_VERSION'] ? "=#{ENV['DM_VERSION']}" : '>=0.9.4'
       require 'dm-observer'
