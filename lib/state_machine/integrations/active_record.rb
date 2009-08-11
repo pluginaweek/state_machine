@@ -281,8 +281,8 @@ module StateMachine
         end
       end
       
-      # Forces recognize the change in state to be recognized regardless of
-      # whether the state value actually changed
+      # Forces the change in state to be recognized regardless of whether the
+      # state value actually changed
       def write(object, attribute, value)
         result = super
         object.send("#{self.attribute}_will_change!") if attribute == :state && object.respond_to?("#{self.attribute}_will_change!")
