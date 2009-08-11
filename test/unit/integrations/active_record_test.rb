@@ -644,8 +644,14 @@ begin
     
     class MachineWithLoopbackTest < ActiveRecord::TestCase
       def setup
+        changed_attrs = nil
+        
         @model = new_model do
           connection.change_table(:foo) {|t| t.datetime(:updated_at)}
+          
+          define_method(:before_update) do
+            changed_attrs = changed_attributes.dup
+          end
         end
         
         @machine = StateMachine::Machine.new(@model, :initial => :parked)
@@ -656,9 +662,18 @@ begin
         
         @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
         @transition.perform
+        
+        @changed_attrs = changed_attrs
       end
       
-      def test_should_update_timestamp
+      def test_should_include_state_in_changed_attributes
+        @changed_attrs.delete('updated_at')
+        
+        expected = {'state' => 'parked'}
+        assert_equal expected, @changed_attrs
+      end
+      
+      def test_should_update_record
         assert_not_equal @timestamp, @record.updated_at
       end
     end

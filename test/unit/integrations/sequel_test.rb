@@ -535,10 +535,14 @@ begin
     
     class MachineWithLoopbackTest < BaseTestCase
       def setup
+        changed_columns = nil
+        
         @model = new_model do
           # Simulate timestamps plugin
-          def before_update
-            super
+          define_method(:before_update) do
+            changed_columns = self.changed_columns.dup
+            
+            super()
             self.updated_at = Time.now if changed_columns.any?
           end
         end
@@ -556,9 +560,15 @@ begin
         
         @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
         @transition.perform
+        
+        @changed_columns = changed_columns
       end
       
-      def test_should_update_timestamp
+      def test_should_include_state_in_changed_columns
+        assert_equal [:state], @changed_columns
+      end
+      
+      def test_should_update_record
         assert_not_equal @timestamp, @record.updated_at
       end
     end

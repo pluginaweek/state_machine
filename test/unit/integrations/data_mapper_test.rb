@@ -377,12 +377,16 @@ begin
     
     class MachineWithLoopbackTest < BaseTestCase
       def setup
+        dirty_attributes = nil
+        
         @resource = new_resource do
           property :updated_at, DateTime
           auto_migrate!
           
           # Simulate dm-timestamps
           before :update do
+            dirty_attributes = self.dirty_attributes.dup
+            
             return unless dirty?
             self.updated_at = DateTime.now
           end
@@ -396,9 +400,16 @@ begin
         
         @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
         @transition.perform
+        
+        @dirty_attributes = dirty_attributes
       end
       
-      def test_should_update_timestamp
+      def test_should_include_state_in_dirty_attributes
+        expected = {@resource.properties[:state] => 'parked'}
+        assert_equal expected, @dirty_attributes
+      end
+      
+      def test_should_update_record
         assert_not_equal @timestamp, @record.updated_at
       end
     end
