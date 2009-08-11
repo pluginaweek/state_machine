@@ -254,7 +254,7 @@ module StateMachine
       # state value actually changed
       def write(object, attribute, value)
         result = super
-        object.original_values[self.attribute] = "#{value}-ignored" if attribute == :state && owner_class.properties.has_property?(attribute)
+        object.original_values[self.attribute] = "#{value}-ignored" if attribute == :state && owner_class.properties.has_property?(self.attribute)
         result
       end
       

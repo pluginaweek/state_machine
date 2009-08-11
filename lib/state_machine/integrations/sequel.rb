@@ -230,7 +230,7 @@ module StateMachine
       # state value actually changed
       def write(object, attribute, value)
         result = super
-        object.changed_columns << attribute.to_sym if attribute == :state && owner_class.columns.include?(attribute.to_sym)
+        object.changed_columns << self.attribute.to_sym if attribute == :state && owner_class.columns.include?(self.attribute.to_sym)
         result
       end
       
