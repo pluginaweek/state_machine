@@ -168,15 +168,14 @@ begin
         
         @machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
         
-        assert record.errors.invalid?(:state)
-        assert_equal 'cannot transition via "park"', record.errors.on(:state)
+        assert_equal ['State cannot transition via "park"'], record.errors.full_messages
       end
       
       def test_should_auto_prefix_custom_attributes_on_invalidation
         record = @model.new
         @machine.invalidate(record, :event, :invalid)
         
-        assert_equal 'is invalid', record.errors.on(:state_event)
+        assert_equal ['State event is invalid'], record.errors.full_messages
       end
       
       def test_should_clear_errors_on_reset
@@ -185,7 +184,7 @@ begin
         record.errors.add(:state, 'is invalid')
         
         @machine.reset(record)
-        assert_nil record.errors.on(:id)
+        assert_equal [], record.errors.full_messages
       end
       
       def test_should_not_override_the_column_reader
@@ -1234,7 +1233,7 @@ begin
           record = @model.new(:state => 'idling')
           
           machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
-          assert_equal 'cannot ignite', record.errors.on(:state)
+          assert_equal ['State cannot ignite'], record.errors.full_messages
         end
         
         def test_should_invalidate_using_customized_i18n_key_if_specified
@@ -1254,7 +1253,7 @@ begin
           record = @model.new(:state => 'idling')
           
           machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
-          assert_equal 'cannot ignite', record.errors.on(:state)
+          assert_equal ['State cannot ignite'], record.errors.full_messages
         end
         
         def test_should_invalidate_using_customized_i18n_string_if_specified
@@ -1264,7 +1263,7 @@ begin
           record = @model.new(:state => 'idling')
           
           machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
-          assert_equal 'cannot ignite', record.errors.on(:state)
+          assert_equal ['State cannot ignite'], record.errors.full_messages
         end
         
         def test_should_only_add_locale_once_in_load_path
