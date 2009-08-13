@@ -1,5 +1,6 @@
 == master
 
+* Always interpet nil return values from actions as failed attempts
 * Fix loopbacks not causing records to save in ORM integrations if no other fields were changed
 * Fix events not failing with useful errors when an object's state is invalid
 * Use more friendly NoMethodError messages for state-driven behaviors

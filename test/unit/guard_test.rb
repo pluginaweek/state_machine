@@ -411,7 +411,7 @@ class GuardWithFailuresExcludedTest < Test::Unit::TestCase
   end
   
   def test_should_use_a_blacklist_matcher
-    assert_instance_of StateMachine::BlacklistMatcher, @guard.result_requirement
+    assert_instance_of StateMachine::BlacklistMatcher, @guard.success_requirement
   end
   
   def test_should_match_if_not_specified
@@ -419,15 +419,11 @@ class GuardWithFailuresExcludedTest < Test::Unit::TestCase
   end
   
   def test_should_match_if_true
-    assert @guard.matches?(@object, :result => true)
-  end
-  
-  def test_should_match_if_object
-    assert @guard.matches?(@object, :result => Object.new)
+    assert @guard.matches?(@object, :success => true)
   end
   
   def test_should_not_match_if_false
-    assert !@guard.matches?(@object, :result => false)
+    assert !@guard.matches?(@object, :success => false)
   end
 end
 
@@ -438,7 +434,7 @@ class GuardWithFailuresIncludedTest < Test::Unit::TestCase
   end
   
   def test_should_use_all_matcher
-    assert_equal StateMachine::AllMatcher.instance, @guard.result_requirement
+    assert_equal StateMachine::AllMatcher.instance, @guard.success_requirement
   end
   
   def test_should_match_if_not_specified
@@ -446,15 +442,11 @@ class GuardWithFailuresIncludedTest < Test::Unit::TestCase
   end
   
   def test_should_match_if_true
-    assert @guard.matches?(@object, :result => true)
-  end
-  
-  def test_should_match_if_object
-    assert @guard.matches?(@object, :result => Object.new)
+    assert @guard.matches?(@object, :success => true)
   end
   
   def test_should_match_if_false
-    assert @guard.matches?(@object, :result => false)
+    assert @guard.matches?(@object, :success => false)
   end
 end
 

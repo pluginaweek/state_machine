@@ -314,11 +314,7 @@ module StateMachine
         def add_callback(type, options, &block)
           options[:bind_to_object] = true
           options[:terminator] = @terminator ||= lambda {|result| result == false}
-          
-          # nil is also a failed value for the result requirement in callbacks
-          callback = super
-          callback.guard.result_requirement.values << nil if options[:include_failures] != true
-          callback
+          super
         end
     end
   end

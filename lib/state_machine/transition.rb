@@ -46,7 +46,7 @@ module StateMachine
                 # Block was given: use the result for each transition
                 result = yield
                 transitions.each {|transition| results[transition.action] = result}
-                result
+                !!result
               elsif options[:action] == false
                 # Skip the action
                 true
@@ -66,7 +66,7 @@ module StateMachine
           
           # Run after callbacks even when the actions failed. The :after option
           # is ignored if the transitions were unsuccessful.
-          transitions.each {|transition| transition.after(results[transition.action])} unless options[:after] == false && success
+          transitions.each {|transition| transition.after(results[transition.action], success)} unless options[:after] == false && success
           
           # Rollback the transitions if the transaction was unsuccessful
           transitions.each {|transition| transition.rollback} unless success
@@ -278,7 +278,7 @@ module StateMachine
     # callbacks that are configured to match the event, from state, and to
     # state will be invoked.
     # 
-    # The result is used to indicate whether the associated machine action
+    # The result can be used to indicate whether the associated machine action
     # was executed successfully.
     # 
     # Once the callbacks are run, they cannot be run again until this transition
@@ -306,12 +306,12 @@ module StateMachine
     #   vehicle = Vehicle.new
     #   transition = StateMachine::Transition.new(vehicle, Vehicle.state_machine, :ignite, :parked, :idling)
     #   transition.after(true)
-    def after(result = nil)
+    def after(result = nil, success = true)
       @result = result
       
       catch(:halt) do
         unless @after_run
-          callback(:after, :result => result)
+          callback(:after, :success => success)
           @after_run = true
         end
       end
