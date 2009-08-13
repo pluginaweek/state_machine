@@ -1,5 +1,6 @@
 == master
 
+* Add support for DataMapper 0.10.0
 * Always interpet nil return values from actions as failed attempts
 * Fix loopbacks not causing records to save in ORM integrations if no other fields were changed
 * Fix events not failing with useful errors when an object's state is invalid

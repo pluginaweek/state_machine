@@ -25,7 +25,7 @@ begin
             storage_names[:default] = 'foo'
             def self.name; 'DataMapperTest::Foo'; end
             
-            property :id, Integer, :serial => true
+            property :id, DataMapper::Types::Serial
             property :state, String
             
             auto_migrate! if auto_migrate

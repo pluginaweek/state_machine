@@ -247,6 +247,7 @@ module StateMachine
       
       # Loads additional files specific to DataMapper
       def self.extended(base) #:nodoc:
+        require 'dm-core/version' unless ::DataMapper.const_defined?('VERSION')
         require 'state_machine/integrations/data_mapper/observer' if ::DataMapper.const_defined?('Observer')
       end
       
@@ -254,7 +255,13 @@ module StateMachine
       # state value actually changed
       def write(object, attribute, value)
         result = super
-        object.original_values[self.attribute] = "#{value}-ignored" if attribute == :state && owner_class.properties.has_property?(self.attribute)
+        if attribute == :state && owner_class.properties.detect {|property| property.name == self.attribute}
+          if ::DataMapper::VERSION =~ /^(0\.\d\.)/ # Match anything < 0.10
+            object.original_values[self.attribute] = "#{value}-ignored"
+          else
+            object.original_attributes[owner_class.properties[self.attribute]] = "#{value}-ignored"
+          end
+        end
         result
       end
       
@@ -265,7 +272,7 @@ module StateMachine
       
       # Resets any errors previously added when invalidating the given object
       def reset(object)
-        object.errors.clear if object.respond_to?(:errors)
+        object.errors.clear if supports_validations?
       end
       
       protected
@@ -276,7 +283,7 @@ module StateMachine
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
-          owner_class.property(attribute, String) unless owner_class.properties.has_property?(attribute)
+          owner_class.property(attribute, String) unless owner_class.properties.detect {|property| property.name == attribute}
           
           if supports_validations?
             name = self.name
