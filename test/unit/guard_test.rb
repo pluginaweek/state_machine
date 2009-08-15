@@ -411,7 +411,7 @@ class GuardWithFailuresExcludedTest < Test::Unit::TestCase
   end
   
   def test_should_use_a_blacklist_matcher
-    assert_instance_of StateMachine::BlacklistMatcher, @guard.success_requirement
+    assert_instance_of StateMachine::WhitelistMatcher, @guard.success_requirement
   end
   
   def test_should_match_if_not_specified

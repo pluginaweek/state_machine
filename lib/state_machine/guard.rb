@@ -43,7 +43,7 @@ module StateMachine
       @event_requirement = build_matcher(options, :on, :except_on)
       
       # Build success requirement
-      @success_requirement = options.delete(:include_failures) ? AllMatcher.instance : BlacklistMatcher.new([false])
+      @success_requirement = options.delete(:include_failures) ? AllMatcher.instance : WhitelistMatcher.new([true])
       
       if (options.keys - [:from, :to, :on, :except_from, :except_to, :except_on]).empty?
         # Explicit from/to requirements specified
