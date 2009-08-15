@@ -1,5 +1,7 @@
 == master
 
+== 0.8.0 / 2009-08-15
+
 * Add support for DataMapper 0.10.0
 * Always interpet nil return values from actions as failed attempts
 * Fix loopbacks not causing records to save in ORM integrations if no other fields were changed
