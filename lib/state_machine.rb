@@ -357,7 +357,7 @@ module StateMachine
     # 
     # For integrations that support it, a group of default scope filters will
     # be automatically created for assisting in finding objects that have the
-    # attribute set to the value for a given set of states.
+    # attribute set to one of a given set of states.
     # 
     # For example,
     # 
@@ -371,9 +371,9 @@ module StateMachine
     # :with_state, :with_states, :without_state, or :without_states), then a
     # scope will not be defined for that name.
     # 
-    # See StateMachine::Machine for more information about using
-    # integrations and the individual integration docs for information about
-    # the actual scopes that are generated.
+    # See StateMachine::Machine for more information about using integrations
+    # and the individual integration docs for information about the actual
+    # scopes that are generated.
     def state_machine(*args, &block)
       StateMachine::Machine.find_or_create(self, *args, &block)
     end
