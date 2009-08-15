@@ -58,7 +58,7 @@ module StateMachine
     # 
     #   class Vehicle
     #     include DataMapper::Resource
-    #     property :id, Integer, :serial => true
+    #     property :id, Serial
     #     
     #     state_machine :initial => :parked do
     #       event :ignite do

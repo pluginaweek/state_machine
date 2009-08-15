@@ -47,7 +47,7 @@ module StateMachine
     # result, you will not be able to access any class methods unless you refer
     # to them directly (i.e. specifying the class name).
     # 
-    # For examples on the types of configured state machines and blocks, see
+    # For examples on the types of state machine configurations and blocks, see
     # the section below.
     # 
     # == Examples
@@ -256,7 +256,7 @@ module StateMachine
     # 
     #   class Vehicle
     #     include DataMapper::Resource
-    #     property :id, Integer, :serial => true
+    #     property :id, Serial
     #     
     #     state_machine :initial => :parked do
     #       event :ignite do
