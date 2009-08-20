@@ -174,7 +174,16 @@ class EventCollectionAttributeWithMachineActionTest < Test::Unit::TestCase
   end
   
   def test_should_have_valid_transition_if_already_defined_in_transition_cache
+    @ignite.transition :parked => :idling
     @object.state_event = nil
+    @object.send(:state_event_transition=, transition = @ignite.transition_for(@object))
+    
+    assert_equal transition, @events.attribute_transition_for(@object)
+  end
+  
+  def test_should_use_transition_cache_if_both_event_and_transition_are_present
+    @ignite.transition :parked => :idling
+    @object.state_event = 'ignite'
     @object.send(:state_event_transition=, transition = @ignite.transition_for(@object))
     
     assert_equal transition, @events.attribute_transition_for(@object)

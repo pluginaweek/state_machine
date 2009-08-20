@@ -102,19 +102,17 @@ module StateMachine
     def attribute_transition_for(object, invalidate = false)
       return unless machine.action
       
-      result = nil
-      
-      if event_name = machine.read(object, :event)
+      result = machine.read(object, :event_transition) || if event_name = machine.read(object, :event)
         if event = self[event_name.to_sym, :name]
-          unless result = machine.read(object, :event_transition) || event.transition_for(object)
+          event.transition_for(object) || begin
             # No valid transition: invalidate
             machine.invalidate(object, :event, :invalid_event, [[:state, machine.states.match!(object).name || 'nil']]) if invalidate
-            result = false
+            false
           end
         else
           # Event is unknown: invalidate
           machine.invalidate(object, :event, :invalid) if invalidate
-          result = false
+          false
         end
       end
       

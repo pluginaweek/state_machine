@@ -293,6 +293,10 @@ class MachineCollectionFireImplicitWithoutEventTest < MachineCollectionFireImpli
   def test_should_not_change_event_attribute
     assert_nil @object.state_event
   end
+  
+  def test_should_not_have_event_transition
+    assert_nil @object.send(:state_event_transition)
+  end
 end
 
 class MachineCollectionFireImplicitWithBlankEventTest < MachineCollectionFireImplicitTest
@@ -317,6 +321,10 @@ class MachineCollectionFireImplicitWithBlankEventTest < MachineCollectionFireImp
   
   def test_should_not_change_event_attribute
     assert_nil @object.state_event
+  end
+  
+  def test_should_not_have_event_transition
+    assert_nil @object.send(:state_event_transition)
   end
 end
 
@@ -343,6 +351,10 @@ class MachineCollectionFireImplicitWithInvalidEventTest < MachineCollectionFireI
   def test_should_not_reset_event_attribute
     assert_equal :invalid, @object.state_event
   end
+  
+  def test_should_not_have_event_transition
+    assert_nil @object.send(:state_event_transition)
+  end
 end
 
 class MachineCollectionFireImplicitWithoutTransitionTest < MachineCollectionFireImplicitTest
@@ -368,6 +380,10 @@ class MachineCollectionFireImplicitWithoutTransitionTest < MachineCollectionFire
   
   def test_should_not_reset_event_attribute
     assert_equal :ignite, @object.state_event
+  end
+  
+  def test_should_not_have_event_transition
+    assert_nil @object.send(:state_event_transition)
   end
 end
 
@@ -402,6 +418,10 @@ class MachineCollectionFireImplicitWithTransitionTest < MachineCollectionFireImp
   
   def test_should_reset_event_attribute
     assert_nil @object.state_event
+  end
+  
+  def test_should_not_have_event_transition
+    assert_nil @object.send(:state_event_transition)
   end
   
   def test_should_not_be_successful_if_fired_again
@@ -455,6 +475,10 @@ class MachineCollectionFireImplicitWithActionFailureTest < MachineCollectionFire
   def test_should_not_reset_event_attribute
     assert_equal :ignite, @object.state_event
   end
+  
+  def test_should_not_have_event_transition
+    assert_nil @object.send(:state_event_transition)
+  end
 end
 
 class MachineCollectionFireImplicitWithActionErrorTest < MachineCollectionFireImplicitTest
@@ -472,32 +496,25 @@ class MachineCollectionFireImplicitWithActionErrorTest < MachineCollectionFireIm
   def test_should_not_reset_event_attribute
     assert_equal :ignite, @object.state_event
   end
+  
+  def test_should_not_have_event_transition
+    assert_nil @object.send(:state_event_transition)
+  end
 end
 
 class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTest
   def setup
     super
     
-    @ran_before_callback = false
-    @ran_after_callback = false
-    @machine.before_transition { @ran_before_callback = true }
-    @machine.after_transition { @ran_after_callback = true }
-    
     @state_event = nil
+    @state_event_transition
     
     @object.state_event = 'ignite'
     @result = @machines.fire_event_attributes(@object, :save, false) do
       @state_event = @object.state_event
+      @state_event_transition = @object.send(:state_event_transition)
       true
     end
-  end
-  
-  def test_should_run_before_callbacks
-    assert @ran_before_callback
-  end
-  
-  def test_should_not_run_after_callbacks
-    assert !@ran_after_callback
   end
   
   def test_should_be_successful
@@ -508,18 +525,31 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
     assert_nil @state_event
   end
   
+  def test_should_not_have_event_transition_while_running_action
+    assert_nil @state_event_transition
+  end
+  
   def test_should_transition_state
     assert_equal 'idling', @object.state
   end
   
-  def test_should_not_reset_event_attribute
-    assert_equal :ignite, @object.state_event
+  def test_should_reset_event_attribute
+    assert_nil @object.state_event
   end
   
-  def test_should_reset_event_attributes_after_next_fire_on_success
+  def test_should_have_event_transition
+    assert_not_nil @object.send(:state_event_transition)
+  end
+  
+  def test_should_reset_event_after_next_fire_on_success
     assert @machines.fire_event_attributes(@object, :save) { true }
     assert_equal 'idling', @object.state
     assert_nil @object.state_event
+  end
+  
+  def test_should_reset_event_transition_after_next_fire_on_success
+    assert @machines.fire_event_attributes(@object, :save) { true }
+    assert_nil @object.send(:state_event_transition)
   end
   
   def test_should_guard_transition_after_next_fire_on_success
@@ -534,6 +564,7 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
     assert !@machines.fire_event_attributes(@object, :save) { false }
     assert_equal 'parked', @object.state
     assert_equal :ignite, @object.state_event
+    assert_nil @object.send(:state_event_transition)
     
     @object.state = 'idling'
     assert !@machines.fire_event_attributes(@object, :save) { false }
@@ -550,6 +581,7 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
     assert_raise(ArgumentError) { @machines.fire_event_attributes(@object, :save) { raise ArgumentError } }
     assert_equal 'parked', @object.state
     assert_equal :ignite, @object.state_event
+    assert_nil @object.send(:state_event_transition)
   end
   
   def test_should_guard_transition_after_next_fire_on_error
@@ -560,6 +592,62 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
     
     @object.state = 'idling'
     assert !@machines.fire_event_attributes(@object, :save) { true }
+  end
+end
+
+class MachineCollectionFireImplicitPartialWithCallbacksTest < MachineCollectionFireImplicitTest
+  def setup
+    super
+    
+    @object.state_event = 'ignite'
+  end
+  
+  def test_should_run_before_callbacks
+    ran_callback = false
+    @machine.before_transition { ran_callback = true }
+    @machines.fire_event_attributes(@object, :save, false) { true }
+    
+    assert ran_callback
+  end
+  
+  def test_should_not_have_event_during_before_callbacks
+    state_event = nil
+    @machine.before_transition {|object, transition| state_event = object.state_event }
+    @machines.fire_event_attributes(@object, :save, false) { true }
+    
+    assert_nil state_event
+  end
+  
+  def test_should_not_have_event_transition_during_before_callbacks
+    state_event_transition = nil
+    @machine.before_transition {|object, transition| state_event_transition = object.send(:state_event_transition) }
+    @machines.fire_event_attributes(@object, :save, false) { true }
+    
+    assert_nil state_event_transition
+  end
+  
+  def test_should_not_run_after_callbacks
+    ran_callback = false
+    @machine.after_transition { ran_callback = true }
+    @machines.fire_event_attributes(@object, :save, false) { true }
+    
+    assert !ran_callback
+  end
+  
+  def test_should_not_have_event_during_after_callbacks
+    state_event = nil
+    @machine.after_transition {|object, transition| state_event = object.state_event }
+    @machines.fire_event_attributes(@object, :save, false) { true }
+    
+    assert_nil state_event
+  end
+  
+  def test_should_not_have_event_transition_during_after_callbacks
+    state_event_transition = nil
+    @machine.after_transition {|object, transition| state_event_transition = object.send(:state_event_transition) }
+    @machines.fire_event_attributes(@object, :save, false) { true }
+    
+    assert_nil state_event_transition
   end
 end
 
@@ -591,6 +679,10 @@ class MachineCollectionFireImplicitNestedPartialTest < MachineCollectionFireImpl
   def test_should_reset_event_attribute
     assert_nil @object.state_event
   end
+  
+  def test_should_reset_event_transition_attribute
+    assert_nil @object.send(:state_event_transition)
+  end
 end
 
 class MachineCollectionFireImplicitWithDifferentActionsTest < MachineCollectionFireImplicitTest
@@ -614,8 +706,12 @@ class MachineCollectionFireImplicitWithDifferentActionsTest < MachineCollectionF
     assert_equal 'idling', @object.state
   end
   
-  def test_should_reset_event_attributes_for_action
+  def test_should_reset_event_attribute_for_action
     assert_nil @object.state_event
+  end
+  
+  def test_should_reset_event_transition_attribute_for_action
+    assert_nil @object.send(:state_event_transition)
   end
   
   def test_should_not_transition_states_for_other_actions
@@ -723,11 +819,88 @@ class MachineCollectionFireImplicitWithCustomMachineNameTest < MachineCollection
     assert @machines.fire_event_attributes(@object, :save) { true }
     assert_equal 'idling', @object.state
     assert_nil @object.state_event
+    assert_nil @object.send(:state_event_transition)
   end
   
   def test_should_be_successful_on_partial_fire
     @machines.fire_event_attributes(@object, :save, false) { true }
     assert_equal 'idling', @object.state
-    assert_equal :ignite, @object.state_event
+    assert_nil @object.state_event
+    assert_not_nil @object.send(:state_event_transition)
+  end
+end
+
+class MachineFireImplicitWithMarshallingTest < MachineCollectionFireImplicitTest
+  def setup
+    super
+    self.class.const_set('Example', @klass)
+    
+    @object.state_event = 'ignite'
+  end
+  
+  def test_should_marshal_during_before_callbacks
+    @machine.before_transition {|object, transition| Marshal.dump(object)}
+    assert_nothing_raised { @machines.fire_event_attributes(@object, :save) { true } }
+  end
+  
+  def test_should_marshal_during_action
+    assert_nothing_raised do
+      @machines.fire_event_attributes(@object, :save) do
+         Marshal.dump(@object)
+         true
+      end
+    end
+  end
+  
+  def test_should_marshal_during_after_callbacks
+    @machine.after_transition {|object, transition| Marshal.dump(object)}
+    assert_nothing_raised { @machines.fire_event_attributes(@object, :save) { true } }
+  end
+  
+  def teardown
+    self.class.send(:remove_const, 'Example')
+  end
+end
+
+class MachineFireImplicitPartialWithMarshallingTest < MachineCollectionFireImplicitTest
+  def setup
+    super
+    self.class.const_set('Example', @klass)
+    
+    @object.state_event = 'ignite'
+  end
+  
+  def test_should_marshal_during_before_callbacks
+    @machine.before_transition {|object, transition| Marshal.dump(object)}
+    assert_nothing_raised do
+      @machines.fire_event_attributes(@object, :save, false) { true }
+      @machines.fire_event_attributes(@object, :save) { true }
+    end
+  end
+  
+  def test_should_marshal_during_action
+    assert_nothing_raised do
+      @machines.fire_event_attributes(@object, :save, false) do
+         Marshal.dump(@object)
+         true
+      end
+      
+      @machines.fire_event_attributes(@object, :save) do
+         Marshal.dump(@object)
+         true
+      end
+    end
+  end
+  
+  def test_should_marshal_during_after_callbacks
+    @machine.after_transition {|object, transition| Marshal.dump(object)}
+    assert_nothing_raised do
+      @machines.fire_event_attributes(@object, :save, false) { true }
+      @machines.fire_event_attributes(@object, :save) { true }
+    end
+  end
+  
+  def teardown
+    self.class.send(:remove_const, 'Example')
   end
 end

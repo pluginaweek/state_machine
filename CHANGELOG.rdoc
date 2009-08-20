@@ -1,5 +1,7 @@
 == master
 
+* Fix event transitions being kept around while running actions/callbacks, sometimes preventing object marshalling
+
 == 0.8.0 / 2009-08-15
 
 * Add support for DataMapper 0.10.0

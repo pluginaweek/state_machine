@@ -663,6 +663,50 @@ class EventWithInvalidCurrentStateTest < Test::Unit::TestCase
   end
 end
 
+class EventWithMarshallingTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def save
+        true
+      end
+    end
+    self.class.const_set('Example', @klass)
+    
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @machine.state :parked, :idling
+    
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
+    @event.transition(:parked => :idling)
+    
+    @object = @klass.new
+    @object.state = 'parked'
+  end
+  
+  def test_should_marshal_during_before_callbacks
+    @machine.before_transition {|object, transition| Marshal.dump(object)}
+    assert_nothing_raised { @event.fire(@object) }
+  end
+  
+  def test_should_marshal_during_action
+    @klass.class_eval do
+      def save
+        Marshal.dump(self)
+      end
+    end
+    
+    assert_nothing_raised { @event.fire(@object) }
+  end
+  
+  def test_should_marshal_during_after_callbacks
+    @machine.after_transition {|object, transition| Marshal.dump(object)}
+    assert_nothing_raised { @event.fire(@object) }
+  end
+  
+  def teardown
+    self.class.send(:remove_const, 'Example')
+  end
+end
+
 begin
   # Load library
   require 'rubygems'
