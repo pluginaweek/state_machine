@@ -118,7 +118,7 @@ module StateMachine
       # Make sure all events were valid
       if result = transitions.all? {|transition| transition != false}
         # Clear any traces of the event since transitions are available and to
-        # prevent from being evaluated multiple times if actinos are nested
+        # prevent from being evaluated multiple times if actions are nested
         transitions.each do |transition|
           transition.machine.write(object, :event, nil)
           transition.machine.write(object, :event_transition, nil)
