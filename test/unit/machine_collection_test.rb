@@ -507,7 +507,7 @@ class MachineCollectionFireImplicitPartialTest < MachineCollectionFireImplicitTe
     super
     
     @state_event = nil
-    @state_event_transition
+    @state_event_transition = nil
     
     @object.state_event = 'ignite'
     @result = @machines.fire_event_attributes(@object, :save, false) do
