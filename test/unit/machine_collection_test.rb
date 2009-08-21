@@ -69,6 +69,38 @@ class MachineCollectionStateInitializationTest < Test::Unit::TestCase
     assert_nil @object.state
     assert_equal 'active', @object.alarm_state
   end
+  
+  def test_should_not_set_states_if_ignored
+    @machines.initialize_states(@object, :ignore => [:state, :alarm_state])
+    
+    assert_nil @object.state
+    assert_nil @object.alarm_state
+  end
+  
+  def test_should_set_states_if_not_ignored_and_nil
+    @machines.initialize_states(@object, :ignore => [])
+    
+    assert_equal 'parked', @object.state
+    assert_equal 'active', @object.alarm_state
+  end
+  
+  def test_should_set_states_if_not_ignored_and_empty
+    @object.state = ''
+    @object.alarm_state = ''
+    @machines.initialize_states(@object, :ignore => [])
+    
+    assert_equal 'parked', @object.state
+    assert_equal 'active', @object.alarm_state
+  end
+  
+  def test_should_set_states_if_not_ignored_and_not_empty
+    @object.state = 'idling'
+    @object.alarm_state = 'inactive'
+    @machines.initialize_states(@object, :ignore => [])
+    
+    assert_equal 'parked', @object.state
+    assert_equal 'active', @object.alarm_state
+  end
 end
 
 class MachineCollectionFireExplicitTest < Test::Unit::TestCase

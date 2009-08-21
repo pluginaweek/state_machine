@@ -330,13 +330,16 @@ module StateMachine
             
             # Hooks in to attribute initialization to set the states *prior*
             # to the attributes being set
-            def attributes=(*args)
+            def attributes=(new_attributes, *args)
               if new_record? && !@initialized_state_machines
                 @initialized_state_machines = true
                 
-                initialize_state_machines(:dynamic => false)
+                attributes = new_attributes.dup
+                attributes.stringify_keys!
+                ignore = remove_attributes_protected_from_mass_assignment(attributes).keys
+                initialize_state_machines(:dynamic => false, :ignore => ignore)
                 super
-                initialize_state_machines(:dynamic => true)
+                initialize_state_machines(:dynamic => true, :ignore => ignore)
               else
                 super
               end

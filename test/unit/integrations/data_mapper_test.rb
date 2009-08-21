@@ -202,6 +202,21 @@ begin
       end
     end
     
+    class MachineWithColumnDefaultTest < BaseTestCase
+      def setup
+        @resource = new_resource do
+          property :status, String, :default => 'idling'
+          auto_migrate!
+        end
+        @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
+        @record = @resource.new
+      end
+      
+      def test_should_use_machine_default
+        assert_equal 'parked', @record.status
+      end
+    end
+    
     class MachineWithComplexPluralizationTest < BaseTestCase
       def setup
         @resource = new_resource
@@ -280,6 +295,44 @@ begin
         end
         
         assert_equal 1, @resource.all.size
+      end
+    end
+    
+    class MachineWithInitializedStateTest < BaseTestCase
+      def setup
+        @resource = new_resource
+        @machine = StateMachine::Machine.new(@resource, :initial => :parked)
+        @machine.state nil, :idling
+      end
+      
+      def test_should_allow_nil_initial_state_when_static
+        record = @resource.new(:state => nil)
+        assert_nil record.state
+      end
+      
+      def test_should_allow_nil_initial_state_when_dynamic
+        @machine.initial_state = lambda {:parked}
+        record = @resource.new(:state => nil)
+        assert_nil record.state
+      end
+      
+      def test_should_allow_different_initial_state_when_static
+        record = @resource.new(:state => 'idling')
+        assert_equal 'idling', record.state
+      end
+      
+      def test_should_allow_different_initial_state_when_dynamic
+        @machine.initial_state = lambda {:parked}
+        record = @resource.new(:state => 'idling')
+        assert_equal 'idling', record.state
+      end
+      
+      def test_should_use_default_state_if_protected
+        @resource.class_eval do
+          protected :state=
+        end
+        
+        assert_raise(ArgumentError) { @resource.new(:state => 'idling') }
       end
     end
     

@@ -281,6 +281,17 @@ module StateMachine
           @supports_validations ||= ::DataMapper.const_defined?('Validate')
         end
         
+      def define_state_initializer
+        @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
+          def initialize(attributes = {}, *args)
+            ignore = attributes.keys
+            initialize_state_machines(:dynamic => false, :ignore => ignore)
+            super
+            initialize_state_machines(:dynamic => true, :ignore => ignore)
+          end
+        end_eval
+      end
+        
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
           owner_class.property(attribute, String) unless owner_class.properties.detect {|property| property.name == attribute}

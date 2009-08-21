@@ -5,10 +5,14 @@ module StateMachine
     # values are only set if the machine's attribute doesn't already exist
     # (which must mean the defaults are being skipped)
     def initialize_states(object, options = {})
+      if ignore = options[:ignore]
+        ignore.map! {|attribute| attribute.to_sym}
+      end
+      
       each_value do |machine|
-        if !options.include?(:dynamic) || machine.dynamic_initial_state? == options[:dynamic]
+        if (!ignore || !ignore.include?(machine.attribute)) && (!options.include?(:dynamic) || machine.dynamic_initial_state? == options[:dynamic])
           value = machine.read(object, :state)
-          machine.write(object, :state, machine.initial_state(object).value) if value.nil? || value.respond_to?(:empty?) && value.empty?
+          machine.write(object, :state, machine.initial_state(object).value) if ignore || value.nil? || value.respond_to?(:empty?) && value.empty?
         end
       end
     end

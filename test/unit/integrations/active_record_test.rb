@@ -351,6 +351,20 @@ begin
       end
     end
     
+    class MachineWithColumnDefaultTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model do
+          connection.change_table(:foo) {|t| t.string(:status, :default => 'idling')}
+        end
+        @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+        @record = @model.new
+      end
+      
+      def test_should_use_machine_default
+        assert_equal 'parked', @record.status
+      end
+    end
+    
     class MachineWithConflictingPredicateTest < ActiveRecord::TestCase
       def setup
         @model = new_model do
@@ -531,6 +545,45 @@ begin
         
         @record.vehicle_status = 'parked'
         assert @record.status?(:parked)
+      end
+    end
+    
+    class MachineWithInitializedStateTest < ActiveRecord::TestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model, :initial => :parked)
+        @machine.state nil, :idling
+      end
+      
+      def test_should_allow_nil_initial_state_when_static
+        record = @model.new(:state => nil)
+        assert_nil record.state
+      end
+      
+      def test_should_allow_nil_initial_state_when_dynamic
+        @machine.initial_state = lambda {:parked}
+        record = @model.new(:state => nil)
+        assert_nil record.state
+      end
+      
+      def test_should_allow_different_initial_state_when_static
+        record = @model.new(:state => 'idling')
+        assert_equal 'idling', record.state
+      end
+      
+      def test_should_allow_different_initial_state_when_dynamic
+        @machine.initial_state = lambda {:parked}
+        record = @model.new(:state => 'idling')
+        assert_equal 'idling', record.state
+      end
+      
+      def test_should_use_default_state_if_protected
+        @model.class_eval do
+          attr_protected :state
+        end
+        
+        record = @model.new(:state => 'idling')
+        assert_equal 'parked', record.state
       end
     end
     

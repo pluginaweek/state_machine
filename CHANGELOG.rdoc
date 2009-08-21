@@ -1,5 +1,7 @@
 == master
 
+* Fix nil states being overwritten when they're explicitly set in ORM integrations
+* Fix default states not getting set in ORM integrations if the column has a default
 * Fix event transitions being kept around while running actions/callbacks, sometimes preventing object marshalling
 
 == 0.8.0 / 2009-08-15

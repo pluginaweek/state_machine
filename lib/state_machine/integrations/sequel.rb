@@ -253,13 +253,14 @@ module StateMachine
           @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
             # Hooks in to attribute initialization to set the states *prior*
             # to the attributes being set
-            def set(*args)
+            def set(hash, *args)
               if new? && !@initialized_state_machines
                 @initialized_state_machines = true
                 
-                initialize_state_machines(:dynamic => false)
+                ignore = setter_methods(nil, nil).map {|setter| setter.chop.to_sym} & hash.keys.map {|attribute| attribute.to_sym}
+                initialize_state_machines(:dynamic => false, :ignore => ignore)
                 result = super
-                initialize_state_machines(:dynamic => true)
+                initialize_state_machines(:dynamic => true, :ignore => ignore)
                 result
               else
                 super
