@@ -257,7 +257,7 @@ module StateMachine
               if new? && !@initialized_state_machines
                 @initialized_state_machines = true
                 
-                ignore = setter_methods(nil, nil).map {|setter| setter.chop.to_sym} & hash.keys.map {|attribute| attribute.to_sym}
+                ignore = setter_methods(nil, nil).map {|setter| setter.chop.to_sym} & (hash ? hash.keys.map {|attribute| attribute.to_sym} : [])
                 initialize_state_machines(:dynamic => false, :ignore => ignore)
                 result = super
                 initialize_state_machines(:dynamic => true, :ignore => ignore)

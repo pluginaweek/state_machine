@@ -284,7 +284,7 @@ module StateMachine
       def define_state_initializer
         @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
           def initialize(attributes = {}, *args)
-            ignore = attributes.keys
+            ignore = attributes ? attributes.keys : []
             initialize_state_machines(:dynamic => false, :ignore => ignore)
             super
             initialize_state_machines(:dynamic => true, :ignore => ignore)

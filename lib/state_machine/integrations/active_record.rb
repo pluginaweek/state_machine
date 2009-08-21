@@ -334,9 +334,14 @@ module StateMachine
               if new_record? && !@initialized_state_machines
                 @initialized_state_machines = true
                 
-                attributes = new_attributes.dup
-                attributes.stringify_keys!
-                ignore = remove_attributes_protected_from_mass_assignment(attributes).keys
+                if new_attributes
+                  attributes = new_attributes.dup
+                  attributes.stringify_keys!
+                  ignore = remove_attributes_protected_from_mass_assignment(attributes).keys
+                else
+                  ignore = []
+                end
+                
                 initialize_state_machines(:dynamic => false, :ignore => ignore)
                 super
                 initialize_state_machines(:dynamic => true, :ignore => ignore)
