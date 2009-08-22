@@ -188,6 +188,8 @@ begin
         @resource = new_resource do
           def initialize
             # Skip attribute initialization
+            @initialized_state_machines = true
+            super
           end
         end
         

@@ -425,6 +425,8 @@ begin
         @model = new_model do
           def initialize
             # Skip attribute initialization
+            @initialized_state_machines = true
+            super
           end
         end
         
