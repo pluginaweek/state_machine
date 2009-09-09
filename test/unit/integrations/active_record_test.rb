@@ -4,7 +4,7 @@ begin
   # Load library
   require 'rubygems'
   
-  gem 'activerecord', ENV['AR_VERSION'] ? "=#{ENV['AR_VERSION']}" : '>=2.1.0'
+  gem 'activerecord', ENV['AR_VERSION'] ? "=#{ENV['AR_VERSION']}" : '>=2.0.0'
   require 'active_record'
   
   FIXTURES_ROOT = File.dirname(__FILE__) + '/../../fixtures/'
@@ -12,7 +12,17 @@ begin
   # Load TestCase helpers
   require 'active_support/test_case'
   require 'active_record/fixtures'
-  require 'active_record/test_case'
+  
+  require 'active_record/version'
+  if ActiveRecord::VERSION::STRING >= '2.1.0'
+    require 'active_record/test_case'
+  else
+    class ActiveRecord::TestCase < ActiveSupport::TestCase
+      self.fixture_path = FIXTURES_ROOT
+      self.use_instantiated_fixtures = false
+      self.use_transactional_fixtures = true
+    end
+  end
   
   # Establish database connection
   ActiveRecord::Base.establish_connection({'adapter' => 'sqlite3', 'database' => ':memory:'})
@@ -88,58 +98,6 @@ begin
         @machine = StateMachine::Machine.new(@model)
         @machine.state :parked, :first_gear
         @machine.state :idling, :value => lambda {'idling'}
-      end
-      
-      def test_should_create_singular_with_scope
-        assert @model.respond_to?(:with_state)
-      end
-      
-      def test_should_only_include_records_with_state_in_singular_with_scope
-        parked = @model.create :state => 'parked'
-        idling = @model.create :state => 'idling'
-        
-        assert_equal [parked], @model.with_state(:parked)
-      end
-      
-      def test_should_create_plural_with_scope
-        assert @model.respond_to?(:with_states)
-      end
-      
-      def test_should_only_include_records_with_states_in_plural_with_scope
-        parked = @model.create :state => 'parked'
-        idling = @model.create :state => 'idling'
-        
-        assert_equal [parked, idling], @model.with_states(:parked, :idling)
-      end
-      
-      def test_should_create_singular_without_scope
-        assert @model.respond_to?(:without_state)
-      end
-      
-      def test_should_only_include_records_without_state_in_singular_without_scope
-        parked = @model.create :state => 'parked'
-        idling = @model.create :state => 'idling'
-        
-        assert_equal [parked], @model.without_state(:idling)
-      end
-      
-      def test_should_create_plural_without_scope
-        assert @model.respond_to?(:without_states)
-      end
-      
-      def test_should_only_include_records_without_states_in_plural_without_scope
-        parked = @model.create :state => 'parked'
-        idling = @model.create :state => 'idling'
-        first_gear = @model.create :state => 'first_gear'
-        
-        assert_equal [parked, idling], @model.without_states(:first_gear)
-      end
-      
-      def test_should_allow_chaining_scopes
-        parked = @model.create :state => 'parked'
-        idling = @model.create :state => 'idling'
-        
-        assert_equal [idling], @model.without_state(:parked).with_state(:idling)
       end
       
       def test_should_rollback_transaction_if_false
@@ -220,7 +178,7 @@ begin
         @model = new_model(false)
         
         # Drop the table so that it definitely doesn't exist
-        @model.connection.drop_table(:foo) if @model.connection.table_exists?(:foo)
+        @model.connection.drop_table(:foo) if @model.table_exists?
       end
       
       def test_should_allow_machine_creation
@@ -359,7 +317,7 @@ begin
     class MachineWithColumnDefaultTest < ActiveRecord::TestCase
       def setup
         @model = new_model do
-          connection.change_table(:foo) {|t| t.string(:status, :default => 'idling')}
+          connection.add_column :foo, :status, :string, :default => 'idling'
         end
         @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
         @record = @model.new
@@ -480,47 +438,6 @@ begin
       
       def test_should_set_initial_state_on_created_object
         assert_equal 'parked', @record.status
-      end
-    end
-    
-    class MachineWithComplexPluralizationTest < ActiveRecord::TestCase
-      def setup
-        @model = new_model
-        @machine = StateMachine::Machine.new(@model, :status)
-      end
-      
-      def test_should_create_singular_with_scope
-        assert @model.respond_to?(:with_status)
-      end
-      
-      def test_should_create_plural_with_scope
-        assert @model.respond_to?(:with_statuses)
-      end
-    end
-    
-    class MachineWithOwnerSubclassTest < ActiveRecord::TestCase
-      def setup
-        @model = new_model
-        @machine = StateMachine::Machine.new(@model, :state)
-        
-        @subclass = Class.new(@model)
-        @subclass_machine = @subclass.state_machine(:state) {}
-        @subclass_machine.state :parked, :idling, :first_gear
-      end
-      
-      def test_should_only_include_records_with_subclass_states_in_with_scope
-        parked = @subclass.create :state => 'parked'
-        idling = @subclass.create :state => 'idling'
-        
-        assert_equal [parked, idling], @subclass.with_states(:parked, :idling)
-      end
-      
-      def test_should_only_include_records_without_subclass_states_in_without_scope
-        parked = @subclass.create :state => 'parked'
-        idling = @subclass.create :state => 'idling'
-        first_gear = @subclass.create :state => 'first_gear'
-        
-        assert_equal [parked, idling], @subclass.without_states(:first_gear)
       end
     end
     
@@ -698,42 +615,6 @@ begin
         @transition.perform
         
         assert_equal [1, 2, 3], @record.callback_result
-      end
-    end
-    
-    class MachineWithLoopbackTest < ActiveRecord::TestCase
-      def setup
-        changed_attrs = nil
-        
-        @model = new_model do
-          connection.change_table(:foo) {|t| t.datetime(:updated_at)}
-          
-          define_method(:before_update) do
-            changed_attrs = changed_attributes.dup
-          end
-        end
-        
-        @machine = StateMachine::Machine.new(@model, :initial => :parked)
-        @machine.event :park
-        
-        @record = @model.create(:updated_at => Time.now - 1)
-        @timestamp = @record.updated_at
-        
-        @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
-        @transition.perform
-        
-        @changed_attrs = changed_attrs
-      end
-      
-      def test_should_include_state_in_changed_attributes
-        @changed_attrs.delete('updated_at')
-        
-        expected = {'state' => 'parked'}
-        assert_equal expected, @changed_attrs
-      end
-      
-      def test_should_update_record
-        assert_not_equal @timestamp, @record.updated_at
       end
     end
     
@@ -1261,6 +1142,148 @@ begin
         ]
         
         assert_equal expected, @notifications
+      end
+    end
+    
+    if ActiveRecord.const_defined?(:Dirty) || ActiveRecord::AttributeMethods.const_defined?(:Dirty)
+      class MachineWithLoopbackTest < ActiveRecord::TestCase
+        def setup
+          changed_attrs = nil
+          
+          @model = new_model do
+            connection.add_column :foo, :updated_at, :datetime
+            
+            define_method(:before_update) do
+              changed_attrs = changed_attributes.dup
+            end
+          end
+          
+          @machine = StateMachine::Machine.new(@model, :initial => :parked)
+          @machine.event :park
+          
+          @record = @model.create(:updated_at => Time.now - 1)
+          @timestamp = @record.updated_at
+          
+          @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+          @transition.perform
+          
+          @changed_attrs = changed_attrs
+        end
+        
+        def test_should_include_state_in_changed_attributes
+          @changed_attrs.delete('updated_at')
+          
+          expected = {'state' => 'parked'}
+          assert_equal expected, @changed_attrs
+        end
+        
+        def test_should_update_record
+          assert_not_equal @timestamp, @record.updated_at
+        end
+      end
+    end
+    
+    if ActiveRecord.const_defined?(:NamedScope)
+      class MachineWithScopesTest < ActiveRecord::TestCase
+        def setup
+          @model = new_model
+          @machine = StateMachine::Machine.new(@model)
+          @machine.state :parked, :first_gear
+          @machine.state :idling, :value => lambda {'idling'}
+        end
+        
+        def test_should_create_singular_with_scope
+          assert @model.respond_to?(:with_state)
+        end
+        
+        def test_should_only_include_records_with_state_in_singular_with_scope
+          parked = @model.create :state => 'parked'
+          idling = @model.create :state => 'idling'
+          
+          assert_equal [parked], @model.with_state(:parked)
+        end
+        
+        def test_should_create_plural_with_scope
+          assert @model.respond_to?(:with_states)
+        end
+        
+        def test_should_only_include_records_with_states_in_plural_with_scope
+          parked = @model.create :state => 'parked'
+          idling = @model.create :state => 'idling'
+          
+          assert_equal [parked, idling], @model.with_states(:parked, :idling)
+        end
+        
+        def test_should_create_singular_without_scope
+          assert @model.respond_to?(:without_state)
+        end
+        
+        def test_should_only_include_records_without_state_in_singular_without_scope
+          parked = @model.create :state => 'parked'
+          idling = @model.create :state => 'idling'
+          
+          assert_equal [parked], @model.without_state(:idling)
+        end
+        
+        def test_should_create_plural_without_scope
+          assert @model.respond_to?(:without_states)
+        end
+        
+        def test_should_only_include_records_without_states_in_plural_without_scope
+          parked = @model.create :state => 'parked'
+          idling = @model.create :state => 'idling'
+          first_gear = @model.create :state => 'first_gear'
+          
+          assert_equal [parked, idling], @model.without_states(:first_gear)
+        end
+        
+        def test_should_allow_chaining_scopes
+          parked = @model.create :state => 'parked'
+          idling = @model.create :state => 'idling'
+          
+          assert_equal [idling], @model.without_state(:parked).with_state(:idling)
+        end
+      end
+      
+      class MachineWithScopesAndOwnerSubclassTest < ActiveRecord::TestCase
+        def setup
+          @model = new_model
+          @machine = StateMachine::Machine.new(@model, :state)
+          
+          @subclass = Class.new(@model)
+          @subclass_machine = @subclass.state_machine(:state) {}
+          @subclass_machine.state :parked, :idling, :first_gear
+        end
+        
+        def test_should_only_include_records_with_subclass_states_in_with_scope
+          parked = @subclass.create :state => 'parked'
+          idling = @subclass.create :state => 'idling'
+          
+          assert_equal [parked, idling], @subclass.with_states(:parked, :idling)
+        end
+        
+        def test_should_only_include_records_without_subclass_states_in_without_scope
+          parked = @subclass.create :state => 'parked'
+          idling = @subclass.create :state => 'idling'
+          first_gear = @subclass.create :state => 'first_gear'
+          
+          assert_equal [parked, idling], @subclass.without_states(:first_gear)
+        end
+      end
+      
+      class MachineWithComplexPluralizationScopesTest < ActiveRecord::TestCase
+        def setup
+          @model = new_model
+          @machine = StateMachine::Machine.new(@model, :status)
+        end
+        
+        def test_should_create_singular_with_scope
+          assert @model.respond_to?(:with_status)
+        end
+        
+        def test_should_create_plural_with_scope
+          assert @model.respond_to?(:with_statuses)
+        end
       end
     end
     

@@ -1,5 +1,6 @@
 == master
 
+* Add support for ActiveRecord 2.0.*
 * Fix nil states being overwritten when they're explicitly set in ORM integrations
 * Fix default states not getting set in ORM integrations if the column has a default
 * Fix event transitions being kept around while running actions/callbacks, sometimes preventing object marshalling

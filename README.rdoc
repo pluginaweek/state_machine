@@ -454,13 +454,13 @@ integrations if the proper dependencies are available):
 
 Target specific versions of integrations like so:
 
-  rake test AR_VERSION=2.1.0 DM_VERSION=0.9.4 SEQUEL_VERSION=2.8.0
+  rake test AR_VERSION=2.0.0 DM_VERSION=0.9.4 SEQUEL_VERSION=2.8.0
 
 == Dependencies
 
 By default, there are no dependencies.  If using specific integrations, those
 dependencies are listed below.
 
-* ActiveRecord[http://rubyonrails.org] integration: 2.1.0 or later
+* ActiveRecord[http://rubyonrails.org] integration: 2.0.0 or later
 * DataMapper[http://datamapper.org] integration: 0.9.4 or later
 * Sequel[http://sequel.rubyforge.org] integration: 2.8.0 or later
