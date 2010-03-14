@@ -481,6 +481,74 @@ begin
       end
     end
     
+    class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
+      def setup
+        @resource = new_resource do
+          property :status, String, :default => 'idling'
+          auto_migrate!
+        end
+        @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
+        @machine.event :ignite
+        @machine.state :idling
+        
+        @record = @resource.create
+        
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+        @transition.perform(false)
+      end
+      
+      def test_should_include_state_in_changed_attributes
+        assert_equal e = {@resource.properties[:status] => 'idling'}, @record.dirty_attributes
+      end
+      
+      def test_should_track_attribute_change
+        if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+          assert_equal e = {@resource.properties[:status] => 'parked'}, @record.original_attributes
+        else
+          assert_equal e = {:status => 'parked'},  @record.original_values
+        end
+      end
+      
+      def test_should_not_reset_changes_on_multiple_transitions
+        transition = StateMachine::Transition.new(@record, @machine, :ignite, :idling, :idling)
+        transition.perform(false)
+        
+        if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+          assert_equal e = {@resource.properties[:status] => 'parked'}, @record.original_attributes
+        else
+          assert_equal e = {:status => 'parked'},  @record.original_values
+        end
+      end
+    end
+    
+    class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
+      def setup
+        @resource = new_resource do
+          property :status, String, :default => 'idling'
+          auto_migrate!
+        end
+        @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
+        @machine.event :park
+        
+        @record = @resource.create
+        
+        @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+        @transition.perform(false)
+      end
+      
+      def test_should_include_state_in_changed_attributes
+        assert_equal e = {@resource.properties[:status] => 'parked'}, @record.dirty_attributes
+      end
+      
+      def test_should_track_attribute_changes
+        if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+          assert_equal e = {@resource.properties[:status] => 'parked-ignored'}, @record.original_attributes
+        else
+          assert_equal e = {:status => 'parked-ignored'},  @record.original_values
+        end
+      end
+    end
+    
     class MachineWithoutTransactionsTest < BaseTestCase
       def setup
         @resource = new_resource

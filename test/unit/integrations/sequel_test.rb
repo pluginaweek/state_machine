@@ -489,6 +489,51 @@ begin
       end
     end
     
+    class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
+      def setup
+        @model = new_model
+        DB.alter_table :foo do
+          add_column :status, :string, :default => 'idling'
+        end
+        @model.class_eval { get_db_schema(true) }
+        
+        @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+        @machine.event :ignite
+        @machine.state :idling
+        
+        @record = @model.create
+        
+        @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+        @transition.perform(false)
+      end
+      
+      def test_should_include_state_in_changed_attributes
+        assert_equal [:status], @record.changed_columns
+      end
+    end
+    
+    class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
+      def setup
+        @model = new_model
+        DB.alter_table :foo do
+          add_column :status, :string, :default => 'idling'
+        end
+        @model.class_eval { get_db_schema(true) }
+        
+        @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+        @machine.event :park
+        
+        @record = @model.create
+        
+        @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+        @transition.perform(false)
+      end
+      
+      def test_should_include_state_in_changed_attributes
+        assert_equal [:status], @record.changed_columns
+      end
+    end
+    
     class MachineWithoutTransactionsTest < BaseTestCase
       def setup
         @model = new_model
