@@ -35,12 +35,14 @@ begin
       
       protected
         # Creates a new ActiveRecord model (and the associated table)
-        def new_model(create_table = true, &block)
+        def new_model(create_table = :foo, &block)
+          table_name = create_table || :foo
+          
           model = Class.new(ActiveRecord::Base) do
-            connection.create_table(:foo, :force => true) {|t| t.string(:state)} if create_table
-            set_table_name('foo')
+            connection.create_table(table_name, :force => true) {|t| t.string(:state)} if create_table
+            set_table_name(table_name.to_s)
             
-            def self.name; 'ActiveRecordTest::Foo'; end
+            def self.name; "ActiveRecordTest::#{table_name.capitalize}"; end
           end
           model.class_eval(&block) if block_given?
           model
@@ -1408,6 +1410,41 @@ begin
         
         def test_should_create_plural_with_scope
           assert @model.respond_to?(:with_statuses)
+        end
+      end
+      
+      class MachineWithScopesAndJoinsTest < BaseTestCase
+        def setup
+          @company = new_model(:company)
+          ActiveRecordTest.const_set('Company', @company)
+          
+          @vehicle = new_model(:vehicle) do
+            connection.add_column :vehicle, :company_id, :integer
+            belongs_to :company
+          end
+          ActiveRecordTest.const_set('Vehicle', @vehicle)
+          
+          @company_machine = StateMachine::Machine.new(@company, :initial => :active)
+          @vehicle_machine = StateMachine::Machine.new(@vehicle, :initial => :parked)
+          @vehicle_machine.state :idling
+          
+          @ford = @company.create
+          @mustang = @vehicle.create(:company => @ford)
+        end
+        
+        def test_should_find_records_in_with_scope
+          assert_equal [@mustang], @vehicle.with_states(:parked).find(:all, :include => :company, :conditions => 'company.state = "active"')
+        end
+        
+        def test_should_find_records_in_without_scope
+          assert_equal [@mustang], @vehicle.without_states(:idling).find(:all, :include => :company, :conditions => 'company.state = "active"')
+        end
+        
+        def teardown
+          ActiveRecordTest.class_eval do
+            remove_const('Vehicle')
+            remove_const('Company')
+          end
         end
       end
     end

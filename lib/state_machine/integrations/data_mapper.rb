@@ -328,14 +328,12 @@ module StateMachine
         # Creates a scope for finding records *with* a particular state or
         # states for the attribute
         def create_with_scope(name)
-          attribute = self.attribute
           lambda {|resource, values| resource.all(attribute => values)}
         end
         
         # Creates a scope for finding records *without* a particular state or
         # states for the attribute
         def create_without_scope(name)
-          attribute = self.attribute
           lambda {|resource, values| resource.all(attribute.to_sym.not => values)}
         end
         

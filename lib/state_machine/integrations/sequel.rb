@@ -292,15 +292,13 @@ module StateMachine
         # Creates a scope for finding records *with* a particular state or
         # states for the attribute
         def create_with_scope(name)
-          attribute = self.attribute
-          lambda {|model, values| model.filter(attribute.to_sym => values)}
+          lambda {|model, values| model.filter(:"#{owner_class.table_name}__#{attribute}" => values)}
         end
         
         # Creates a scope for finding records *without* a particular state or
         # states for the attribute
         def create_without_scope(name)
-          attribute = self.attribute
-          lambda {|model, values| model.filter(~{attribute.to_sym => values})}
+          lambda {|model, values| model.filter(~{:"#{owner_class.table_name}__#{attribute}" => values})}
         end
         
         # Runs a new database transaction, rolling back any changes if the

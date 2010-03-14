@@ -18,14 +18,16 @@ begin
       
       protected
         # Creates a new Sequel model (and the associated table)
-        def new_model(auto_migrate = true, &block)
-          DB.create_table! :foo do
+        def new_model(create_table = :foo, &block)
+          table_name = create_table || :foo
+          
+          DB.create_table!(table_name) do
             primary_key :id
             column :state, :string
-          end if auto_migrate
-          model = Class.new(Sequel::Model(:foo)) do
+          end if create_table
+          model = Class.new(Sequel::Model(table_name)) do
             self.raise_on_save_failure = false
-            def self.name; 'SequelTest::Foo'; end
+            def self.name; "SequelTest::#{table_name.to_s.capitalize}"; end
           end
           model.plugin(:validation_class_methods) if model.respond_to?(:plugin)
           model.plugin(:hook_class_methods) if model.respond_to?(:plugin)
@@ -1191,6 +1193,44 @@ begin
       
       def test_should_create_plural_with_scope
         assert @model.respond_to?(:with_statuses)
+      end
+    end
+    
+    class MachineWithScopesAndJoinsTest < BaseTestCase
+      def setup
+        @company = new_model(:company)
+        SequelTest.const_set('Company', @company)
+        
+        @vehicle = new_model(:vehicle) do
+          many_to_one :company, :class => SequelTest::Company
+        end
+        DB.alter_table :vehicle do
+          add_column :company_id, :integer
+        end
+        @vehicle.class_eval { get_db_schema(true) }
+        SequelTest.const_set('Vehicle', @vehicle)
+        
+        @company_machine = StateMachine::Machine.new(@company, :initial => :active)
+        @vehicle_machine = StateMachine::Machine.new(@vehicle, :initial => :parked)
+        @vehicle_machine.state :idling
+        
+        @ford = @company.create
+        @mustang = @vehicle.create(:company => @ford)
+      end
+      
+      def test_should_find_records_in_with_scope
+        assert_equal [@mustang], @vehicle.with_states(:parked).join(:company, :id => :company_id).filter(:company__state => 'active').select(:vehicle.*).all
+      end
+      
+      def test_should_find_records_in_without_scope
+        assert_equal [@mustang], @vehicle.without_states(:idling).join(:company, :id => :company_id).filter(:company__state => 'active').select(:vehicle.*).all
+      end
+      
+      def teardown
+        SequelTest.class_eval do
+          remove_const('Vehicle')
+          remove_const('Company')
+        end
       end
     end
   end

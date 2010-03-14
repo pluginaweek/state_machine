@@ -19,17 +19,19 @@ begin
       
       protected
         # Creates a new DataMapper resource (and the associated table)
-        def new_resource(auto_migrate = true, &block)
+        def new_resource(create_table = :foo, &block)
+          table_name = create_table || :foo
+          
           resource = Class.new do
             include DataMapper::Resource
             
-            storage_names[:default] = 'foo'
-            def self.name; 'DataMapperTest::Foo'; end
+            storage_names[:default] = table_name.to_s
+            def self.name; "DataMapperTest::#{storage_names[:default].capitalize}"; end
             
             property :id, DataMapper::Types::Serial
             property :state, String
             
-            auto_migrate! if auto_migrate
+            auto_migrate! if create_table
           end
           resource.class_eval(&block) if block_given?
           resource
@@ -1410,6 +1412,43 @@ begin
       
       def test_should_create_plural_with_scope
         assert @resource.respond_to?(:with_statuses)
+      end
+    end
+    
+    class MachineWithScopesAndJoinsTest < BaseTestCase
+      def setup
+        @company = new_resource(:company)
+        DataMapperTest.const_set('Company', @company)
+        
+        @vehicle = new_resource(:vehicle) do
+          property :company_id, Integer
+          auto_migrate!
+          
+          belongs_to :company
+        end
+        DataMapperTest.const_set('Vehicle', @vehicle)
+        
+        @company_machine = StateMachine::Machine.new(@company, :initial => :active)
+        @vehicle_machine = StateMachine::Machine.new(@vehicle, :initial => :parked)
+        @vehicle_machine.state :idling
+        
+        @ford = @company.create
+        @mustang = @vehicle.create(:company => @ford)
+      end
+      
+      def test_should_find_records_in_with_scope
+        assert_equal [@mustang], @vehicle.with_states(:parked).all(Vehicle.company.state => 'active')
+      end
+      
+      def test_should_find_records_in_without_scope
+        assert_equal [@mustang], @vehicle.without_states(:idling).all(Vehicle.company.state => 'active')
+      end
+      
+      def teardown
+        DataMapperTest.class_eval do
+          remove_const('Vehicle')
+          remove_const('Company')
+        end
       end
     end
   end
