@@ -470,8 +470,9 @@ attribute-based event transitions to fail
 
 == Dependencies
 
-By default, there are no dependencies.  If using specific integrations, those
-dependencies are listed below.
+* Ruby 1.8.6 or later
+
+If using specific integrations:
 
 * ActiveRecord[http://rubyonrails.org] integration: 2.0.0 or later
 * DataMapper[http://datamapper.org] integration: 0.9.4 or later
