@@ -456,6 +456,13 @@ Target specific versions of integrations like so:
 
   rake test AR_VERSION=2.0.0 DM_VERSION=0.9.4 SEQUEL_VERSION=2.8.0
 
+== Caveats
+
+The following caveats should be noted when using state_machine:
+
+* DataMapper: dm-validations 0.9.4 - 0.9.6 causes +after+ callbacks for
+attribute-based event transitions to fail
+
 == Dependencies
 
 By default, there are no dependencies.  If using specific integrations, those
