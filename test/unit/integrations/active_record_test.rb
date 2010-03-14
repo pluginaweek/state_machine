@@ -1218,6 +1218,26 @@ begin
         @transition.perform
         assert_equal [instance], instance.notifications
       end
+      
+      def test_should_use_original_observer_behavior_to_handle_non_state_machine_callbacks
+        observer = new_observer(@model) do
+          def before_save(object)
+          end
+          
+          def before_ignite(*args)
+          end
+          
+          def update_without_multiple_args(observed_method, object)
+            notifications << [observed_method, object] if [:before_save, :before_ignite].include?(observed_method)
+            super
+          end
+        end
+        
+        instance = observer.instance
+        
+        @transition.perform
+        assert_equal [[:before_save, @record]], instance.notifications
+      end
     end
     
     class MachineWithNamespacedObserversTest < BaseTestCase

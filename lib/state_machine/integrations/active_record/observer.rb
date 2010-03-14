@@ -29,7 +29,11 @@ module StateMachine
         # Allows additional arguments other than the object to be passed to the
         # observed methods
         def update_with_multiple_args(observed_method, object, *args) #:nodoc:
-          send(observed_method, object, *args) if respond_to?(observed_method)
+          if args.any?
+            send(observed_method, object, *args) if respond_to?(observed_method)
+          else
+            update_without_multiple_args(observed_method, object)
+          end
         end
       end
     end
