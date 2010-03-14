@@ -803,7 +803,7 @@ begin
     end
     
     def test_should_use_event_name_as_label
-      assert_equal 'park', @edges.first['label']
+      assert_equal 'park', @edges.first['label'].to_s.gsub('"', '')
     end
   end
   

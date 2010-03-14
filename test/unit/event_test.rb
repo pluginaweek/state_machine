@@ -735,7 +735,7 @@ begin
     end
     
     def test_should_use_event_name_for_edge_label
-      assert_equal 'park', @edges.first['label']
+      assert_equal 'park', @edges.first['label'].to_s.gsub('"', '')
     end
   end
 rescue LoadError

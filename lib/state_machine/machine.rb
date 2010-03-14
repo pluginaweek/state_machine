@@ -1258,21 +1258,16 @@ module StateMachine
         :path => '.',
         :format => 'png',
         :font => 'Arial',
-        :orientation => 'portrait',
-        :output => true
+        :orientation => 'portrait'
       }.merge(options)
-      assert_valid_keys(options, :name, :path, :format, :font, :orientation, :output)
+      assert_valid_keys(options, :name, :path, :format, :font, :orientation)
       
       begin
         # Load the graphviz library
         require 'rubygems'
         require 'graphviz'
         
-        graph = GraphViz.new('G',
-          :output => options[:format],
-          :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}"),
-          :rankdir => options[:orientation] == 'landscape' ? 'LR' : 'TB'
-        )
+        graph = GraphViz.new('G', :rankdir => options[:orientation] == 'landscape' ? 'LR' : 'TB')
         
         # Add nodes
         states.by_priority.each do |state|
@@ -1287,7 +1282,20 @@ module StateMachine
         end
         
         # Generate the graph
-        graph.output if options[:output]
+        graphvizVersion = Constants::RGV_VERSION.split('.')
+        
+        if graphvizVersion[0] == '0' && graphvizVersion[1] < '9'
+          outputOptions = {
+            :output => options[:format],
+            :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}")
+          }
+        else
+          outputOptions = {
+            options[:format] => File.join(options[:path], "#{options[:name]}.#{options[:format]}")
+          }
+        end
+        
+        graph.output(outputOptions)
         graph
       rescue LoadError
         $stderr.puts 'Cannot draw the machine. `gem install ruby-graphviz` and try again.'

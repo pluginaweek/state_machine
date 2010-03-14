@@ -1853,34 +1853,37 @@ begin
     end
     
     def test_should_save_file_with_class_name_by_default
-      graph = @machine.draw(:output => false)
-      assert_equal './Vehicle_state.png', graph.instance_variable_get('@filename')
+      graph = @machine.draw
+      assert File.exists?('./Vehicle_state.png')
     end
     
     def test_should_allow_base_name_to_be_customized
-      graph = @machine.draw(:name => 'machine', :output => false)
-      assert_equal './machine.png', graph.instance_variable_get('@filename')
+      graph = @machine.draw(:name => 'machine')
+      assert File.exists?('./machine.png')
     end
     
     def test_should_allow_format_to_be_customized
-      graph = @machine.draw(:format => 'jpg', :output => false)
-      assert_equal './Vehicle_state.jpg', graph.instance_variable_get('@filename')
-      assert_equal 'jpg', graph.instance_variable_get('@format')
+      graph = @machine.draw(:format => 'jpg')
+      assert File.exists?('./Vehicle_state.jpg')
     end
     
     def test_should_allow_path_to_be_customized
-      graph = @machine.draw(:path => "#{File.dirname(__FILE__)}/", :output => false)
-      assert_equal "#{File.dirname(__FILE__)}/Vehicle_state.png", graph.instance_variable_get('@filename')
+      graph = @machine.draw(:path => "#{File.dirname(__FILE__)}/")
+      assert File.exists?("#{File.dirname(__FILE__)}/Vehicle_state.png")
     end
     
     def test_should_allow_orientation_to_be_landscape
-      graph = @machine.draw(:orientation => 'landscape', :output => false)
-      assert_equal 'LR', graph['rankdir']
+      graph = @machine.draw(:orientation => 'landscape')
+      assert_equal 'LR', graph['rankdir'].to_s.gsub('"', '')
     end
     
     def test_should_allow_orientation_to_be_portrait
-      graph = @machine.draw(:orientation => 'portrait', :output => false)
-      assert_equal 'TB', graph['rankdir']
+      graph = @machine.draw(:orientation => 'portrait')
+      assert_equal 'TB', graph['rankdir'].to_s.gsub('"', '')
+    end
+    
+    def teardown
+      FileUtils.rm Dir["{.,#{File.dirname(__FILE__)}}/*.{png,jpg}"]
     end
   end
   
