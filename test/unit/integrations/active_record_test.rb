@@ -1478,20 +1478,14 @@ begin
           @model = new_model
         end
         
-        def test_should_invalidate_using_i18n_default
+        def test_should_use_defaults
           I18n.backend.store_translations(:en, {
-            :activerecord => {
-              :errors => {
-                :messages => {
-                  :invalid_transition => 'cannot {{event}}'
-                }
-              }
-            }
+            :activerecord => {:errors => {:messages => {:invalid_transition => 'cannot {{event}}'}}}
           })
           
           machine = StateMachine::Machine.new(@model)
           machine.state :parked, :idling
-          event = StateMachine::Event.new(machine, :ignite)
+          machine.event :ignite
           
           record = @model.new(:state => 'idling')
           
@@ -1499,15 +1493,9 @@ begin
           assert_equal ['State cannot ignite'], record.errors.full_messages
         end
         
-        def test_should_invalidate_using_customized_i18n_key_if_specified
+        def test_should_allow_customized_error_key
           I18n.backend.store_translations(:en, {
-            :activerecord => {
-              :errors => {
-                :messages => {
-                  :bad_transition => 'cannot {{event}}'
-                }
-              }
-            }
+            :activerecord => {:errors => {:messages => {:bad_transition => 'cannot {{event}}'}}}
           })
           
           machine = StateMachine::Machine.new(@model, :messages => {:invalid_transition => :bad_transition})
@@ -1519,7 +1507,7 @@ begin
           assert_equal ['State cannot ignite'], record.errors.full_messages
         end
         
-        def test_should_invalidate_using_customized_i18n_string_if_specified
+        def test_should_allow_customized_error_string
           machine = StateMachine::Machine.new(@model, :messages => {:invalid_transition => 'cannot {{event}}'})
           machine.state :parked, :idling
           
@@ -1527,6 +1515,81 @@ begin
           
           machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
           assert_equal ['State cannot ignite'], record.errors.full_messages
+        end
+        
+        def test_should_allow_customized_state_key_scoped_to_class_and_machine
+          I18n.backend.store_translations(:en, {
+            :activerecord => {:state_machines => {:'active_record_test/foo' => {:state => {:states => {:parked => 'shutdown'}}}}}
+          })
+          
+          machine = StateMachine::Machine.new(@model, :initial => :parked)
+          record = @model.new
+          
+          machine.invalidate(record, :event, :invalid_event, [[:state, :parked]])
+          assert_equal ['State event cannot transition when shutdown'], record.errors.full_messages
+        end
+        
+        def test_should_allow_customized_state_key_scoped_to_machine
+          I18n.backend.store_translations(:en, {
+            :activerecord => {:state_machines => {:state => {:states => {:parked => 'shutdown'}}}}
+          })
+          
+          machine = StateMachine::Machine.new(@model, :initial => :parked)
+          record = @model.new
+          
+          machine.invalidate(record, :event, :invalid_event, [[:state, :parked]])
+          assert_equal ['State event cannot transition when shutdown'], record.errors.full_messages
+        end
+        
+        def test_should_allow_customized_state_key_unscoped
+          I18n.backend.store_translations(:en, {
+            :activerecord => {:state_machines => {:states => {:parked => 'shutdown'}}}
+          })
+          
+          machine = StateMachine::Machine.new(@model, :initial => :parked)
+          record = @model.new
+          
+          machine.invalidate(record, :event, :invalid_event, [[:state, :parked]])
+          assert_equal ['State event cannot transition when shutdown'], record.errors.full_messages
+        end
+        
+        def test_should_allow_customized_event_key_scoped_to_class_and_machine
+          I18n.backend.store_translations(:en, {
+            :activerecord => {:state_machines => {:'active_record_test/foo' => {:state => {:events => {:park => 'stop'}}}}}
+          })
+          
+          machine = StateMachine::Machine.new(@model)
+          machine.event :park
+          record = @model.new
+          
+          machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
+          assert_equal ['State cannot transition via "stop"'], record.errors.full_messages
+        end
+        
+        def test_should_allow_customized_event_key_scoped_to_machine
+          I18n.backend.store_translations(:en, {
+            :activerecord => {:state_machines => {:state => {:events => {:park => 'stop'}}}}
+          })
+          
+          machine = StateMachine::Machine.new(@model)
+          machine.event :park
+          record = @model.new
+          
+          machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
+          assert_equal ['State cannot transition via "stop"'], record.errors.full_messages
+        end
+        
+        def test_should_allow_customized_event_key_unscoped
+          I18n.backend.store_translations(:en, {
+            :activerecord => {:state_machines => {:events => {:park => 'stop'}}}
+          })
+          
+          machine = StateMachine::Machine.new(@model)
+          machine.event :park
+          record = @model.new
+          
+          machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
+          assert_equal ['State cannot transition via "stop"'], record.errors.full_messages
         end
         
         def test_should_only_add_locale_once_in_load_path

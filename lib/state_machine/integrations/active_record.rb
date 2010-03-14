@@ -259,6 +259,50 @@ module StateMachine
     #       Audit.log(record, transition)
     #     end
     #   end
+    # 
+    # == Internationalization
+    # 
+    # In Rails 2.2+, any error message that is generated from performing invalid
+    # transitions can be localized.  The following default translations are used:
+    # 
+    #   en:
+    #     activerecord:
+    #       errors:
+    #         messages:
+    #           invalid: "is invalid"
+    #           invalid_event: "cannot transition when {{state}}"
+    #           invalid_transition: "cannot transition via {{event}}"
+    # 
+    # You can override these for a specific model like so:
+    # 
+    #   en:
+    #     activerecord:
+    #       errors:
+    #         models:
+    #           user:
+    #             invalid: "is not valid"
+    # 
+    # In addition to the above, you can also provide translations for the
+    # various states / events in each state machine.  Using the Vehicle example,
+    # state translations will be looked for using the following keys:
+    # * <tt>activerecord.state_machines.vehicle.state.states.parked</tt>
+    # * <tt>activerecord.state_machines.state.states.parked
+    # * <tt>activerecord.state_machines.states.parked</tt>
+    # 
+    # Event translations will be looked for using the following keys:
+    # * <tt>activerecord.state_machines.vehicle.state.events.ignite</tt>
+    # * <tt>activerecord.state_machines.state.events.ignite
+    # * <tt>activerecord.state_machines.events.ignite</tt>
+    # 
+    # An example translation configuration might look like so:
+    # 
+    #   es:
+    #     activerecord:
+    #       state_machines:
+    #         states:
+    #           parked: 'estacionado'
+    #         events:
+    #           park: 'estacionarse'
     module ActiveRecord
       # The default options to use for state machines using this integration
       class << self; attr_reader :defaults; end
@@ -296,10 +340,26 @@ module StateMachine
         attribute = self.attribute(attribute)
         
         if Object.const_defined?(:I18n)
-          options = values.inject({}) {|options, (key, value)| options[key] = value; options}
-          object.errors.add(attribute, message, options.merge(
-            :default => @messages[message]
-          ))
+          klasses =
+            if ::ActiveRecord::VERSION::MAJOR >= 3
+              object.class.lookup_ancestors
+            elsif ::ActiveRecord::VERSION::MINOR == 3 && ::ActiveRecord::VERSION::TINY >= 2
+              object.class.self_and_descendants_from_active_record
+            else
+              object.class.self_and_descendents_from_active_record
+            end
+          
+          options = values.inject({}) do |options, (key, value)|
+            # Generate all possible translation keys
+            group = key.to_s.pluralize
+            translations = klasses.map {|klass| :"#{klass.model_name.underscore}.#{name}.#{group}.#{value}"}
+            translations.concat([:"#{name}.#{group}.#{value}", :"#{group}.#{value}", value.to_s])
+            
+            options[key] = I18n.translate(translations.shift, :default => translations, :scope => [:activerecord, :state_machines])
+            options
+          end
+          
+          object.errors.add(attribute, message, options.merge(:default => @messages[message]))
         else
           object.errors.add(attribute, generate_message(message, values))
         end
