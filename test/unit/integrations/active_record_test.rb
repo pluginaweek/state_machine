@@ -28,38 +28,41 @@ begin
   ActiveRecord::Base.establish_connection({'adapter' => 'sqlite3', 'database' => ':memory:'})
   ActiveRecord::Base.logger = Logger.new("#{File.dirname(__FILE__)}/../../active_record.log")
   
-  # Add model/observer creation helpers
-  ActiveRecord::TestCase.class_eval do
-    # Creates a new ActiveRecord model (and the associated table)
-    def new_model(create_table = true, &block)
-      model = Class.new(ActiveRecord::Base) do
-        connection.create_table(:foo, :force => true) {|t| t.string(:state)} if create_table
-        set_table_name('foo')
-        
-        def self.name; 'ActiveRecordTest::Foo'; end
+  module ActiveRecordTest
+    class BaseTestCase < ActiveRecord::TestCase
+      def default_test
       end
-      model.class_eval(&block) if block_given?
-      model
+      
+      protected
+        # Creates a new ActiveRecord model (and the associated table)
+        def new_model(create_table = true, &block)
+          model = Class.new(ActiveRecord::Base) do
+            connection.create_table(:foo, :force => true) {|t| t.string(:state)} if create_table
+            set_table_name('foo')
+            
+            def self.name; 'ActiveRecordTest::Foo'; end
+          end
+          model.class_eval(&block) if block_given?
+          model
+        end
+        
+        # Creates a new ActiveRecord observer
+        def new_observer(model, &block)
+          observer = Class.new(ActiveRecord::Observer) do
+            attr_accessor :notifications
+            
+            def initialize
+              super
+              @notifications = []
+            end
+          end
+          observer.observe(model)
+          observer.class_eval(&block) if block_given?
+          observer
+        end
     end
     
-    # Creates a new ActiveRecord observer
-    def new_observer(model, &block)
-      observer = Class.new(ActiveRecord::Observer) do
-        attr_accessor :notifications
-        
-        def initialize
-          super
-          @notifications = []
-        end
-      end
-      observer.observe(model)
-      observer.class_eval(&block) if block_given?
-      observer
-    end
-  end
-  
-  module ActiveRecordTest
-    class IntegrationTest < ActiveRecord::TestCase
+    class IntegrationTest < BaseTestCase
       def test_should_match_if_class_inherits_from_active_record
         assert StateMachine::Integrations::ActiveRecord.matches?(new_model)
       end
@@ -67,9 +70,41 @@ begin
       def test_should_not_match_if_class_does_not_inherit_from_active_record
         assert !StateMachine::Integrations::ActiveRecord.matches?(Class.new)
       end
+      
+      def test_should_have_defaults
+        assert_equal e = {:action => :save}, StateMachine::Integrations::ActiveRecord.defaults
+      end
     end
     
-    class MachineByDefaultTest < ActiveRecord::TestCase
+    class MachineWithoutDatabaseTest < BaseTestCase
+      def setup
+        @model = new_model(false) do
+          # Simulate the database not being available entirely
+          def self.connection
+            raise ActiveRecord::ConnectionNotEstablished
+          end
+        end
+      end
+      
+      def test_should_allow_machine_creation
+        assert_nothing_raised { StateMachine::Machine.new(@model) }
+      end
+    end
+    
+    class MachineUnmigratedTest < BaseTestCase
+      def setup
+        @model = new_model(false)
+        
+        # Drop the table so that it definitely doesn't exist
+        @model.connection.drop_table(:foo) if @model.table_exists?
+      end
+      
+      def test_should_allow_machine_creation
+        assert_nothing_raised { StateMachine::Machine.new(@model) }
+      end
+    end
+    
+    class MachineByDefaultTest < BaseTestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
@@ -92,101 +127,7 @@ begin
       end
     end
     
-    class MachineTest < ActiveRecord::TestCase
-      def setup
-        @model = new_model
-        @machine = StateMachine::Machine.new(@model)
-        @machine.state :parked, :first_gear
-        @machine.state :idling, :value => lambda {'idling'}
-      end
-      
-      def test_should_rollback_transaction_if_false
-        @machine.within_transaction(@model.new) do
-          @model.create
-          false
-        end
-        
-        assert_equal 0, @model.count
-      end
-      
-      def test_should_not_rollback_transaction_if_true
-        @machine.within_transaction(@model.new) do
-          @model.create
-          true
-        end
-        
-        assert_equal 1, @model.count
-      end
-      
-      def test_should_invalidate_using_errors
-        I18n.backend = I18n::Backend::Simple.new if Object.const_defined?(:I18n)
-        
-        record = @model.new
-        record.state = 'parked'
-        
-        @machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
-        
-        assert_equal ['State cannot transition via "park"'], record.errors.full_messages
-      end
-      
-      def test_should_auto_prefix_custom_attributes_on_invalidation
-        record = @model.new
-        @machine.invalidate(record, :event, :invalid)
-        
-        assert_equal ['State event is invalid'], record.errors.full_messages
-      end
-      
-      def test_should_clear_errors_on_reset
-        record = @model.new
-        record.state = 'parked'
-        record.errors.add(:state, 'is invalid')
-        
-        @machine.reset(record)
-        assert_equal [], record.errors.full_messages
-      end
-      
-      def test_should_not_override_the_column_reader
-        record = @model.new
-        record[:state] = 'parked'
-        assert_equal 'parked', record.state
-      end
-      
-      def test_should_not_override_the_column_writer
-        record = @model.new
-        record.state = 'parked'
-        assert_equal 'parked', record[:state]
-      end
-    end
-    
-    class MachineWithoutDatabaseTest < ActiveRecord::TestCase
-      def setup
-        @model = new_model(false) do
-          # Simulate the database not being available entirely
-          def self.connection
-            raise ActiveRecord::ConnectionNotEstablished
-          end
-        end
-      end
-      
-      def test_should_allow_machine_creation
-        assert_nothing_raised { StateMachine::Machine.new(@model) }
-      end
-    end
-    
-    class MachineUnmigratedTest < ActiveRecord::TestCase
-      def setup
-        @model = new_model(false)
-        
-        # Drop the table so that it definitely doesn't exist
-        @model.connection.drop_table(:foo) if @model.table_exists?
-      end
-      
-      def test_should_allow_machine_creation
-        assert_nothing_raised { StateMachine::Machine.new(@model) }
-      end
-    end
-    
-    class MachineWithStaticInitialStateTest < ActiveRecord::TestCase
+    class MachineWithStaticInitialStateTest < BaseTestCase
       def setup
         @model = new_model do
           attr_accessor :value
@@ -252,7 +193,7 @@ begin
       end
     end
     
-    class MachineWithDynamicInitialStateTest < ActiveRecord::TestCase
+    class MachineWithDynamicInitialStateTest < BaseTestCase
       def setup
         @model = new_model do
           attr_accessor :value
@@ -314,7 +255,7 @@ begin
       end
     end
     
-    class MachineWithColumnDefaultTest < ActiveRecord::TestCase
+    class MachineWithColumnDefaultTest < BaseTestCase
       def setup
         @model = new_model do
           connection.add_column :foo, :status, :string, :default => 'idling'
@@ -328,7 +269,7 @@ begin
       end
     end
     
-    class MachineWithConflictingPredicateTest < ActiveRecord::TestCase
+    class MachineWithConflictingPredicateTest < BaseTestCase
       def setup
         @model = new_model do
           def state?(*args)
@@ -345,13 +286,23 @@ begin
       end
     end
     
-    class MachineWithColumnStateAttributeTest < ActiveRecord::TestCase
+    class MachineWithColumnStateAttributeTest < BaseTestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model, :initial => :parked)
         @machine.other_states(:idling)
         
         @record = @model.new
+      end
+      
+      def test_should_not_override_the_column_reader
+        @record[:state] = 'parked'
+        assert_equal 'parked', @record.state
+      end
+      
+      def test_should_not_override_the_column_writer
+        @record.state = 'parked'
+        assert_equal 'parked', @record[:state]
       end
       
       def test_should_have_an_attribute_predicate
@@ -378,7 +329,7 @@ begin
       end
     end
     
-    class MachineWithNonColumnStateAttributeUndefinedTest < ActiveRecord::TestCase
+    class MachineWithNonColumnStateAttributeUndefinedTest < BaseTestCase
       def setup
         @model = new_model do
           def initialize
@@ -413,7 +364,7 @@ begin
       end
     end
     
-    class MachineWithNonColumnStateAttributeDefinedTest < ActiveRecord::TestCase
+    class MachineWithNonColumnStateAttributeDefinedTest < BaseTestCase
       def setup
         @model = new_model do
           attr_accessor :status
@@ -441,7 +392,7 @@ begin
       end
     end
     
-    class MachineWithCustomAttributeTest < ActiveRecord::TestCase
+    class MachineWithAliasedAttributeTest < BaseTestCase
       def setup
         @model = new_model do
           alias_attribute :vehicle_status, :state
@@ -453,16 +404,6 @@ begin
         @record = @model.new
       end
       
-      def test_should_add_validation_errors_to_custom_attribute
-        @record.vehicle_status = 'invalid'
-        
-        assert !@record.valid?
-        assert_equal ['Vehicle status is invalid'], @record.errors.full_messages
-        
-        @record.vehicle_status = 'parked'
-        assert @record.valid?
-      end
-      
       def test_should_check_custom_attribute_for_predicate
         @record.vehicle_status = nil
         assert !@record.status?(:parked)
@@ -472,7 +413,7 @@ begin
       end
     end
     
-    class MachineWithInitializedStateTest < ActiveRecord::TestCase
+    class MachineWithInitializedStateTest < BaseTestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model, :initial => :parked)
@@ -511,7 +452,115 @@ begin
       end
     end
     
-    class MachineWithCallbacksTest < ActiveRecord::TestCase
+    class MachineWithLoopbackTest < BaseTestCase
+      def setup
+        @model = new_model do
+          connection.add_column :foo, :updated_at, :datetime
+        end
+        
+        @machine = StateMachine::Machine.new(@model, :initial => :parked)
+        @machine.event :park
+        
+        @record = @model.create(:updated_at => Time.now - 1)
+        @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+        
+        @timestamp = @record.updated_at
+        @transition.perform
+      end
+      
+      def test_should_update_record
+        assert_not_equal @timestamp, @record.updated_at
+      end
+    end
+    
+    if ActiveRecord.const_defined?(:Dirty) || ActiveRecord::AttributeMethods.const_defined?(:Dirty)
+      class MachineWithDirtyAttributesTest < BaseTestCase
+        def setup
+          @model = new_model
+          @machine = StateMachine::Machine.new(@model, :initial => :parked)
+          @machine.event :ignite
+          @machine.state :idling
+          
+          @record = @model.create
+          
+          @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+          @transition.perform(false)
+        end
+        
+        def test_should_include_state_in_changed_attributes
+          assert_equal %w(state), @record.changed
+        end
+      end
+      
+      class MachineWithDirtyAttributesDuringLoopbackTest < BaseTestCase
+        def setup
+          @model = new_model
+          @machine = StateMachine::Machine.new(@model, :initial => :parked)
+          @machine.event :park
+          
+          @record = @model.create
+          
+          @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+          @transition.perform(false)
+        end
+        
+        def test_should_include_state_in_changed_attributes
+          assert_equal %w(state), @record.changed
+        end
+      end
+    end
+    
+    class MachineWithoutTransactionsTest < BaseTestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model, :use_transactions => false)
+      end
+      
+      def test_should_not_rollback_transaction_if_false
+        @machine.within_transaction(@model.new) do
+          @model.create
+          false
+        end
+        
+        assert_equal 1, @model.count
+      end
+      
+      def test_should_not_rollback_transaction_if_true
+        @machine.within_transaction(@model.new) do
+          @model.create
+          true
+        end
+        
+        assert_equal 1, @model.count
+      end
+    end
+    
+    class MachineWithTransactionsTest < BaseTestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model, :use_transactions => true)
+      end
+      
+      def test_should_rollback_transaction_if_false
+        @machine.within_transaction(@model.new) do
+          @model.create
+          false
+        end
+        
+        assert_equal 0, @model.count
+      end
+      
+      def test_should_not_rollback_transaction_if_true
+        @machine.within_transaction(@model.new) do
+          @model.create
+          true
+        end
+        
+        assert_equal 1, @model.count
+      end
+    end
+    
+    class MachineWithCallbacksTest < BaseTestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model, :initial => :parked)
@@ -618,7 +667,7 @@ begin
       end
     end
     
-    class MachineWithFailedBeforeCallbacksTest < ActiveRecord::TestCase
+    class MachineWithFailedBeforeCallbacksTest < BaseTestCase
       def setup
         @before_count = 0
         @after_count = 0
@@ -657,7 +706,7 @@ begin
       end
     end
     
-    class MachineWithFailedActionTest < ActiveRecord::TestCase
+    class MachineWithFailedActionTest < BaseTestCase
       def setup
         @model = new_model do
           validates_inclusion_of :state, :in => %w(first_gear)
@@ -704,59 +753,7 @@ begin
       end
     end
     
-    class MachineWithValidationsTest < ActiveRecord::TestCase
-      def setup
-        @model = new_model
-        @machine = StateMachine::Machine.new(@model)
-        @machine.state :parked
-        
-        @record = @model.new
-      end
-      
-      def test_should_be_valid_if_state_is_known
-        @record.state = 'parked'
-        
-        assert @record.valid?
-      end
-      
-      def test_should_not_be_valid_if_state_is_unknown
-        @record.state = 'invalid'
-        
-        assert !@record.valid?
-        assert_equal ['State is invalid'], @record.errors.full_messages
-      end
-    end
-    
-    class MachineWithStateDrivenValidationsTest < ActiveRecord::TestCase
-      def setup
-        @model = new_model do
-          attr_accessor :seatbelt
-        end
-        
-        @machine = StateMachine::Machine.new(@model)
-        @machine.state :first_gear, :second_gear do
-          validates_presence_of :seatbelt
-        end
-        @machine.other_states :parked
-      end
-      
-      def test_should_be_valid_if_validation_fails_outside_state_scope
-        record = @model.new(:state => 'parked', :seatbelt => nil)
-        assert record.valid?
-      end
-      
-      def test_should_be_invalid_if_validation_fails_within_state_scope
-        record = @model.new(:state => 'first_gear', :seatbelt => nil)
-        assert !record.valid?
-      end
-      
-      def test_should_be_valid_if_validation_succeeds_within_state_scope
-        record = @model.new(:state => 'second_gear', :seatbelt => true)
-        assert record.valid?
-      end
-    end
-    
-    class MachineWithFailedAfterCallbacksTest < ActiveRecord::TestCase
+    class MachineWithFailedAfterCallbacksTest < BaseTestCase
        def setup
         @after_count = 0
         
@@ -789,7 +786,104 @@ begin
       end
     end
     
-    class MachineWithEventAttributesOnValidationTest < ActiveRecord::TestCase
+    class MachineWithValidationsTest < BaseTestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model)
+        @machine.state :parked
+        
+        @record = @model.new
+      end
+      
+      def test_should_invalidate_using_errors
+        I18n.backend = I18n::Backend::Simple.new if Object.const_defined?(:I18n)
+        @record.state = 'parked'
+        
+        @machine.invalidate(@record, :state, :invalid_transition, [[:event, :park]])
+        assert_equal ['State cannot transition via "park"'], @record.errors.full_messages
+      end
+      
+      def test_should_auto_prefix_custom_attributes_on_invalidation
+        @machine.invalidate(@record, :event, :invalid)
+        
+        assert_equal ['State event is invalid'], @record.errors.full_messages
+      end
+      
+      def test_should_clear_errors_on_reset
+        @record.state = 'parked'
+        @record.errors.add(:state, 'is invalid')
+        
+        @machine.reset(@record)
+        assert_equal [], @record.errors.full_messages
+      end
+      
+      def test_should_be_valid_if_state_is_known
+        @record.state = 'parked'
+        
+        assert @record.valid?
+      end
+      
+      def test_should_not_be_valid_if_state_is_unknown
+        @record.state = 'invalid'
+        
+        assert !@record.valid?
+        assert_equal ['State is invalid'], @record.errors.full_messages
+      end
+    end
+    
+    class MachineWithValidationsAndCustomAttributeTest < BaseTestCase
+      def setup
+        @model = new_model do
+          alias_attribute :status, :state
+        end
+        
+        @machine = StateMachine::Machine.new(@model, :status, :attribute => :state)
+        @machine.state :parked
+        
+        @record = @model.new
+      end
+      
+      def test_should_add_validation_errors_to_custom_attribute
+        @record.state = 'invalid'
+        
+        assert !@record.valid?
+        assert_equal ['State is invalid'], @record.errors.full_messages
+        
+        @record.state = 'parked'
+        assert @record.valid?
+      end
+    end
+      
+    class MachineWithStateDrivenValidationsTest < BaseTestCase
+      def setup
+        @model = new_model do
+          attr_accessor :seatbelt
+        end
+        
+        @machine = StateMachine::Machine.new(@model)
+        @machine.state :first_gear, :second_gear do
+          validates_presence_of :seatbelt
+        end
+        @machine.other_states :parked
+      end
+      
+      def test_should_be_valid_if_validation_fails_outside_state_scope
+        record = @model.new(:state => 'parked', :seatbelt => nil)
+        assert record.valid?
+      end
+      
+      def test_should_be_invalid_if_validation_fails_within_state_scope
+        record = @model.new(:state => 'first_gear', :seatbelt => nil)
+        assert !record.valid?
+      end
+      
+      def test_should_be_valid_if_validation_succeeds_within_state_scope
+        record = @model.new(:state => 'second_gear', :seatbelt => true)
+        assert record.valid?
+      end
+    end
+    
+    class MachineWithEventAttributesOnValidationTest < BaseTestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
@@ -866,7 +960,7 @@ begin
       end
     end
     
-    class MachineWithEventAttributesOnSaveBangTest < ActiveRecord::TestCase
+    class MachineWithEventAttributesOnSaveBangTest < BaseTestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
@@ -943,7 +1037,7 @@ begin
       end
     end
     
-    class MachineWithEventAttributesOnCustomActionTest < ActiveRecord::TestCase
+    class MachineWithEventAttributesOnCustomActionTest < BaseTestCase
       def setup
         @superclass = new_model do
           def persist
@@ -982,7 +1076,7 @@ begin
       end
     end
     
-    class MachineWithObserversTest < ActiveRecord::TestCase
+    class MachineWithObserversTest < BaseTestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
@@ -1057,7 +1151,7 @@ begin
       end
     end
     
-    class MachineWithNamespacedObserversTest < ActiveRecord::TestCase
+    class MachineWithNamespacedObserversTest < BaseTestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model, :state, :namespace => 'alarm')
@@ -1092,7 +1186,7 @@ begin
       end
     end
     
-    class MachineWithMixedCallbacksTest < ActiveRecord::TestCase
+    class MachineWithMixedCallbacksTest < BaseTestCase
       def setup
         @model = new_model
         @machine = StateMachine::Machine.new(@model)
@@ -1145,46 +1239,8 @@ begin
       end
     end
     
-    if ActiveRecord.const_defined?(:Dirty) || ActiveRecord::AttributeMethods.const_defined?(:Dirty)
-      class MachineWithLoopbackTest < ActiveRecord::TestCase
-        def setup
-          changed_attrs = nil
-          
-          @model = new_model do
-            connection.add_column :foo, :updated_at, :datetime
-            
-            define_method(:before_update) do
-              changed_attrs = changed_attributes.dup
-            end
-          end
-          
-          @machine = StateMachine::Machine.new(@model, :initial => :parked)
-          @machine.event :park
-          
-          @record = @model.create(:updated_at => Time.now - 1)
-          @timestamp = @record.updated_at
-          
-          @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
-          @transition.perform
-          
-          @changed_attrs = changed_attrs
-        end
-        
-        def test_should_include_state_in_changed_attributes
-          @changed_attrs.delete('updated_at')
-          
-          expected = {'state' => 'parked'}
-          assert_equal expected, @changed_attrs
-        end
-        
-        def test_should_update_record
-          assert_not_equal @timestamp, @record.updated_at
-        end
-      end
-    end
-    
     if ActiveRecord.const_defined?(:NamedScope)
-      class MachineWithScopesTest < ActiveRecord::TestCase
+      class MachineWithScopesTest < BaseTestCase
         def setup
           @model = new_model
           @machine = StateMachine::Machine.new(@model)
@@ -1245,7 +1301,7 @@ begin
         end
       end
       
-      class MachineWithScopesAndOwnerSubclassTest < ActiveRecord::TestCase
+      class MachineWithScopesAndOwnerSubclassTest < BaseTestCase
         def setup
           @model = new_model
           @machine = StateMachine::Machine.new(@model, :state)
@@ -1271,7 +1327,7 @@ begin
         end
       end
       
-      class MachineWithComplexPluralizationScopesTest < ActiveRecord::TestCase
+      class MachineWithComplexPluralizationScopesTest < BaseTestCase
         def setup
           @model = new_model
           @machine = StateMachine::Machine.new(@model, :status)
@@ -1288,7 +1344,7 @@ begin
     end
     
     if Object.const_defined?(:I18n)
-      class MachineWithInternationalizationTest < ActiveRecord::TestCase
+      class MachineWithInternationalizationTest < BaseTestCase
         def setup
           I18n.backend = I18n::Backend::Simple.new
           
