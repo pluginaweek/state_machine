@@ -1,7 +1,7 @@
 == master
 
 * Fix custom state attributes not being marked properly as changed in ActiveRecord
-* Fix tracked attributes changes in ActiveRecord / DataMapper integrations not working correctly for non-loopbacks
+* Fix tracked attributes changes in ActiveRecord / DataMapper integrations not working correctly for non-loopbacks [Joe Lind]
 * Fix plural scope names being incorrect for DataMapper 0.9.4 - 0.9.6
 * Fix deprecation warnings for ruby-graphviz 0.9.0+
 * Add support for ActiveRecord 2.0.*
