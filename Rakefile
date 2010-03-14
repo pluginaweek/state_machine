@@ -10,7 +10,7 @@ spec = Gem::Specification.new do |s|
   s.summary           = 'Adds support for creating state machines for attributes on any Ruby class'
   s.description       = s.summary
   
-  s.files             = FileList['{examples,lib,tasks,test}/**/*'] + %w(CHANGELOG.rdoc init.rb LICENSE Rakefile README.rdoc) - FileList['test/*.log']
+  s.files             = FileList['{examples,lib,test}/**/*'] + %w(CHANGELOG.rdoc init.rb LICENSE Rakefile README.rdoc) - FileList['test/*.log']
   s.require_path      = 'lib'
   s.has_rdoc          = true
   s.test_files        = Dir['test/**/*_test.rb']
@@ -95,4 +95,4 @@ task :release => [:gem, :package] do
   end
 end
 
-Dir['tasks/**/*.rake'].each {|rake| load rake}
+load 'lib/tasks/state_machine.rake'

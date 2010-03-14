@@ -427,10 +427,15 @@ For example,
 
   rake state_machine:draw:rails CLASS=Vehicle
 
-If you are using this library as a gem, the following must be added to your
-application's Rakefile in order for the above task to work:
+If you are using this library as a gem, the following must be added to the end
+of your application's Rakefile in order for the above task to work:
 
-  load("#{Gem.searcher.find('state_machine').full_gem_path}/tasks/state_machine.rake")
+  require 'tasks/state_machine'
+
+If you are using Rails 3.0+, you must also add the following to your
+application's Gemfile:
+
+  gem 'ruby-graphviz', :require => 'graphviz'
 
 ==== Merb Integration
 

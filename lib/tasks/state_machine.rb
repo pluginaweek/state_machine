@@ -2,7 +2,7 @@ namespace :state_machine do
   desc 'Draws a set of state machines using GraphViz. Target files to load with FILE=x,y,z; Machine class with CLASS=x,y,z; Font name with FONT=x; Image format with FORMAT=x; Orientation with ORIENTATION=x'
   task :draw do
     # Load the library
-    $:.unshift(File.dirname(__FILE__) + '/lib')
+    $:.unshift(File.dirname(__FILE__) + '/..')
     require 'state_machine'
     
     # Build drawing options
