@@ -1,5 +1,7 @@
 == master
 
+== 0.8.1 / 2010-03-14
+
 * Release gems via rake-gemcutter instead of rubyforge
 * Move rake tasks to lib/tasks
 * Dispatch state behavior to the superclass if it's undefined for a particular state [Sandro Turriate and Tim Pope]
