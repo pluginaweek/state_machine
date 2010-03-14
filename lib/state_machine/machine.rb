@@ -1284,7 +1284,7 @@ module StateMachine
         # Generate the graph
         graphvizVersion = Constants::RGV_VERSION.split('.')
         
-        if graphvizVersion[0] == '0' && graphvizVersion[1] < '9'
+        if graphvizVersion[0] == '0' && (graphvizVersion[1] < '9' || graphvizVersion[1] == '9' && graphvizVersion[2] == '0')
           outputOptions = {
             :output => options[:format],
             :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}")
