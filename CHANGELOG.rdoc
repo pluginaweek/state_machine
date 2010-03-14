@@ -1,5 +1,6 @@
 == master
 
+* Release gems via rake-gemcutter instead of rubyforge
 * Move rake tasks to lib/tasks
 * Dispatch state behavior to the superclass if it's undefined for a particular state [Sandro Turriate and Tim Pope]
 * Fix state / event names not supporting i18n in ActiveRecord
