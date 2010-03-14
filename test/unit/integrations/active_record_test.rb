@@ -490,6 +490,17 @@ begin
         def test_should_include_state_in_changed_attributes
           assert_equal %w(state), @record.changed
         end
+        
+        def test_should_track_attribute_change
+          assert_equal %w(parked idling), @record.changes['state']
+        end
+        
+        def test_should_not_reset_changes_on_multiple_transitions
+          transition = StateMachine::Transition.new(@record, @machine, :ignite, :idling, :idling)
+          transition.perform(false)
+          
+          assert_equal %w(parked idling), @record.changes['state']
+        end
       end
       
       class MachineWithDirtyAttributesDuringLoopbackTest < BaseTestCase
@@ -506,6 +517,10 @@ begin
         
         def test_should_include_state_in_changed_attributes
           assert_equal %w(state), @record.changed
+        end
+        
+        def test_should_track_attribute_changes
+          assert_equal %w(parked parked), @record.changes['state']
         end
       end
     end

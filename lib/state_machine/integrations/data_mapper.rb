@@ -257,9 +257,10 @@ module StateMachine
         result = super
         if attribute == :state && owner_class.properties.detect {|property| property.name == self.attribute}
           if ::DataMapper::VERSION =~ /^(0\.\d\.)/ # Match anything < 0.10
-            object.original_values[self.attribute] = "#{value}-ignored"
+            object.original_values[self.attribute] = "#{value}-ignored" if object.original_values[self.attribute] == value
           else
-            object.original_attributes[owner_class.properties[self.attribute]] = "#{value}-ignored"
+            property = owner_class.properties[self.attribute]
+            object.original_attributes[property] = "#{value}-ignored" unless object.original_attributes.include?(property)
           end
         end
         result

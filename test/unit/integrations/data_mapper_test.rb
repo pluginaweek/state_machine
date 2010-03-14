@@ -435,6 +435,25 @@ begin
       def test_should_include_state_in_changed_attributes
         assert_equal e = {@resource.properties[:state] => 'idling'}, @record.dirty_attributes
       end
+      
+      def test_should_track_attribute_change
+        if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+          assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
+        else
+          assert_equal e = {:state => 'parked'},  @record.original_values
+        end
+      end
+      
+      def test_should_not_reset_changes_on_multiple_transitions
+        transition = StateMachine::Transition.new(@record, @machine, :ignite, :idling, :idling)
+        transition.perform(false)
+        
+        if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+          assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
+        else
+          assert_equal e = {:state => 'parked'},  @record.original_values
+        end
+      end
     end
     
     class MachineWithDirtyAttributesDuringLoopbackTest < BaseTestCase
@@ -451,6 +470,14 @@ begin
       
       def test_should_include_state_in_changed_attributes
         assert_equal e = {@resource.properties[:state] => 'parked'}, @record.dirty_attributes
+      end
+      
+      def test_should_track_attribute_change
+        if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+          assert_equal e = {@resource.properties[:state] => 'parked-ignored'}, @record.original_attributes
+        else
+          assert_equal e = {:state => 'parked-ignored'},  @record.original_values
+        end
       end
     end
     
