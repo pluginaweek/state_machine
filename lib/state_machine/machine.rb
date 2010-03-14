@@ -1416,7 +1416,7 @@ module StateMachine
       # automatically determined by either calling +pluralize+ on the attribute
       # name or adding an "s" to the end of the name.
       def define_scopes(custom_plural = nil)
-        plural = custom_plural || (name.to_s.respond_to?(:pluralize) ? name.to_s.pluralize : "#{name}s")
+        plural = custom_plural || pluralize(name)
         
         [name, plural].uniq.each do |name|
           [:with, :without].each do |kind|
@@ -1431,6 +1431,17 @@ module StateMachine
               end
             end
           end
+        end
+      end
+      
+      # Pluralizes the given word using #pluralize (if available) or simply
+      # adding an "s" to the end of the word 
+      def pluralize(word)
+        word = word.to_s
+        if word.respond_to?(:pluralize)
+          word.pluralize
+        else
+          "#{name}s"
         end
       end
       

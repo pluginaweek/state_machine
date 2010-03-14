@@ -281,6 +281,11 @@ module StateMachine
           @supports_validations ||= ::DataMapper.const_defined?('Validate')
         end
         
+        # Pluralizes the name using the built-in inflector
+        def pluralize(word)
+          Extlib::Inflection.pluralize(word.to_s)
+        end
+        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
