@@ -1,5 +1,6 @@
 == master
 
+* Add support for ActiveRecord 3.0
 * Fix without_{name} scopes not quoting columns in ActiveRecord [Jon Evans]
 * Fix without_{name} scopes not scoping columns to the table in ActiveRecord and Sequel [Jon Evans]
 * Fix custom state attributes not being marked properly as changed in ActiveRecord

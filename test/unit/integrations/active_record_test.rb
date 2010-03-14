@@ -163,10 +163,9 @@ begin
       
       def test_should_set_attributes_prior_to_after_initialize_hook
         state = nil
-        @model.class_eval do
-          define_method(:after_initialize) do
-            state = self.state
-          end
+        @model.class_eval {define_method(:after_initialize) {}} if ::ActiveRecord::VERSION::MAJOR <= 2
+        @model.after_initialize do |record|
+          state = record.state
         end
         @model.new
         assert_equal 'parked', state
@@ -225,10 +224,9 @@ begin
       
       def test_should_set_attributes_prior_to_after_initialize_hook
         state = nil
-        @model.class_eval do
-          define_method(:after_initialize) do
-            state = self.state
-          end
+        @model.class_eval {define_method(:after_initialize) {}} if ::ActiveRecord::VERSION::MAJOR <= 2
+        @model.after_initialize do |record|
+          state = record.state
         end
         @model.new
         assert_equal 'parked', state
@@ -1327,7 +1325,7 @@ begin
           parked = @model.create :state => 'parked'
           idling = @model.create :state => 'idling'
           
-          assert_equal [parked], @model.with_state(:parked)
+          assert_equal [parked], @model.with_state(:parked).find(:all)
         end
         
         def test_should_create_plural_with_scope
@@ -1338,7 +1336,7 @@ begin
           parked = @model.create :state => 'parked'
           idling = @model.create :state => 'idling'
           
-          assert_equal [parked, idling], @model.with_states(:parked, :idling)
+          assert_equal [parked, idling], @model.with_states(:parked, :idling).find(:all)
         end
         
         def test_should_create_singular_without_scope
@@ -1349,7 +1347,7 @@ begin
           parked = @model.create :state => 'parked'
           idling = @model.create :state => 'idling'
           
-          assert_equal [parked], @model.without_state(:idling)
+          assert_equal [parked], @model.without_state(:idling).find(:all)
         end
         
         def test_should_create_plural_without_scope
@@ -1361,14 +1359,14 @@ begin
           idling = @model.create :state => 'idling'
           first_gear = @model.create :state => 'first_gear'
           
-          assert_equal [parked, idling], @model.without_states(:first_gear)
+          assert_equal [parked, idling], @model.without_states(:first_gear).find(:all)
         end
         
         def test_should_allow_chaining_scopes
           parked = @model.create :state => 'parked'
           idling = @model.create :state => 'idling'
           
-          assert_equal [idling], @model.without_state(:parked).with_state(:idling)
+          assert_equal [idling], @model.without_state(:parked).with_state(:idling).find(:all)
         end
       end
       
@@ -1386,7 +1384,7 @@ begin
           parked = @subclass.create :state => 'parked'
           idling = @subclass.create :state => 'idling'
           
-          assert_equal [parked, idling], @subclass.with_states(:parked, :idling)
+          assert_equal [parked, idling], @subclass.with_states(:parked, :idling).find(:all)
         end
         
         def test_should_only_include_records_without_subclass_states_in_without_scope
@@ -1394,7 +1392,7 @@ begin
           idling = @subclass.create :state => 'idling'
           first_gear = @subclass.create :state => 'first_gear'
           
-          assert_equal [parked, idling], @subclass.without_states(:first_gear)
+          assert_equal [parked, idling], @subclass.without_states(:first_gear).find(:all)
         end
       end
       
@@ -1420,7 +1418,7 @@ begin
           
           @vehicle = new_model(:vehicle) do
             connection.add_column :vehicle, :company_id, :integer
-            belongs_to :company
+            belongs_to :company, :class_name => 'ActiveRecordTest::Company'
           end
           ActiveRecordTest.const_set('Vehicle', @vehicle)
           
