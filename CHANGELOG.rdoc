@@ -1,5 +1,6 @@
 == master
 
+* Dispatch state behavior to the superclass if it's undefined for a particular state [Sandro Turriate and Tim Pope]
 * Fix state / event names not supporting i18n in ActiveRecord
 * Fix original ActiveRecord::Observer#update not being used for non-state_machine callbacks [Jeremy Wells]
 * Add support for ActiveRecord 3.0

@@ -626,9 +626,8 @@ class StateWithInvalidMethodCallTest < Test::Unit::TestCase
     @object = @klass.new
   end
   
-  def test_should_raise_an_exception
-    exception = assert_raise(NoMethodError) { @state.call(@object, :invalid) }
-    assert_equal "undefined method 'invalid' for #{@object} with idling state", exception.message
+  def test_should_call_method_missing_arg
+    assert_equal 1, @state.call(@object, :invalid, lambda {1})
   end
 end
 
@@ -648,11 +647,11 @@ class StateWithValidMethodCallTest < Test::Unit::TestCase
   end
   
   def test_should_not_raise_an_exception
-    assert_nothing_raised { @state.call(@object, :speed) }
+    assert_nothing_raised { @state.call(@object, :speed, lambda {raise}) }
   end
   
   def test_should_pass_arguments_through
-    assert_equal 1, @state.call(@object, :speed, 1)
+    assert_equal 1, @state.call(@object, :speed, lambda {}, 1)
   end
   
   def test_should_pass_blocks_through
@@ -660,7 +659,7 @@ class StateWithValidMethodCallTest < Test::Unit::TestCase
   end
   
   def test_should_pass_both_arguments_and_blocks_through
-    assert_equal [1, 2], @state.call(@object, :speed, 1) {2}
+    assert_equal [1, 2], @state.call(@object, :speed, lambda {}, 1) {2}
   end
 end
 

@@ -131,6 +131,10 @@ class Vehicle < ModelBase
     auto_shop.fix_vehicle
   end
   
+  def decibels
+    0.0
+  end
+  
   private
     # Safety first! Puts on our seatbelt
     def put_on_seatbelt
@@ -169,7 +173,13 @@ class Car < Vehicle
 end
 
 class Motorcycle < Vehicle
-  state_machine :initial => :idling
+  state_machine :initial => :idling do
+    state :first_gear do
+      def decibels
+        1.0
+      end
+    end
+  end
 end
 
 class TrafficLight
@@ -764,6 +774,16 @@ class MotorcycleTest < Test::Unit::TestCase
   
   def test_should_not_allow_repair
     assert !@motorcycle.repair
+  end
+  
+  def test_should_inherit_decibels_from_superclass
+    @motorcycle.park
+    assert_equal 0.0, @motorcycle.decibels
+  end
+  
+  def test_should_use_decibels_defined_in_state
+    @motorcycle.shift_up
+    assert_equal 1.0, @motorcycle.decibels
   end
 end
 
