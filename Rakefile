@@ -68,11 +68,13 @@ end
 
 desc 'Publish the beta gem.'
 task :pgem => [:package] do
+  require 'rake/contrib/sshpublisher'
   Rake::SshFilePublisher.new('aaron@pluginaweek.org', '/home/aaron/gems.pluginaweek.org/public/gems', 'pkg', "#{spec.name}-#{spec.version}.gem").upload
 end
 
 desc 'Publish the API documentation.'
 task :pdoc => [:rdoc] do
+  require 'rake/contrib/sshpublisher'
   Rake::SshDirPublisher.new('aaron@pluginaweek.org', "/home/aaron/api.pluginaweek.org/public/#{spec.name}", 'rdoc').upload
 end
 
