@@ -284,7 +284,8 @@ module StateMachine
         
         # Pluralizes the name using the built-in inflector
         def pluralize(word)
-          Extlib::Inflection.pluralize(word.to_s)
+          word = word.to_s
+          word.respond_to?(:pluralize) ? word.pluralize : Extlib::Inflection.pluralize(word)
         end
         
         # Defines an initialization hook into the owner class for setting the
