@@ -470,10 +470,8 @@ Target specific versions of integrations like so:
 
 The following caveats should be noted when using state_machine:
 
-* DataMapper: dm-validations 0.9.4 - 0.9.6 causes +after+ callbacks for
-attribute-based event transitions to fail
-* Overridden event methods won't get invoked when using attribute-based event
-transitions
+* DataMapper: dm-validations 0.9.4 - 0.9.6 causes +after+ callbacks for attribute-based event transitions to fail
+* Overridden event methods won't get invoked when using attribute-based event transitions
 
 == Dependencies
 
