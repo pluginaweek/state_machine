@@ -1,5 +1,6 @@
 == master
 
+* Remove app-specific rails / merb rake tasks in favor of always running state_machine:draw
 * Add Rails 3 railtie for automatically loading rake tasks when installed as a gem
 
 == 0.8.1 / 2010-03-14

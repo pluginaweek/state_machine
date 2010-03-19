@@ -425,7 +425,7 @@ environment, meaning that it's unnecessary to specify the actual file to load.
 
 For example,
 
-  rake state_machine:draw:rails CLASS=Vehicle
+  rake state_machine:draw CLASS=Vehicle
 
 If you are using this library as a gem in Rails 2.x, the following must be added
 to the end of your application's Rakefile in order for the above task to work:
@@ -446,7 +446,7 @@ files to load.
 
 For example,
 
-  rake state_machine:draw:merb CLASS=Vehicle
+  rake state_machine:draw CLASS=Vehicle
 
 === Interactive graphs
 
