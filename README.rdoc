@@ -7,7 +7,7 @@ Ruby class.
 
 API
 
-* http://api.pluginaweek.org/state_machine
+* http://rdoc.info/projects/pluginaweek/state_machine
 
 Bugs
 
