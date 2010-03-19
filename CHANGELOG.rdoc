@@ -1,5 +1,7 @@
 == master
 
+* Add Rails 3 railtie for automatically loading rake tasks when installed as a gem
+
 == 0.8.1 / 2010-03-14
 
 * Release gems via rake-gemcutter instead of rubyforge

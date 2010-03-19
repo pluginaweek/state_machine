@@ -427,8 +427,8 @@ For example,
 
   rake state_machine:draw:rails CLASS=Vehicle
 
-If you are using this library as a gem, the following must be added to the end
-of your application's Rakefile in order for the above task to work:
+If you are using this library as a gem in Rails 2.x, the following must be added
+to the end of your application's Rakefile in order for the above task to work:
 
   require 'tasks/state_machine'
 
