@@ -1265,6 +1265,7 @@ module StateMachine
       begin
         # Load the graphviz library
         require 'rubygems'
+        gem 'ruby-graphviz', '>=0.9.0'
         require 'graphviz'
         
         graph = GraphViz.new('G', :rankdir => options[:orientation] == 'landscape' ? 'LR' : 'TB')
@@ -1284,7 +1285,7 @@ module StateMachine
         # Generate the graph
         graphvizVersion = Constants::RGV_VERSION.split('.')
         
-        if graphvizVersion[0] == '0' && (graphvizVersion[1] < '9' || graphvizVersion[1] == '9' && graphvizVersion[2] == '0')
+        if graphvizVersion[1] == '9' && graphvizVersion[2] == '0'
           outputOptions = {
             :output => options[:format],
             :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}")
@@ -1298,7 +1299,7 @@ module StateMachine
         graph.output(outputOptions)
         graph
       rescue LoadError
-        $stderr.puts 'Cannot draw the machine. `gem install ruby-graphviz` and try again.'
+        $stderr.puts 'Cannot draw the machine. `gem install ruby-graphviz` >= v0.9.0 and try again.'
         false
       end
     end

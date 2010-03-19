@@ -710,6 +710,7 @@ end
 begin
   # Load library
   require 'rubygems'
+  gem 'ruby-graphviz', '>=0.9.0'
   require 'graphviz'
   
   class EventDrawingTest < Test::Unit::TestCase
@@ -739,5 +740,5 @@ begin
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping GraphViz StateMachine::Event tests. `gem install ruby-graphviz` and try again.'
+  $stderr.puts 'Skipping GraphViz StateMachine::Event tests. `gem install ruby-graphviz` >= v0.9.0 and try again.'
 end

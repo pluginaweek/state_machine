@@ -1,5 +1,6 @@
 == master
 
+* Add version dependencies for ruby-graphviz
 * Remove app-specific rails / merb rake tasks in favor of always running state_machine:draw
 * Add Rails 3 railtie for automatically loading rake tasks when installed as a gem
 
