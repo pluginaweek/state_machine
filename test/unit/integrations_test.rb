@@ -36,6 +36,10 @@ class IntegrationFinderTest < Test::Unit::TestCase
     assert_equal StateMachine::Integrations::DataMapper, StateMachine::Integrations.find(:data_mapper)
   end
   
+  def test_should_find_mongo_mapper
+    assert_equal StateMachine::Integrations::MongoMapper, StateMachine::Integrations.find(:mongo_mapper)
+  end
+  
   def test_should_find_sequel
     assert_equal StateMachine::Integrations::Sequel, StateMachine::Integrations.find(:sequel)
   end

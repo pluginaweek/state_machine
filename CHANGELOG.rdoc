@@ -1,5 +1,6 @@
 == master
 
+* Add MongoMapper 0.5.5+ support
 * Add ActiveModel 3.0+ support for use with integrations that implement its interface
 * Fix DataMapper integration failing when ActiveSupport is loaded in place of Extlib
 * Add version dependencies for ruby-graphviz

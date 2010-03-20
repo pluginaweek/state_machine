@@ -81,6 +81,10 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::DataMapper)
   end
   
+  def test_should_not_be_extended_by_the_mongo_mapper_integration
+    assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::MongoMapper)
+  end
+  
   def test_should_not_be_extended_by_the_sequel_integration
     assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::Sequel)
   end

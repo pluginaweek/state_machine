@@ -45,6 +45,10 @@ module StateMachine
     #     include DataMapper::Resource
     #   end
     #   
+    #   class MongoMapperVehicle
+    #     include MongoMapper::Document
+    #   end
+    #   
     #   class SequelVehicle < Sequel::Model
     #   end
     #   
@@ -52,6 +56,7 @@ module StateMachine
     #   StateMachine::Integrations.match(ActiveModelVehicle)  # => StateMachine::Integrations::ActiveModel
     #   StateMachine::Integrations.match(ActiveRecordVehicle) # => StateMachine::Integrations::ActiveRecord
     #   StateMachine::Integrations.match(DataMapperVehicle)   # => StateMachine::Integrations::DataMapper
+    #   StateMachine::Integrations.match(MongoMapperVehicle)  # => StateMachine::Integrations::MongoMapper
     #   StateMachine::Integrations.match(SequelVehicle)       # => StateMachine::Integrations::Sequel
     def self.match(klass)
       constants = self.constants.select {|c| c != 'ActiveModel'}.sort << 'ActiveModel'
@@ -68,6 +73,7 @@ module StateMachine
     #   StateMachine::Integrations.find(:active_record)   # => StateMachine::Integrations::ActiveRecord
     #   StateMachine::Integrations.find(:active_model)    # => StateMachine::Integrations::ActiveModel
     #   StateMachine::Integrations.find(:data_mapper)     # => StateMachine::Integrations::DataMapper
+    #   StateMachine::Integrations.find(:mongo_mapper)    # => StateMachine::Integrations::MongoMapper
     #   StateMachine::Integrations.find(:sequel)          # => StateMachine::Integrations::Sequel
     #   StateMachine::Integrations.find(:invalid)         # => NameError: wrong constant name Invalid
     def self.find(name)

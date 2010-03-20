@@ -41,6 +41,7 @@ Some brief, high-level features include:
 * ActiveModel integration
 * ActiveRecord integration
 * DataMapper integration
+* MongoMapper integration
 * Sequel integration
 * State predicates
 * State-driven instance / class behavior
@@ -233,6 +234,7 @@ The integrations currently available include:
 * ActiveModel classes
 * ActiveRecord models
 * DataMapper resources
+* MongoMapper models
 * Sequel models
 
 A brief overview of these integrations is described below.
@@ -362,6 +364,37 @@ errors and callbacks.  For example,
 For more information about the various behaviors added for Sequel state
 machines, see StateMachine::Integrations::Sequel.
 
+=== MongoMapper
+
+The MongoMapper integration adds support for automatically saving the record,
+validation errors and callbacks.  For example,
+
+  class Vehicle
+    include MongoMapper::Document
+    
+    state_machine :initial => :parked do
+      before_transition :parked => any - :parked, :do => :put_on_seatbelt
+      after_transition any => :parked do |vehicle, transition|
+        vehicle.seatbelt = 'off' # self is the record
+      end
+      
+      event :ignite do
+        transition :parked => :idling
+      end
+      
+      state :first_gear, :second_gear do
+        validates_presence_of :seatbelt_on
+      end
+    end
+    
+    def put_on_seatbelt
+      ...
+    end
+  end
+
+For more information about the various behaviors added for MongoMapper state
+machines, see StateMachine::Integrations::MongoMapper.
+
 == Compatibility
 
 Although state_machine introduces a simplified syntax, it still remains
@@ -468,6 +501,7 @@ Target specific versions of integrations like so:
   rake test INTEGRATION=active_model VERSION=3.0.0
   rake test INTEGRATION=active_record VERSION=2.0.0
   rake test INTEGRATION=data_mapper VERSION=0.9.4
+  rake test INTEGRATION=mongo_mapper VERSION=0.9.4
   rake test INTEGRATION=sequel VERSION=2.8.0
 
 == Caveats
@@ -486,6 +520,7 @@ If using specific integrations:
 * ActiveModel[http://rubyonrails.org] integration: 3.0.0 or later
 * ActiveRecord[http://rubyonrails.org] integration: 2.0.0 or later
 * DataMapper[http://datamapper.org] integration: 0.9.4 or later
+* MongoMapper[http://mongomapper.com] integration: 0.5.5 or later
 * Sequel[http://sequel.rubyforge.org] integration: 2.8.0 or later
 
 If graphing state machine:
