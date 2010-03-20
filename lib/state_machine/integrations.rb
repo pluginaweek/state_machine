@@ -59,7 +59,7 @@ module StateMachine
     #   StateMachine::Integrations.match(MongoMapperVehicle)  # => StateMachine::Integrations::MongoMapper
     #   StateMachine::Integrations.match(SequelVehicle)       # => StateMachine::Integrations::Sequel
     def self.match(klass)
-      constants = self.constants.select {|c| c != 'ActiveModel'}.sort << 'ActiveModel'
+      constants = self.constants.map {|c| c.to_s}.select {|c| c != 'ActiveModel'}.sort << 'ActiveModel'
       if integration = constants.find {|name| const_get(name).matches?(klass)}
         find(integration)
       end
