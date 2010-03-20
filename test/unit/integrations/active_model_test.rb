@@ -16,6 +16,7 @@ module ActiveModelTest
     protected
       # Creates a new ActiveRecord model (and the associated table)
       def new_model(&block)
+        # Simple ActiveModel superclass
         parent = Class.new do
           def self.model_attribute(name)
             define_method(name) { instance_variable_get("@#{name}") }
@@ -47,14 +48,11 @@ module ActiveModelTest
         end
         
         model = Class.new(parent) do
-          include ActiveModel::AttributeMethods
-          
           def self.name
             'ActiveModelTest::Foo'
           end
           
           model_attribute :state
-          define_attribute_methods [:state]
         end
         model.class_eval(&block) if block_given?
         model
@@ -77,15 +75,23 @@ module ActiveModelTest
   end
   
   class IntegrationTest < BaseTestCase
-    def test_should_match_if_class_includes_active_model_features
-      assert StateMachine::Integrations::ActiveModel.matches?(new_model)
+    def test_should_match_if_class_includes_dirty_feature
+      assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::Dirty })
+    end
+    
+    def test_should_match_if_class_includes_observing_feature
+      assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::Observing })
+    end
+    
+    def test_should_match_if_class_includes_validations_feature
+      assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::Validations })
     end
     
     def test_should_not_match_if_class_does_not_include_active_model_features
-      assert !StateMachine::Integrations::ActiveModel.matches?(Class.new)
+      assert !StateMachine::Integrations::ActiveModel.matches?(new_model)
     end
     
-    def test_should_have_defaults
+    def test_should_have_no_defaults
       assert_equal e = {}, StateMachine::Integrations::ActiveModel.defaults
     end
   end
@@ -93,7 +99,7 @@ module ActiveModelTest
   class MachineByDefaultTest < BaseTestCase
     def setup
       @model = new_model
-      @machine = StateMachine::Machine.new(@model)
+      @machine = StateMachine::Machine.new(@model, :integration => :active_model)
     end
     
     def test_should_not_have_action
@@ -116,7 +122,7 @@ module ActiveModelTest
   class MachineWithStaticInitialStateTest < BaseTestCase
     def setup
       @model = new_model
-      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @machine = StateMachine::Machine.new(@model, :initial => :parked, :integration => :active_model)
     end
     
     def test_should_set_initial_state_on_created_object
@@ -128,7 +134,7 @@ module ActiveModelTest
   class MachineWithDynamicInitialStateTest < BaseTestCase
     def setup
       @model = new_model
-      @machine = StateMachine::Machine.new(@model, :initial => lambda {|object| :parked})
+      @machine = StateMachine::Machine.new(@model, :initial => lambda {|object| :parked}, :integration => :active_model)
       @machine.state :parked
     end
     
@@ -138,27 +144,10 @@ module ActiveModelTest
     end
   end
   
-  class MachineWithConflictingPredicateTest < BaseTestCase
-    def setup
-      @model = new_model do
-        def state?(*args)
-          true
-        end
-      end
-      
-      @machine = StateMachine::Machine.new(@model)
-      @record = @model.new
-    end
-    
-    def test_should_not_define_attribute_predicate
-      assert @record.state?
-    end
-  end
-  
   class MachineWithModelStateAttributeTest < BaseTestCase
     def setup
       @model = new_model
-      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @machine = StateMachine::Machine.new(@model, :initial => :parked, :integration => :active_model)
       @machine.other_states(:idling)
       
       @record = @model.new
@@ -192,7 +181,7 @@ module ActiveModelTest
         end
       end
       
-      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked, :integration => :active_model)
       @machine.other_states(:idling)
       @record = @model.new
     end
@@ -210,40 +199,29 @@ module ActiveModelTest
     end
   end
   
-  class MachineWithNonModelStateAttributeDefinedTest < BaseTestCase
+  class MachineWithInitializedStateTest < BaseTestCase
     def setup
-      @model = new_model do
-        attr_accessor :status
-      end
-      
-      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
-      @machine.other_states(:idling)
-      @record = @model.new
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model, :initial => :parked, :integration => :active_model)
+      @machine.state nil, :idling
     end
     
-    def test_should_return_false_for_predicate_if_does_not_match_current_value
-      assert !@record.status?(:idling)
+    def test_should_should_use_initialized_state_when_static
+      record = @model.new(:state => nil)
+      assert_nil record.state
     end
     
-    def test_should_return_true_for_predicate_if_matches_current_value
-      assert @record.status?(:parked)
-    end
-    
-    def test_should_raise_exception_for_predicate_if_invalid_state_specified
-      assert_raise(IndexError) { @record.status?(:invalid) }
-    end
-    
-    def test_should_set_initial_state_on_created_object
-      assert_equal 'parked', @record.status
+    def test_should_should_not_use_initialized_state_when_dynamic
+      @machine.initial_state = lambda {:parked}
+      record = @model.new(:state => nil)
+      assert_equal 'parked', record.state
     end
   end
-
+  
   class MachineWithDirtyAttributesTest < BaseTestCase
     def setup
       @model = new_model do
         include ActiveModel::Dirty
-        
-        undefine_attribute_methods
         define_attribute_methods [:state]
       end
       @machine = StateMachine::Machine.new(@model, :initial => :parked)
@@ -276,8 +254,6 @@ module ActiveModelTest
     def setup
       @model = new_model do
         include ActiveModel::Dirty
-        
-        undefine_attribute_methods
         define_attribute_methods [:state]
       end
       @machine = StateMachine::Machine.new(@model, :initial => :parked)
@@ -302,9 +278,7 @@ module ActiveModelTest
     def setup
       @model = new_model do
         include ActiveModel::Dirty
-        
         model_attribute :status
-        undefine_attribute_methods
         define_attribute_methods [:status]
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
@@ -337,9 +311,7 @@ module ActiveModelTest
     def setup
       @model = new_model do
         include ActiveModel::Dirty
-        
         model_attribute :status
-        undefine_attribute_methods
         define_attribute_methods [:status]
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
@@ -363,7 +335,7 @@ module ActiveModelTest
   class MachineWithCallbacksTest < BaseTestCase
     def setup
       @model = new_model
-      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @machine = StateMachine::Machine.new(@model, :initial => :parked, :integration => :active_model)
       @machine.other_states :idling
       @machine.event :ignite
       
@@ -473,7 +445,7 @@ module ActiveModelTest
       @after_count = 0
       
       @model = new_model
-      @machine = StateMachine::Machine.new(@model)
+      @machine = StateMachine::Machine.new(@model, :integration => :active_model)
       @machine.state :parked, :idling
       @machine.event :ignite
       @machine.before_transition(lambda {@before_count += 1; false})
@@ -507,7 +479,7 @@ module ActiveModelTest
       @after_count = 0
       
       @model = new_model
-      @machine = StateMachine::Machine.new(@model)
+      @machine = StateMachine::Machine.new(@model, :integration => :active_model)
       @machine.state :parked, :idling
       @machine.event :ignite
       @machine.after_transition(lambda {@after_count += 1; false})
@@ -575,12 +547,32 @@ module ActiveModelTest
       assert_equal ['State is invalid'], @record.errors.full_messages
     end
   end
+  
+  class MachineWithValidationsAndCustomAttributeTest < BaseTestCase
+    def setup
+      @model = new_model { include ActiveModel::Validations }
+      
+      @machine = StateMachine::Machine.new(@model, :status, :attribute => :state)
+      @machine.state :parked
+      
+      @record = @model.new
+    end
+    
+    def test_should_add_validation_errors_to_custom_attribute
+      @record.state = 'invalid'
+      
+      assert !@record.valid?
+      assert_equal ['State is invalid'], @record.errors.full_messages
+      
+      @record.state = 'parked'
+      assert @record.valid?
+    end
+  end
     
   class MachineWithStateDrivenValidationsTest < BaseTestCase
     def setup
       @model = new_model do
         include ActiveModel::Validations
-        
         attr_accessor :seatbelt
       end
       
@@ -613,8 +605,7 @@ module ActiveModelTest
       @machine = StateMachine::Machine.new(@model)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @record = @model.new
-      @record.state = 'parked'
+      @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
     end
     
@@ -689,8 +680,7 @@ module ActiveModelTest
       @machine = StateMachine::Machine.new(@model, :state, :namespace => 'alarm')
       @machine.state :active, :off
       @machine.event :enable
-      @record = @model.new
-      @record.state = 'off'
+      @record = @model.new(:state => 'off')
       @transition = StateMachine::Transition.new(@record, @machine, :enable, :off, :active)
     end
     
@@ -725,8 +715,7 @@ module ActiveModelTest
       @machine = StateMachine::Machine.new(@model)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @record = @model.new
-      @record.state = 'parked'
+      @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       
       @notifications = []
@@ -792,8 +781,7 @@ module ActiveModelTest
       machine.state :parked, :idling
       machine.event :ignite
       
-      record = @model.new
-      record.state = 'idling'
+      record = @model.new(:state => 'idling')
       
       machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
       assert_equal ['State cannot ignite'], record.errors.full_messages
@@ -818,8 +806,7 @@ module ActiveModelTest
       machine = StateMachine::Machine.new(@model, :action => :save, :messages => {:invalid_transition => 'cannot {{event}}'})
       machine.state :parked, :idling
       
-      record = @model.new
-      record.state = 'idling'
+      record = @model.new(:state => 'idling')
       
       machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
       assert_equal ['State cannot ignite'], record.errors.full_messages

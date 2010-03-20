@@ -33,8 +33,8 @@ module StateMachine
     #   end
     #   
     #   class ActiveModelVehicle
-    #     include ActiveModel::AttributeMethods
     #     include ActiveModel::Dirty
+    #     include ActiveModel::Observing
     #     include ActiveModel::Validations
     #   end
     #   

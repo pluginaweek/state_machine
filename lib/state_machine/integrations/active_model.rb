@@ -4,13 +4,23 @@ module StateMachine
     # 
     # == Examples
     # 
-    # If using ActiveModel directly within your class, then the
-    # ActiveModel::AttributeMethods feature must be included in order for this
-    # integration to be detected.  Below is an example of a simple state machine
-    # defined within an ActiveModel class:
+    # If using ActiveModel directly within your class, then any one of the
+    # following features need to be included in order for the integration to be
+    # detected:
+    # * ActiveModel::Dirty
+    # * ActiveModel::Observing
+    # * ActiveModel::Validations
+    # 
+    # Below is an example of a simple state machine defined within an
+    # ActiveModel class:
     # 
     #   class Vehicle
-    #     include ActiveModel::AttributeMethods
+    #     include ActiveModel::Dirty
+    #     include ActiveModel::Observing
+    #     include ActiveModel::Validations
+    #     
+    #     attr_accessor :state
+    #     define_attribute_methods [:state]
     #     
     #     state_machine :initial => :parked do
     #       event :ignite do
@@ -29,14 +39,15 @@ module StateMachine
     # define the action yourself like so:
     # 
     #   class Vehicle
-    #     include ActiveModel::AttributeMethods
+    #     include ActiveModel::Validations
+    #     attr_accessor :state
     #     
     #     state_machine :action => :save do
     #       ...
     #     end
     #     
     #     def save
-    #       ...
+    #       # Save changes
     #     end
     #   end
     # 
@@ -63,7 +74,8 @@ module StateMachine
     # For example,
     # 
     #   class Vehicle
-    #     include ActiveModel::AttributeMethods
+    #     include ActiveModel::Validations
+    #     attr_accessor :state
     #     
     #     state_machine :initial => :parked do
     #       before_transition any => :idling do |vehicle|
@@ -90,7 +102,7 @@ module StateMachine
     # == Observers
     # 
     # In order to hook in observer support for your application, the
-    # ActiveModel::Observer class must be loaded.  Because of the way
+    # ActiveModel::Observing feature must be included.  Because of the way
     # ActiveModel observers are designed, there is less flexibility around the
     # specific transitions that can be hooked in.  However, a large number of
     # hooks *are* supported.  For example, if a transition for a object's
@@ -149,8 +161,8 @@ module StateMachine
     # For example,
     # 
     #   class Vehicle
-    #     include ActiveModel::AttributeMethods
     #     include ActiveModel::Dirty
+    #     attr_accessor :state
     #     
     #     state_machine :initial => :parked do
     #       event :park do
@@ -226,10 +238,12 @@ module StateMachine
       extend ClassMethods
       
       # Should this integration be used for state machines in the given class?
-      # Classes that include ActiveModel::AttributeMethods will automatically
-      # use the ActiveModel integration.
+      # Classes that include ActiveModel::Dirty, ActiveModel::Observing, or
+      # ActiveModel::Validations will automatically use the ActiveModel
+      # integration.
       def self.matches?(klass)
-        defined?(::ActiveModel::AttributeMethods) && klass <= ::ActiveModel::AttributeMethods
+        features = %w(Dirty Observing Validations)
+        defined?(::ActiveModel) && features.any? {|feature| ::ActiveModel.const_defined?(feature) && klass <= ::ActiveModel.const_get(feature)}
       end
       
       @defaults = {}
