@@ -105,6 +105,7 @@ Class definition:
       
       event :repair do
         transition :stalled => :parked, :if => :auto_shop_busy?
+        transition :stalled => same # Loopback if we have to
       end
       
       state :parked do

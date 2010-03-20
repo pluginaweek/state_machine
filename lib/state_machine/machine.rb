@@ -917,6 +917,7 @@ module StateMachine
     #   
     #   event :first_gear do
     #     transition :parked => :first_gear, :if => :seatbelt_on?
+    #     transition :parked => same # Allow to loopback if seatbelt is off
     #   end
     # 
     # See StateMachine::Event#transition for more information on
@@ -983,6 +984,7 @@ module StateMachine
     #       
     #       event :ignite do
     #         transition :parked => :idling
+    #         transition :idling => same # Allow ignite while still idling
     #       end
     #     end
     #   end
