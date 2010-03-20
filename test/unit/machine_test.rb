@@ -69,6 +69,10 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert_equal 'cannot transition via "park"', @machine.generate_message(:invalid_transition, [[:event, :park]])
   end
   
+  def test_should_not_be_extended_by_the_active_model_integration
+    assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::ActiveModel)
+  end
+  
   def test_should_not_be_extended_by_the_active_record_integration
     assert !(class << @machine; ancestors; end).include?(StateMachine::Integrations::ActiveRecord)
   end

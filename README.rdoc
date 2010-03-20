@@ -38,6 +38,7 @@ Some brief, high-level features include:
 * Multiple state machines on a single class
 * Namespaced state machines
 * before/after transition hooks with explicit transition requirements
+* ActiveModel integration
 * ActiveRecord integration
 * DataMapper integration
 * Sequel integration
@@ -229,6 +230,7 @@ libraries.  These integrations add library-specific behavior, allowing for state
 machines to work more tightly with the conventions defined by those libraries.
 
 The integrations currently available include:
+* ActiveModel classes
 * ActiveRecord models
 * DataMapper resources
 * Sequel models
@@ -463,6 +465,7 @@ To run the core test suite (does *not* test any of the integrations):
 
 Target specific versions of integrations like so:
 
+  rake test INTEGRATION=active_model VERSION=3.0.0
   rake test INTEGRATION=active_record VERSION=2.0.0
   rake test INTEGRATION=data_mapper VERSION=0.9.4
   rake test INTEGRATION=sequel VERSION=2.8.0
@@ -480,6 +483,7 @@ The following caveats should be noted when using state_machine:
 
 If using specific integrations:
 
+* ActiveModel[http://rubyonrails.org] integration: 3.0.0 or later
 * ActiveRecord[http://rubyonrails.org] integration: 2.0.0 or later
 * DataMapper[http://datamapper.org] integration: 0.9.4 or later
 * Sequel[http://sequel.rubyforge.org] integration: 2.8.0 or later

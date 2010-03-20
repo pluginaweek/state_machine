@@ -1,14 +1,14 @@
 module StateMachine
   module Integrations #:nodoc:
-    module ActiveRecord
-      # Adds support for invoking callbacks on ActiveRecord observers with more
+    module ActiveModel
+      # Adds support for invoking callbacks on ActiveModel observers with more
       # than one argument (e.g. the record *and* the state transition).  By
-      # default, ActiveRecord only supports passing the record into the
+      # default, ActiveModel only supports passing the record into the
       # callbacks.
       # 
       # For example:
       # 
-      #   class VehicleObserver < ActiveRecord::Observer
+      #   class VehicleObserver < ActiveModel::Observer
       #     # The default behavior: only pass in the record
       #     def after_save(vehicle)
       #     end
@@ -40,6 +40,6 @@ module StateMachine
   end
 end
 
-ActiveRecord::Observer.class_eval do
-  include StateMachine::Integrations::ActiveRecord::Observer
-end
+ActiveModel::Observer.class_eval do
+  include StateMachine::Integrations::ActiveModel::Observer
+end if defined?(ActiveModel::Observer)

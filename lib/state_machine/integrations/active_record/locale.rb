@@ -1,11 +1,4 @@
-{:en => {
-  :activerecord => {
-    :errors => {
-      :messages => {
-        :invalid => StateMachine::Machine.default_messages[:invalid],
-        :invalid_event => StateMachine::Machine.default_messages[:invalid_event] % ['{{state}}'],
-        :invalid_transition => StateMachine::Machine.default_messages[:invalid_transition] % ['{{event}}']
-      }
-    }
-  }
-}}
+filename = "#{File.dirname(__FILE__)}/../active_model/locale.rb"
+translations = eval(IO.read(filename), binding, filename)
+translations[:en][:activerecord] = translations[:en].delete(:activemodel)
+translations

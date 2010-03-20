@@ -1,0 +1,912 @@
+require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
+
+# Load library
+require 'rubygems'
+
+gem 'activemodel', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=3.0.0.beta'
+require 'active_model'
+require 'active_model/observing'
+require 'active_support/all'
+
+module ActiveModelTest
+  class BaseTestCase < Test::Unit::TestCase
+    def default_test
+    end
+    
+    protected
+      # Creates a new ActiveRecord model (and the associated table)
+      def new_model(&block)
+        parent = Class.new do
+          def self.model_attribute(name)
+            define_method(name) { instance_variable_get("@#{name}") }
+            define_method("#{name}=") do |value|
+              send("#{name}_will_change!") if self.class <= ActiveModel::Dirty && !send("#{name}_changed?")
+              instance_variable_set("@#{name}", value)
+            end
+          end
+          
+          def self.create
+            object = new
+            object.save
+            object
+          end
+          
+          def initialize(attrs = {})
+            attrs.each {|attr, value| send("#{attr}=", value)}
+            @changed_attributes = {}
+          end
+          
+          def attributes
+            @attributes ||= {}
+          end
+          
+          def save
+            @changed_attributes = {}
+            true
+          end
+        end
+        
+        model = Class.new(parent) do
+          include ActiveModel::AttributeMethods
+          
+          def self.name
+            'ActiveModelTest::Foo'
+          end
+          
+          model_attribute :state
+          define_attribute_methods [:state]
+        end
+        model.class_eval(&block) if block_given?
+        model
+      end
+      
+      # Creates a new ActiveRecord observer
+      def new_observer(model, &block)
+        observer = Class.new(ActiveModel::Observer) do
+          attr_accessor :notifications
+          
+          def initialize
+            super
+            @notifications = []
+          end
+        end
+        observer.observe(model)
+        observer.class_eval(&block) if block_given?
+        observer
+      end
+  end
+  
+  class IntegrationTest < BaseTestCase
+    def test_should_match_if_class_includes_active_model_features
+      assert StateMachine::Integrations::ActiveModel.matches?(new_model)
+    end
+    
+    def test_should_not_match_if_class_does_not_include_active_model_features
+      assert !StateMachine::Integrations::ActiveModel.matches?(Class.new)
+    end
+    
+    def test_should_have_defaults
+      assert_equal e = {}, StateMachine::Integrations::ActiveModel.defaults
+    end
+  end
+  
+  class MachineByDefaultTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+    end
+    
+    def test_should_not_have_action
+      assert_nil @machine.action
+    end
+    
+    def test_should_use_transactions
+      assert_equal true, @machine.use_transactions
+    end
+    
+    def test_should_not_have_any_before_callbacks
+      assert_equal 0, @machine.callbacks[:before].size
+    end
+    
+    def test_should_not_have_any_after_callbacks
+      assert_equal 0, @machine.callbacks[:after].size
+    end
+  end
+  
+  class MachineWithStaticInitialStateTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+    end
+    
+    def test_should_set_initial_state_on_created_object
+      record = @model.new
+      assert_equal 'parked', record.state
+    end
+  end
+  
+  class MachineWithDynamicInitialStateTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model, :initial => lambda {|object| :parked})
+      @machine.state :parked
+    end
+    
+    def test_should_set_initial_state_on_created_object
+      record = @model.new
+      assert_equal 'parked', record.state
+    end
+  end
+  
+  class MachineWithConflictingPredicateTest < BaseTestCase
+    def setup
+      @model = new_model do
+        def state?(*args)
+          true
+        end
+      end
+      
+      @machine = StateMachine::Machine.new(@model)
+      @record = @model.new
+    end
+    
+    def test_should_not_define_attribute_predicate
+      assert @record.state?
+    end
+  end
+  
+  class MachineWithModelStateAttributeTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @machine.other_states(:idling)
+      
+      @record = @model.new
+    end
+    
+    def test_should_have_an_attribute_predicate
+      assert @record.respond_to?(:state?)
+    end
+    
+    def test_should_raise_exception_for_predicate_without_parameters
+      assert_raise(IndexError) { @record.state? }
+    end
+    
+    def test_should_return_false_for_predicate_if_does_not_match_current_value
+      assert !@record.state?(:idling)
+    end
+    
+    def test_should_return_true_for_predicate_if_matches_current_value
+      assert @record.state?(:parked)
+    end
+    
+    def test_should_raise_exception_for_predicate_if_invalid_state_specified
+      assert_raise(IndexError) { @record.state?(:invalid) }
+    end
+  end
+  
+  class MachineWithNonModelStateAttributeUndefinedTest < BaseTestCase
+    def setup
+      @model = new_model do
+        def initialize
+        end
+      end
+      
+      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+      @machine.other_states(:idling)
+      @record = @model.new
+    end
+    
+    def test_should_not_define_a_reader_attribute_for_the_attribute
+      assert !@record.respond_to?(:status)
+    end
+    
+    def test_should_not_define_a_writer_attribute_for_the_attribute
+      assert !@record.respond_to?(:status=)
+    end
+    
+    def test_should_define_an_attribute_predicate
+      assert @record.respond_to?(:status?)
+    end
+  end
+  
+  class MachineWithNonModelStateAttributeDefinedTest < BaseTestCase
+    def setup
+      @model = new_model do
+        attr_accessor :status
+      end
+      
+      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+      @machine.other_states(:idling)
+      @record = @model.new
+    end
+    
+    def test_should_return_false_for_predicate_if_does_not_match_current_value
+      assert !@record.status?(:idling)
+    end
+    
+    def test_should_return_true_for_predicate_if_matches_current_value
+      assert @record.status?(:parked)
+    end
+    
+    def test_should_raise_exception_for_predicate_if_invalid_state_specified
+      assert_raise(IndexError) { @record.status?(:invalid) }
+    end
+    
+    def test_should_set_initial_state_on_created_object
+      assert_equal 'parked', @record.status
+    end
+  end
+
+  class MachineWithDirtyAttributesTest < BaseTestCase
+    def setup
+      @model = new_model do
+        include ActiveModel::Dirty
+        
+        undefine_attribute_methods
+        define_attribute_methods [:state]
+      end
+      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @machine.event :ignite
+      @machine.state :idling
+      
+      @record = @model.create
+      
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+      @transition.perform
+    end
+    
+    def test_should_include_state_in_changed_attributes
+      assert_equal %w(state), @record.changed
+    end
+    
+    def test_should_track_attribute_change
+      assert_equal %w(parked idling), @record.changes['state']
+    end
+    
+    def test_should_not_reset_changes_on_multiple_transitions
+      transition = StateMachine::Transition.new(@record, @machine, :ignite, :idling, :idling)
+      transition.perform
+      
+      assert_equal %w(parked idling), @record.changes['state']
+    end
+  end
+  
+  class MachineWithDirtyAttributesDuringLoopbackTest < BaseTestCase
+    def setup
+      @model = new_model do
+        include ActiveModel::Dirty
+        
+        undefine_attribute_methods
+        define_attribute_methods [:state]
+      end
+      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @machine.event :park
+      
+      @record = @model.create
+      
+      @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+      @transition.perform
+    end
+    
+    def test_should_include_state_in_changed_attributes
+      assert_equal %w(state), @record.changed
+    end
+    
+    def test_should_track_attribute_changes
+      assert_equal %w(parked parked), @record.changes['state']
+    end
+  end
+  
+  class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
+    def setup
+      @model = new_model do
+        include ActiveModel::Dirty
+        
+        model_attribute :status
+        undefine_attribute_methods
+        define_attribute_methods [:status]
+      end
+      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+      @machine.event :ignite
+      @machine.state :idling
+      
+      @record = @model.create
+      
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+      @transition.perform
+    end
+    
+    def test_should_include_state_in_changed_attributes
+      assert_equal %w(status), @record.changed
+    end
+    
+    def test_should_track_attribute_change
+      assert_equal %w(parked idling), @record.changes['status']
+    end
+    
+    def test_should_not_reset_changes_on_multiple_transitions
+      transition = StateMachine::Transition.new(@record, @machine, :ignite, :idling, :idling)
+      transition.perform
+      
+      assert_equal %w(parked idling), @record.changes['status']
+    end
+  end
+  
+  class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
+    def setup
+      @model = new_model do
+        include ActiveModel::Dirty
+        
+        model_attribute :status
+        undefine_attribute_methods
+        define_attribute_methods [:status]
+      end
+      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+      @machine.event :park
+      
+      @record = @model.create
+      
+      @transition = StateMachine::Transition.new(@record, @machine, :park, :parked, :parked)
+      @transition.perform
+    end
+    
+    def test_should_include_state_in_changed_attributes
+      assert_equal %w(status), @record.changed
+    end
+    
+    def test_should_track_attribute_changes
+      assert_equal %w(parked parked), @record.changes['status']
+    end
+  end
+  
+  class MachineWithCallbacksTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @machine.other_states :idling
+      @machine.event :ignite
+      
+      @record = @model.new(:state => 'parked')
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+    end
+    
+    def test_should_run_before_callbacks
+      called = false
+      @machine.before_transition(lambda {called = true})
+      
+      @transition.perform
+      assert called
+    end
+    
+    def test_should_pass_record_to_before_callbacks_with_one_argument
+      record = nil
+      @machine.before_transition(lambda {|arg| record = arg})
+      
+      @transition.perform
+      assert_equal @record, record
+    end
+    
+    def test_should_pass_record_and_transition_to_before_callbacks_with_multiple_arguments
+      callback_args = nil
+      @machine.before_transition(lambda {|*args| callback_args = args})
+      
+      @transition.perform
+      assert_equal [@record, @transition], callback_args
+    end
+    
+    def test_should_run_before_callbacks_outside_the_context_of_the_record
+      context = nil
+      @machine.before_transition(lambda {context = self})
+      
+      @transition.perform
+      assert_equal self, context
+    end
+    
+    def test_should_run_after_callbacks
+      called = false
+      @machine.after_transition(lambda {called = true})
+      
+      @transition.perform
+      assert called
+    end
+    
+    def test_should_pass_record_to_after_callbacks_with_one_argument
+      record = nil
+      @machine.after_transition(lambda {|arg| record = arg})
+      
+      @transition.perform
+      assert_equal @record, record
+    end
+    
+    def test_should_pass_record_and_transition_to_after_callbacks_with_multiple_arguments
+      callback_args = nil
+      @machine.after_transition(lambda {|*args| callback_args = args})
+      
+      @transition.perform
+      assert_equal [@record, @transition], callback_args
+    end
+    
+    def test_should_run_after_callbacks_outside_the_context_of_the_record
+      context = nil
+      @machine.after_transition(lambda {context = self})
+      
+      @transition.perform
+      assert_equal self, context
+    end
+    
+    def test_should_include_transition_states_in_known_states
+      @machine.before_transition :to => :first_gear, :do => lambda {}
+      
+      assert_equal [:parked, :idling, :first_gear], @machine.states.map {|state| state.name}
+    end
+    
+    def test_should_allow_symbolic_callbacks
+      callback_args = nil
+      
+      klass = class << @record; self; end
+      klass.send(:define_method, :after_ignite) do |*args|
+        callback_args = args
+      end
+      
+      @machine.before_transition(:after_ignite)
+      
+      @transition.perform
+      assert_equal [@transition], callback_args
+    end
+    
+    def test_should_allow_string_callbacks
+      class << @record
+        attr_reader :callback_result
+      end
+      
+      @machine.before_transition('@callback_result = [1, 2, 3]')
+      @transition.perform
+      
+      assert_equal [1, 2, 3], @record.callback_result
+    end
+  end
+  
+  class MachineWithFailedBeforeCallbacksTest < BaseTestCase
+    def setup
+      @before_count = 0
+      @after_count = 0
+      
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :parked, :idling
+      @machine.event :ignite
+      @machine.before_transition(lambda {@before_count += 1; false})
+      @machine.before_transition(lambda {@before_count += 1})
+      @machine.after_transition(lambda {@after_count += 1})
+      
+      @record = @model.new(:state => 'parked')
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+      @result = @transition.perform
+    end
+    
+    def test_should_not_be_successful
+      assert !@result
+    end
+    
+    def test_should_not_change_current_state
+      assert_equal 'parked', @record.state
+    end
+    
+    def test_should_not_run_further_before_callbacks
+      assert_equal 1, @before_count
+    end
+    
+    def test_should_not_run_after_callbacks
+      assert_equal 0, @after_count
+    end
+  end
+  
+  class MachineWithFailedAfterCallbacksTest < BaseTestCase
+     def setup
+      @after_count = 0
+      
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :parked, :idling
+      @machine.event :ignite
+      @machine.after_transition(lambda {@after_count += 1; false})
+      @machine.after_transition(lambda {@after_count += 1})
+      
+      @record = @model.new(:state => 'parked')
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+      @result = @transition.perform
+    end
+    
+    def test_should_be_successful
+      assert @result
+    end
+    
+    def test_should_change_current_state
+      assert_equal 'idling', @record.state
+    end
+    
+    def test_should_not_run_further_after_callbacks
+      assert_equal 1, @after_count
+    end
+  end
+  
+  class MachineWithValidationsTest < BaseTestCase
+    def setup
+      @model = new_model { include ActiveModel::Validations }
+      @machine = StateMachine::Machine.new(@model, :action => :save)
+      @machine.state :parked
+      
+      @record = @model.new
+    end
+    
+    def test_should_invalidate_using_errors
+      I18n.backend = I18n::Backend::Simple.new if Object.const_defined?(:I18n)
+      @record.state = 'parked'
+      
+      @machine.invalidate(@record, :state, :invalid_transition, [[:event, :park]])
+      assert_equal ['State cannot transition via "park"'], @record.errors.full_messages
+    end
+    
+    def test_should_auto_prefix_custom_attributes_on_invalidation
+      @machine.invalidate(@record, :event, :invalid)
+      
+      assert_equal ['State event is invalid'], @record.errors.full_messages
+    end
+    
+    def test_should_clear_errors_on_reset
+      @record.state = 'parked'
+      @record.errors.add(:state, 'is invalid')
+      
+      @machine.reset(@record)
+      assert_equal [], @record.errors.full_messages
+    end
+    
+    def test_should_be_valid_if_state_is_known
+      @record.state = 'parked'
+      
+      assert @record.valid?
+    end
+    
+    def test_should_not_be_valid_if_state_is_unknown
+      @record.state = 'invalid'
+      
+      assert !@record.valid?
+      assert_equal ['State is invalid'], @record.errors.full_messages
+    end
+  end
+    
+  class MachineWithStateDrivenValidationsTest < BaseTestCase
+    def setup
+      @model = new_model do
+        include ActiveModel::Validations
+        
+        attr_accessor :seatbelt
+      end
+      
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :first_gear, :second_gear do
+        validates_presence_of :seatbelt
+      end
+      @machine.other_states :parked
+    end
+    
+    def test_should_be_valid_if_validation_fails_outside_state_scope
+      record = @model.new(:state => 'parked', :seatbelt => nil)
+      assert record.valid?
+    end
+    
+    def test_should_be_invalid_if_validation_fails_within_state_scope
+      record = @model.new(:state => 'first_gear', :seatbelt => nil)
+      assert !record.valid?
+    end
+    
+    def test_should_be_valid_if_validation_succeeds_within_state_scope
+      record = @model.new(:state => 'second_gear', :seatbelt => true)
+      assert record.valid?
+    end
+  end
+  
+  class MachineWithObserversTest < BaseTestCase
+    def setup
+      @model = new_model { include ActiveModel::Observing }
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :parked, :idling
+      @machine.event :ignite
+      @record = @model.new
+      @record.state = 'parked'
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+    end
+    
+    def test_should_call_all_transition_callback_permutations
+      callbacks = [
+        :before_ignite_from_parked_to_idling,
+        :before_ignite_from_parked,
+        :before_ignite_to_idling,
+        :before_ignite,
+        :before_transition_state_from_parked_to_idling,
+        :before_transition_state_from_parked,
+        :before_transition_state_to_idling,
+        :before_transition_state,
+        :before_transition
+      ]
+      
+      notified = false
+      observer = new_observer(@model) do
+        callbacks.each do |callback|
+          define_method(callback) do |*args|
+            notifications << callback
+          end
+        end
+      end
+      
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal callbacks, instance.notifications
+    end
+    
+    def test_should_pass_record_and_transition_to_before_callbacks
+      observer = new_observer(@model) do
+        def before_transition(*args)
+          notifications << args
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [[@record, @transition]], instance.notifications
+    end
+    
+    def test_should_pass_record_and_transition_to_after_callbacks
+      observer = new_observer(@model) do
+        def after_transition(*args)
+          notifications << args
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [[@record, @transition]], instance.notifications
+    end
+    
+    def test_should_call_methods_outside_the_context_of_the_record
+      observer = new_observer(@model) do
+        def before_ignite(*args)
+          notifications << self
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [instance], instance.notifications
+    end
+  end
+  
+  class MachineWithNamespacedObserversTest < BaseTestCase
+    def setup
+      @model = new_model { include ActiveModel::Observing }
+      @machine = StateMachine::Machine.new(@model, :state, :namespace => 'alarm')
+      @machine.state :active, :off
+      @machine.event :enable
+      @record = @model.new
+      @record.state = 'off'
+      @transition = StateMachine::Transition.new(@record, @machine, :enable, :off, :active)
+    end
+    
+    def test_should_call_namespaced_before_event_method
+      observer = new_observer(@model) do
+        def before_enable_alarm(*args)
+          notifications << args
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [[@record, @transition]], instance.notifications
+    end
+    
+    def test_should_call_namespaced_after_event_method
+      observer = new_observer(@model) do
+        def after_enable_alarm(*args)
+          notifications << args
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [[@record, @transition]], instance.notifications
+    end
+  end
+  
+  class MachineWithMixedCallbacksTest < BaseTestCase
+    def setup
+      @model = new_model { include ActiveModel::Observing }
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :parked, :idling
+      @machine.event :ignite
+      @record = @model.new
+      @record.state = 'parked'
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+      
+      @notifications = []
+      
+      # Create callbacks
+      @machine.before_transition(lambda {@notifications << :callback_before_transition})
+      @machine.after_transition(lambda {@notifications << :callback_after_transition})
+      
+      # Create observer callbacks
+      observer = new_observer(@model) do
+        def before_ignite(*args)
+          notifications << :observer_before_ignite
+        end
+        
+        def before_transition(*args)
+          notifications << :observer_before_transition
+        end
+        
+        def after_ignite(*args)
+          notifications << :observer_after_ignite
+        end
+        
+        def after_transition(*args)
+          notifications << :observer_after_transition
+        end
+      end
+      instance = observer.instance
+      instance.notifications = @notifications
+      
+      @transition.perform
+    end
+    
+    def test_should_invoke_callbacks_in_specific_order
+      expected = [
+        :callback_before_transition,
+        :observer_before_ignite,
+        :observer_before_transition,
+        :callback_after_transition,
+        :observer_after_ignite,
+        :observer_after_transition
+      ]
+      
+      assert_equal expected, @notifications
+    end
+  end
+  
+  class MachineWithInternationalizationTest < BaseTestCase
+    def setup
+      I18n.backend = I18n::Backend::Simple.new
+      
+      # Initialize the backend
+      I18n.backend.translate(:en, 'activemodel.errors.messages.invalid_transition', :event => 'ignite', :value => 'idling')
+      
+      @model = new_model { include ActiveModel::Validations }
+    end
+    
+    def test_should_use_defaults
+      I18n.backend.store_translations(:en, {
+        :activemodel => {:errors => {:messages => {:invalid_transition => 'cannot {{event}}'}}}
+      })
+      
+      machine = StateMachine::Machine.new(@model, :action => :save)
+      machine.state :parked, :idling
+      machine.event :ignite
+      
+      record = @model.new
+      record.state = 'idling'
+      
+      machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+      assert_equal ['State cannot ignite'], record.errors.full_messages
+    end
+    
+    def test_should_allow_customized_error_key
+      I18n.backend.store_translations(:en, {
+        :activemodel => {:errors => {:messages => {:bad_transition => 'cannot {{event}}'}}}
+      })
+      
+      machine = StateMachine::Machine.new(@model, :action => :save, :messages => {:invalid_transition => :bad_transition})
+      machine.state :parked, :idling
+      
+      record = @model.new
+      record.state = 'idling'
+      
+      machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+      assert_equal ['State cannot ignite'], record.errors.full_messages
+    end
+    
+    def test_should_allow_customized_error_string
+      machine = StateMachine::Machine.new(@model, :action => :save, :messages => {:invalid_transition => 'cannot {{event}}'})
+      machine.state :parked, :idling
+      
+      record = @model.new
+      record.state = 'idling'
+      
+      machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+      assert_equal ['State cannot ignite'], record.errors.full_messages
+    end
+    
+    def test_should_allow_customized_state_key_scoped_to_class_and_machine
+      I18n.backend.store_translations(:en, {
+        :activemodel => {:state_machines => {:'active_model_test/foo' => {:state => {:states => {:parked => 'shutdown'}}}}}
+      })
+      
+      machine = StateMachine::Machine.new(@model, :initial => :parked, :action => :save)
+      record = @model.new
+      
+      machine.invalidate(record, :event, :invalid_event, [[:state, :parked]])
+      assert_equal ['State event cannot transition when shutdown'], record.errors.full_messages
+    end
+    
+    def test_should_allow_customized_state_key_scoped_to_machine
+      I18n.backend.store_translations(:en, {
+        :activemodel => {:state_machines => {:state => {:states => {:parked => 'shutdown'}}}}
+      })
+      
+      machine = StateMachine::Machine.new(@model, :initial => :parked, :action => :save)
+      record = @model.new
+      
+      machine.invalidate(record, :event, :invalid_event, [[:state, :parked]])
+      assert_equal ['State event cannot transition when shutdown'], record.errors.full_messages
+    end
+    
+    def test_should_allow_customized_state_key_unscoped
+      I18n.backend.store_translations(:en, {
+        :activemodel => {:state_machines => {:states => {:parked => 'shutdown'}}}
+      })
+      
+      machine = StateMachine::Machine.new(@model, :initial => :parked, :action => :save)
+      record = @model.new
+      
+      machine.invalidate(record, :event, :invalid_event, [[:state, :parked]])
+      assert_equal ['State event cannot transition when shutdown'], record.errors.full_messages
+    end
+    
+    def test_should_allow_customized_event_key_scoped_to_class_and_machine
+      I18n.backend.store_translations(:en, {
+        :activemodel => {:state_machines => {:'active_model_test/foo' => {:state => {:events => {:park => 'stop'}}}}}
+      })
+      
+      machine = StateMachine::Machine.new(@model, :action => :save)
+      machine.event :park
+      record = @model.new
+      
+      machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
+      assert_equal ['State cannot transition via "stop"'], record.errors.full_messages
+    end
+    
+    def test_should_allow_customized_event_key_scoped_to_machine
+      I18n.backend.store_translations(:en, {
+        :activemodel => {:state_machines => {:state => {:events => {:park => 'stop'}}}}
+      })
+      
+      machine = StateMachine::Machine.new(@model, :action => :save)
+      machine.event :park
+      record = @model.new
+      
+      machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
+      assert_equal ['State cannot transition via "stop"'], record.errors.full_messages
+    end
+    
+    def test_should_allow_customized_event_key_unscoped
+      I18n.backend.store_translations(:en, {
+        :activemodel => {:state_machines => {:events => {:park => 'stop'}}}
+      })
+      
+      machine = StateMachine::Machine.new(@model, :action => :save)
+      machine.event :park
+      record = @model.new
+      
+      machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
+      assert_equal ['State cannot transition via "stop"'], record.errors.full_messages
+    end
+    
+    def test_should_only_add_locale_once_in_load_path
+      assert_equal 1, I18n.load_path.select {|path| path =~ %r{state_machine/integrations/active_model/locale\.rb$}}.length
+      
+      # Create another ActiveRecord model that will triger the i18n feature
+      new_model
+      
+      assert_equal 1, I18n.load_path.select {|path| path =~ %r{state_machine/integrations/active_model/locale\.rb$}}.length
+    end
+  end
+end

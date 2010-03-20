@@ -32,21 +32,29 @@ module StateMachine
     #   class Vehicle
     #   end
     #   
-    #   class ARVehicle < ActiveRecord::Base
+    #   class ActiveModelVehicle
+    #     include ActiveModel::AttributeMethods
+    #     include ActiveModel::Dirty
+    #     include ActiveModel::Validations
     #   end
     #   
-    #   class DMVehicle
+    #   class ActiveRecordVehicle < ActiveRecord::Base
+    #   end
+    #   
+    #   class DataMapperVehicle
     #     include DataMapper::Resource
     #   end
     #   
     #   class SequelVehicle < Sequel::Model
     #   end
     #   
-    #   StateMachine::Integrations.match(Vehicle)         # => nil
-    #   StateMachine::Integrations.match(ARVehicle)       # => StateMachine::Integrations::ActiveRecord
-    #   StateMachine::Integrations.match(DMVehicle)       # => StateMachine::Integrations::DataMapper
-    #   StateMachine::Integrations.match(SequelVehicle)   # => StateMachine::Integrations::Sequel
+    #   StateMachine::Integrations.match(Vehicle)             # => nil
+    #   StateMachine::Integrations.match(ActiveModelVehicle)  # => StateMachine::Integrations::ActiveModel
+    #   StateMachine::Integrations.match(ActiveRecordVehicle) # => StateMachine::Integrations::ActiveRecord
+    #   StateMachine::Integrations.match(DataMapperVehicle)   # => StateMachine::Integrations::DataMapper
+    #   StateMachine::Integrations.match(SequelVehicle)       # => StateMachine::Integrations::Sequel
     def self.match(klass)
+      constants = self.constants.select {|c| c != 'ActiveModel'}.sort << 'ActiveModel'
       if integration = constants.find {|name| const_get(name).matches?(klass)}
         find(integration)
       end
@@ -58,6 +66,7 @@ module StateMachine
     # == Examples
     # 
     #   StateMachine::Integrations.find(:active_record)   # => StateMachine::Integrations::ActiveRecord
+    #   StateMachine::Integrations.find(:active_model)    # => StateMachine::Integrations::ActiveModel
     #   StateMachine::Integrations.find(:data_mapper)     # => StateMachine::Integrations::DataMapper
     #   StateMachine::Integrations.find(:sequel)          # => StateMachine::Integrations::Sequel
     #   StateMachine::Integrations.find(:invalid)         # => NameError: wrong constant name Invalid

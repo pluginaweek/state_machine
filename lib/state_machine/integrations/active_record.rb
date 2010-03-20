@@ -304,8 +304,9 @@ module StateMachine
     #         events:
     #           park: 'estacionarse'
     module ActiveRecord
+      include ActiveModel
+      
       # The default options to use for state machines using this integration
-      class << self; attr_reader :defaults; end
       @defaults = {:action => :save}
       
       # Should this integration be used for state machines in the given class?
@@ -315,9 +316,12 @@ module StateMachine
         defined?(::ActiveRecord::Base) && klass <= ::ActiveRecord::Base
       end
       
-      # Loads additional files specific to ActiveRecord
       def self.extended(base) #:nodoc:
-        require 'state_machine/integrations/active_record/observer'
+        require 'state_machine/integrations/active_model/observer'
+        
+        ::ActiveRecord::Observer.class_eval do
+          include StateMachine::Integrations::ActiveModel::Observer
+        end unless ::ActiveRecord::Observer.included_modules.include?(StateMachine::Integrations::ActiveModel::Observer)
         
         if Object.const_defined?(:I18n)
           locale = "#{File.dirname(__FILE__)}/active_record/locale.rb"
@@ -325,57 +329,53 @@ module StateMachine
         end
       end
       
-      # Forces the change in state to be recognized regardless of whether the
-      # state value actually changed
-      def write(object, attribute, value)
-        result = super
-        if attribute == :state && object.respond_to?("#{self.attribute}_will_change!") && !object.send("#{self.attribute}_changed?")
-          object.send("#{self.attribute}_will_change!")
-        end
-        result
-      end
-      
       # Adds a validation error to the given object 
       def invalidate(object, attribute, message, values = [])
-        attribute = self.attribute(attribute)
-        
         if Object.const_defined?(:I18n)
-          klasses =
-            if ::ActiveRecord::VERSION::MAJOR >= 3
-              object.class.lookup_ancestors
-            elsif ::ActiveRecord::VERSION::MINOR == 3 && ::ActiveRecord::VERSION::TINY >= 2
-              object.class.self_and_descendants_from_active_record
-            else
-              object.class.self_and_descendents_from_active_record
-            end
-          
-          options = values.inject({}) do |options, (key, value)|
-            # Generate all possible translation keys
-            group = key.to_s.pluralize
-            translations = klasses.map {|klass| :"#{klass.model_name.underscore}.#{name}.#{group}.#{value}"}
-            translations.concat([:"#{name}.#{group}.#{value}", :"#{group}.#{value}", value.to_s])
-            
-            options[key] = I18n.translate(translations.shift, :default => translations, :scope => [:activerecord, :state_machines])
-            options
-          end
-          
-          object.errors.add(attribute, message, options.merge(:default => @messages[message]))
+          super
         else
-          object.errors.add(attribute, generate_message(message, values))
+          object.errors.add(self.attribute(attribute), generate_message(message, values))
         end
-      end
-      
-      # Resets any errors previously added when invalidating the given object
-      def reset(object)
-        object.errors.clear
       end
       
       protected
-        # Adds the default callbacks for notifying ActiveRecord observers
-        # before/after a transition has been performed.
-        def after_initialize
-          callbacks[:before] << Callback.new {|object, transition| notify(:before, object, transition)}
-          callbacks[:after] << Callback.new {|object, transition| notify(:after, object, transition)}
+        # Always adds observer support
+        def supports_observers?
+          true
+        end
+        
+        # Always adds validation support
+        def supports_validations?
+          true
+        end
+        
+        # Only runs validations on the action if using <tt>:save</tt>
+        def runs_validations_on_action?
+          action == :save
+        end
+        
+        # Only adds dirty tracking support if ActiveRecord supports it
+        def supports_dirty_tracking?(object)
+          defined?(::ActiveRecord::Dirty) && object.respond_to?("#{self.attribute}_changed?") || super
+        end
+        
+        # Always uses the <tt>:activerecord</tt> translation scope
+        def i18n_scope
+          :activerecord
+        end
+        
+        # Attempts to look up a class's ancestors via:
+        # * #lookup_ancestors
+        # * #self_and_descendants_from_active_record
+        # * #self_and_descendents_from_active_record
+        def ancestors_for(klass)
+          if ::ActiveRecord::VERSION::MAJOR >= 3
+            super
+          elsif ::ActiveRecord::VERSION::MINOR == 3 && ::ActiveRecord::VERSION::TINY >= 2
+            klass.self_and_descendants_from_active_record
+          else
+            klass.self_and_descendents_from_active_record
+          end
         end
         
         # Defines an initialization hook into the owner class for setting the
@@ -414,16 +414,6 @@ module StateMachine
           end_eval
         end
         
-        # Skips defining reader/writer methods since this is done automatically
-        def define_state_accessor
-          name = self.name
-          
-          owner_class.validates_each(attribute) do |record, attr, value|
-            machine = record.class.state_machine(name)
-            machine.invalidate(record, :state, :invalid) unless machine.states.match(record)
-          end
-        end
-        
         # Adds support for defining the attribute predicate, while providing
         # compatibility with the default predicate which determines whether
         # *anything* is set for the attribute's value
@@ -441,17 +431,7 @@ module StateMachine
         
         # Adds hooks into validation for automatically firing events
         def define_action_helpers
-          if action == :save
-            if super(:create_or_update)
-              @instance_helper_module.class_eval do
-                define_method(:valid?) do |*args|
-                  self.class.state_machines.fire_event_attributes(self, :save, false) { super(*args) }
-                end
-              end
-            end
-          else
-            super
-          end
+          super(action == :save ? :create_or_update : action)
         end
         
         # Creates a scope for finding records *with* a particular state or
@@ -476,83 +456,33 @@ module StateMachine
           object.class.transaction {raise ::ActiveRecord::Rollback unless yield}
         end
         
-        # Creates a new callback in the callback chain, always inserting it
-        # before the default Observer callbacks that were created after
-        # initialization.
-        def add_callback(type, options, &block)
-          options[:terminator] = @terminator ||= lambda {|result| result == false}
-          @callbacks[type].insert(-2, callback = Callback.new(options, &block))
-          add_states(callback.known_states)
-          
-          callback
-        end
-        
       private
-        # Defines a new named scope with the given name.  Since ActiveRecord
-        # does not allow direct access to the model being used within the
-        # evaluation of a dynamic named scope, the scope must be generated
-        # manually.  It's necessary to have access to the model so that the
-        # state names can be translated to their associated values and so that
-        # inheritance is respected properly.
+        # Defines a new named scope with the given name
         def define_scope(name, scope)
-          if ::ActiveRecord::VERSION::MAJOR <= 2
+          if ::ActiveRecord::VERSION::MAJOR >= 3
+            lambda {|model, values| model.where(scope.call(values)[:conditions])}
+          else
             if owner_class.respond_to?(:named_scope)
               name = name.to_sym
               machine_name = self.name
               
-              # Create the scope and then override it with state translation
+              # Since ActiveRecord does not allow direct access to the model
+              # being used within the evaluation of a dynamic named scope, the
+              # scope must be generated manually.  It's necessary to have access
+              # to the model so that the state names can be translated to their
+              # associated values and so that inheritance is respected properly.
               owner_class.named_scope(name)
-              owner_class.scopes[name] = lambda do |klass, *states|
-                machine_states = klass.state_machine(machine_name).states
+              owner_class.scopes[name] = lambda do |model, *states|
+                machine_states = model.state_machine(machine_name).states
                 values = states.flatten.map {|state| machine_states.fetch(state).value}
                 
-                ::ActiveRecord::NamedScope::Scope.new(klass, scope.call(values))
+                ::ActiveRecord::NamedScope::Scope.new(model, scope.call(values))
               end
             end
             
             # Prevent the Machine class from wrapping the scope
             false
-          else
-            lambda {|klass, values| klass.where(scope.call(values)[:conditions])}
           end
-        end
-        
-        # Notifies observers on the given object that a callback occurred
-        # involving the given transition.  This will attempt to call the
-        # following methods on observers:
-        # * #{type}_#{qualified_event}_from_#{from}_to_#{to}
-        # * #{type}_#{qualified_event}_from_#{from}
-        # * #{type}_#{qualified_event}_to_#{to}
-        # * #{type}_#{qualified_event}
-        # * #{type}_transition_#{machine_name}_from_#{from}_to_#{to}
-        # * #{type}_transition_#{machine_name}_from_#{from}
-        # * #{type}_transition_#{machine_name}_to_#{to}
-        # * #{type}_transition_#{machine_name}
-        # * #{type}_transition
-        # 
-        # This will always return true regardless of the results of the
-        # callbacks.
-        def notify(type, object, transition)
-          name = self.name
-          event = transition.qualified_event
-          from = transition.from_name
-          to = transition.to_name
-          
-          # Machine-specific updates
-          ["#{type}_#{event}", "#{type}_transition_#{name}"].each do |event_segment|
-            ["_from_#{from}", nil].each do |from_segment|
-              ["_to_#{to}", nil].each do |to_segment|
-                object.class.changed
-                object.class.notify_observers([event_segment, from_segment, to_segment].join, object, transition)
-              end
-            end
-          end
-          
-          # Generic updates
-          object.class.changed
-          object.class.notify_observers("#{type}_transition", object, transition)
-          
-          true
         end
     end
   end

@@ -90,10 +90,10 @@ module StateMachine
   # action being invoked (and not a superclass), then it must manually run the
   # StateMachine hook that checks for event attributes.
   # 
-  # For example, in ActiveRecord, DataMapper, and Sequel, the default action
-  # (+save+) is already defined in a base class.  As a result, when a state
-  # machine is defined in a model / resource, StateMachine can automatically
-  # hook into the +save+ action.
+  # For example, in ActiveRecord, DataMapper, and Sequel, the
+  # default action (+save+) is already defined in a base class.  As a result,
+  # when a state machine is defined in a model / resource, StateMachine can
+  # automatically hook into the +save+ action.
   # 
   # On the other hand, the Vehicle class from above defined its own +save+
   # method (and there is no +save+ method in its superclass).  As a result, it

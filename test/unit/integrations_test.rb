@@ -24,6 +24,10 @@ class IntegrationMatcherTest < Test::Unit::TestCase
 end
 
 class IntegrationFinderTest < Test::Unit::TestCase
+  def test_should_find_active_model
+    assert_equal StateMachine::Integrations::ActiveModel, StateMachine::Integrations.find(:active_model)
+  end
+  
   def test_should_find_active_record
     assert_equal StateMachine::Integrations::ActiveRecord, StateMachine::Integrations.find(:active_record)
   end
