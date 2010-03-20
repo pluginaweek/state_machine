@@ -977,9 +977,7 @@ module MongoMapperTest
     
     def test_should_not_run_after_callbacks_with_failures_disabled_if_fails
       @model.class_eval do
-        def create_or_update
-          false
-        end
+        validates_inclusion_of :state, :within => %w(first_gear)
       end
       
       ran_callback = false
@@ -990,7 +988,9 @@ module MongoMapperTest
     end
     
     def test_should_run_after_callbacks_with_failures_enabled_if_fails
-      @model.before_create {|record| false}
+      @model.class_eval do
+        validates_inclusion_of :state, :within => %w(first_gear)
+      end
       
       ran_callback = false
       @machine.after_transition(:include_failures => true) { ran_callback = true }
