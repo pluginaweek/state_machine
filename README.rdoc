@@ -532,10 +532,10 @@ For example,
 
 === Interactive graphs
 
-Jean Bovet - {Visual Automata Simulator}[http://www.cs.usfca.edu/~jbovet/vas.html].
-This is a great tool for "simulating, visualizing and transforming finite state
-automata and Turing Machines".  This tool can help in the creation of states and
-events for your models.  It is cross-platform, written in Java.
+Jean Bovet's {Visual Automata Simulator}[http://www.cs.usfca.edu/~jbovet/vas.html]
+is a great tool for "simulating, visualizing and transforming finite state
+automata and Turing Machines".  It can help in the creation of states and events
+for your models.  It is cross-platform, written in Java.
 
 == Testing
 
@@ -543,12 +543,12 @@ To run the core test suite (does *not* test any of the integrations):
 
   rake test
 
-Target specific versions of integrations like so:
+Test specific versions of integrations like so:
 
   rake test INTEGRATION=active_model VERSION=3.0.0
   rake test INTEGRATION=active_record VERSION=2.0.0
   rake test INTEGRATION=data_mapper VERSION=0.9.4
-  rake test INTEGRATION=mongo_mapper VERSION=0.9.4
+  rake test INTEGRATION=mongo_mapper VERSION=0.5.5
   rake test INTEGRATION=sequel VERSION=2.8.0
 
 == Caveats
