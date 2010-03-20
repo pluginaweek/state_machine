@@ -457,14 +457,15 @@ events for your models.  It is cross-platform, written in Java.
 
 == Testing
 
-To run the entire test suite (will test ActiveRecord, DataMapper, and Sequel
-integrations if the proper dependencies are available):
+To run the core test suite (does *not* test any of the integrations):
 
   rake test
 
 Target specific versions of integrations like so:
 
-  rake test AR_VERSION=2.0.0 DM_VERSION=0.9.4 SEQUEL_VERSION=2.8.0
+  rake test INTEGRATION=active_record VERSION=2.0.0
+  rake test INTEGRATION=data_mapper VERSION=0.9.4
+  rake test INTEGRATION=sequel VERSION=2.8.0
 
 == Caveats
 
