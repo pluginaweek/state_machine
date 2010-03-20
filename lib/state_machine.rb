@@ -24,8 +24,8 @@ module StateMachine
     #   Default is nil.
     # * <tt>:integration</tt> - The name of the integration to use for adding
     #   library-specific behavior to the machine.  Built-in integrations
-    #   include :data_mapper, :active_record, and :sequel.  By default, this
-    #   is determined automatically.
+    #   include :active_model, :active_record, :data_mapper, :mongo_mapper, and
+    #   :sequel.  By default, this is determined automatically.
     # 
     # Configuration options relevant to ORM integrations:
     # * <tt>:plural</tt> - The pluralized name of the attribute.  By default,
