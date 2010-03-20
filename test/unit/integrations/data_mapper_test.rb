@@ -49,11 +49,11 @@ begin
     end
     
     class IntegrationTest < BaseTestCase
-      def test_should_match_if_class_inherits_from_active_record
+      def test_should_match_if_class_includes_data_mapper
         assert StateMachine::Integrations::DataMapper.matches?(new_resource)
       end
       
-      def test_should_not_match_if_class_does_not_inherit_from_active_record
+      def test_should_not_match_if_class_does_not_include_data_mapper
         assert !StateMachine::Integrations::DataMapper.matches?(Class.new)
       end
       
