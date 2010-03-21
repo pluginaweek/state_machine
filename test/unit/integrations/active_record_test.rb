@@ -528,6 +528,11 @@ module ActiveRecordTest
         
         assert_equal %w(parked idling), @record.changes['state']
       end
+      
+      def test_should_not_have_changes_when_loaded_from_database
+        record = @model.find(@record.id)
+        assert !record.changed?
+      end
     end
     
     class MachineWithDirtyAttributesDuringLoopbackTest < BaseTestCase

@@ -483,6 +483,11 @@ module DataMapperTest
         assert_equal e = {:state => 'parked'},  @record.original_values
       end
     end
+    
+      def test_should_have_changes_when_loaded_from_database
+        record = @resource.get(@record.id)
+        assert record.dirty_attributes.blank?
+      end
   end
   
   class MachineWithDirtyAttributesDuringLoopbackTest < BaseTestCase

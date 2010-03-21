@@ -499,6 +499,11 @@ module SequelTest
     def test_should_include_state_in_changed_attributes
       assert_equal [:state], @record.changed_columns
     end
+    
+    def test_should_not_have_changes_when_loaded_from_database
+      record = @model[@record.id]
+      assert record.changed_columns.empty?
+    end
   end
   
   class MachineWithDirtyAttributesDuringLoopbackTest < BaseTestCase
