@@ -119,6 +119,35 @@ module StateMachine
     # *not* because a matching transition was not available, no error messages
     # will be added to the state attribute.
     # 
+    # == Scopes
+    # 
+    # To assist in filtering models with specific states, a series of basic
+    # scopes are defined on the model for finding records with or without a
+    # particular set of states.
+    # 
+    # These scopes are essentially the functional equivalent of the following
+    # definitions:
+    # 
+    #   class Vehicle
+    #     include MongoMapper::Document
+    #     
+    #     def self.with_states(*states)
+    #       all(:conditions => {:state => {'$in' => states}})
+    #     end
+    #     # with_states also aliased to with_state
+    #     
+    #     def self.without_states(*states)
+    #       all(:conditions => {:state => {'$nin' => states}})
+    #     end
+    #     # without_states also aliased to without_state
+    #   end
+    # 
+    # *Note*, however, that the states are converted to their stored values
+    # before being passed into the query.
+    # 
+    # Because of the way named scopes work in MongoMapper, they *cannot* be
+    # chained.
+    # 
     # == Callbacks
     # 
     # All before/after transition callbacks defined for MongoMapper models
@@ -239,6 +268,18 @@ module StateMachine
         # Adds hooks into validation for automatically firing events
         def define_action_helpers
           super(action == :save ? :create_or_update : action)
+        end
+        
+        # Creates a scope for finding records *with* a particular state or
+        # states for the attribute
+        def create_with_scope(name)
+          lambda {|model, values| model.all(:conditions => {attribute => {'$in' => values}})}
+        end
+        
+        # Creates a scope for finding records *without* a particular state or
+        # states for the attribute
+        def create_without_scope(name)
+          lambda {|model, values| model.all(:conditions => {attribute => {'$nin' => values}})}
         end
     end
   end

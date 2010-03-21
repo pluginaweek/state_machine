@@ -34,6 +34,7 @@ module MongoMapperTest
           key :state, String
         end
         model.class_eval(&block) if block_given?
+        model.collection.remove
         model
       end
   end
@@ -1036,6 +1037,101 @@ module MongoMapperTest
     def test_should_transition_on_custom_action
       @record.persist
       assert_equal 'idling', @record.state
+    end
+  end
+  
+  class MachineWithScopesTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :parked, :first_gear
+      @machine.state :idling, :value => lambda {'idling'}
+    end
+    
+    def test_should_create_singular_with_scope
+      assert @model.respond_to?(:with_state)
+    end
+    
+    def test_should_only_include_records_with_state_in_singular_with_scope
+      parked = @model.create :state => 'parked'
+      idling = @model.create :state => 'idling'
+      
+      assert_equal [parked], @model.with_state(:parked)
+    end
+    
+    def test_should_create_plural_with_scope
+      assert @model.respond_to?(:with_states)
+    end
+    
+    def test_should_only_include_records_with_states_in_plural_with_scope
+      parked = @model.create :state => 'parked'
+      idling = @model.create :state => 'idling'
+      
+      assert_equal [parked, idling], @model.with_states(:parked, :idling)
+    end
+    
+    def test_should_create_singular_without_scope
+      assert @model.respond_to?(:without_state)
+    end
+    
+    def test_should_only_include_records_without_state_in_singular_without_scope
+      parked = @model.create :state => 'parked'
+      idling = @model.create :state => 'idling'
+      
+      assert_equal [parked], @model.without_state(:idling)
+    end
+    
+    def test_should_create_plural_without_scope
+      assert @model.respond_to?(:without_states)
+    end
+    
+    def test_should_only_include_records_without_states_in_plural_without_scope
+      parked = @model.create :state => 'parked'
+      idling = @model.create :state => 'idling'
+      first_gear = @model.create :state => 'first_gear'
+      
+      assert_equal [parked, idling], @model.without_states(:first_gear)
+    end
+  end
+  
+  class MachineWithScopesAndOwnerSubclassTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model, :state)
+      
+      @subclass = Class.new(@model)
+      @subclass_machine = @subclass.state_machine(:state) {}
+      @subclass_machine.state :parked, :idling, :first_gear
+    end
+    
+    def test_should_only_include_records_with_subclass_states_in_with_scope
+      parked = @subclass.create :state => 'parked'
+      idling = @subclass.create :state => 'idling'
+      
+      assert_equal [parked, idling], @subclass.with_states(:parked, :idling)
+    end
+    
+    def test_should_only_include_records_without_subclass_states_in_without_scope
+      parked = @subclass.create :state => 'parked'
+      idling = @subclass.create :state => 'idling'
+      first_gear = @subclass.create :state => 'first_gear'
+      
+      assert_equal [parked, idling], @subclass.without_states(:first_gear)
+    end
+  end
+  
+  class MachineWithComplexPluralizationScopesTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model, :status)
+    end
+    
+    def test_should_create_singular_with_scope
+      assert @model.respond_to?(:with_status)
+    end
+    
+    def test_should_create_plural_with_scope
+      assert @model.respond_to?(:with_statuses)
     end
   end
 end

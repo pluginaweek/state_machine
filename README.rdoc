@@ -385,7 +385,7 @@ machines, see StateMachine::Integrations::DataMapper.
 === MongoMapper
 
 The MongoMapper integration adds support for automatically saving the record,
-validation errors and callbacks.  For example,
+basic scopes, validation errors and callbacks.  For example,
 
   class Vehicle
     include MongoMapper::Document
