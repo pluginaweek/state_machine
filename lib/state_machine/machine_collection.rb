@@ -6,7 +6,7 @@ module StateMachine
     # (which must mean the defaults are being skipped)
     def initialize_states(object, options = {})
       if ignore = options[:ignore]
-        ignore.map! {|attribute| attribute.to_sym}
+        ignore = ignore.map {|attribute| attribute.to_sym}
       end
       
       each_value do |machine|

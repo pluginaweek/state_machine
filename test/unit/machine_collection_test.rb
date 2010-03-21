@@ -101,6 +101,15 @@ class MachineCollectionStateInitializationTest < Test::Unit::TestCase
     assert_equal 'parked', @object.state
     assert_equal 'active', @object.alarm_state
   end
+  
+  def test_should_not_modify_ignore_option
+    ignore = ['state', 'alarm_state']
+    @machines.initialize_states(@object, :ignore => ignore)
+    
+    assert_nil @object.state
+    assert_nil @object.alarm_state
+    assert_equal ['state', 'alarm_state'], ignore
+  end
 end
 
 class MachineCollectionFireExplicitTest < Test::Unit::TestCase
