@@ -191,6 +191,13 @@ module ActiveRecordTest
       record.attributes = {}
       assert_equal 'idling', record.state
     end
+    
+    def test_should_use_stored_values_when_loading_from_database
+      @machine.state :idling
+      
+      record = @model.find(@model.create(:state => 'idling').id)
+      assert_equal 'idling', record.state
+    end
   end
   
   class MachineWithDynamicInitialStateTest < BaseTestCase
