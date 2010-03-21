@@ -229,7 +229,9 @@ module StateMachine
         def define_state_initializer
           @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
             def initialize(attrs = {}, *args)
-              if args.first || !attrs || !attrs.stringify_keys.key?('_id')
+              from_database = args.first
+              
+              if !from_database && (!attrs || !attrs.stringify_keys.key?('_id'))
                 filtered = respond_to?(:filter_protected_attrs) ? filter_protected_attrs(attrs) : attrs 
                 ignore = filtered ? filtered.keys : []
                 
