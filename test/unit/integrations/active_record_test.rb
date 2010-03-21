@@ -198,6 +198,13 @@ module ActiveRecordTest
       record = @model.find(@model.create(:state => 'idling').id)
       assert_equal 'idling', record.state
     end
+    
+    def test_should_use_stored_values_when_loading_from_database_with_nil_state
+      @machine.state nil
+      
+      record = @model.find(@model.create(:state => nil).id)
+      assert_nil record.state
+    end
   end
   
   class MachineWithDynamicInitialStateTest < BaseTestCase
@@ -258,6 +265,20 @@ module ActiveRecordTest
       record.state = 'idling'
       record.attributes = {}
       assert_equal 'idling', record.state
+    end
+    
+    def test_should_use_stored_values_when_loading_from_database
+      @machine.state :idling
+      
+      record = @model.find(@model.create(:state => 'idling').id)
+      assert_equal 'idling', record.state
+    end
+    
+    def test_should_use_stored_values_when_loading_from_database_with_nil_state
+      @machine.state nil
+      
+      record = @model.find(@model.create(:state => nil).id)
+      assert_nil record.state
     end
   end
   

@@ -169,6 +169,13 @@ module SequelTest
       record = @model[@model.create(:state => 'idling').id]
       assert_equal 'idling', record.state
     end
+    
+    def test_should_use_stored_values_when_loading_from_database_with_nil_state
+      @machine.state nil
+      
+      record = @model[@model.create(:state => nil).id]
+      assert_nil record.state
+    end
   end
   
   class MachineWithDynamicInitialStateTest < BaseTestCase
@@ -235,6 +242,20 @@ module SequelTest
       record.state = 'idling'
       record.set({})
       assert_equal 'idling', record.state
+    end
+    
+    def test_should_use_stored_values_when_loading_from_database
+      @machine.state :idling
+      
+      record = @model[@model.create(:state => 'idling').id]
+      assert_equal 'idling', record.state
+    end
+    
+    def test_should_use_stored_values_when_loading_from_database_with_nil_state
+      @machine.state nil
+      
+      record = @model[@model.create(:state => nil).id]
+      assert_nil record.state
     end
   end
   
