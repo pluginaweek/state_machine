@@ -220,7 +220,7 @@ module MongoMapperTest
       assert_nil record.state
     end
   end
-#  
+  
   class MachineWithColumnDefaultTest < BaseTestCase
     def setup
       @model = new_model do
