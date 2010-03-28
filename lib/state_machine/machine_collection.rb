@@ -44,7 +44,7 @@ module StateMachine
       # Run the events in parallel only if valid transitions were found for
       # all of them
       if events.length == transitions.length
-        Transition.perform_within_transaction(transitions, :action => run_action)
+        TransitionCollection.new(transitions, :actions => run_action).perform
       else
         false
       end
@@ -130,7 +130,7 @@ module StateMachine
         
         # Perform the transitions
         begin
-          result = Transition.perform(transitions, :after => complete) { action_value = yield }
+          result = TransitionCollection.new(transitions, :after => complete, :transaction => false).perform { action_value = yield }
         rescue Exception
           # Reset the event attribute so it can be re-evaluated if attempted again
           transitions.each do |transition|

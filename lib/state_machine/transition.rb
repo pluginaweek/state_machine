@@ -1,3 +1,5 @@
+require 'state_machine/transition_collection'
+
 module StateMachine
   # An invalid transition was attempted
   class InvalidTransition < StandardError
@@ -10,83 +12,6 @@ module StateMachine
   # * A starting state
   # * An ending state
   class Transition
-    class << self
-      # Runs one or more transitions in parallel.  All transitions will run
-      # through the following steps:
-      # 1. Before callbacks
-      # 2. Persist state
-      # 3. Invoke action
-      # 4. After callbacks (if configured)
-      # 5. Rollback (if action is unsuccessful)
-      # 
-      # Configuration options:
-      # * <tt>:action</tt> - Whether to run the action configured for each transition
-      # * <tt>:after</tt> - Whether to run after callbacks
-      # 
-      # If a block is passed to this method, that block will be called instead
-      # of invoking each transition's action.
-      def perform(transitions, options = {})
-        # Validate that the transitions are for separate machines / attributes
-        attributes = transitions.map {|transition| transition.attribute}.uniq
-        raise ArgumentError, 'Cannot perform multiple transitions in parallel for the same state machine attribute' if attributes.length != transitions.length
-        
-        success = false
-        
-        # Run before callbacks.  If any callback halts, then the entire chain
-        # is halted for every transition.
-        if transitions.all? {|transition| transition.before}
-          # Persist the new state for each attribute
-          transitions.each {|transition| transition.persist}
-          
-          # Run the actions associated with each machine
-          begin
-            results = {}
-            success =
-              if block_given?
-                # Block was given: use the result for each transition
-                result = yield
-                transitions.each {|transition| results[transition.action] = result}
-                !!result
-              elsif options[:action] == false
-                # Skip the action
-                true
-              else
-                # Run each transition's action (only once)
-                object = transitions.first.object
-                transitions.all? do |transition|
-                  action = transition.action
-                  action && !results.include?(action) ? results[action] = object.send(action) : true
-                end
-              end
-          rescue Exception
-            # Action failed: rollback 
-            transitions.each {|transition| transition.rollback}
-            raise
-          end
-          
-          # Run after callbacks even when the actions failed. The :after option
-          # is ignored if the transitions were unsuccessful.
-          transitions.each {|transition| transition.after(results[transition.action], success)} unless options[:after] == false && success
-          
-          # Rollback the transitions if the transaction was unsuccessful
-          transitions.each {|transition| transition.rollback} unless success
-        end
-        
-        success
-      end
-      
-      # Runs one or more transitions within a transaction.  See StateMachine::Transition.perform
-      # for more information.
-      def perform_within_transaction(transitions, options = {})
-        success = false
-        transitions.first.within_transaction do
-          success = perform(transitions, options)
-        end
-        
-        success
-      end
-    end
-    
     # The object being transitioned
     attr_reader :object
     
@@ -203,7 +128,7 @@ module StateMachine
       self.args = args
       
       # Run the transition
-      self.class.perform_within_transaction([self], :action => run_action)
+      TransitionCollection.new([self], :actions => run_action).perform
     end
     
     # Runs a block within a transaction for the object being transitioned.
