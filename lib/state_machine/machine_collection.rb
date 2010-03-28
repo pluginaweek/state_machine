@@ -26,9 +26,7 @@ module StateMachine
       transitions = events.collect do |event_name|
         # Find the actual event being run
         event = nil
-        detect do |name, machine|
-          event = machine.events[event_name, :qualified_name]
-        end
+        detect {|name, machine| event = machine.events[event_name, :qualified_name]}
         
         raise InvalidEvent, "#{event_name.inspect} is an unknown state machine event" unless event
         
