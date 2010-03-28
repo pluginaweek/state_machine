@@ -12,7 +12,7 @@ module StateMachine
       each_value do |machine|
         if (!ignore || !ignore.include?(machine.attribute)) && (!options.include?(:dynamic) || machine.dynamic_initial_state? == options[:dynamic])
           value = machine.read(object, :state)
-          machine.write(object, :state, machine.initial_state(object).value) if ignore || value.nil? || value.respond_to?(:empty?) && value.empty?
+          machine.initialize_state(object) if ignore || value.nil? || value.respond_to?(:empty?) && value.empty?
         end
       end
     end

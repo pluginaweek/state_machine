@@ -490,6 +490,12 @@ module StateMachine
       states.each {|state| state.initial = (state.name == @initial_state)}
     end
     
+    # Initializes the state on the given object.  This will always write to the
+    # attribute regardless of whether a value is already present.
+    def initialize_state(object)
+      write(object, :state, initial_state(object).value)
+    end
+    
     # Gets the actual name of the attribute on the machine's owner class that
     # stores data with the given name.
     def attribute(name = :state)

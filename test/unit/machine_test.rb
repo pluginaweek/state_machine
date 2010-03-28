@@ -224,6 +224,12 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
     assert_equal 'parked', @machine.initial_state(object).value
   end
   
+  def test_should_write_to_attribute_when_initializing_state
+    object = @klass.allocate
+    @machine.initialize_state(object)
+    assert_equal 'parked', object.state
+  end
+  
   def test_should_set_initial_on_state_object
     assert @machine.state(:parked).initial
   end
@@ -282,6 +288,13 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
     
     @object.initial_state = :idling
     assert_equal :idling, @machine.initial_state(@object).name
+  end
+  
+  def test_should_write_to_attribute_when_initializing_state
+    object = @klass.allocate
+    object.initial_state = :parked
+    @machine.initialize_state(object)
+    assert_equal 'parked', object.state
   end
   
   def test_should_set_initial_state_on_created_object
