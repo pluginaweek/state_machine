@@ -285,6 +285,7 @@ module StateMachine
   # namespace.
   class Machine
     include Assertions
+    include EvalHelpers
     include MatcherHelpers
     
     class << self
@@ -576,7 +577,7 @@ module StateMachine
     #   vehicle.force_idle = false
     #   Vehicle.state_machine.initial_state(vehicle)  # => #<StateMachine::State name=:parked value="parked" initial=false>
     def initial_state(object)
-      states.fetch(dynamic_initial_state? ? @initial_state.call(object) : @initial_state)
+      states.fetch(dynamic_initial_state? ? evaluate_method(object, @initial_state) : @initial_state)
     end
     
     # Whether a dynamic initial state is being used in the machine

@@ -1,5 +1,6 @@
 == master
 
+* Fix dynamic initial states causing errors in Ruby 1.9+ if no arguments are defined in the block
 * Add MongoMapper 0.5.5+ support
 * Add ActiveModel 3.0+ support for use with integrations that implement its interface
 * Fix DataMapper integration failing when ActiveSupport is loaded in place of Extlib
