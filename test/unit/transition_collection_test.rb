@@ -31,6 +31,10 @@ class TransitionCollectionByDefaultTest < Test::Unit::TestCase
     assert !@transitions.success?
   end
   
+  def test_should_not_have_any_results
+    assert_equal e = {}, @transitions.results
+  end
+  
   def test_should_store_transitions
     assert_equal 1, @transitions.length
   end
@@ -41,11 +45,11 @@ class TransitionCollectionAfterBeingPersistedTest < Test::Unit::TestCase
     @klass = Class.new
     
     @state = StateMachine::Machine.new(@klass, :initial => :parked)
-    @state.state :parked, :idling
+    @state.state :idling
     @state.event :ignite
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear)
+    @status.state :second_gear
     @status.event :shift_up
-    @status.state :first_gear, :second_gear
     
     @object = @klass.new
     
@@ -71,11 +75,11 @@ class TransitionCollectionAfterBeingRolledBackTest < Test::Unit::TestCase
     @klass = Class.new
     
     @state = StateMachine::Machine.new(@klass, :initial => :parked)
-    @state.state :parked, :idling
+    @state.state :idling
     @state.event :ignite
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear)
+    @status.state :second_gear
     @status.event :shift_up
-    @status.state :first_gear, :second_gear
     
     @object = @klass.new
     
@@ -108,14 +112,14 @@ class TransitionCollectionWithCallbacksTest < Test::Unit::TestCase
     @after_callbacks = []
     
     @state = StateMachine::Machine.new(@klass, :initial => :parked)
+    @state.state :idling
     @state.event :ignite
-    @state.state :parked, :idling
     @state.before_transition {@before_callbacks << :state}
     @state.after_transition(:include_failures => true) {@after_callbacks << :state}
     
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear)
+    @status.state :second_gear
     @status.event :shift_up
-    @status.state :first_gear, :second_gear
     @status.before_transition {@before_callbacks << :status}
     @status.after_transition(:include_failures => true) {@after_callbacks << :status}
     
@@ -163,12 +167,12 @@ class TransitionCollectionAfterRunningEmptyActionsTest < Test::Unit::TestCase
     @klass = Class.new
     
     @state = StateMachine::Machine.new(@klass, :initial => :parked)
+    @state.state :idling
     @state.event :ignite
-    @state.state :parked, :idling
     
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear)
+    @status.state :second_gear
     @status.event :shift_up
-    @status.state :first_gear, :second_gear
     
     @object = @klass.new
     
@@ -192,7 +196,11 @@ class TransitionCollectionAfterRunningEmptyActionsTest < Test::Unit::TestCase
     assert_equal 'second_gear', @object.status
   end
   
-  def test_should_store_action_specific_results
+  def test_should_not_have_results
+    assert_equal e = {}, @transitions.results
+  end
+  
+  def test_should_store_results_in_transitions
     @transitions.after
     assert_nil @state_transition.result
     assert_nil @status_transition.result
@@ -216,12 +224,12 @@ class TransitionCollectionAfterRunningSkippedActionsTest < Test::Unit::TestCase
     end
     
     @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save_state)
+    @state.state :idling
     @state.event :ignite
-    @state.state :parked, :idling
     
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save_status)
+    @status.state :second_gear
     @status.event :shift_up
-    @status.state :first_gear, :second_gear
     
     @object = @klass.new
     
@@ -240,7 +248,11 @@ class TransitionCollectionAfterRunningSkippedActionsTest < Test::Unit::TestCase
     assert_nil @object.actions
   end
   
-  def test_should_store_action_specific_results
+  def test_should_not_have_any_results
+    assert_equal e = {}, @transitions.results
+  end
+  
+  def test_should_store_results_in_transitions
     @transitions.after
     assert_nil @state_transition.result
     assert_nil @status_transition.result
@@ -259,12 +271,12 @@ class TransitionCollectionAfterRunningDuplicateActionsTest < Test::Unit::TestCas
     end
     
     @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @state.state :idling
     @state.event :ignite
-    @state.state :parked, :idling
     
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save)
+    @status.state :second_gear
     @status.event :shift_up
-    @status.state :first_gear, :second_gear
     
     @object = @klass.new
     
@@ -283,7 +295,11 @@ class TransitionCollectionAfterRunningDuplicateActionsTest < Test::Unit::TestCas
     assert_equal [:save], @object.actions
   end
   
-  def test_should_store_action_specific_results
+  def test_should_have_results
+    assert_equal e = {:save => :save}, @transitions.results
+  end
+  
+  def test_should_store_results_in_transitions
     @transitions.after
     assert_equal :save, @state_transition.result
     assert_equal :save, @status_transition.result
@@ -307,12 +323,12 @@ class TransitionCollectionAfterRunningDifferentActionsTest < Test::Unit::TestCas
     end
     
     @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save_state)
+    @state.state :idling
     @state.event :ignite
-    @state.state :parked, :idling
     
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save_status)
+    @status.state :second_gear
     @status.event :shift_up
-    @status.state :first_gear, :second_gear
     
     @object = @klass.new
     
@@ -332,7 +348,12 @@ class TransitionCollectionAfterRunningDifferentActionsTest < Test::Unit::TestCas
     assert_equal [:save_state, :save_status], @object.actions
   end
   
-  def test_should_store_action_specific_results
+  def test_should_have_results
+    @transitions.run_actions
+    assert_equal e = {:save_state => :save_state, :save_status => :save_status}, @transitions.results
+  end
+  
+  def test_should_store_results_in_transitions
     @transitions.run_actions
     @transitions.after
     assert_equal :save_state, @state_transition.result
@@ -465,18 +486,18 @@ end
 class TransitionsAfterRunningWithMixedActionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do
-      def save_state
+      def save
         true
       end
     end
     
-    @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save_state)
+    @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @state.state :idling
     @state.event :ignite
-    @state.state :parked, :idling
     
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear)
+    @status.state :second_gear
     @status.event :shift_up
-    @status.state :first_gear, :second_gear
     
     @object = @klass.new
     
@@ -495,10 +516,43 @@ class TransitionsAfterRunningWithMixedActionsTest < Test::Unit::TestCase
     assert @transitions.success?
   end
   
-  def test_should_store_action_specific_results
+  def test_should_have_results
+    assert_equal e = {:save => true}, @transitions.results
+  end
+  
+  def test_should_store_results_in_transitions
     @transitions.after
     assert_equal true, @state_transition.result
     assert_nil @status_transition.result
+  end
+end
+
+class TransitionCollectionAfteRunningWithNonBooleanResultTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def save
+        Object.new
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @machine.state :idling
+    @machine.event :ignite
+    
+    @object = @klass.new
+    
+    @transitions = StateMachine::TransitionCollection.new([
+      StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+    ])
+    @result = @transitions.run_actions
+  end
+  
+  def test_should_succeed
+    assert_equal true, @result
+  end
+  
+  def test_should_be_successful
+    assert @transitions.success?
   end
 end
 
@@ -507,12 +561,12 @@ class TransitionsAfterRunningWithBlockTest < Test::Unit::TestCase
     @klass = Class.new
     
     @state = StateMachine::Machine.new(@klass, :state, :initial => :parked)
+    @state.state  :idling
     @state.event :ignite
-    @state.state :parked, :idling
     
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear)
+    @status.state :second_gear
     @status.event :shift_up
-    @status.state :first_gear, :second_gear
     
     @object = @klass.new
     @transitions = StateMachine::TransitionCollection.new([
@@ -534,6 +588,11 @@ class TransitionsAfterRunningWithBlockTest < Test::Unit::TestCase
   def test_should_not_be_successful_if_result_is_nil
     @transitions.run_actions { nil }
     assert !@transitions.success?
+  end
+  
+  def test_should_have_results
+    @transitions.run_actions { 1 }
+    assert_equal e = {nil => 1}, @transitions.results
   end
   
   def test_should_use_result_as_transition_result
@@ -568,12 +627,12 @@ class TransitionCollectionPerformTest < Test::Unit::TestCase
     end
     
     @state = StateMachine::Machine.new(@klass)
-    @state.event :ignite
     @state.state :parked, :idling
+    @state.event :ignite
     
     @status = StateMachine::Machine.new(@klass, :status)
-    @status.event :shift_up
     @status.state :first_gear, :second_gear
+    @status.event :shift_up
     
     @object = @klass.new
     
@@ -609,8 +668,8 @@ class TransitionCollectionPerformWithoutTransactionsTest < Test::Unit::TestCase
     end
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+    @machine.state :idling
     @machine.event :ignite
-    @machine.state :parked, :idling
     
     class << @machine
       def within_transaction(object)
@@ -642,8 +701,8 @@ class TransitionCollectionPerformWithTransactionsTest < Test::Unit::TestCase
     end
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @machine.state :idling
     @machine.event :ignite
-    @machine.state :parked, :idling
     
     class << @machine
       def within_transaction(object)
@@ -716,8 +775,8 @@ class TransitionCollectionPerformWithoutRunningActionsTest < Test::Unit::TestCas
     end
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @machine.state :idling
     @machine.event :ignite
-    @machine.state :parked, :idling
     @machine.before_transition {@ran_before = true}
     @machine.after_transition {@ran_after = true}
     
@@ -764,7 +823,7 @@ class TransitionCollectionPerformWithActionFailedTest < Test::Unit::TestCase
     @after_count = 0
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
-    @machine.state :parked, :idling
+    @machine.state :idling
     @machine.event :ignite
     
     @machine.before_transition {@before_count += 1}
@@ -805,7 +864,7 @@ class TransitionCollectionPerformWithActionErrorTest < Test::Unit::TestCase
     end
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
-    @machine.state :parked, :idling
+    @machine.state :idling
     @machine.event :ignite
     
     @object = @klass.new
@@ -842,7 +901,7 @@ class TransitionCollectionPerformWithCallbacksTest < Test::Unit::TestCase
     end
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
-    @machine.state :parked, :idling
+    @machine.state :idling
     @machine.event :ignite
     
     @object = @klass.new
@@ -894,7 +953,7 @@ class TransitionCollectionPerformHaltedDuringBeforeCallbacksTest < Test::Unit::T
     @after_count = 0
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
-    @machine.state :parked, :idling
+    @machine.state :idling
     @machine.event :ignite
     
     @machine.before_transition {@before_count += 1; throw :halt}
@@ -943,7 +1002,7 @@ class TransitionCollectionPerformHaltedAfterCallbackTest < Test::Unit::TestCase
     @after_count = 0
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
-    @machine.state :parked, :idling
+    @machine.state :idling
     @machine.event :ignite
     
     @machine.before_transition {@before_count += 1}
@@ -980,7 +1039,7 @@ class TransitionCollectionOnPerformWithoutAfterTest < Test::Unit::TestCase
     @klass = Class.new
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
-    @machine.state :parked, :idling
+    @machine.state :idling
     @machine.event :ignite
     @machine.after_transition {@ran_after = true}
     
@@ -999,4 +1058,317 @@ class TransitionCollectionOnPerformWithoutAfterTest < Test::Unit::TestCase
   def test_should_not_run_after_callbacks
     assert !@ran_after
   end
+end
+
+class AttributeTransitionCollectionByDefaultTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @machine.state :idling
+    @machine.event :ignite
+    
+    @object = @klass.new
+    @object.state_event = 'ignite'
+    
+    @transitions = StateMachine::AttributeTransitionCollection.new([
+      StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+    ])
+  end
+  
+  def test_should_not_skip_actions
+    assert !@transitions.skip_actions
+  end
+  
+  def test_should_not_skip_after
+    assert !@transitions.skip_after
+  end
+  
+  def test_should_use_transaction
+    assert @transitions.use_transaction
+  end
+  
+  def test_should_not_be_success
+    assert !@transitions.success?
+  end
+end
+
+class AttributeTransitionCollectionOnBeforeTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @state.state :idling
+    @state.event :ignite
+    
+    @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save)
+    @status.state :second_gear
+    @status.event :shift_up
+    
+    @object = @klass.new
+    
+    @transitions = StateMachine::AttributeTransitionCollection.new([
+      @state_transition = StateMachine::Transition.new(@object, @state, :ignite, :parked, :idling),
+      @status_transition = StateMachine::Transition.new(@object, @status, :shift_up, :first_gear, :second_gear)
+    ])
+  end
+  
+  def test_should_clear_each_event
+    @object.state_event = 'ignite'
+    @object.status_event = 'shift_up'
+    @transitions.before
+    
+    assert_nil @object.state_event
+    assert_nil @object.status_event
+  end
+  
+  def test_should_clear_each_event_transition
+    @object.send(:state_event_transition=, @state_transition)
+    @object.send(:status_event_transition=, @state_transition)
+    @transitions.before
+    
+    assert_nil @object.send(:state_event_transition)
+    assert_nil @object.send(:status_event_transition)
+  end
+  
+  def test_should_not_have_event_during_before_callbacks
+    state_event = nil
+    @state.before_transition {|object, transition| state_event = object.state_event }
+    @transitions.before
+    
+    assert_nil state_event
+  end
+  
+  def test_should_not_have_event_transition_during_before_callbacks
+    state_event_transition = @state_transition
+    @state.before_transition {|object, transition| state_event_transition = object.send(:state_event_transition) }
+    @transitions.before
+    
+    assert_nil state_event_transition
+  end
+end
+
+class AttributeTransitionCollectionOnAfterTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @state.state :idling
+    @state.event :ignite
+    
+    @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save)
+    @status.state :second_gear
+    @status.event :shift_up
+    
+    @object = @klass.new
+    
+    @transitions = StateMachine::AttributeTransitionCollection.new([
+      StateMachine::Transition.new(@object, @state, :ignite, :parked, :idling),
+      StateMachine::Transition.new(@object, @status, :shift_up, :first_gear, :second_gear)
+    ])
+  end
+  
+  def test_should_not_reset_event
+    @transitions.after
+    assert_nil @object.state_event
+    assert_nil @object.status_event
+  end
+  
+  def test_should_not_set_event_transitions_if_success
+    @transitions.run_actions { true }
+    @transitions.after
+    assert_nil @object.send(:state_event_transition)
+    assert_nil @object.send(:status_event_transition)
+  end
+  
+  def test_should_not_set_event_transitions_if_failed
+    @transitions.run_actions { false }
+    @transitions.after
+    assert_nil @object.send(:state_event_transition)
+    assert_nil @object.send(:status_event_transition)
+  end
+end
+
+class AttributeTransitionCollectionWithoutAfterTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @state.state :idling
+    @state.event :ignite
+    
+    @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save)
+    @status.state :second_gear
+    @status.event :shift_up
+    
+    @object = @klass.new
+    
+    @transitions = StateMachine::AttributeTransitionCollection.new([
+      @state_transition = StateMachine::Transition.new(@object, @state, :ignite, :parked, :idling),
+      @status_transition = StateMachine::Transition.new(@object, @status, :shift_up, :first_gear, :second_gear)
+    ], :after => false)
+  end
+  
+  def test_should_not_reset_event
+    @transitions.after
+    assert_nil @object.state_event
+    assert_nil @object.status_event
+  end
+  
+  def test_should_set_event_transitions_if_success
+    @transitions.run_actions { true }
+    @transitions.after
+    assert_equal @state_transition, @object.send(:state_event_transition)
+    assert_equal @status_transition, @object.send(:status_event_transition)
+  end
+  
+  def test_should_not_set_event_transitions_if_failed
+    @transitions.run_actions { false }
+    @transitions.after
+    assert_nil @object.send(:state_event_transition)
+    assert_nil @object.send(:status_event_transition)
+  end
+end
+
+class AttributeTransitionCollectionAfterRollbackTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @state.state :idling
+    @state.event :ignite
+    
+    @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save)
+    @status.state :second_gear
+    @status.event :shift_up
+    
+    @object = @klass.new
+    
+    @transitions = StateMachine::AttributeTransitionCollection.new([
+      @state_transition = StateMachine::Transition.new(@object, @state, :ignite, :parked, :idling),
+      @status_transition = StateMachine::Transition.new(@object, @status, :shift_up, :first_gear, :second_gear)
+    ])
+    @transitions.rollback
+  end
+  
+  def test_should_set_each_event
+    assert_equal :ignite, @object.state_event
+    assert_equal :shift_up, @object.status_event
+  end
+  
+  def test_should_not_set_each_event_transition
+    assert_nil @object.send(:state_event_transition)
+    assert_nil @object.send(:status_event_transition)
+  end
+end
+
+class AttributeTransitionCollectionPerformTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @state = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @state.state :idling
+    @state.event :ignite
+    
+    @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save)
+    @status.state :second_gear
+    @status.event :shift_up
+    
+    @object = @klass.new
+    @object.state_event = 'ignite'
+    @object.status_event = 'shift_up'
+    
+    @transitions = StateMachine::AttributeTransitionCollection.new([
+      @state_transition = StateMachine::Transition.new(@object, @state, :ignite, :parked, :idling),
+      @status_transition = StateMachine::Transition.new(@object, @status, :shift_up, :first_gear, :second_gear)
+    ])
+    
+    @state_event = nil
+    @status_event = nil
+    
+    @result = @transitions.perform do
+      @state_event = @object.state_event
+      @status_event = @object.status_event
+      true
+    end
+  end
+  
+  def test_should_succeed
+    assert_equal true, @result
+  end
+  
+  def test_should_not_have_event_while_running_action
+    assert_nil @state_event
+    assert_nil @status_event
+  end
+  
+  def test_should_transition_each_state
+    assert_equal 'idling', @object.state
+    assert_equal 'second_gear', @object.status
+  end
+  
+  def test_should_reset_each_event_attribute
+    assert_nil @object.state_event
+    assert_nil @object.status_event
+  end
+  
+  def test_should_not_have_event_transition
+    assert_nil @object.send(:state_event_transition)
+    assert_nil @object.send(:status_event_transition)
+  end
+end
+
+class AttributeTransitionCollectionMarshallingTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    self.class.const_set('Example', @klass)
+    
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @machine.state :idling
+    @machine.event :ignite
+    
+    @object = @klass.new
+    @object.state_event = 'ignite'
+  end
+  
+  def test_should_marshal_during_before_callbacks
+    @machine.before_transition {|object, transition| Marshal.dump(object)}
+    assert_nothing_raised do
+      transitions(:after => false).perform { true }
+      transitions.perform { true }
+    end
+  end
+  
+  def test_should_marshal_during_action
+    assert_nothing_raised do
+      transitions(:after => false).perform do
+         Marshal.dump(@object)
+         true
+      end
+      
+      transitions.perform do
+         Marshal.dump(@object)
+         true
+      end
+    end
+  end
+  
+  def test_should_marshal_during_after_callbacks
+    @machine.after_transition {|object, transition| Marshal.dump(object)}
+    assert_nothing_raised do
+      transitions(:after => false).perform { true }
+      transitions.perform { true }
+    end
+  end
+  
+  def teardown
+    self.class.send(:remove_const, 'Example')
+  end
+  
+  private
+    def transitions(options = {})
+      StateMachine::AttributeTransitionCollection.new([
+        StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+      ], options)
+    end
 end

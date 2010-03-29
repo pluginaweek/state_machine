@@ -10,6 +10,9 @@ module StateMachine
     # Whether transitions should wrapped around a transaction block
     attr_reader :use_transaction
     
+    # The resulting values from calling each action
+    attr_reader :results
+    
     # Creates a new collection of transitions that can be run in parallel.  Each
     # transitions *must* be for a different attribute.
     # 
@@ -46,7 +49,7 @@ module StateMachine
         if before
           persist
           run_actions(&block)
-          after unless skip_after && success?
+          after
           rollback unless success?
         end
       end
@@ -80,29 +83,38 @@ module StateMachine
       each {|transition| transition.persist}
     end
     
-    # Runs the actions for each transition.  If a block is given method, then it
-    # will be called instead of invoking each transition's action.
-    # 
-    # The results of the actions will be used to determine #success?.
-    def run_actions
+    # Wraps the given block with a rescue handler so that any exceptions that
+    # occur will automatically result in the transition rolling back any changes
+    # that were made to the object involved.
+    def catch_exceptions
       begin
-        @success = if block_given?
-          result = yield
-          actions.each {|action| @results[action] = result}
-          !!result
-        else
-          actions.compact.each {|action| !skip_actions && @results[action] = object.send(action)}
-          @results.values.all?
-        end
+        yield
       rescue Exception
         rollback
         raise
       end
     end
     
+    # Runs the actions for each transition.  If a block is given method, then it
+    # will be called instead of invoking each transition's action.
+    # 
+    # The results of the actions will be used to determine #success?.
+    def run_actions
+      catch_exceptions do
+        @success = if block_given?
+          result = yield
+          actions.each {|action| results[action] = result}
+          !!result
+        else
+          actions.compact.each {|action| !skip_actions && results[action] = object.send(action)}
+          results.values.all?
+        end
+      end
+    end
+    
     # Runs the +after+ callbacks for each transition
     def after
-      each {|transition| transition.after(@results[transition.action], success?)}
+      each {|transition| transition.after(results[transition.action], success?)} unless skip_after && success?
     end
     
     # Rolls back changes made to the object's states via each transition
@@ -129,5 +141,34 @@ module StateMachine
       def actions
         map {|transition| transition.action}.uniq
       end
+  end
+  
+  # Represents a collection of transitions that were generated from attribute-
+  # based events
+  class AttributeTransitionCollection < TransitionCollection
+    # Clears any traces of the event attribute to prevent it from being
+    # evaluated multiple times if actions are nested
+    def before
+      each do |transition|
+        transition.machine.write(object, :event, nil)
+        transition.machine.write(object, :event_transition, nil)
+      end
+      
+      super
+    end
+    
+    # Persists transitions on the object if partial transition was successful.
+    # This allows us to reference them later to complete the transition with
+    # after callbacks.
+    def after
+      each {|transition| transition.machine.write(object, :event_transition, transition)} if skip_after && success?
+      super
+    end
+    
+    # Resets the event attribute so it can be re-evaluated if attempted again
+    def rollback
+      each {|transition| transition.machine.write(object, :event, transition.event)}
+      super
+    end
   end
 end
