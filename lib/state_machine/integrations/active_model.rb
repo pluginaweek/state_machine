@@ -298,7 +298,7 @@ module StateMachine
         
         # Do validations run when the action configured this machine is
         # invoked?  This is used to determine whether to fire off attribute-based
-        # event transitions when the actino is run.
+        # event transitions when the action is run.
         def runs_validations_on_action?
           false
         end
