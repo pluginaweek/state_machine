@@ -351,7 +351,7 @@ module StateMachine
           action = self.action
           @instance_helper_module.class_eval do
             define_method(:valid?) do |*args|
-              self.class.state_machines.fire_event_attributes(self, action, false) { super(*args) }
+              self.class.state_machines.attribute_transitions(self, action, :after => false).perform { super(*args) }
             end
           end if runs_validations_on_action?
         end

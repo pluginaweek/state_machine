@@ -1408,7 +1408,7 @@ module StateMachine
           @instance_helper_module.class_eval do
             # Override the default action to invoke the before / after hooks
             define_method(action_hook) do |*args|
-              self.class.state_machines.fire_event_attributes(self, action) { super(*args) }
+              self.class.state_machines.attribute_transitions(self, action).perform { super(*args) }
             end
             
             private action_hook if private_method

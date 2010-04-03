@@ -522,6 +522,7 @@ class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
       def save
         @save_state = state
         @saved = true
+        1
       end
     end
     
@@ -540,7 +541,7 @@ class TransitionAfterBeingPerformedTest < Test::Unit::TestCase
   end
   
   def test_should_have_a_result
-    assert_equal true, @transition.result
+    assert_equal 1, @transition.result
   end
   
   def test_should_be_successful

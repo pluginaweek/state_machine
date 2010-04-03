@@ -48,80 +48,17 @@ module StateMachine
       end
     end
     
-    # Runs one or more event attributes in parallel during the invocation of
-    # an action on the given object.  after_transition callbacks can be
-    # optionally disabled if the events are being only partially fired (for
-    # example, when validating records in ORM integrations).
+    # Builds the collection of transitions for all event attributes defined on
+    # the given object.  This will only include events whose machine actions
+    # match the one specified.
     # 
-    # The event attributes that will be fired are based on which machines
-    # match the action that is being invoked.
-    # 
-    # == Examples
-    # 
-    #   class Vehicle
-    #     include DataMapper::Resource
-    #     property :id, Serial
-    #     
-    #     state_machine :initial => :parked do
-    #       event :ignite do
-    #         transition :parked => :idling
-    #       end
-    #     end
-    #     
-    #     state_machine :alarm_state, :namespace => 'alarm', :initial => :active do
-    #       event :disable do
-    #         transition all => :off
-    #       end
-    #     end
-    #   end
-    # 
-    # With valid events:
-    # 
-    #   vehicle = Vehicle.create                      # => #<Vehicle id=1 state="parked" alarm_state="active">
-    #   vehicle.state_event = 'ignite'
-    #   vehicle.alarm_state_event = 'disable'
-    #   
-    #   Vehicle.state_machines.fire_event_attributes(vehicle, :save) { true }
-    #   vehicle.state                                 # => "idling"
-    #   vehicle.state_event                           # => nil
-    #   vehicle.alarm_state                           # => "off"
-    #   vehicle.alarm_state_event                     # => nil
-    # 
-    # With invalid events:
-    #   
-    #   vehicle = Vehicle.create                      # => #<Vehicle id=1 state="parked" alarm_state="active">
-    #   vehicle.state_event = 'park'
-    #   vehicle.alarm_state_event = 'disable'
-    #   
-    #   Vehicle.state_machines.fire_event_attributes(vehicle, :save) { true }
-    #   vehicle.state                                 # => "parked"
-    #   vehicle.state_event                           # => nil
-    #   vehicle.alarm_state                           # => "active"
-    #   vehicle.alarm_state_event                     # => nil
-    #   vehicle.errors                                # => #<DataMapper::Validate::ValidationErrors:0xb7af9abc @errors={"state_event"=>["is invalid"]}>
-    # 
-    # With partial firing:
-    # 
-    #   vehicle = Vehicle.create                      # => #<Vehicle id=1 state="parked" alarm_state="active">
-    #   vehicle.state_event = 'ignite'
-    #   
-    #   Vehicle.state_machines.fire_event_attributes(vehicle, :save, false) { true }
-    #   vehicle.state                                 # => "idling"
-    #   vehicle.state_event                           # => "ignite"
-    #   vehicle.state_event_transition                # => #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>
-    def fire_event_attributes(object, action, complete = true)
-      # Get the transitions to fire for each applicable machine
-      transitions = map {|name, machine| machine.action == action ? machine.events.attribute_transition_for(object, true) : nil}.compact
-      return yield if transitions.empty?
-      
-      # Make sure all events were valid
-      if transitions.all?
-        collection = AttributeTransitionCollection.new(transitions, :after => complete, :transaction => false)
-        success = collection.perform { yield }
-        collection.results.include?(action) ? collection.results[action] : success
-      else
-        false
+    # These should only be fired as a result of the action being run.
+    def attribute_transitions(object, action, options = {})
+      transitions = map do |name, machine|
+        machine.events.attribute_transition_for(object, true) if machine.action == action
       end
+      
+      AttributeTransitionCollection.new(transitions.compact, options)
     end
   end
 end

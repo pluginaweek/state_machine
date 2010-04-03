@@ -293,7 +293,7 @@ class MachineCollectionFireWithValidationsTest < Test::Unit::TestCase
   end
 end
 
-class MachineCollectionFireAttributesTest < Test::Unit::TestCase
+class MachineCollectionAttributeTransitionsWithoutEventsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -303,421 +303,216 @@ class MachineCollectionFireAttributesTest < Test::Unit::TestCase
       transition :parked => :idling
     end
     
-    @saved = false
     @object = @klass.new
-  end
-  
-  def default_test
-  end
-end
-
-class MachineCollectionFireAttributesWithoutEventTest < MachineCollectionFireAttributesTest
-  def setup
-    super
-    
     @object.state_event = nil
-    @result = @machines.fire_event_attributes(@object, :save) { @saved = true }
+    @transitions = @machines.attribute_transitions(@object, :save)
   end
   
-  def test_should_be_successful
-    assert_equal true, @result
+  def test_should_be_empty
+    assert @transitions.empty?
   end
   
-  def test_should_run_action
-    assert @saved
-  end
-  
-  def test_should_not_transition_state
-    assert_equal 'parked', @object.state
-  end
-  
-  def test_should_not_change_event_attribute
-    assert_nil @object.state_event
-  end
-  
-  def test_should_not_have_event_transition
-    assert_nil @object.send(:state_event_transition)
+  def test_should_perform
+    assert_equal true, @transitions.perform
   end
 end
 
-class MachineCollectionFireAttributesWithBlankEventTest < MachineCollectionFireAttributesTest
+class MachineCollectionAttributeTransitionsWithBlankEventsTest < Test::Unit::TestCase
   def setup
-    super
+    @klass = Class.new
     
-    @object.state_event = ''
-    @result = @machines.fire_event_attributes(@object, :save) { @saved = true }
-  end
-  
-  def test_should_be_successful
-    assert_equal true, @result
-  end
-  
-  def test_should_run_action
-    assert @saved
-  end
-  
-  def test_should_not_transition_state
-    assert_equal 'parked', @object.state
-  end
-  
-  def test_should_not_change_event_attribute
-    assert_nil @object.state_event
-  end
-  
-  def test_should_not_have_event_transition
-    assert_nil @object.send(:state_event_transition)
-  end
-end
-
-class MachineCollectionFireAttributesWithInvalidEventTest < MachineCollectionFireAttributesTest
-  def setup
-    super
-    
-    @object.state_event = 'invalid'
-    @result = @machines.fire_event_attributes(@object, :save) { @saved = true }
-  end
-  
-  def test_should_not_be_successful
-    assert_equal false, @result
-  end
-  
-  def test_should_not_run_action
-    assert !@saved
-  end
-  
-  def test_should_not_transition_state
-    assert_equal 'parked', @object.state
-  end
-  
-  def test_should_not_change_event_attribute
-    assert_equal :invalid, @object.state_event
-  end
-  
-  def test_should_not_have_event_transition
-    assert_nil @object.send(:state_event_transition)
-  end
-end
-
-class MachineCollectionFireAttributesWithPartialInvalidEventTest < MachineCollectionFireAttributesTest
-  def setup
-    super
-    
-    @machines[:alarm_state] = @alarm_machine = StateMachine::Machine.new(@klass, :alarm_state, :initial => :active, :action => :save)
-    @alarm_machine.event :disable do
-      transition :active => :off
+    @machines = StateMachine::MachineCollection.new
+    @machines[:state] = @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save)
+    @machine.event :ignite do
+      transition :parked => :idling
     end
     
     @object = @klass.new
-    @object.state_event = 'ignite'
-    @object.alarm_state_event = 'invalid'
-    @result = @machines.fire_event_attributes(@object, :save) { @saved = true }
+    @object.state_event = ''
+    @transitions = @machines.attribute_transitions(@object, :save)
   end
   
-  def test_should_not_be_successful
-    assert_equal false, @result
+  def test_should_be_empty
+    assert @transitions.empty?
   end
   
-  def test_should_not_run_action
-    assert !@saved
-  end
-  
-  def test_should_not_transition_states
-    assert_equal 'parked', @object.state
-    assert_equal 'active', @object.alarm_state
-  end
-  
-  def test_should_not_change_event_attributes
-    assert_equal :ignite, @object.state_event
-    assert_equal :invalid, @object.alarm_state_event
-  end
-  
-  def test_should_not_have_event_transitions
-    assert_nil @object.send(:state_event_transition)
-    assert_nil @object.send(:alarm_state_event_transition)
+  def test_should_perform
+    assert_equal true, @transitions.perform
   end
 end
 
-class MachineCollectionFireAttributesWithoutTransitionTest < MachineCollectionFireAttributesTest
+class MachineCollectionAttributeTransitionsWithInvalidEventsTest < Test::Unit::TestCase
   def setup
-    super
+    @klass = Class.new
     
+    @machines = StateMachine::MachineCollection.new
+    @machines[:state] = @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save)
+    @machine.event :ignite do
+      transition :parked => :idling
+    end
+    
+    @object = @klass.new
+    @object.state_event = 'invalid'
+    @transitions = @machines.attribute_transitions(@object, :save)
+  end
+  
+  def test_should_be_empty
+    assert @transitions.empty?
+  end
+  
+  def test_should_not_perform
+    assert_equal false, @transitions.perform
+  end
+end
+
+class MachineCollectionAttributeTransitionsWithoutTransitionTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @machines = StateMachine::MachineCollection.new
+    @machines[:state] = @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save)
+    @machine.event :ignite do
+      transition :parked => :idling
+    end
+    
+    @object = @klass.new
     @object.state = 'idling'
     @object.state_event = 'ignite'
-    @result = @machines.fire_event_attributes(@object, :save) { @saved = true }
+    @transitions = @machines.attribute_transitions(@object, :save)
   end
   
-  def test_should_not_be_successful
-    assert_equal false, @result
+  def test_should_be_empty
+    assert @transitions.empty?
   end
   
-  def test_should_not_run_action
-    assert !@saved
-  end
-  
-  def test_should_not_transition_state
-    assert_equal 'idling', @object.state
-  end
-  
-  def test_should_not_change_event_attribute
-    assert_equal :ignite, @object.state_event
-  end
-  
-  def test_should_not_have_event_transition
-    assert_nil @object.send(:state_event_transition)
+  def test_should_not_perform
+    assert_equal false, @transitions.perform
   end
 end
 
-class MachineCollectionFireAttributesWithTransitionTest < MachineCollectionFireAttributesTest
+class MachineCollectionAttributeTransitionsWithTransitionTest < Test::Unit::TestCase
   def setup
-    super
+    @klass = Class.new
     
-    @klass.class_eval do
-      attr_accessor :ran_transaction
+    @machines = StateMachine::MachineCollection.new
+    @machines[:state] = @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save)
+    @machine.event :ignite do
+      transition :parked => :idling
     end
     
-    class << @machine
-      def within_transaction(object)
-        object.ran_transaction = true
-      end
-    end
-    
-    @state_event = nil
-    
-    @object.state_event = 'ignite'
-    @result = @machines.fire_event_attributes(@object, :save) do
-      @state_event = @object.state_event
-      @saved = 1
-    end
-  end
-  
-  def test_should_be_successful
-    assert_equal 1, @result
-  end
-  
-  def test_should_run_action
-    assert @saved
-  end
-  
-  def test_should_not_have_event_while_running_action
-    assert_nil @state_event
-  end
-  
-  def test_should_transition_state
-    assert_equal 'idling', @object.state
-  end
-  
-  def test_should_reset_event_attribute
-    assert_nil @object.state_event
-  end
-  
-  def test_should_not_have_event_transition
-    assert_nil @object.send(:state_event_transition)
-  end
-  
-  def test_should_not_be_successful_if_fired_again
-    @object.state_event = 'ignite'
-    assert !@machines.fire_event_attributes(@object, :save) { true }
-  end
-  
-  def test_should_not_run_within_transaction
-    assert !@object.ran_transaction
-  end
-end
-
-class MachineCollectionFireAttributesOnFailedCallbackTest < MachineCollectionFireAttributesTest
-  def setup
-    super
-    
-    @machine.before_transition { throw :halt }
-    
-    @object.state_event = 'ignite'
-    @result = @machines.fire_event_attributes(@object, :save) do
-      1
-    end
-  end
-  
-  def test_should_use_success_value_as_result
-    assert_equal false, @result
-  end
-end
-
-class MachineCollectionFireAttributesWithNilResultTest < MachineCollectionFireAttributesTest
-  def setup
-    super
-    
-    @object.state_event = 'ignite'
-    @result = @machines.fire_event_attributes(@object, :save) do
-      nil
-    end
-  end
-  
-  def test_should_use_action_value_as_result
-    assert_nil @result
-  end
-end
-
-class MachineCollectionFireAttributesPartialTest < MachineCollectionFireAttributesTest
-  def setup
-    super
-    
-    @machine.after_transition { @ran_after = true }
-    
-    @state_event = nil
-    @state_event_transition = nil
-    
-    @object.state_event = 'ignite'
-    @result = @machines.fire_event_attributes(@object, :save, false) { true }
-  end
-  
-  def test_should_be_successful
-    assert @result
-  end
-  
-  def test_should_transition_state
-    assert_equal 'idling', @object.state
-  end
-  
-  def test_should_reset_event_attribute
-    assert_nil @object.state_event
-  end
-  
-  def test_should_have_event_transition
-    assert_not_nil @object.send(:state_event_transition)
-  end
-  
-  def test_should_not_run_after_callbacks
-    assert !@ran_after
-  end
-  
-  def test_should_reset_event_after_next_fire
-    assert @machines.fire_event_attributes(@object, :save) { true }
-    assert_equal 'idling', @object.state
-    assert_nil @object.state_event
-  end
-  
-  def test_should_reset_event_transition_after_next_fire
-    assert @machines.fire_event_attributes(@object, :save) { true }
-    assert_nil @object.send(:state_event_transition)
-  end
-  
-  def test_should_run_after_callbacks_after_next_fire
-    @machines.fire_event_attributes(@object, :save) { true }
-    assert @ran_after
-  end
-end
-
-class MachineCollectionFireAttributesNestedPartialTest < MachineCollectionFireAttributesTest
-  def setup
-    super
-    
-    @partial_result = nil
-    
-    @object.state_event = 'ignite'
-    @result = @machines.fire_event_attributes(@object, :save) do
-      @partial_result = @machines.fire_event_attributes(@object, :save, false) { true }
-      true
-    end
-  end
-  
-  def test_should_be_successful
-    assert @result
-  end
-  
-  def test_should_have_successful_partial_fire
-    assert @partial_result
-  end
-  
-  def test_should_transition_state
-    assert_equal 'idling', @object.state
-  end
-  
-  def test_should_reset_event_attribute
-    assert_nil @object.state_event
-  end
-  
-  def test_should_reset_event_transition_attribute
-    assert_nil @object.send(:state_event_transition)
-  end
-end
-
-class MachineCollectionFireAttributesWithDifferentActionsTest < MachineCollectionFireAttributesTest
-  def setup
-    super
-    
-    @machines[:alarm_state] = @alarm_machine = StateMachine::Machine.new(@klass, :alarm_state, :initial => :active, :action => :save_alarm)
-    @alarm_machine.event :disable do
-      transition :active => :off
-    end
-    
-    @saved = false
     @object = @klass.new
     @object.state_event = 'ignite'
-    @object.alarm_state_event = 'disable'
-    
-    @machines.fire_event_attributes(@object, :save) { true }
+    @transitions = @machines.attribute_transitions(@object, :save)
   end
   
-  def test_should_transition_states_for_action
-    assert_equal 'idling', @object.state
+  def test_should_not_be_empty
+    assert_equal 1, @transitions.length
   end
   
-  def test_should_reset_event_attribute_for_action
-    assert_nil @object.state_event
-  end
-  
-  def test_should_reset_event_transition_attribute_for_action
-    assert_nil @object.send(:state_event_transition)
-  end
-  
-  def test_should_not_transition_states_for_other_actions
-    assert_equal 'active', @object.alarm_state
-  end
-  
-  def test_should_not_reset_event_attributes_for_other_actions
-    assert_equal :disable, @object.alarm_state_event
+  def test_should_perform
+    assert_equal true, @transitions.perform
   end
 end
 
-class MachineCollectionFireAttributesWithSameActionsTest < MachineCollectionFireAttributesTest
+class MachineCollectionAttributeTransitionsWithSameActionsTest < Test::Unit::TestCase
   def setup
-    super
+    @klass = Class.new
     
-    @machines[:alarm_state] = @alarm_machine = StateMachine::Machine.new(@klass, :alarm_state, :initial => :active, :action => :save)
-    @alarm_machine.event :disable do
-      transition :active => :off
+    @machines = StateMachine::MachineCollection.new
+    @machines[:state] = @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save)
+    @machine.event :ignite do
+      transition :parked => :idling
+    end
+    @machines[:status] = @machine = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save)
+    @machine.event :shift_up do
+      transition :first_gear => :second_gear
     end
     
-    @saved = false
     @object = @klass.new
     @object.state_event = 'ignite'
-    @object.alarm_state_event = 'disable'
+    @object.status_event = 'shift_up'
+    @transitions = @machines.attribute_transitions(@object, :save)
+  end
+  
+  def test_should_not_be_empty
+    assert_equal 2, @transitions.length
+  end
+  
+  def test_should_perform
+    assert_equal true, @transitions.perform
+  end
+end
+
+class MachineCollectionAttributeTransitionsWithDifferentActionsTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
     
-    @machines.fire_event_attributes(@object, :save) { true }
+    @machines = StateMachine::MachineCollection.new
+    @machines[:state] = @state = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save)
+    @state.event :ignite do
+      transition :parked => :idling
+    end
+    @machines[:status] = @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :persist)
+    @status.event :shift_up do
+      transition :first_gear => :second_gear
+    end
+    
+    @object = @klass.new
+    @object.state_event = 'ignite'
+    @object.status_event = 'shift_up'
+    @transitions = @machines.attribute_transitions(@object, :save)
   end
   
-  def test_should_transition_all_states_for_action
-    assert_equal 'idling', @object.state
-    assert_equal 'off', @object.alarm_state
+  def test_should_only_select_matching_actions
+    assert_equal 1, @transitions.length
+  end
+end
+
+class MachineCollectionAttributeTransitionsWithExisitingTransitionsTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @machines = StateMachine::MachineCollection.new
+    @machines[:state] = @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save)
+    @machine.event :ignite do
+      transition :parked => :idling
+    end
+    
+    @object = @klass.new
+    @object.send(:state_event_transition=, StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling))
+    @transitions = @machines.attribute_transitions(@object, :save)
   end
   
-  def test_should_reset_all_event_attributes_for_action
-    assert_nil @object.state_event
-    assert_nil @object.alarm_state_event
+  def test_should_not_be_empty
+    assert_equal 1, @transitions.length
+  end
+  
+  def test_should_perform
+    assert_equal true, @transitions.perform
+  end
+end
+
+class MachineCollectionAttributeTransitionsWithCustomOptionsTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @machines = StateMachine::MachineCollection.new
+    @machines[:state] = @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save)
+    @machine.event :ignite do
+      transition :parked => :idling
+    end
+    
+    @object = @klass.new
+    @transitions = @machines.attribute_transitions(@object, :save, :after => false)
+  end
+  
+  def test_should_use_custom_options
+    assert @transitions.skip_after
   end
 end
 
 class MachineCollectionFireAttributesWithValidationsTest < Test::Unit::TestCase
   def setup
-    StateMachine::Integrations.const_set('Custom', Module.new do
-      def invalidate(object, attribute, message, values = [])
-        (object.errors ||= []) << generate_message(message, values)
-      end
-      
-      def reset(object)
-        object.errors = []
-      end
-    end)
-    
     @klass = Class.new do
       attr_accessor :errors
       
@@ -728,9 +523,19 @@ class MachineCollectionFireAttributesWithValidationsTest < Test::Unit::TestCase
     end
     
     @machines = StateMachine::MachineCollection.new
-    @machines[:state] = @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save, :integration => :custom)
+    @machines[:state] = @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :action => :save)
     @machine.event :ignite do
       transition :parked => :idling
+    end
+    
+    class << @machine
+      def invalidate(object, attribute, message, values = [])
+        (object.errors ||= []) << generate_message(message, values)
+      end
+      
+      def reset(object)
+        object.errors = []
+      end
     end
     
     @object = @klass.new
@@ -738,7 +543,7 @@ class MachineCollectionFireAttributesWithValidationsTest < Test::Unit::TestCase
   
   def test_should_invalidate_if_event_is_invalid
     @object.state_event = 'invalid'
-    @machines.fire_event_attributes(@object, :save) { true }
+    @machines.attribute_transitions(@object, :save)
     
     assert !@object.errors.empty?
   end
@@ -746,41 +551,15 @@ class MachineCollectionFireAttributesWithValidationsTest < Test::Unit::TestCase
   def test_should_invalidate_if_no_transition_exists
     @object.state = 'idling'
     @object.state_event = 'ignite'
-    @machines.fire_event_attributes(@object, :save) { true }
+    @machines.attribute_transitions(@object, :save)
     
     assert !@object.errors.empty?
   end
   
   def test_should_not_invalidate_if_transition_exists
     @object.state_event = 'ignite'
-    @machines.fire_event_attributes(@object, :save) { true }
+    @machines.attribute_transitions(@object, :save)
     
     assert @object.errors.empty?
-  end
-  
-  def teardown
-    StateMachine::Integrations.send(:remove_const, 'Custom')
-  end
-end
-
-class MachineCollectionFireAttributesWithCustomMachineNameTest < MachineCollectionFireAttributesTest
-  def setup
-    super
-    
-    @object.state_event = 'ignite'
-  end
-  
-  def test_should_be_successful_on_complete_fire
-    assert @machines.fire_event_attributes(@object, :save) { true }
-    assert_equal 'idling', @object.state
-    assert_nil @object.state_event
-    assert_nil @object.send(:state_event_transition)
-  end
-  
-  def test_should_be_successful_on_partial_fire
-    @machines.fire_event_attributes(@object, :save, false) { true }
-    assert_equal 'idling', @object.state
-    assert_nil @object.state_event
-    assert_not_nil @object.send(:state_event_transition)
   end
 end
