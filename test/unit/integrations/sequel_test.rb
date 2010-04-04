@@ -1013,6 +1013,17 @@ module SequelTest
       @record.valid?
       assert ran_callback
     end
+    
+    def test_should_not_run_before_transitions_within_transaction
+      @machine.before_transition { self.class.create; raise Sequel::Error::Rollback }
+      
+      begin
+        @record.valid?
+      rescue Sequel::Error::Rollback
+      end
+      
+      assert_equal 1, @model.count
+    end
   end
   
   class MachineWithEventAttributesOnSaveTest < BaseTestCase
@@ -1033,9 +1044,29 @@ module SequelTest
       assert !@record.save
     end
     
+    def test_should_raise_exception_when_enabled_if_event_is_invalid
+      @record.state_event = 'invalid'
+      @model.raise_on_save_failure = true
+      if defined?(Sequel::BeforeHookFailed)
+        assert_raise(Sequel::BeforeHookFailed) { @record.save }
+      else
+        assert_raise(Sequel::Error) { @record.save }
+      end
+    end
+    
     def test_should_fail_if_event_has_no_transition
       @record.state = 'idling'
       assert !@record.save
+    end
+    
+    def test_should_raise_exception_when_enabled_if_event_has_no_transition
+      @record.state = 'idling'
+      @model.raise_on_save_failure = true
+      if defined?(Sequel::BeforeHookFailed)
+        assert_raise(Sequel::BeforeHookFailed) { @record.save }
+      else
+        assert_raise(Sequel::Error) { @record.save }
+      end
     end
     
     def test_should_be_successful_if_event_has_transition
@@ -1081,14 +1112,57 @@ module SequelTest
       assert !ran_callback
     end
     
-    def test_should_run_after_callbacks_with_failures_enabled_if_fails
-      @model.before_create {|record| false}
+    if defined?(Sequel::MAJOR) && Sequel::MAJOR >= 3 && Sequel::MINOR >= 7
+      def test_should_not_run_after_callbacks_with_failures_enabled_if_fails
+        @model.before_create {|record| false}
+        
+        ran_callback = false
+        @machine.after_transition(:include_failures => true) { ran_callback = true }
+        
+        @record.save
+        assert !ran_callback
+      end
+    else
+      def test_should_run_after_callbacks_with_failures_enabled_if_fails
+        @model.before_create {|record| false}
+        
+        ran_callback = false
+        @machine.after_transition(:include_failures => true) { ran_callback = true }
+        
+        @record.save
+        assert ran_callback
+      end
+    end
+    def test_should_not_run_before_transitions_within_transaction
+      @machine.before_transition { self.class.create; raise Sequel::Error::Rollback }
       
-      ran_callback = false
-      @machine.after_transition(:include_failures => true) { ran_callback = true }
+      begin
+        @record.save
+      rescue Sequel::Error::Rollback
+      end
       
-      @record.save
-      assert ran_callback
+      assert_equal 1, @model.count
+    end
+    
+    if defined?(Sequel::MAJOR) && (Sequel::MAJOR >= 3 || Sequel::MAJOR == 2 && Sequel::MINOR == 12)
+      def test_should_run_after_transitions_within_transaction
+        @machine.after_transition { self.class.create; raise Sequel::Error::Rollback }
+        
+        @record.save
+        
+        assert_equal 0, @model.count
+      end
+    else
+      def test_should_not_run_after_transitions_within_transaction
+        @machine.after_transition { self.class.create; raise Sequel::Error::Rollback }
+        
+        begin
+          @record.save
+        rescue Sequel::Error::Rollback
+        end
+        
+        assert_equal 2, @model.count
+      end
     end
   end
   

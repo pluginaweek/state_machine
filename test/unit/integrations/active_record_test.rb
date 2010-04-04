@@ -1061,6 +1061,112 @@ module ActiveRecordTest
       @record.valid?
       assert ran_callback
     end
+    
+    def test_should_not_run_before_transitions_within_transaction
+      @machine.before_transition { @model.create; raise ActiveRecord::Rollback }
+      
+      begin
+        @record.valid?
+      rescue Exception
+      end
+      
+      assert_equal 1, @model.count
+    end
+  end
+  
+  class MachineWithEventAttributesOnSaveTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
+      
+      @record = @model.new
+      @record.state = 'parked'
+      @record.state_event = 'ignite'
+    end
+    
+    def test_should_fail_if_event_is_invalid
+      @record.state_event = 'invalid'
+      assert_equal false, @record.save
+    end
+    
+    def test_should_fail_if_event_has_no_transition
+      @record.state = 'idling'
+      assert_equal false, @record.save
+    end
+    
+    def test_should_run_before_callbacks
+      ran_callback = false
+      @machine.before_transition { ran_callback = true }
+      
+      @record.save
+      assert ran_callback
+    end
+    
+    def test_should_run_before_callbacks_once
+      before_count = 0
+      @machine.before_transition { before_count += 1 }
+      
+      @record.save
+      assert_equal 1, before_count
+    end
+    
+    def test_should_persist_new_state
+      @record.save
+      assert_equal 'idling', @record.state
+    end
+    
+    def test_should_run_after_callbacks
+      ran_callback = false
+      @machine.after_transition { ran_callback = true }
+      
+      @record.save
+      assert ran_callback
+    end
+    
+    def test_should_not_run_after_callbacks_with_failures_disabled_if_fails
+      @model.before_create {|record| false}
+      
+      ran_callback = false
+      @machine.after_transition { ran_callback = true }
+      
+      begin; @record.save; rescue; end
+      assert !ran_callback
+    end
+    
+    def test_should_run_after_callbacks_with_failures_enabled_if_fails
+      @model.before_create {|record| false}
+      
+      ran_callback = false
+      @machine.after_transition(:include_failures => true) { ran_callback = true }
+      
+      begin; @record.save; rescue; end
+      assert ran_callback
+    end
+    
+    def test_should_run_before_transitions_within_transaction
+      @machine.before_transition { @model.create; raise ActiveRecord::Rollback }
+      
+      begin
+        @record.save
+      rescue Exception
+      end
+      
+      assert_equal 0, @model.count
+    end
+    
+    def test_should_run_after_transitions_within_transaction
+      @machine.after_transition { @model.create; raise ActiveRecord::Rollback }
+      
+      begin
+        @record.save
+      rescue Exception
+      end
+      
+      assert_equal 0, @model.count
+    end
   end
   
   class MachineWithEventAttributesOnSaveBangTest < BaseTestCase
@@ -1116,26 +1222,6 @@ module ActiveRecordTest
       @machine.after_transition { ran_callback = true }
       
       @record.save!
-      assert ran_callback
-    end
-    
-    def test_should_not_run_after_callbacks_with_failures_disabled_if_fails
-      @model.before_create {|record| false}
-      
-      ran_callback = false
-      @machine.after_transition { ran_callback = true }
-      
-      begin; @record.save!; rescue; end
-      assert !ran_callback
-    end
-    
-    def test_should_run_after_callbacks_with_failures_enabled_if_fails
-      @model.before_create {|record| false}
-      
-      ran_callback = false
-      @machine.after_transition(:include_failures => true) { ran_callback = true }
-      
-      begin; @record.save!; rescue; end
       assert ran_callback
     end
   end

@@ -1026,6 +1026,13 @@ module DataMapperTest
         @record.valid?
         assert ran_callback
       end
+      
+      def test_should_not_run_before_transitions_within_transaction
+        @machine.before_transition { self.class.create; throw :halt }
+        
+        assert !@record.valid?
+        assert_equal 1, @resource.all.size
+      end
     end
     
     class MachineWithEventAttributesOnSaveTest < BaseTestCase
@@ -1103,6 +1110,79 @@ module DataMapperTest
           @machine.after_transition(:include_failures => true) { ran_callback = true }
           
           @record.save
+          assert ran_callback
+        end
+      end
+      
+      def test_should_not_run_before_transitions_within_transaction
+        @machine.before_transition { self.class.create; throw :halt }
+        
+        assert_equal false, @record.save
+        assert_equal 1, @resource.all.size
+      end
+      
+      def test_should_not_run_after_transitions_within_transaction
+        @machine.before_transition { self.class.create; throw :halt }
+        
+        assert_equal false, @record.save
+        assert_equal 1, @resource.all.size
+      end
+    end
+    
+    if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+      class MachineWithEventAttributesOnSaveBangTest < BaseTestCase
+        def setup
+          @resource = new_resource
+          @machine = StateMachine::Machine.new(@resource)
+          @machine.event :ignite do
+            transition :parked => :idling
+          end
+          
+          @record = @resource.new
+          @record.state = 'parked'
+          @record.state_event = 'ignite'
+        end
+        
+        def test_should_fail_if_event_is_invalid
+          @record.state_event = 'invalid'
+          assert !@record.save!
+        end
+        
+        def test_should_fail_if_event_has_no_transition
+          @record.state = 'idling'
+          assert !@record.save!
+        end
+        
+        def test_should_be_successful_if_event_has_transition
+          assert_equal true, @record.save!
+        end
+        
+        def test_should_run_before_callbacks
+          ran_callback = false
+          @machine.before_transition { ran_callback = true }
+          
+          @record.save!
+          assert ran_callback
+        end
+        
+        def test_should_run_before_callbacks_once
+          before_count = 0
+          @machine.before_transition { before_count += 1 }
+          
+          @record.save!
+          assert_equal 1, before_count
+        end
+        
+        def test_should_persist_new_state
+          @record.save!
+          assert_equal 'idling', @record.state
+        end
+        
+        def test_should_run_after_callbacks
+          ran_callback = false
+          @machine.after_transition { ran_callback = true }
+          
+          @record.save!
           assert ran_callback
         end
       end

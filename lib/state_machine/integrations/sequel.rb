@@ -278,14 +278,34 @@ module StateMachine
           end
         end
         
-        # Adds hooks into validation for automatically firing events
-        def define_action_helpers
-          if super && action == :save
-            @instance_helper_module.class_eval do
-              define_method(:valid?) do |*args|
-                self.class.state_machines.transitions(self, :save, :after => false).perform { super(*args) }
+        # Adds hooks into validation for automatically firing events.  This is
+        # a bit more complicated than other integrations since Sequel doesn't
+        # provide an easy way to hook around validation / save calls
+         def define_action_helpers
+           if action == :save
+             @instance_helper_module.class_eval do
+               define_method(:valid?) do |*args|
+                yielded = false
+                result = self.class.state_machines.transitions(self, :save, :after => false).perform do
+                  yielded = true
+                  super(*args)
+                end
+                
+                raise_on_save_failure && !yielded && !result ? save_failure(:validation) : result
               end
-            end
+              
+              define_method(defined?(::Sequel::MAJOR) && (::Sequel::MAJOR >= 3 || ::Sequel::MAJOR == 2 && ::Sequel::MINOR == 12) ? :_save : :save) do |*args|
+                yielded = false
+                result = self.class.state_machines.transitions(self, :save).perform do
+                  yielded = true
+                  super(*args)
+                end
+                
+                yielded || result ? result : save_failure(:save)
+              end
+            end unless owner_class.state_machines.any? {|name, machine| machine.action == :save && machine != self}
+          else
+            super
           end
         end
         

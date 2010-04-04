@@ -316,12 +316,16 @@ module StateMachine
         
         # Adds hooks into validation for automatically firing events
         def define_action_helpers
-          if super && action == :save && supports_validations?
-            @instance_helper_module.class_eval do
-              define_method(:valid?) do |*args|
-                self.class.state_machines.transitions(self, :save, :after => false).perform { super(*args) }
+          if action == :save
+            if super(::DataMapper::VERSION =~ /^(0\.\d\.)/ ? :save : :save_self) && supports_validations?
+              @instance_helper_module.class_eval do
+                define_method(:valid?) do |*args|
+                  self.class.state_machines.transitions(self, :save, :after => false).perform { super(*args) }
+                end
               end
             end
+          else
+            super
           end
         end
         

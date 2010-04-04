@@ -953,6 +953,87 @@ module MongoMapperTest
     end
   end
   
+  class MachineWithEventAttributesOnSaveTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
+      
+      @record = @model.new
+      @record.state = 'parked'
+      @record.state_event = 'ignite'
+    end
+    
+    def test_should_fail_if_event_is_invalid
+      @record.state_event = 'invalid'
+      assert_equal false, @record.save
+    end
+    
+    def test_should_fail_if_event_has_no_transition
+      @record.state = 'idling'
+      assert_equal false, @record.save
+    end
+    
+    def test_should_be_successful_if_event_has_transition
+      assert_equal true, @record.save
+    end
+    
+    def test_should_run_before_callbacks
+      ran_callback = false
+      @machine.before_transition { ran_callback = true }
+      
+      @record.save
+      assert ran_callback
+    end
+    
+    def test_should_run_before_callbacks_once
+      before_count = 0
+      @machine.before_transition { before_count += 1 }
+      
+      @record.save
+      assert_equal 1, before_count
+    end
+    
+    def test_should_persist_new_state
+      @record.save
+      assert_equal 'idling', @record.state
+    end
+    
+    def test_should_run_after_callbacks
+      ran_callback = false
+      @machine.after_transition { ran_callback = true }
+      
+      @record.save
+      assert ran_callback
+    end
+    
+    def test_should_not_run_after_callbacks_with_failures_disabled_if_fails
+      @model.class_eval do
+        validates_inclusion_of :state, :within => %w(first_gear)
+      end
+      
+      ran_callback = false
+      @machine.after_transition { ran_callback = true }
+      
+      begin; @record.save; rescue; end
+      assert !ran_callback
+    end
+    
+    def test_should_run_after_callbacks_with_failures_enabled_if_fails
+      @model.class_eval do
+        validates_inclusion_of :state, :within => %w(first_gear)
+      end
+      
+      ran_callback = false
+      @machine.after_transition(:include_failures => true) { ran_callback = true }
+      
+      begin; @record.save; rescue; end
+      assert ran_callback
+    end
+  end
+  
   class MachineWithEventAttributesOnSaveBangTest < BaseTestCase
     def setup
       @model = new_model
@@ -1006,30 +1087,6 @@ module MongoMapperTest
       @machine.after_transition { ran_callback = true }
       
       @record.save!
-      assert ran_callback
-    end
-    
-    def test_should_not_run_after_callbacks_with_failures_disabled_if_fails
-      @model.class_eval do
-        validates_inclusion_of :state, :within => %w(first_gear)
-      end
-      
-      ran_callback = false
-      @machine.after_transition { ran_callback = true }
-      
-      begin; @record.save!; rescue; end
-      assert !ran_callback
-    end
-    
-    def test_should_run_after_callbacks_with_failures_enabled_if_fails
-      @model.class_eval do
-        validates_inclusion_of :state, :within => %w(first_gear)
-      end
-      
-      ran_callback = false
-      @machine.after_transition(:include_failures => true) { ran_callback = true }
-      
-      begin; @record.save!; rescue; end
       assert ran_callback
     end
   end

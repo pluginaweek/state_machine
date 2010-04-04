@@ -1,5 +1,7 @@
 == master
 
+* Fix transition failures during save not being handled correctly in Sequel 2.12.0+
+* Fix attribute-based event transitions not hooking in properly in DataMapper 0.10.0+ and Sequel 2.12.0+
 * Fix dynamic initial states causing errors in Ruby 1.9+ if no arguments are defined in the block
 * Add MongoMapper 0.5.5+ support
 * Add ActiveModel 3.0+ support for use with integrations that implement its interface
