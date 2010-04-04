@@ -53,7 +53,7 @@ module StateMachine
     # match the one specified.
     # 
     # These should only be fired as a result of the action being run.
-    def attribute_transitions(object, action, options = {})
+    def transitions(object, action, options = {})
       transitions = map do |name, machine|
         machine.events.attribute_transition_for(object, true) if machine.action == action
       end

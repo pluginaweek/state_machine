@@ -293,7 +293,7 @@ class MachineCollectionFireWithValidationsTest < Test::Unit::TestCase
   end
 end
 
-class MachineCollectionAttributeTransitionsWithoutEventsTest < Test::Unit::TestCase
+class MachineCollectionTransitionsWithoutEventsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -305,7 +305,7 @@ class MachineCollectionAttributeTransitionsWithoutEventsTest < Test::Unit::TestC
     
     @object = @klass.new
     @object.state_event = nil
-    @transitions = @machines.attribute_transitions(@object, :save)
+    @transitions = @machines.transitions(@object, :save)
   end
   
   def test_should_be_empty
@@ -317,7 +317,7 @@ class MachineCollectionAttributeTransitionsWithoutEventsTest < Test::Unit::TestC
   end
 end
 
-class MachineCollectionAttributeTransitionsWithBlankEventsTest < Test::Unit::TestCase
+class MachineCollectionTransitionsWithBlankEventsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -329,7 +329,7 @@ class MachineCollectionAttributeTransitionsWithBlankEventsTest < Test::Unit::Tes
     
     @object = @klass.new
     @object.state_event = ''
-    @transitions = @machines.attribute_transitions(@object, :save)
+    @transitions = @machines.transitions(@object, :save)
   end
   
   def test_should_be_empty
@@ -341,7 +341,7 @@ class MachineCollectionAttributeTransitionsWithBlankEventsTest < Test::Unit::Tes
   end
 end
 
-class MachineCollectionAttributeTransitionsWithInvalidEventsTest < Test::Unit::TestCase
+class MachineCollectionTransitionsWithInvalidEventsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -353,7 +353,7 @@ class MachineCollectionAttributeTransitionsWithInvalidEventsTest < Test::Unit::T
     
     @object = @klass.new
     @object.state_event = 'invalid'
-    @transitions = @machines.attribute_transitions(@object, :save)
+    @transitions = @machines.transitions(@object, :save)
   end
   
   def test_should_be_empty
@@ -365,7 +365,7 @@ class MachineCollectionAttributeTransitionsWithInvalidEventsTest < Test::Unit::T
   end
 end
 
-class MachineCollectionAttributeTransitionsWithoutTransitionTest < Test::Unit::TestCase
+class MachineCollectionTransitionsWithoutTransitionTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -378,7 +378,7 @@ class MachineCollectionAttributeTransitionsWithoutTransitionTest < Test::Unit::T
     @object = @klass.new
     @object.state = 'idling'
     @object.state_event = 'ignite'
-    @transitions = @machines.attribute_transitions(@object, :save)
+    @transitions = @machines.transitions(@object, :save)
   end
   
   def test_should_be_empty
@@ -390,7 +390,7 @@ class MachineCollectionAttributeTransitionsWithoutTransitionTest < Test::Unit::T
   end
 end
 
-class MachineCollectionAttributeTransitionsWithTransitionTest < Test::Unit::TestCase
+class MachineCollectionTransitionsWithTransitionTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -402,7 +402,7 @@ class MachineCollectionAttributeTransitionsWithTransitionTest < Test::Unit::Test
     
     @object = @klass.new
     @object.state_event = 'ignite'
-    @transitions = @machines.attribute_transitions(@object, :save)
+    @transitions = @machines.transitions(@object, :save)
   end
   
   def test_should_not_be_empty
@@ -414,7 +414,7 @@ class MachineCollectionAttributeTransitionsWithTransitionTest < Test::Unit::Test
   end
 end
 
-class MachineCollectionAttributeTransitionsWithSameActionsTest < Test::Unit::TestCase
+class MachineCollectionTransitionsWithSameActionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -431,7 +431,7 @@ class MachineCollectionAttributeTransitionsWithSameActionsTest < Test::Unit::Tes
     @object = @klass.new
     @object.state_event = 'ignite'
     @object.status_event = 'shift_up'
-    @transitions = @machines.attribute_transitions(@object, :save)
+    @transitions = @machines.transitions(@object, :save)
   end
   
   def test_should_not_be_empty
@@ -443,7 +443,7 @@ class MachineCollectionAttributeTransitionsWithSameActionsTest < Test::Unit::Tes
   end
 end
 
-class MachineCollectionAttributeTransitionsWithDifferentActionsTest < Test::Unit::TestCase
+class MachineCollectionTransitionsWithDifferentActionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -460,7 +460,7 @@ class MachineCollectionAttributeTransitionsWithDifferentActionsTest < Test::Unit
     @object = @klass.new
     @object.state_event = 'ignite'
     @object.status_event = 'shift_up'
-    @transitions = @machines.attribute_transitions(@object, :save)
+    @transitions = @machines.transitions(@object, :save)
   end
   
   def test_should_only_select_matching_actions
@@ -468,7 +468,7 @@ class MachineCollectionAttributeTransitionsWithDifferentActionsTest < Test::Unit
   end
 end
 
-class MachineCollectionAttributeTransitionsWithExisitingTransitionsTest < Test::Unit::TestCase
+class MachineCollectionTransitionsWithExisitingTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -480,7 +480,7 @@ class MachineCollectionAttributeTransitionsWithExisitingTransitionsTest < Test::
     
     @object = @klass.new
     @object.send(:state_event_transition=, StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling))
-    @transitions = @machines.attribute_transitions(@object, :save)
+    @transitions = @machines.transitions(@object, :save)
   end
   
   def test_should_not_be_empty
@@ -492,7 +492,7 @@ class MachineCollectionAttributeTransitionsWithExisitingTransitionsTest < Test::
   end
 end
 
-class MachineCollectionAttributeTransitionsWithCustomOptionsTest < Test::Unit::TestCase
+class MachineCollectionTransitionsWithCustomOptionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
@@ -503,7 +503,7 @@ class MachineCollectionAttributeTransitionsWithCustomOptionsTest < Test::Unit::T
     end
     
     @object = @klass.new
-    @transitions = @machines.attribute_transitions(@object, :save, :after => false)
+    @transitions = @machines.transitions(@object, :save, :after => false)
   end
   
   def test_should_use_custom_options
@@ -543,7 +543,7 @@ class MachineCollectionFireAttributesWithValidationsTest < Test::Unit::TestCase
   
   def test_should_invalidate_if_event_is_invalid
     @object.state_event = 'invalid'
-    @machines.attribute_transitions(@object, :save)
+    @machines.transitions(@object, :save)
     
     assert !@object.errors.empty?
   end
@@ -551,14 +551,14 @@ class MachineCollectionFireAttributesWithValidationsTest < Test::Unit::TestCase
   def test_should_invalidate_if_no_transition_exists
     @object.state = 'idling'
     @object.state_event = 'ignite'
-    @machines.attribute_transitions(@object, :save)
+    @machines.transitions(@object, :save)
     
     assert !@object.errors.empty?
   end
   
   def test_should_not_invalidate_if_transition_exists
     @object.state_event = 'ignite'
-    @machines.attribute_transitions(@object, :save)
+    @machines.transitions(@object, :save)
     
     assert @object.errors.empty?
   end
