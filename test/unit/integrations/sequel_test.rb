@@ -631,7 +631,7 @@ module SequelTest
     
     def test_should_run_before_callbacks
       called = false
-      @machine.before_transition(lambda {called = true})
+      @machine.before_transition {called = true}
       
       @transition.perform
       assert called
@@ -639,7 +639,7 @@ module SequelTest
     
     def test_should_pass_transition_to_before_callbacks_with_one_argument
       transition = nil
-      @machine.before_transition(lambda {|arg| transition = arg})
+      @machine.before_transition {|arg| transition = arg}
       
       @transition.perform
       assert_equal @transition, transition
@@ -647,7 +647,7 @@ module SequelTest
     
     def test_should_pass_transition_to_before_callbacks_with_multiple_arguments
       callback_args = nil
-      @machine.before_transition(lambda {|*args| callback_args = args})
+      @machine.before_transition {|*args| callback_args = args}
       
       @transition.perform
       assert_equal [@transition], callback_args
@@ -655,7 +655,7 @@ module SequelTest
     
     def test_should_run_before_callbacks_within_the_context_of_the_record
       context = nil
-      @machine.before_transition(lambda {context = self})
+      @machine.before_transition {context = self}
       
       @transition.perform
       assert_equal @record, context
@@ -663,7 +663,7 @@ module SequelTest
     
     def test_should_run_after_callbacks
       called = false
-      @machine.after_transition(lambda {called = true})
+      @machine.after_transition {called = true}
       
       @transition.perform
       assert called
@@ -671,7 +671,7 @@ module SequelTest
     
     def test_should_pass_transition_to_after_callbacks_with_multiple_arguments
       callback_args = nil
-      @machine.after_transition(lambda {|*args| callback_args = args})
+      @machine.after_transition {|*args| callback_args = args}
       
       @transition.perform
       assert_equal [@transition], callback_args
@@ -679,7 +679,7 @@ module SequelTest
     
     def test_should_run_after_callbacks_with_the_context_of_the_record
       context = nil
-      @machine.after_transition(lambda {context = self})
+      @machine.after_transition {context = self}
       
       @transition.perform
       assert_equal @record, context
@@ -720,9 +720,9 @@ module SequelTest
       @machine = StateMachine::Machine.new(@model)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @machine.before_transition(lambda {before_count += 1; false})
-      @machine.before_transition(lambda {before_count += 1})
-      @machine.after_transition(lambda {after_count += 1})
+      @machine.before_transition {before_count += 1; false}
+      @machine.before_transition {before_count += 1}
+      @machine.after_transition {after_count += 1}
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -768,9 +768,9 @@ module SequelTest
       before_transition_called = false
       after_transition_called = false
       after_transition_with_failures_called = false
-      @machine.before_transition(lambda {before_transition_called = true})
-      @machine.after_transition(lambda {after_transition_called = true})
-      @machine.after_transition(lambda {after_transition_with_failures_called = true}, :include_failures => true)
+      @machine.before_transition {before_transition_called = true}
+      @machine.after_transition {after_transition_called = true}
+      @machine.after_transition(:include_failures => true) {after_transition_with_failures_called = true}
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -814,8 +814,8 @@ module SequelTest
       @machine = StateMachine::Machine.new(@model)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @machine.after_transition(lambda {after_count += 1; false})
-      @machine.after_transition(lambda {after_count += 1})
+      @machine.after_transition {after_count += 1; false}
+      @machine.after_transition {after_count += 1}
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)

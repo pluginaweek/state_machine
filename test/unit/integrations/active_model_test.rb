@@ -345,7 +345,7 @@ module ActiveModelTest
     
     def test_should_run_before_callbacks
       called = false
-      @machine.before_transition(lambda {called = true})
+      @machine.before_transition {called = true}
       
       @transition.perform
       assert called
@@ -353,7 +353,7 @@ module ActiveModelTest
     
     def test_should_pass_record_to_before_callbacks_with_one_argument
       record = nil
-      @machine.before_transition(lambda {|arg| record = arg})
+      @machine.before_transition {|arg| record = arg}
       
       @transition.perform
       assert_equal @record, record
@@ -377,7 +377,7 @@ module ActiveModelTest
     
     def test_should_run_after_callbacks
       called = false
-      @machine.after_transition(lambda {called = true})
+      @machine.after_transition {called = true}
       
       @transition.perform
       assert called
