@@ -7,6 +7,11 @@ gem 'dm-core', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=0.9.4'
 require 'dm-core'
 require 'dm-core/version' unless defined?(::DataMapper::VERSION)
 
+if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
+  gem 'dm-migrations', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=0.10.3'
+  require 'dm-migrations'
+end
+
 # Establish database connection
 DataMapper.setup(:default, 'sqlite3::memory:')
 DataObjects::Sqlite3.logger = DataObjects::Logger.new("#{File.dirname(__FILE__)}/../../data_mapper.log", :info)
@@ -608,29 +613,38 @@ module DataMapperTest
     end
   end
   
-  class MachineWithTransactionsTest < BaseTestCase
-    def setup
-      @resource = new_resource
-      @machine = StateMachine::Machine.new(@resource, :use_transactions => true)
+  begin
+    if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
+      gem 'dm-transactions', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=0.10.3'
+      require 'dm-transactions'
     end
     
-    def test_should_rollback_transaction_if_false
-      @machine.within_transaction(@resource.new) do
-        @resource.create
-        false
+    class MachineWithTransactionsTest < BaseTestCase
+      def setup
+        @resource = new_resource
+        @machine = StateMachine::Machine.new(@resource, :use_transactions => true)
       end
       
-      assert_equal 0, @resource.all.size
-    end
-    
-    def test_should_not_rollback_transaction_if_true
-      @machine.within_transaction(@resource.new) do
-        @resource.create
-        true
+      def test_should_rollback_transaction_if_false
+        @machine.within_transaction(@resource.new) do
+          @resource.create
+          false
+        end
+        
+        assert_equal 0, @resource.all.size
       end
       
-      assert_equal 1, @resource.all.size
+      def test_should_not_rollback_transaction_if_true
+        @machine.within_transaction(@resource.new) do
+          @resource.create
+          true
+        end
+        
+        assert_equal 1, @resource.all.size
+      end
     end
+  rescue LoadError
+    $stderr.puts "Skipping DataMapper Transaction tests. `gem install dm-transactions#{" -v #{ENV['VERSION']}" if ENV['VERSION']}` and try again."
   end
   
   class MachineWithCallbacksTest < BaseTestCase
@@ -932,13 +946,17 @@ module DataMapperTest
     
     class MachineWithStateDrivenValidationsTest < BaseTestCase
       def setup
-        @resource = new_resource do
+        @resource = resource = new_resource do
           attr_accessor :seatbelt
         end
         
         @machine = StateMachine::Machine.new(@resource)
         @machine.state :first_gear, :second_gear do
-          validates_present :seatbelt
+          if resource.respond_to?(:validates_presence_of)
+            validates_presence_of :seatbelt
+          else
+            validates_present :seatbelt
+          end
         end
         @machine.other_states :parked
       end
@@ -1020,7 +1038,11 @@ module DataMapperTest
       def test_should_not_run_after_callbacks_with_failures_disabled_if_validation_fails
         @resource.class_eval do
           attr_accessor :seatbelt
-          validates_present :seatbelt
+          if respond_to?(:validates_presence_of)
+            validates_presence_of :seatbelt
+          else
+            validates_present :seatbelt
+          end
         end
         
         ran_callback = false
@@ -1033,7 +1055,11 @@ module DataMapperTest
       def test_should_run_after_callbacks_with_failures_enabled_if_validation_fails
         @resource.class_eval do
           attr_accessor :seatbelt
-          validates_present :seatbelt
+          if respond_to?(:validates_presence_of)
+            validates_presence_of :seatbelt
+          else
+            validates_present :seatbelt
+          end
         end
         
         ran_callback = false
@@ -1054,7 +1080,11 @@ module DataMapperTest
       def test_should_not_run_around_callbacks_after_yield_with_failures_disabled_if_validation_fails
         @resource.class_eval do
           attr_accessor :seatbelt
-          validates_present :seatbelt
+          if respond_to?(:validates_presence_of)
+            validates_presence_of :seatbelt
+          else
+            validates_present :seatbelt
+          end
         end
         
         ran_callback = [false]
@@ -1067,7 +1097,11 @@ module DataMapperTest
       def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_validation_fails
         @resource.class_eval do
           attr_accessor :seatbelt
-          validates_present :seatbelt
+          if respond_to?(:validates_presence_of)
+            validates_presence_of :seatbelt
+          else
+            validates_present :seatbelt
+          end
         end
         
         ran_callback = [false]

@@ -1,5 +1,6 @@
 == master
 
+* Add support for DataMapper 0.10.3+
 * Add around_transition callbacks
 * Fix transition failures during save not being handled correctly in Sequel 2.12.0+
 * Fix attribute-based event transitions not hooking in properly in DataMapper 0.10.0+ and Sequel 2.12.0+

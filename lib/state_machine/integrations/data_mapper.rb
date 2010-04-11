@@ -256,9 +256,12 @@ module StateMachine
       def write(object, attribute, value)
         result = super
         if attribute == :state && owner_class.properties.detect {|property| property.name == self.attribute}
-          if ::DataMapper::VERSION =~ /^(0\.\d\.)/ # Match anything < 0.10
+          if ::DataMapper::VERSION =~ /^0\.\d\./ # Match anything < 0.10
             object.original_values[self.attribute] = "#{value}-ignored" if object.original_values[self.attribute] == value
           else
+            # Force the resource's state to Dirty for 0.10.13+
+            object.persisted_state = ::DataMapper::Resource::State::Dirty.new(object) unless ::DataMapper::VERSION =~ /^0\.10\.[0-2]$/ || object.persisted_state.respond_to?(:original_attributes)
+            
             property = owner_class.properties[self.attribute]
             object.original_attributes[property] = "#{value}-ignored" unless object.original_attributes.include?(property)
           end
