@@ -51,12 +51,8 @@ module StateMachine
       reset
       
       within_transaction do
-        if before
-          persist
-          run_actions(&block)
-          after
-          rollback unless success?
-        end
+        catch(:halt) { run_callbacks(&block) }
+        rollback unless success?
       end if valid?
       
       if actions.length == 1 && results.include?(actions.first)
@@ -102,11 +98,21 @@ module StateMachine
         @success = false
       end
       
-      # Runs the +before+ callbacks for each transition.  If the +before+ callback
-      # chain is halted for any transition, then the remaining transitions will be
-      # skipped.
-      def before
-        all? {|transition| transition.before}
+      # Runs each transition's callbacks recursively.  Once all before callbacks
+      # have been executed, the transitions will then be persisted and the
+      # configured actions will be run.
+      # 
+      # If any transition fails to run its callbacks, :halt will be thrown.
+      def run_callbacks(index = 0, &block)
+        if transition = self[index]
+          throw :halt unless transition.run_callbacks(:after => !skip_after) do
+            run_callbacks(index + 1, &block)
+            {:result => results[transition.action], :success => success?}
+          end
+        else
+          persist
+          run_actions(&block)
+        end
       end
       
       # Transitions the current value of the object's states to those specified by
@@ -130,11 +136,6 @@ module StateMachine
             results.values.all?
           end
         end
-      end
-      
-      # Runs the +after+ callbacks for each transition
-      def after
-        each {|transition| transition.after(results[transition.action], success?)} unless skip_after && success?
       end
       
       # Rolls back changes made to the object's states via each transition
@@ -176,23 +177,44 @@ module StateMachine
     end
     
     private
-      # Clears any traces of the event attribute to prevent it from being
-      # evaluated multiple times if actions are nested
-      def before
-        each do |transition|
-          transition.machine.write(object, :event, nil)
-          transition.machine.write(object, :event_transition, nil)
+      # Hooks into running transition callbacks so that event / event transition
+      # attributes can be properly updated
+      def run_callbacks(index = 0)
+        if index == 0
+          # Clears any traces of the event attribute to prevent it from being
+          # evaluated multiple times if actions are nested
+          each do |transition|
+            transition.machine.write(object, :event, nil)
+            transition.machine.write(object, :event_transition, nil)
+          end
+          
+          # Rollback only if exceptions occur during before callbacks
+          begin
+            super
+          rescue Exception
+            rollback unless @before_run
+            raise
+          end
+          
+          # Persists transitions on the object if partial transition was successful.
+          # This allows us to reference them later to complete the transition with
+          # after callbacks.          
+          each {|transition| transition.machine.write(object, :event_transition, transition)} if skip_after && success?
+        else
+          super
         end
-        
-        catch_exceptions { super || rollback && false }
       end
       
-      # Persists transitions on the object if partial transition was successful.
-      # This allows us to reference them later to complete the transition with
-      # after callbacks.
-      def after
+      # Tracks that before callbacks have now completed
+      def persist
+        @before_run = true
         super
-        each {|transition| transition.machine.write(object, :event_transition, transition)} if skip_after && success?
+      end
+      
+      # Resets callback tracking
+      def reset
+        super
+        @before_run = false
       end
       
       # Resets the event attribute so it can be re-evaluated if attempted again

@@ -104,6 +104,42 @@ module StateMachine
           add_transition_callback(:after, *args, &block)
         end
         
+        # Creates a callback that will be invoked *around* a transition so long
+        # as the given requirements match the transition.
+        # 
+        # == Examples
+        # 
+        #   class Vehicle
+        #     include DataMapper::Resource
+        #     
+        #     property :id, Serial
+        #     property :state, :String
+        #     
+        #     state_machine :initial => :parked do
+        #       event :ignite do
+        #         transition :parked => :idling
+        #       end
+        #     end
+        #   end
+        #   
+        #   class VehicleObserver
+        #     include DataMapper::Observer
+        #     
+        #     observe Vehicle
+        #     
+        #     around_transition do |transition, &block|
+        #       # track start time
+        #       block.call
+        #       # track end time
+        #     end
+        #   end
+        # 
+        # See +before_transition+ for a description of the possible configurations
+        # for defining callbacks.
+        def around_transition(*args, &block)
+          add_transition_callback(:around, *args, &block)
+        end
+        
         private
           # Adds the transition callback to a specific machine or all of the
           # state machines for each observed class.

@@ -3,7 +3,7 @@ require 'state_machine/eval_helpers'
 
 module StateMachine
   # Callbacks represent hooks into objects that allow logic to be triggered
-  # before or after a specific transition occurs.
+  # before, after, or around a specific set of transitions.
   class Callback
     include EvalHelpers
     
@@ -62,6 +62,13 @@ module StateMachine
       attr_accessor :terminator
     end
     
+    # The type of callback chain this callback is for.  This can be one of the
+    # following:
+    # * +before+
+    # * +after+
+    # * +around+
+    attr_accessor :type
+    
     # An optional block for determining whether to cancel the callback chain
     # based on the return value of the callback.  By default, the callback
     # chain never cancels based on the return value (i.e. there is no implicit
@@ -112,12 +119,14 @@ module StateMachine
     # 
     # More information about how those options affect the behavior of the
     # callback can be found in their attribute definitions.
-    def initialize(*args, &block)
+    def initialize(type, *args, &block)
+      @type = type
+      raise ArgumentError, 'Type must be :before, :after, or :around' unless [:before, :after, :around].include?(type)
+      
       options = args.last.is_a?(Hash) ? args.pop : {}
       @methods = args
       @methods.concat(Array(options.delete(:do)))
       @methods << block if block_given?
-      
       raise ArgumentError, 'Method(s) for callback must be specified' unless @methods.any?
       
       options = {:bind_to_object => self.class.bind_to_object, :terminator => self.class.terminator}.merge(options)
@@ -139,32 +148,68 @@ module StateMachine
     end
     
     # Runs the callback as long as the transition context matches the guard
-    # requirements configured for this callback.
+    # requirements configured for this callback.  If a block is provided, it
+    # will be called when the last method has run.
     # 
     # If a terminator has been configured and it matches the result from the
     # evaluated method, then the callback chain should be halted.
-    def call(object, context = {}, *args)
+    def call(object, context = {}, *args, &block)
       if @guard.matches?(object, context)
-        @methods.each do |method|
-          result = evaluate_method(object, method, *args)
-          throw :halt if @terminator && @terminator.call(result)
-        end
-        
+        run_methods(object, context, 0, *args, &block)
         true
       else
         false
       end
     end
     
+    # Verifies that the success requirement for this callback matches the given
+    # value
+    def matches_success?(success)
+      guard.success_requirement.matches?(success)
+    end
+    
     private
+      # Runs all of the methods configured for this callback.
+      # 
+      # When running +around+ callbacks, this will evaluate each method and
+      # yield when the last method has yielded.  The callback will only halt if
+      # one of the methods does not yield.
+      # 
+      # For all other types of callbacks, this will evaluate each method in
+      # order.  The callback will only halt if the resulting value from the
+      # method passes the terminator.
+      def run_methods(object, context = {}, index = 0, *args, &block)
+        if type == :around
+          if method = @methods[index]
+            yielded = false
+            evaluate_method(object, method, *args) do
+              yielded = true
+              run_methods(object, context, index + 1, *args, &block)
+            end
+            
+            throw :halt unless yielded
+          else
+            yield if block_given?
+          end
+        else
+          @methods.each do |method|
+            result = evaluate_method(object, method, *args)
+            throw :halt if @terminator && @terminator.call(result)
+          end
+        end
+      end
+      
       # Generates a method that can be bound to the object being transitioned
       # when the callback is invoked
       def bound_method(block)
+        type = self.type
         arity = block.arity
+        arity += 1 if arity >= 0
+        arity += 1 if arity == 1 && type == :around 
         
-        if RUBY_VERSION >= '1.9'
+        method = if RUBY_VERSION >= '1.9'
           lambda do |object, *args|
-            object.instance_exec(*(arity == 0 ? [] : args), &block)
+            object.instance_exec(*args, &block)
           end
         else
           # Generate a thread-safe unbound method that can be used on any object.
@@ -181,9 +226,16 @@ module StateMachine
           # Proxy calls to the method so that the method can be bound *and*
           # the arguments are adjusted
           lambda do |object, *args|
-            unbound_method.bind(object).call(*(arity == 0 ? [] : args))
+            unbound_method.bind(object).call(*args)
           end
         end
+        
+        # Proxy arity to the original block
+        (class << method; self; end).class_eval do
+          define_method(:arity) { arity }
+        end
+        
+        method
       end
   end
 end

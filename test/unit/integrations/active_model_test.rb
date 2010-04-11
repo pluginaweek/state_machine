@@ -361,7 +361,7 @@ module ActiveModelTest
     
     def test_should_pass_record_and_transition_to_before_callbacks_with_multiple_arguments
       callback_args = nil
-      @machine.before_transition(lambda {|*args| callback_args = args})
+      @machine.before_transition {|*args| callback_args = args}
       
       @transition.perform
       assert_equal [@record, @transition], callback_args
@@ -369,7 +369,7 @@ module ActiveModelTest
     
     def test_should_run_before_callbacks_outside_the_context_of_the_record
       context = nil
-      @machine.before_transition(lambda {context = self})
+      @machine.before_transition {context = self}
       
       @transition.perform
       assert_equal self, context
@@ -385,7 +385,7 @@ module ActiveModelTest
     
     def test_should_pass_record_to_after_callbacks_with_one_argument
       record = nil
-      @machine.after_transition(lambda {|arg| record = arg})
+      @machine.after_transition {|arg| record = arg}
       
       @transition.perform
       assert_equal @record, record
@@ -393,7 +393,7 @@ module ActiveModelTest
     
     def test_should_pass_record_and_transition_to_after_callbacks_with_multiple_arguments
       callback_args = nil
-      @machine.after_transition(lambda {|*args| callback_args = args})
+      @machine.after_transition {|*args| callback_args = args}
       
       @transition.perform
       assert_equal [@record, @transition], callback_args
@@ -401,10 +401,20 @@ module ActiveModelTest
     
     def test_should_run_after_callbacks_outside_the_context_of_the_record
       context = nil
-      @machine.after_transition(lambda {context = self})
+      @machine.after_transition {context = self}
       
       @transition.perform
       assert_equal self, context
+    end
+    
+    def test_should_run_around_callbacks
+      before_called = false
+      after_called = false
+      @machine.around_transition {|block| before_called = true; block.call; after_called = true}
+      
+      @transition.perform
+      assert before_called
+      assert after_called
     end
     
     def test_should_include_transition_states_in_known_states
@@ -441,16 +451,16 @@ module ActiveModelTest
   
   class MachineWithFailedBeforeCallbacksTest < BaseTestCase
     def setup
-      @before_count = 0
-      @after_count = 0
+      @callbacks = []
       
       @model = new_model
       @machine = StateMachine::Machine.new(@model, :integration => :active_model)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @machine.before_transition(lambda {@before_count += 1; false})
-      @machine.before_transition(lambda {@before_count += 1})
-      @machine.after_transition(lambda {@after_count += 1})
+      @machine.before_transition {@callbacks << :before_1; false}
+      @machine.before_transition {@callbacks << :before_2}
+      @machine.after_transition {@callbacks << :after}
+      @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -465,25 +475,22 @@ module ActiveModelTest
       assert_equal 'parked', @record.state
     end
     
-    def test_should_not_run_further_before_callbacks
-      assert_equal 1, @before_count
-    end
-    
-    def test_should_not_run_after_callbacks
-      assert_equal 0, @after_count
+    def test_should_not_run_further_callbacks
+      assert_equal [:before_1], @callbacks
     end
   end
   
   class MachineWithFailedAfterCallbacksTest < BaseTestCase
      def setup
-      @after_count = 0
+      @callbacks = []
       
       @model = new_model
       @machine = StateMachine::Machine.new(@model, :integration => :active_model)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @machine.after_transition(lambda {@after_count += 1; false})
-      @machine.after_transition(lambda {@after_count += 1})
+      @machine.after_transition {@callbacks << :after_1; false}
+      @machine.after_transition {@callbacks << :after_2}
+      @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -499,7 +506,7 @@ module ActiveModelTest
     end
     
     def test_should_not_run_further_after_callbacks
-      assert_equal 1, @after_count
+      assert_equal [:around_before, :around_after, :after_1], @callbacks
     end
   end
   
@@ -721,8 +728,9 @@ module ActiveModelTest
       @notifications = []
       
       # Create callbacks
-      @machine.before_transition(lambda {@notifications << :callback_before_transition})
-      @machine.after_transition(lambda {@notifications << :callback_after_transition})
+      @machine.before_transition {@notifications << :callback_before_transition}
+      @machine.after_transition {@notifications << :callback_after_transition}
+      @machine.around_transition {|block| @notifications << :callback_around_before_transition; block.call; @notifications << :callback_around_after_transition}
       
       # Create observer callbacks
       observer = new_observer(@model) do
@@ -751,8 +759,10 @@ module ActiveModelTest
     def test_should_invoke_callbacks_in_specific_order
       expected = [
         :callback_before_transition,
+        :callback_around_before_transition,
         :observer_before_ignite,
         :observer_before_transition,
+        :callback_around_after_transition,
         :callback_after_transition,
         :observer_after_ignite,
         :observer_after_transition

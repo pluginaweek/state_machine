@@ -71,6 +71,8 @@ module StateMachine
       @to = to_state.value
       @to_name = to_state.name
       @qualified_to_name = to_state.qualified_name
+      
+      reset
     end
     
     # The attribute which this transition's machine is defined for
@@ -140,37 +142,39 @@ module StateMachine
       end
     end
     
-    # Runs the machine's +before+ callbacks for this transition.  Only
-    # callbacks that are configured to match the event, from state, and to
-    # state will be invoked.
+    # Runs the before / after callbacks for this transition.  If a block is
+    # provided, then it will be executed between the before and after callbacks.
     # 
-    # Once the callbacks are run, they cannot be run again until this transition
-    # is reset.
+    # Configuration options:
+    # * +after+ - Whether to run after callbacks.  If false, then any around
+    #   callbacks will be paused until called again with +after+ enabled.
+    #   Default is true.
     # 
-    # == Example
-    # 
-    #   class Vehicle
-    #     state_machine do
-    #       before_transition :on => :ignite, :do => lambda {|vehicle| ...}
-    #     end
-    #   end
-    #   
-    #   vehicle = Vehicle.new
-    #   transition = StateMachine::Transition.new(vehicle, machine, :ignite, :parked, :idling)
-    #   transition.before
-    def before
-      result = false
+    # This will return true if all before callbacks gets executed.  After
+    # callbacks will not have an effect on the result.
+    def run_callbacks(options = {}, &block)
+      options = {:after => true}.merge(options)
+      @success = false
       
-      catch(:halt) do
-        unless @before_run
-          callback(:before)
-          @before_run = true
-        end
-        
-        result = true
+      # Run before callbacks.  :halt is caught here so that it rolls up through
+      # any around callbacks.
+      begin
+        halted = !catch(:halt) { before(options[:after], &block); true }
+      rescue Exception => error
+        raise unless @after_block
       end
       
-      result
+      # After callbacks are only run if:
+      # * There isn't an after block already running
+      # * An around callback didn't halt after yielding
+      # * They're enabled or the run didn't succeed
+      if @after_block
+        @after_block.call(halted, error)
+      elsif !(@before_run && halted) && (options[:after] || !@success)
+        after
+      end
+      
+      @before_run
     end
     
     # Transitions the current value of the state to that specified by the
@@ -197,51 +201,6 @@ module StateMachine
         machine.write(object, :state, to)
         @persisted = true
       end
-    end
-    
-    # Runs the machine's +after+ callbacks for this transition.  Only
-    # callbacks that are configured to match the event, from state, and to
-    # state will be invoked.
-    # 
-    # The result can be used to indicate whether the associated machine action
-    # was executed successfully.
-    # 
-    # Once the callbacks are run, they cannot be run again until this transition
-    # is reset.
-    # 
-    # == Halting
-    # 
-    # If any callback throws a <tt>:halt</tt> exception, it will be caught
-    # and the callback chain will be automatically stopped.  However, this
-    # exception will not bubble up to the caller since +after+ callbacks
-    # should never halt the execution of a +perform+.
-    # 
-    # == Example
-    # 
-    #   class Vehicle
-    #     state_machine do
-    #       after_transition :on => :ignite, :do => lambda {|vehicle| ...}
-    #       
-    #       event :ignite do
-    #         transition :parked => :idling
-    #       end
-    #     end
-    #   end
-    #   
-    #   vehicle = Vehicle.new
-    #   transition = StateMachine::Transition.new(vehicle, Vehicle.state_machine, :ignite, :parked, :idling)
-    #   transition.after(true)
-    def after(result = nil, success = true)
-      @result = result
-      
-      catch(:halt) do
-        unless @after_run
-          callback(:after, :success => success)
-          @after_run = true
-        end
-      end
-      
-      true
     end
     
     # Rolls back changes made to the object's state via this transition.  This
@@ -277,6 +236,7 @@ module StateMachine
     # the state has already been persisted
     def reset
       @before_run = @persisted = @after_run = false
+      @around_block = nil
     end
     
     # Generates a nicely formatted description of this transitions's contents.
@@ -289,7 +249,86 @@ module StateMachine
       "#<#{self.class} #{%w(attribute event from from_name to to_name).map {|attr| "#{attr}=#{send(attr).inspect}"} * ' '}>"
     end
     
-    protected
+    private
+      # Runs the machine's +before+ callbacks for this transition.  Only
+      # callbacks that are configured to match the event, from state, and to
+      # state will be invoked.
+      # 
+      # Once the callbacks are run, they cannot be run again until this transition
+      # is reset.
+      def before(complete = true, index = 0, &block)
+        unless @before_run
+          while callback = machine.callbacks[:before][index]
+            index += 1
+            
+            if callback.type == :around
+              # Around callback: need to handle recursively.  Execution only gets
+              # paused if:
+              # * The block fails and the callback doesn't run on failures OR
+              # * The block succeeds, but after callbacks are disabled (in which
+              #   case a continuation is stored for later execution)
+              return if catch(:pause) do
+                callback.call(object, context, self) do
+                  before(complete, index, &block)
+                  
+                  if @success && !complete && !@around_block && !@after_block
+                    require 'continuation' unless defined?(callcc)
+                    callcc {|block| @around_block = block}
+                  end
+                  
+                  throw :pause, true if @around_block && !@after_block || !callback.matches_success?(@success)
+                end
+              end
+            else
+              # Normal before callback
+              callback.call(object, context, self)
+            end
+          end
+          
+          @before_run = true
+        end
+        
+        action = {:success => true}.merge(block_given? ? yield : {})
+        @result, @success = action[:result], action[:success]
+      end
+      
+      # Runs the machine's +after+ callbacks for this transition.  Only
+      # callbacks that are configured to match the event, from state, and to
+      # state will be invoked.
+      # 
+      # Once the callbacks are run, they cannot be run again until this transition
+      # is reset.
+      # 
+      # == Halting
+      # 
+      # If any callback throws a <tt>:halt</tt> exception, it will be caught
+      # and the callback chain will be automatically stopped.  However, this
+      # exception will not bubble up to the caller since +after+ callbacks
+      # should never halt the execution of a +perform+.
+      def after
+        unless @after_run
+          catch(:halt) do
+            # First call any yielded around blocks
+            if @around_block
+              halted, error = callcc do |block|
+                @after_block = block
+                @around_block.call
+              end
+              
+              @after_block = @around_block = nil
+              raise error if error
+              throw :halt if halted
+            end
+            
+            # Call normal after callbacks in order
+            after_context = context.merge(:success => @success)
+            machine.callbacks[:after].each {|callback| callback.call(object, after_context, self)}
+          end
+          
+          @after_run = true
+        end
+      end
+      
       # Gets a hash of the context defining this unique transition (including
       # event, from state, and to state).
       # 
@@ -300,20 +339,6 @@ module StateMachine
       #   transition.context    # => {:on => :ignite, :from => :parked, :to => :idling}
       def context
         @context ||= {:on => event, :from => from_name, :to => to_name}
-      end
-      
-      # Runs the callbacks of the given type for this transition.  This will
-      # only invoke callbacks that exactly match the event, from state, and
-      # to state that describe this transition.
-      # 
-      # Additional callback parameters can be specified.  By default, this
-      # transition is also passed into callbacks.
-      def callback(type, context = {})
-        context = self.context.merge(context)
-        
-        machine.callbacks[type].each do |callback|
-          callback.call(object, context, self)
-        end
       end
   end
 end

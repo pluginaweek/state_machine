@@ -700,6 +700,24 @@ module DataMapperTest
       assert_equal @record, context
     end
     
+    def test_should_run_around_callbacks
+      before_called = false
+      after_called = [false]
+      @machine.around_transition {|block| before_called = true; block.call; after_called[0] = true}
+      
+      @transition.perform
+      assert before_called
+      assert after_called[0]
+    end
+    
+    def test_should_run_around_callbacks_with_the_context_of_the_record
+      context = nil
+      @machine.around_transition {|block| context = self; block.call}
+      
+      @transition.perform
+      assert_equal @record, context
+    end
+    
     def test_should_allow_symbolic_callbacks
       callback_args = nil
       
@@ -728,23 +746,22 @@ module DataMapperTest
   
   class MachineWithFailedBeforeCallbacksTest < BaseTestCase
     def setup
-      before_count = 0
-      after_count = 0
+      callbacks = []
       
       @resource = new_resource
       @machine = StateMachine::Machine.new(@resource)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @machine.before_transition {before_count += 1; throw :halt}
-      @machine.before_transition {before_count += 1}
-      @machine.after_transition {after_count += 1}
+      @machine.before_transition {callbacks << :before_1; throw :halt}
+      @machine.before_transition {callbacks << :before_2}
+      @machine.after_transition {callbacks << :after}
+      @machine.around_transition {|block| callbacks << :around_before; block.call; callbacks << :around_after}
       
       @record = @resource.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       @result = @transition.perform
       
-      @before_count = before_count
-      @after_count = after_count
+      @callbacks = callbacks
     end
     
     def test_should_not_be_successful
@@ -759,12 +776,8 @@ module DataMapperTest
       assert @record.respond_to?(:new?) ? @record.new? : @record.new_record?
     end
     
-    def test_should_not_run_further_before_callbacks
-      assert_equal 1, @before_count
-    end
-    
-    def test_should_not_run_after_callbacks
-      assert_equal 0, @after_count
+    def test_should_not_run_further_callbacks
+      assert_equal [:before_1], @callbacks
     end
   end
   
@@ -778,20 +791,22 @@ module DataMapperTest
       @machine.state :parked, :idling
       @machine.event :ignite
       
-      before_transition_called = false
-      after_transition_called = false
-      after_transition_with_failures_called = false
-      @machine.before_transition {before_transition_called = true}
-      @machine.after_transition {after_transition_called = true}
-      @machine.after_transition(:include_failures => true) {after_transition_with_failures_called = true}
+      callbacks = []
+      @machine.before_transition {callbacks << :before}
+      @machine.after_transition {callbacks << :after}
+      @machine.after_transition(:include_failures => true) {callbacks << :after_failure}
+      @machine.around_transition {|block| callbacks << :around_before; block.call; callbacks << :around_after}
+      @machine.around_transition(:include_failures => true) do |block|
+        callbacks << :around_before_failure
+        block.call
+        callbacks << :around_after_failure
+      end
       
       @record = @resource.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       @result = @transition.perform
       
-      @before_transition_called = before_transition_called
-      @after_transition_called = after_transition_called
-      @after_transition_with_failures_called = after_transition_with_failures_called
+      @callbacks = callbacks
     end
     
     def test_should_not_be_successful
@@ -806,35 +821,28 @@ module DataMapperTest
       assert @record.respond_to?(:new?) ? @record.new? : @record.new_record?
     end
     
-    def test_should_run_before_callback
-      assert @before_transition_called
-    end
-    
-    def test_should_not_run_after_callback_if_not_including_failures
-      assert !@after_transition_called
-    end
-    
-    def test_should_run_after_callback_if_including_failures
-      assert @after_transition_with_failures_called
+    def test_should_run_before_callbacks_and_after_callbacks_with_failures
+      assert_equal [:before, :around_before, :around_before_failure, :around_after_failure, :after_failure], @callbacks
     end
   end
   
   class MachineWithFailedAfterCallbacksTest < BaseTestCase
      def setup
-      after_count = 0
+      callbacks = []
       
       @resource = new_resource
       @machine = StateMachine::Machine.new(@resource)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @machine.after_transition {after_count += 1; throw :halt}
-      @machine.after_transition {after_count += 1}
+      @machine.after_transition {callbacks << :after_1; throw :halt}
+      @machine.after_transition {callbacks << :after_2}
+      @machine.around_transition {|block| callbacks << :around_before; block.call; callbacks << :around_after}
       
       @record = @resource.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
       @result = @transition.perform
       
-      @after_count = after_count
+      @callbacks = callbacks
     end
     
     def test_should_be_successful
@@ -850,7 +858,7 @@ module DataMapperTest
     end
     
     def test_should_not_run_further_after_callbacks
-      assert_equal 1, @after_count
+      assert_equal [:around_before, :around_after, :after_1], @callbacks
     end
   end
   
@@ -988,6 +996,14 @@ module DataMapperTest
         assert ran_callback
       end
       
+      def test_should_run_around_callbacks_before_yield
+        ran_callback = false
+        @machine.around_transition {|block| ran_callback = true; block.call }
+        
+        @record.valid?
+        assert ran_callback
+      end
+      
       def test_should_persist_new_state
         @record.valid?
         assert_equal 'idling', @record.state
@@ -1025,6 +1041,40 @@ module DataMapperTest
         
         @record.valid?
         assert ran_callback
+      end
+      
+      def test_should_not_run_around_callbacks_after_yield
+        ran_callback = [false]
+        @machine.around_transition {|block| block.call; ran_callback[0] = true }
+        
+        @record.valid?
+        assert !ran_callback[0]
+      end
+      
+      def test_should_not_run_around_callbacks_after_yield_with_failures_disabled_if_validation_fails
+        @resource.class_eval do
+          attr_accessor :seatbelt
+          validates_present :seatbelt
+        end
+        
+        ran_callback = [false]
+        @machine.around_transition {|block| block.call; ran_callback[0] = true }
+        
+        @record.valid?
+        assert !ran_callback[0]
+      end
+      
+      def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_validation_fails
+        @resource.class_eval do
+          attr_accessor :seatbelt
+          validates_present :seatbelt
+        end
+        
+        ran_callback = [false]
+        @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback[0] = true }
+        
+        @record.valid?
+        assert ran_callback[0]
       end
       
       def test_should_not_run_before_transitions_within_transaction
@@ -1078,6 +1128,22 @@ module DataMapperTest
         assert_equal 1, before_count
       end
       
+      def test_should_run_around_callbacks_before_yield
+        ran_callback = false
+        @machine.around_transition {|block| ran_callback = true; block.call }
+        
+        @record.save
+        assert ran_callback
+      end
+      
+      def test_should_run_around_callbacks_before_yield_once
+        around_before_count = 0
+        @machine.around_transition {|block| around_before_count += 1; block.call }
+        
+        @record.save
+        assert_equal 1, around_before_count
+      end
+      
       def test_should_persist_new_state
         @record.save
         assert_equal 'idling', @record.state
@@ -1112,6 +1178,34 @@ module DataMapperTest
           @record.save
           assert ran_callback
         end
+        
+        def test_should_not_run_around_callbacks_with_failures_disabled_if_fails
+          @resource.before(:create) { throw :halt }
+          
+          ran_callback = [false]
+          @machine.around_transition {|block| block.call; ran_callback[0] = true }
+          
+          @record.save
+          assert !ran_callback[0]
+        end
+        
+        def test_should_run_around_callbacks_after_yield
+          ran_callback = [false]
+          @machine.around_transition {|block| block.call; ran_callback[0] = true }
+          
+          @record.save
+          assert ran_callback[0]
+        end
+        
+        def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_fails
+          @resource.before(:create) { throw :halt }
+          
+          ran_callback = [false]
+          @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback[0] = true }
+          
+          @record.save
+          assert ran_callback[0]
+        end
       end
       
       def test_should_not_run_before_transitions_within_transaction
@@ -1123,6 +1217,13 @@ module DataMapperTest
       
       def test_should_not_run_after_transitions_within_transaction
         @machine.before_transition { self.class.create; throw :halt }
+        
+        assert_equal false, @record.save
+        assert_equal 1, @resource.all.size
+      end
+      
+      def test_should_not_run_around_transition_within_transaction
+        @machine.around_transition { self.class.create; throw :halt }
         
         assert_equal false, @record.save
         assert_equal 1, @resource.all.size
@@ -1173,6 +1274,22 @@ module DataMapperTest
           assert_equal 1, before_count
         end
         
+        def test_should_run_around_callbacks_before_yield
+          ran_callback = false
+          @machine.around_transition {|block| ran_callback = true; block.call }
+          
+          @record.save!
+          assert ran_callback
+        end
+        
+        def test_should_run_around_callbacks_before_yield_once
+          around_before_count = 0
+          @machine.around_transition {|block| around_before_count += 1; block.call }
+          
+          @record.save!
+          assert_equal 1, around_before_count
+        end
+        
         def test_should_persist_new_state
           @record.save!
           assert_equal 'idling', @record.state
@@ -1184,6 +1301,14 @@ module DataMapperTest
           
           @record.save!
           assert ran_callback
+        end
+        
+        def test_should_run_around_callbacks_after_yield
+          ran_callback = [false]
+          @machine.around_transition {|block| block.call; ran_callback[0] = true }
+          
+          @record.save!
+          assert ran_callback[0]
         end
       end
     end
@@ -1327,6 +1452,49 @@ module DataMapperTest
         assert_equal [@transition], callback_args
       end
       
+      def test_should_call_around_transition_callback_if_requirements_match
+        called = false
+        
+        observer = new_observer(@resource) do
+          around_transition :from => :parked do |block|
+            called = true
+            block.call
+          end
+        end
+        
+        @transition.perform
+        assert called
+      end
+      
+      def test_should_not_call_after_transition_callback_if_requirements_do_not_match
+        called = false
+        
+        observer = new_observer(@resource) do
+          around_transition :from => :idling do |block|
+            called = true
+            block.call
+          end
+        end
+        
+        @transition.perform
+        assert !called
+      end
+      
+      def test_should_pass_transition_to_after_callbacks
+        callback_args = nil
+        
+        observer = new_observer(@resource) do
+          around_transition do |*args|
+            block = args.pop
+            callback_args = args
+            block.call
+          end
+        end
+        
+        @transition.perform
+        assert_equal [@transition], callback_args
+      end
+      
       def test_should_raise_exception_if_targeting_invalid_machine
         assert_raise(RUBY_VERSION < '1.9' ? IndexError : KeyError) do
           new_observer(@resource) do
@@ -1396,6 +1564,11 @@ module DataMapperTest
         # Create callbacks
         @machine.before_transition {notifications << :callback_before_transition}
         @machine.after_transition {notifications << :callback_after_transition}
+        @machine.around_transition do |block|
+          notifications << :callback_around_before_transition
+          block.call
+          notifications << :callback_around_after_transition
+        end
         
         observer = new_observer(@resource) do
           before_transition do
@@ -1405,6 +1578,12 @@ module DataMapperTest
           after_transition do
             notifications << :observer_after_transition
           end
+          
+          around_transition do |block|
+            notifications << :observer_around_before_transition
+            block.call
+            notifications << :observer_around_after_transition
+          end
         end
         
         @transition.perform
@@ -1413,7 +1592,11 @@ module DataMapperTest
       def test_should_invoke_callbacks_in_specific_order
         expected = [
           :callback_before_transition,
+          :callback_around_before_transition,
           :observer_before_transition,
+          :observer_around_before_transition,
+          :observer_around_after_transition,
+          :callback_around_after_transition,
           :callback_after_transition,
           :observer_after_transition
         ]

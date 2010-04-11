@@ -40,7 +40,7 @@ class ModelBase
 end
 
 class Vehicle < ModelBase
-  attr_accessor :auto_shop, :seatbelt_on, :insurance_premium, :force_idle, :callbacks, :saved
+  attr_accessor :auto_shop, :seatbelt_on, :insurance_premium, :force_idle, :callbacks, :saved, :time_elapsed
   
   def initialize(attributes = {})
     attributes = {
@@ -67,6 +67,12 @@ class Vehicle < ModelBase
     # Callback tracking for initial state callbacks
     after_transition any => :parked, :do => lambda {|vehicle| vehicle.callbacks << 'before_enter_parked'}
     before_transition any => :idling, :do => lambda {|vehicle| vehicle.callbacks << 'before_enter_idling'}
+    
+    around_transition do |vehicle, transition, block|
+      time = Time.now
+      block.call
+      vehicle.time_elapsed = Time.now - time
+    end
     
     event :park do
       transition [:idling, :first_gear] => :parked
@@ -445,6 +451,10 @@ class VehicleIdlingTest < Test::Unit::TestCase
   
   def test_should_have_seatbelt_on
     assert @vehicle.seatbelt_on
+  end
+  
+  def test_should_track_time_elapsed
+    assert_not_nil @vehicle.time_elapsed
   end
   
   def test_should_allow_park

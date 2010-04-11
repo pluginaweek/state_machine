@@ -626,6 +626,16 @@ module MongoMapperTest
       assert_equal self, context
     end
     
+    def test_should_run_around_callbacks
+      before_called = false
+      after_called = false
+      @machine.around_transition {|block| before_called = true; block.call; after_called = true}
+      
+      @transition.perform
+      assert before_called
+      assert after_called
+    end
+    
     def test_should_include_transition_states_in_known_states
       @machine.before_transition :to => :first_gear, :do => lambda {}
       
@@ -660,16 +670,16 @@ module MongoMapperTest
   
   class MachineWithFailedBeforeCallbacksTest < BaseTestCase
     def setup
-      @before_count = 0
-      @after_count = 0
+      @callbacks = []
       
       @model = new_model
       @machine = StateMachine::Machine.new(@model)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @machine.before_transition {@before_count += 1; false}
-      @machine.before_transition {@before_count += 1}
-      @machine.after_transition {@after_count += 1}
+      @machine.before_transition {@callbacks << :before_1; false}
+      @machine.before_transition {@callbacks << :before_2}
+      @machine.after_transition {@callbacks << :after}
+      @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -688,12 +698,8 @@ module MongoMapperTest
       assert !@record.new_record?
     end
     
-    def test_should_run_further_before_callbacks
-      assert_equal 2, @before_count
-    end
-    
-    def test_should_run_after_callbacks
-      assert_equal 1, @after_count
+    def test_should_run_further_callbacks
+      assert_equal [:before_1, :before_2, :around_before, :around_after, :after], @callbacks
     end
   end
   
@@ -707,12 +713,16 @@ module MongoMapperTest
       @machine.state :parked, :idling
       @machine.event :ignite
       
-      @before_transition_called = false
-      @after_transition_called = false
-      @after_transition_with_failures_called = false
-      @machine.before_transition { @before_transition_called = true }
-      @machine.after_transition { @after_transition_called = true }
-      @machine.after_transition(:include_failures => true) {@after_transition_with_failures_called = true}
+      @callbacks = []
+      @machine.before_transition {@callbacks << :before}
+      @machine.after_transition {@callbacks << :after}
+      @machine.after_transition(:include_failures => true) {@callbacks << :after_failure}
+      @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
+      @machine.around_transition(:include_failures => true) do |block|
+        @callbacks << :around_before_failure
+        block.call
+        @callbacks << :around_after_failure
+      end
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -731,29 +741,22 @@ module MongoMapperTest
       assert @record.new_record?
     end
     
-    def test_should_run_before_callback
-      assert @before_transition_called
-    end
-    
-    def test_should_not_run_after_callback_if_not_including_failures
-      assert !@after_transition_called
-    end
-    
-    def test_should_run_after_callback_if_including_failures
-      assert @after_transition_with_failures_called
+    def test_should_run_before_callbacks_and_after_callbacks_with_failures
+      assert_equal [:before, :around_before, :around_before_failure, :around_after_failure, :after_failure], @callbacks
     end
   end
   
   class MachineWithFailedAfterCallbacksTest < BaseTestCase
      def setup
-      @after_count = 0
+      @callbacks = []
       
       @model = new_model
       @machine = StateMachine::Machine.new(@model)
       @machine.state :parked, :idling
       @machine.event :ignite
-      @machine.after_transition {@after_count += 1; false}
-      @machine.after_transition {@after_count += 1}
+      @machine.after_transition {@callbacks << :after_1; false}
+      @machine.after_transition {@callbacks << :after_2}
+      @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -773,7 +776,7 @@ module MongoMapperTest
     end
     
     def test_should_still_run_further_after_callbacks
-      assert_equal 2, @after_count
+      assert_equal [:around_before, :around_after, :after_1, :after_2], @callbacks
     end
   end
   
@@ -913,6 +916,14 @@ module MongoMapperTest
       assert ran_callback
     end
     
+    def test_should_run_around_callbacks_before_yield
+      ran_callback = false
+      @machine.around_transition {|block| ran_callback = true; block.call }
+      
+      @record.valid?
+      assert ran_callback
+    end
+    
     def test_should_persist_new_state
       @record.valid?
       assert_equal 'idling', @record.state
@@ -937,6 +948,40 @@ module MongoMapperTest
       
       @record.valid?
       assert !ran_callback
+    end
+    
+    def test_should_not_run_around_callbacks_after_yield
+      ran_callback = false
+      @machine.around_transition {|block| block.call; ran_callback = true }
+      
+      @record.valid?
+      assert !ran_callback
+    end
+    
+    def test_should_not_run_around_callbacks_after_yield_with_failures_disabled_if_validation_fails
+      @model.class_eval do
+        attr_accessor :seatbelt
+        validates_presence_of :seatbelt
+      end
+      
+      ran_callback = false
+      @machine.around_transition {|block| block.call; ran_callback = true }
+      
+      @record.valid?
+      assert !ran_callback
+    end
+    
+    def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_validation_fails
+      @model.class_eval do
+        attr_accessor :seatbelt
+        validates_presence_of :seatbelt
+      end
+      
+      ran_callback = false
+      @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback = true }
+      
+      @record.valid?
+      assert ran_callback
     end
     
     def test_should_run_after_callbacks_with_failures_enabled_if_validation_fails
@@ -996,6 +1041,22 @@ module MongoMapperTest
       assert_equal 1, before_count
     end
     
+    def test_should_run_around_callbacks_before_yield
+      ran_callback = false
+      @machine.around_transition {|block| ran_callback = true; block.call }
+      
+      @record.save
+      assert ran_callback
+    end
+    
+    def test_should_run_around_callbacks_before_yield_once
+      around_before_count = 0
+      @machine.around_transition {|block| around_before_count += 1; block.call }
+      
+      @record.save
+      assert_equal 1, around_before_count
+    end
+    
     def test_should_persist_new_state
       @record.save
       assert_equal 'idling', @record.state
@@ -1028,6 +1089,38 @@ module MongoMapperTest
       
       ran_callback = false
       @machine.after_transition(:include_failures => true) { ran_callback = true }
+      
+      begin; @record.save; rescue; end
+      assert ran_callback
+    end
+    
+    def test_should_not_run_around_callbacks_with_failures_disabled_if_fails
+      @model.class_eval do
+        validates_inclusion_of :state, :within => %w(first_gear)
+      end
+      
+      ran_callback = false
+      @machine.around_transition {|block| block.call; ran_callback = true }
+      
+      begin; @record.save; rescue; end
+      assert !ran_callback
+    end
+    
+    def test_should_run_around_callbacks_after_yield
+      ran_callback = false
+      @machine.around_transition {|block| block.call; ran_callback = true }
+      
+      @record.save
+      assert ran_callback
+    end
+    
+    def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_fails
+      @model.class_eval do
+        validates_inclusion_of :state, :within => %w(first_gear)
+      end
+      
+      ran_callback = false
+      @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback = true }
       
       begin; @record.save; rescue; end
       assert ran_callback
@@ -1077,6 +1170,27 @@ module MongoMapperTest
       assert_equal 1, before_count
     end
     
+    def test_should_run_around_callbacks_before_yield
+      ran_callback = false
+      @machine.around_transition {|block| ran_callback = true; block.call }
+      
+      @record.save!
+      assert ran_callback
+    end
+    
+    def test_should_run_around_callbacks_before_yield_once
+      around_before_count = 0
+      @machine.around_transition {|block| around_before_count += 1; block.call }
+      
+      @record.save!
+      assert_equal 1, around_before_count
+    end
+    
+    def test_should_persist_new_state
+      @record.save!
+      assert_equal 'idling', @record.state
+    end
+    
     def test_should_persist_new_state
       @record.save!
       assert_equal 'idling', @record.state
@@ -1085,6 +1199,14 @@ module MongoMapperTest
     def test_should_run_after_callbacks
       ran_callback = false
       @machine.after_transition { ran_callback = true }
+      
+      @record.save!
+      assert ran_callback
+    end
+    
+    def test_should_run_around_callbacks_after_yield
+      ran_callback = false
+      @machine.around_transition {|block| block.call; ran_callback = true }
       
       @record.save!
       assert ran_callback

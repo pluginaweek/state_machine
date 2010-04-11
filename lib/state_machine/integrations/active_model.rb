@@ -329,8 +329,8 @@ module StateMachine
         # before/after a transition has been performed.
         def after_initialize
           if supports_observers?
-            callbacks[:before] << Callback.new {|object, transition| notify(:before, object, transition)}
-            callbacks[:after] << Callback.new {|object, transition| notify(:after, object, transition)}
+            callbacks[:before] << Callback.new(:before) {|object, transition| notify(:before, object, transition)}
+            callbacks[:after] << Callback.new(:after) {|object, transition| notify(:after, object, transition)}
           end
         end
         
@@ -363,7 +363,7 @@ module StateMachine
           options[:terminator] = callback_terminator
           
           if supports_observers?
-            @callbacks[type].insert(-2, callback = Callback.new(options, &block))
+            @callbacks[type == :around ? :before : type].insert(-2, callback = Callback.new(type, options, &block))
             add_states(callback.known_states)
             callback
           else

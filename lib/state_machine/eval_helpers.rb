@@ -50,15 +50,31 @@ module StateMachine
     #   evaluate_method(person, lambda {|person| person.name}, 21)                              # => "John Smith"
     #   evaluate_method(person, lambda {|person, age| "#{person.name} is #{age}"}, 21)          # => "John Smith is 21"
     #   evaluate_method(person, lambda {|person, age| "#{person.name} is #{age}"}, 21, 'male')  # => ArgumentError: wrong number of arguments (3 for 2)
-    def evaluate_method(object, method, *args)
+    def evaluate_method(object, method, *args, &block)
       case method
         when Symbol
-          object.method(method).arity == 0 ? object.send(method) : object.send(method, *args)
+          object.method(method).arity == 0 ? object.send(method, &block) : object.send(method, *args, &block)
         when Proc, Method
           args.unshift(object)
-          [0, 1].include?(method.arity) ? method.call(*args.slice(0, method.arity)) : method.call(*args)
+          arity = method.arity
+          limit = [0, 1].include?(arity) ? arity : args.length
+          
+          # Procs don't support blocks in < Ruby 1.8.6, so it's tacked on as an
+          # argument for consistency across versions of Ruby (even though 1.9
+          # supports yielding within blocks)
+          if block_given? && Proc === method && arity != 0
+            if [1, 2].include?(arity)
+              limit = arity
+              args.insert(limit - 1, block)
+            else
+              limit += 1 unless limit < 0
+              args.push(block)
+            end
+          end
+          
+          method.call(*args[0, limit], &block)
         when String
-          eval(method, object.instance_eval {binding})
+          eval(method, object.instance_eval {binding}, &block)
         else
           raise ArgumentError, 'Methods must be a symbol denoting the method to call, a block to be invoked, or a string to be evaluated'
         end

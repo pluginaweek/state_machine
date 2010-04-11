@@ -37,7 +37,7 @@ Some brief, high-level features include:
 * Defining state machines on any Ruby class
 * Multiple state machines on a single class
 * Namespaced state machines
-* before/after transition hooks with explicit transition requirements
+* before/after/around transition hooks with explicit transition requirements
 * Integration with ActiveModel, ActiveRecord, DataMapper, MongoMapper, and Sequel
 * State predicates
 * State-driven instance / class behavior
@@ -68,7 +68,7 @@ Below is an example of many of the features offered by this plugin, including:
 Class definition:
 
   class Vehicle
-    attr_accessor :seatbelt_on
+    attr_accessor :seatbelt_on, :time_used
     
     state_machine :state, :initial => :parked do
       before_transition :parked => any - :parked, :do => :put_on_seatbelt
@@ -77,6 +77,12 @@ Class definition:
       after_transition :on => :repair, :do => :fix
       after_transition any => :parked do |vehicle, transition|
         vehicle.seatbelt_on = false
+      end
+      
+      around_transition do |vehicle, transition, block|
+        start = Time.now
+        block.call
+        vehicle.time_used += Time.now - start
       end
       
       event :park do
@@ -142,6 +148,7 @@ Class definition:
     
     def initialize
       @seatbelt_on = false
+      @time_used = 0
       super() # NOTE: This *must* be called, otherwise states won't get initialized
     end
     
@@ -256,6 +263,7 @@ observers.  For example,
       after_transition any => :parked do |vehicle, transition|
         vehicle.seatbelt = 'off'
       end
+      around_transition :benchmark
       
       event :ignite do
         transition :parked => :idling
@@ -267,6 +275,12 @@ observers.  For example,
     end
     
     def put_on_seatbelt
+      ...
+    end
+    
+    def benchmark
+      ...
+      yield
       ...
     end
   end
@@ -298,6 +312,7 @@ saving the record, named scopes, validation errors, and observers.  For example,
       after_transition any => :parked do |vehicle, transition|
         vehicle.seatbelt = 'off'
       end
+      around_transition :benchmark
       
       event :ignite do
         transition :parked => :idling
@@ -309,6 +324,12 @@ saving the record, named scopes, validation errors, and observers.  For example,
     end
     
     def put_on_seatbelt
+      ...
+    end
+    
+    def benchmark
+      ...
+      yield
       ...
     end
   end
@@ -345,6 +366,7 @@ callbacks, validation errors, and observers.  For example,
       after_transition any => :parked do |transition|
         self.seatbelt = 'off' # self is the record
       end
+      around_transition :benchmark
       
       event :ignite do
         transition :parked => :idling
@@ -356,6 +378,12 @@ callbacks, validation errors, and observers.  For example,
     end
     
     def put_on_seatbelt
+      ...
+    end
+    
+    def benchmark
+      ...
+      yield
       ...
     end
   end
@@ -373,6 +401,12 @@ callbacks, validation errors, and observers.  For example,
     # Generic transition callback *after* the transition is performed
     after_transition do |transition|
       Audit.log(self, transition) # self is the record
+    end
+    
+    around_transition do |transition, block|
+      # mark start time
+      block.call
+      # mark stop time
     end
   end
 
@@ -395,6 +429,7 @@ basic scopes, validation errors and callbacks.  For example,
       after_transition any => :parked do |vehicle, transition|
         vehicle.seatbelt = 'off' # self is the record
       end
+      around_transition :benchmark
       
       event :ignite do
         transition :parked => :idling
@@ -406,6 +441,12 @@ basic scopes, validation errors and callbacks.  For example,
     end
     
     def put_on_seatbelt
+      ...
+    end
+    
+    def benchmark
+      ...
+      yield
       ...
     end
   end
@@ -425,6 +466,7 @@ errors and callbacks.  For example,
       after_transition any => :parked do |transition|
         self.seatbelt = 'off' # self is the record
       end
+      around_transition :benchmark
       
       event :ignite do
         transition :parked => :idling
@@ -436,6 +478,12 @@ errors and callbacks.  For example,
     end
     
     def put_on_seatbelt
+      ...
+    end
+    
+    def benchmark
+      ...
+      yield
       ...
     end
   end
@@ -558,6 +606,7 @@ The following caveats should be noted when using state_machine:
 
 * DataMapper: dm-validations 0.9.4 - 0.9.6 causes +after+ callbacks for attribute-based event transitions to fail
 * Overridden event methods won't get invoked when using attribute-based event transitions
+* around_transition callbacks in ORM integrations won't work on JRuby since it doesn't support continuations
 
 == Dependencies
 

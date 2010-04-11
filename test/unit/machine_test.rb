@@ -616,6 +616,7 @@ class MachineAfterBeingCopiedTest < Test::Unit::TestCase
     @machine.event(:ignite) {}
     @machine.before_transition(lambda {})
     @machine.after_transition(lambda {})
+    @machine.around_transition(lambda {})
     
     @copied_machine = @machine.clone
   end
@@ -1428,17 +1429,22 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   def test_should_invoke_callbacks_during_transition
     @machine.before_transition lambda {|object| object.callbacks << 'before'}
     @machine.after_transition lambda {|object| object.callbacks << 'after'}
+    @machine.around_transition lambda {|object, transition, block| object.callbacks << 'before_around'; block.call; object.callbacks << 'after_around'}
     
     @event.fire(@object)
-    assert_equal %w(before after), @object.callbacks
+    assert_equal %w(before before_around after_around after), @object.callbacks
   end
   
   def test_should_allow_multiple_callbacks
     @machine.before_transition lambda {|object| object.callbacks << 'before1'}, lambda {|object| object.callbacks << 'before2'}
     @machine.after_transition lambda {|object| object.callbacks << 'after1'}, lambda {|object| object.callbacks << 'after2'}
+    @machine.around_transition(
+      lambda {|object, transition, block| object.callbacks << 'before_around1'; block.call; object.callbacks << 'after_around1'},
+      lambda {|object, transition, block| object.callbacks << 'before_around2'; block.call; object.callbacks << 'after_around2'}
+    )
     
     @event.fire(@object)
-    assert_equal %w(before1 before2 after1 after2), @object.callbacks
+    assert_equal %w(before1 before2 before_around1 before_around2 after_around2 after_around1 after1 after2), @object.callbacks
   end
   
   def test_should_allow_multiple_callbacks_with_requirements
@@ -1446,9 +1452,19 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
     @machine.before_transition lambda {|object| object.callbacks << 'before_idling1'}, lambda {|object| object.callbacks << 'before_idling2'}, :from => :idling
     @machine.after_transition lambda {|object| object.callbacks << 'after_parked1'}, lambda {|object| object.callbacks << 'after_parked2'}, :from => :parked
     @machine.after_transition lambda {|object| object.callbacks << 'after_idling1'}, lambda {|object| object.callbacks << 'after_idling2'}, :from => :idling
+    @machine.around_transition(
+      lambda {|object, transition, block| object.callbacks << 'before_around_parked1'; block.call; object.callbacks << 'after_around_parked1'},
+      lambda {|object, transition, block| object.callbacks << 'before_around_parked2'; block.call; object.callbacks << 'after_around_parked2'},
+      :from => :parked
+    )
+    @machine.around_transition(
+      lambda {|object, transition, block| object.callbacks << 'before_around_idling1'; block.call; object.callbacks << 'after_around_idling1'},
+      lambda {|object, transition, block| object.callbacks << 'before_around_idling2'; block.call; object.callbacks << 'after_around_idling2'},
+      :from => :idling
+    )
     
     @event.fire(@object)
-    assert_equal %w(before_parked1 before_parked2 after_parked1 after_parked2), @object.callbacks
+    assert_equal %w(before_parked1 before_parked2 before_around_parked1 before_around_parked2 after_around_parked2 after_around_parked1 after_parked1 after_parked2), @object.callbacks
   end
   
   def test_should_support_from_requirement
@@ -1510,14 +1526,16 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   def test_should_track_states_defined_in_transition_callbacks
     @machine.before_transition :parked => :idling, :do => lambda {}
     @machine.after_transition :first_gear => :second_gear, :do => lambda {}
+    @machine.around_transition :third_gear => :fourth_gear, :do => lambda {}
     
-    assert_equal [:parked, :idling, :first_gear, :second_gear], @machine.states.map {|state| state.name}
+    assert_equal [:parked, :idling, :first_gear, :second_gear, :third_gear, :fourth_gear], @machine.states.map {|state| state.name}
   end
   
   def test_should_not_duplicate_states_defined_in_multiple_event_transitions
     @machine.before_transition :parked => :idling, :do => lambda {}
     @machine.after_transition :first_gear => :second_gear, :do => lambda {}
     @machine.after_transition :parked => :idling, :do => lambda {}
+    @machine.around_transition :parked => :idling, :do => lambda {}
     
     assert_equal [:parked, :idling, :first_gear, :second_gear], @machine.states.map {|state| state.name}
   end
@@ -1775,6 +1793,7 @@ class MachineFinderWithExistingMachineOnSuperclassTest < Test::Unit::TestCase
     @base_machine.event(:ignite) {}
     @base_machine.before_transition(lambda {})
     @base_machine.after_transition(lambda {})
+    @base_machine.around_transition(lambda {})
     
     @klass = Class.new(@base_class)
     @machine = StateMachine::Machine.find_or_create(@klass, :status) {}

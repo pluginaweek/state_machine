@@ -156,6 +156,11 @@ module StateMachine
   # later callbacks are canceled.  If an +after+ callback halts the chain,
   # the later callbacks are canceled, but the transition is still successful.
   # 
+  # These same rules apply to +around+ callbacks with the exception that any
+  # +around+ callback that doesn't yield will essentially result in :halt being
+  # thrown.  Any code executed after the yield will behave in the same way as
+  # +after+ callbacks.
+  # 
   # *Note* that if a +before+ callback fails and the bang version of an event
   # was invoked, an exception will be raised instead of returning false.  For
   # example,
@@ -207,6 +212,10 @@ module StateMachine
   #     def self.after_transition(vehicle, transition)
   #       logger.info "#{vehicle} instructed to #{transition.event}... #{transition.attribute} was: #{transition.from}, #{transition.attribute} is: #{transition.to}"
   #     end
+  #     
+  #     def self.around_transition(vehicle, transition)
+  #       logger.info Benchmark.measure { yield }
+  #     end
   #   end
   #   
   #   Vehicle.state_machine do
@@ -215,6 +224,8 @@ module StateMachine
   #     
   #     after_transition :on => :park, :do => VehicleObserver.method(:after_park)
   #     after_transition VehicleObserver.method(:after_transition)
+  #     
+  #     around_transition VehicleObserver.method(:around_transition)
   #   end
   # 
   # One common callback is to record transitions for all models in the system
@@ -1094,14 +1105,19 @@ module StateMachine
     # 
     # == Result requirements
     # 
-    # By default, after_transition callbacks will only be run if the transition
+    # By default, +after_transition+ callbacks and code executed after an
+    # +around_transition+ callback yields will only be run if the transition
     # was performed successfully.  A transition is successful if the machine's
     # action is not configured or does not return false when it is invoked.
-    # In order to include failed attempts when running an after_transition
-    # callback, the :include_failures option can be specified like so:
+    # In order to include failed attempts when running an +after_transition+ or
+    # +around_transition+ callback, the <tt>:include_failures</tt> option can be
+    # specified like so:
     # 
     #   after_transition :include_failures => true, :do => ...  # Runs on all attempts to transition, including failures
     #   after_transition :do => ...                             # Runs only on successful attempts to transition
+    # 
+    #   around_transition :include_failures => true, :do => ... # Runs on all attempts to transition, including failures
+    #   around_transition :do => ...                            # Runs only on successful attempts to transition
     # 
     # == Verbose Requirements
     # 
@@ -1211,6 +1227,66 @@ module StateMachine
       options = (args.last.is_a?(Hash) ? args.pop : {})
       options[:do] = args if args.any?
       add_callback(:after, options, &block)
+    end
+    
+    # Creates a callback that will be invoked *around* a transition so long as
+    # the given requirements match the transition.
+    # 
+    # == The callback
+    # 
+    # Around callbacks wrap transitions, executing code both before and after.
+    # These callbacks are defined in the exact same manner as before / after
+    # callbacks with the exception that the transition must be yielded to in
+    # order to finish running it.
+    # 
+    # If defining +around+ callbacks using blocks, you must yield within the
+    # transition by directly calling the block (since yielding is not allowed
+    # within blocks).
+    # 
+    # For example,
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       around_transition do |block|
+    #         Benchmark.measure { block.call }
+    #       end
+    #       
+    #       around_transition do |vehicle, block|
+    #         logger.info "vehicle was #{state}..."
+    #         block.call
+    #         logger.info "...and is now #{state}"
+    #       end
+    #       
+    #       around_transition do |vehicle, transition, block|
+    #         logger.info "before #{transition.event}: #{vehicle.state}"
+    #         block.call
+    #         logger.info "after #{transition.event}: #{vehicle.state}"
+    #       end
+    #     end
+    #   end
+    # 
+    # Notice that referencing the block is similar to doing so within an
+    # actual method definition in that it is always the last argument.
+    # 
+    # On the other hand, if you're defining +around+ callbacks using method
+    # references, you can yield like normal:
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       around_transition :benchmark
+    #       
+    #       def benchmark
+    #         Benchmark.measure { yield }
+    #       end
+    #     end
+    #   end
+    # 
+    # See +before_transition+ for a description of the possible configurations
+    # for defining callbacks.
+    def around_transition(*args, &block)
+      options = (args.last.is_a?(Hash) ? args.pop : {})
+      options[:do] = args if args.any?
+      add_callback(:around, options, &block)
     end
     
     # Marks the given object as invalid with the given message.
@@ -1477,7 +1553,7 @@ module StateMachine
       
       # Adds a new transition callback of the given type.
       def add_callback(type, options, &block)
-        callbacks[type] << callback = Callback.new(options, &block)
+        callbacks[type == :around ? :before : type] << callback = Callback.new(type, options, &block)
         add_states(callback.known_states)
         callback
       end

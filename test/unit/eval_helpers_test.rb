@@ -28,7 +28,7 @@ class EvalHelpersSymbolTest < EvalHelpersBaseTest
   end
   
   def test_should_call_method_on_object_with_no_arguments
-    assert evaluate_method(@object, :callback, 1, 2, 3)
+    assert_equal true, evaluate_method(@object, :callback, 1, 2, 3)
   end
 end
 
@@ -43,6 +43,34 @@ class EvalHelpersSymbolWithArgumentsTest < EvalHelpersBaseTest
   
   def test_should_call_method_with_all_arguments
     assert_equal [1, 2, 3], evaluate_method(@object, :callback, 1, 2, 3)
+  end
+end
+
+class EvalHelpersSymbolWithBlockTest < EvalHelpersBaseTest
+  def setup
+    class << (@object = Object.new)
+      def callback
+        yield
+      end
+    end
+  end
+  
+  def test_should_call_method_on_object_with_block
+    assert_equal true, evaluate_method(@object, :callback) { true }
+  end
+end
+
+class EvalHelpersSymbolWithArgumentsAndBlockTest < EvalHelpersBaseTest
+  def setup
+    class << (@object = Object.new)
+      def callback(*args)
+        args << yield
+      end
+    end
+  end
+  
+  def test_should_call_method_on_object_with_all_arguments_and_block
+    assert_equal [1, 2, 3, true], evaluate_method(@object, :callback, 1, 2, 3) { true }
   end
 end
 
@@ -81,6 +109,16 @@ class EvalHelpersStringTest < EvalHelpersBaseTest
   end
 end
 
+class EvalHelpersStringWithBlockTest < EvalHelpersBaseTest
+  def setup
+    @object = Object.new
+  end
+  
+  def test_should_call_method_on_object_with_block
+    assert_equal 1, evaluate_method(@object, 'yield') { 1 }
+  end
+end
+
 class EvalHelpersProcTest < EvalHelpersBaseTest
   def setup
     @object = Object.new
@@ -116,5 +154,69 @@ class EvalHelpersProcWithArgumentsTest < EvalHelpersBaseTest
   
   def test_should_call_method_with_all_arguments
     assert_equal [@object, 1, 2, 3], evaluate_method(@object, @proc, 1, 2, 3)
+  end
+end
+
+class EvalHelpersProcWithBlockTest < EvalHelpersBaseTest
+  def setup
+    @object = Object.new
+    @proc = lambda {|obj, block| block.call}
+  end
+  
+  def test_should_call_method_on_object_with_block
+    assert_equal true, evaluate_method(@object, @proc, 1, 2, 3) { true }
+  end
+end
+
+class EvalHelpersProcWithBlockWithoutArgumentsTest < EvalHelpersBaseTest
+  def setup
+    @object = Object.new
+    @proc = lambda {|*args| args}
+    class << @proc
+      def arity
+        0
+      end
+    end
+  end
+  
+  def test_should_call_proc_without_arguments
+    block = lambda { true }
+    assert_equal [], evaluate_method(@object, @proc, 1, 2, 3, &block)
+  end
+end
+
+class EvalHelpersProcWithBlockWithoutObjectTest < EvalHelpersBaseTest
+  def setup
+    @object = Object.new
+    @proc = lambda {|block| [block]}
+  end
+  
+  def test_should_call_proc_with_block_only
+    block = lambda { true }
+    assert_equal [block], evaluate_method(@object, @proc, 1, 2, 3, &block)
+  end
+end
+
+class EvalHelpersProcBlockAndImplicitArgumentsTest < EvalHelpersBaseTest
+  def setup
+    @object = Object.new
+    @proc = lambda {|*args| args}
+  end
+  
+  def test_should_call_method_on_object_with_all_arguments_and_block
+    block = lambda { true }
+    assert_equal [@object, 1, 2, 3, block], evaluate_method(@object, @proc, 1, 2, 3, &block)
+  end
+end
+
+class EvalHelpersProcBlockAndExplicitArgumentsTest < EvalHelpersBaseTest
+  def setup
+    @object = Object.new
+    @proc = lambda {|object, arg1, arg2, arg3, block| [object, arg1, arg2, arg3, block]}
+  end
+  
+  def test_should_call_method_on_object_with_all_arguments_and_block
+    block = lambda { true }
+    assert_equal [@object, 1, 2, 3, block], evaluate_method(@object, @proc, 1, 2, 3, &block)
   end
 end
