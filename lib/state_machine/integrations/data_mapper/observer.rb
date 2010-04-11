@@ -127,7 +127,7 @@ module StateMachine
         #     
         #     observe Vehicle
         #     
-        #     around_transition do |transition, &block|
+        #     around_transition do |transition, block|
         #       # track start time
         #       block.call
         #       # track end time
