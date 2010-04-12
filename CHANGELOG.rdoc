@@ -1,5 +1,6 @@
 == master
 
+* Disable attribute-based event transitions in DataMapper 0.9.4 - 0.9.6 when dm-validations is being used
 * Add support for DataMapper 0.10.3+
 * Add around_transition callbacks
 * Fix transition failures during save not being handled correctly in Sequel 2.12.0+

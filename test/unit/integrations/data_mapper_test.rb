@@ -977,214 +977,214 @@ module DataMapperTest
       end
     end
     
-    class MachineWithEventAttributesOnValidationTest < BaseTestCase
-      def setup
-        @resource = new_resource
-        @machine = StateMachine::Machine.new(@resource)
-        @machine.event :ignite do
-          transition :parked => :idling
-        end
-        
-        @record = @resource.new
-        @record.state = 'parked'
-        @record.state_event = 'ignite'
-      end
-      
-      def test_should_fail_if_event_is_invalid
-        @record.state_event = 'invalid'
-        assert !@record.valid?
-        assert_equal ['is invalid'], @record.errors.full_messages
-      end
-      
-      def test_should_fail_if_event_has_no_transition
-        @record.state = 'idling'
-        assert !@record.valid?
-        assert_equal ['cannot transition when idling'], @record.errors.full_messages
-      end
-      
-      def test_should_be_successful_if_event_has_transition
-        assert @record.valid?
-      end
-      
-      def test_should_run_before_callbacks
-        ran_callback = false
-        @machine.before_transition { ran_callback = true }
-        
-        @record.valid?
-        assert ran_callback
-      end
-      
-      def test_should_run_around_callbacks_before_yield
-        ran_callback = false
-        @machine.around_transition {|block| ran_callback = true; block.call }
-        
-        @record.valid?
-        assert ran_callback
-      end
-      
-      def test_should_persist_new_state
-        @record.valid?
-        assert_equal 'idling', @record.state
-      end
-      
-      def test_should_not_run_after_callbacks
-        ran_callback = false
-        @machine.after_transition { ran_callback = true }
-        
-        @record.valid?
-        assert !ran_callback
-      end
-      
-      def test_should_not_run_after_callbacks_with_failures_disabled_if_validation_fails
-        @resource.class_eval do
-          attr_accessor :seatbelt
-          if respond_to?(:validates_presence_of)
-            validates_presence_of :seatbelt
-          else
-            validates_present :seatbelt
+    # See README caveats
+    if Gem::Version.new(::DataMapper::VERSION) > Gem::Version.new('0.9.6')
+      class MachineWithEventAttributesOnValidationTest < BaseTestCase
+        def setup
+          @resource = new_resource
+          @machine = StateMachine::Machine.new(@resource)
+          @machine.event :ignite do
+            transition :parked => :idling
           end
+          
+          @record = @resource.new
+          @record.state = 'parked'
+          @record.state_event = 'ignite'
         end
         
-        ran_callback = false
-        @machine.after_transition { ran_callback = true }
+        def test_should_fail_if_event_is_invalid
+          @record.state_event = 'invalid'
+          assert !@record.valid?
+          assert_equal ['is invalid'], @record.errors.full_messages
+        end
         
-        @record.valid?
-        assert !ran_callback
-      end
-      
-      def test_should_run_after_callbacks_with_failures_enabled_if_validation_fails
-        @resource.class_eval do
-          attr_accessor :seatbelt
-          if respond_to?(:validates_presence_of)
-            validates_presence_of :seatbelt
-          else
-            validates_present :seatbelt
+        def test_should_fail_if_event_has_no_transition
+          @record.state = 'idling'
+          assert !@record.valid?
+          assert_equal ['cannot transition when idling'], @record.errors.full_messages
+        end
+        
+        def test_should_be_successful_if_event_has_transition
+          assert @record.valid?
+        end
+        
+        def test_should_run_before_callbacks
+          ran_callback = false
+          @machine.before_transition { ran_callback = true }
+          
+          @record.valid?
+          assert ran_callback
+        end
+        
+        def test_should_run_around_callbacks_before_yield
+          ran_callback = false
+          @machine.around_transition {|block| ran_callback = true; block.call }
+          
+          @record.valid?
+          assert ran_callback
+        end
+        
+        def test_should_persist_new_state
+          @record.valid?
+          assert_equal 'idling', @record.state
+        end
+        
+        def test_should_not_run_after_callbacks
+          ran_callback = false
+          @machine.after_transition { ran_callback = true }
+          
+          @record.valid?
+          assert !ran_callback
+        end
+        
+        def test_should_not_run_after_callbacks_with_failures_disabled_if_validation_fails
+          @resource.class_eval do
+            attr_accessor :seatbelt
+            if respond_to?(:validates_presence_of)
+              validates_presence_of :seatbelt
+            else
+              validates_present :seatbelt
+            end
           end
+          
+          ran_callback = false
+          @machine.after_transition { ran_callback = true }
+          
+          @record.valid?
+          assert !ran_callback
         end
         
-        ran_callback = false
-        @machine.after_transition(:include_failures => true) { ran_callback = true }
-        
-        @record.valid?
-        assert ran_callback
-      end
-      
-      def test_should_not_run_around_callbacks_after_yield
-        ran_callback = [false]
-        @machine.around_transition {|block| block.call; ran_callback[0] = true }
-        
-        @record.valid?
-        assert !ran_callback[0]
-      end
-      
-      def test_should_not_run_around_callbacks_after_yield_with_failures_disabled_if_validation_fails
-        @resource.class_eval do
-          attr_accessor :seatbelt
-          if respond_to?(:validates_presence_of)
-            validates_presence_of :seatbelt
-          else
-            validates_present :seatbelt
+        def test_should_run_after_callbacks_with_failures_enabled_if_validation_fails
+          @resource.class_eval do
+            attr_accessor :seatbelt
+            if respond_to?(:validates_presence_of)
+              validates_presence_of :seatbelt
+            else
+              validates_present :seatbelt
+            end
           end
+          
+          ran_callback = false
+          @machine.after_transition(:include_failures => true) { ran_callback = true }
+          
+          @record.valid?
+          assert ran_callback
         end
         
-        ran_callback = [false]
-        @machine.around_transition {|block| block.call; ran_callback[0] = true }
+        def test_should_not_run_around_callbacks_after_yield
+          ran_callback = [false]
+          @machine.around_transition {|block| block.call; ran_callback[0] = true }
+          
+          @record.valid?
+          assert !ran_callback[0]
+        end
         
-        @record.valid?
-        assert !ran_callback[0]
-      end
-      
-      def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_validation_fails
-        @resource.class_eval do
-          attr_accessor :seatbelt
-          if respond_to?(:validates_presence_of)
-            validates_presence_of :seatbelt
-          else
-            validates_present :seatbelt
+        def test_should_not_run_around_callbacks_after_yield_with_failures_disabled_if_validation_fails
+          @resource.class_eval do
+            attr_accessor :seatbelt
+            if respond_to?(:validates_presence_of)
+              validates_presence_of :seatbelt
+            else
+              validates_present :seatbelt
+            end
           end
+          
+          ran_callback = [false]
+          @machine.around_transition {|block| block.call; ran_callback[0] = true }
+          
+          @record.valid?
+          assert !ran_callback[0]
         end
         
-        ran_callback = [false]
-        @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback[0] = true }
-        
-        @record.valid?
-        assert ran_callback[0]
-      end
-      
-      def test_should_not_run_before_transitions_within_transaction
-        @machine.before_transition { self.class.create; throw :halt }
-        
-        assert !@record.valid?
-        assert_equal 1, @resource.all.size
-      end
-    end
-    
-    class MachineWithEventAttributesOnSaveTest < BaseTestCase
-      def setup
-        @resource = new_resource
-        @machine = StateMachine::Machine.new(@resource)
-        @machine.event :ignite do
-          transition :parked => :idling
+        def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_validation_fails
+          @resource.class_eval do
+            attr_accessor :seatbelt
+            if respond_to?(:validates_presence_of)
+              validates_presence_of :seatbelt
+            else
+              validates_present :seatbelt
+            end
+          end
+          
+          ran_callback = [false]
+          @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback[0] = true }
+          
+          @record.valid?
+          assert ran_callback[0]
         end
         
-        @record = @resource.new
-        @record.state = 'parked'
-        @record.state_event = 'ignite'
+        def test_should_not_run_before_transitions_within_transaction
+          @machine.before_transition { self.class.create; throw :halt }
+          
+          assert !@record.valid?
+          assert_equal 1, @resource.all.size
+        end
       end
       
-      def test_should_fail_if_event_is_invalid
-        @record.state_event = 'invalid'
-        assert !@record.save
-      end
-      
-      def test_should_fail_if_event_has_no_transition
-        @record.state = 'idling'
-        assert !@record.save
-      end
-      
-      def test_should_be_successful_if_event_has_transition
-        assert_equal true, @record.save
-      end
-      
-      def test_should_run_before_callbacks
-        ran_callback = false
-        @machine.before_transition { ran_callback = true }
+      class MachineWithEventAttributesOnSaveTest < BaseTestCase
+        def setup
+          @resource = new_resource
+          @machine = StateMachine::Machine.new(@resource)
+          @machine.event :ignite do
+            transition :parked => :idling
+          end
+          
+          @record = @resource.new
+          @record.state = 'parked'
+          @record.state_event = 'ignite'
+        end
         
-        @record.save
-        assert ran_callback
-      end
-      
-      def test_should_run_before_callbacks_once
-        before_count = 0
-        @machine.before_transition { before_count += 1 }
+        def test_should_fail_if_event_is_invalid
+          @record.state_event = 'invalid'
+          assert !@record.save
+        end
         
-        @record.save
-        assert_equal 1, before_count
-      end
-      
-      def test_should_run_around_callbacks_before_yield
-        ran_callback = false
-        @machine.around_transition {|block| ran_callback = true; block.call }
+        def test_should_fail_if_event_has_no_transition
+          @record.state = 'idling'
+          assert !@record.save
+        end
         
-        @record.save
-        assert ran_callback
-      end
-      
-      def test_should_run_around_callbacks_before_yield_once
-        around_before_count = 0
-        @machine.around_transition {|block| around_before_count += 1; block.call }
+        def test_should_be_successful_if_event_has_transition
+          assert_equal true, @record.save
+        end
         
-        @record.save
-        assert_equal 1, around_before_count
-      end
-      
-      def test_should_persist_new_state
-        @record.save
-        assert_equal 'idling', @record.state
-      end
-      
-      # See README caveats
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.9.7')
+        def test_should_run_before_callbacks
+          ran_callback = false
+          @machine.before_transition { ran_callback = true }
+          
+          @record.save
+          assert ran_callback
+        end
+        
+        def test_should_run_before_callbacks_once
+          before_count = 0
+          @machine.before_transition { before_count += 1 }
+          
+          @record.save
+          assert_equal 1, before_count
+        end
+        
+        def test_should_run_around_callbacks_before_yield
+          ran_callback = false
+          @machine.around_transition {|block| ran_callback = true; block.call }
+          
+          @record.save
+          assert ran_callback
+        end
+        
+        def test_should_run_around_callbacks_before_yield_once
+          around_before_count = 0
+          @machine.around_transition {|block| around_before_count += 1; block.call }
+          
+          @record.save
+          assert_equal 1, around_before_count
+        end
+        
+        def test_should_persist_new_state
+          @record.save
+          assert_equal 'idling', @record.state
+        end
+        
         def test_should_run_after_callbacks
           ran_callback = false
           @machine.after_transition { ran_callback = true }
@@ -1240,27 +1240,27 @@ module DataMapperTest
           @record.save
           assert ran_callback[0]
         end
-      end
-      
-      def test_should_not_run_before_transitions_within_transaction
-        @machine.before_transition { self.class.create; throw :halt }
         
-        assert_equal false, @record.save
-        assert_equal 1, @resource.all.size
-      end
-      
-      def test_should_not_run_after_transitions_within_transaction
-        @machine.before_transition { self.class.create; throw :halt }
+        def test_should_not_run_before_transitions_within_transaction
+          @machine.before_transition { self.class.create; throw :halt }
+          
+          assert_equal false, @record.save
+          assert_equal 1, @resource.all.size
+        end
         
-        assert_equal false, @record.save
-        assert_equal 1, @resource.all.size
-      end
-      
-      def test_should_not_run_around_transition_within_transaction
-        @machine.around_transition { self.class.create; throw :halt }
+        def test_should_not_run_after_transitions_within_transaction
+          @machine.before_transition { self.class.create; throw :halt }
+          
+          assert_equal false, @record.save
+          assert_equal 1, @resource.all.size
+        end
         
-        assert_equal false, @record.save
-        assert_equal 1, @resource.all.size
+        def test_should_not_run_around_transition_within_transaction
+          @machine.around_transition { self.class.create; throw :halt }
+          
+          assert_equal false, @record.save
+          assert_equal 1, @resource.all.size
+        end
       end
     end
     
@@ -1347,37 +1347,39 @@ module DataMapperTest
       end
     end
     
-    class MachineWithEventAttributesOnCustomActionTest < BaseTestCase
-      def setup
-        @superclass = new_resource do
-          def persist
-            save
+    if Gem::Version.new(::DataMapper::VERSION) > Gem::Version.new('0.9.6')
+      class MachineWithEventAttributesOnCustomActionTest < BaseTestCase
+        def setup
+          @superclass = new_resource do
+            def persist
+              save
+            end
           end
-        end
-        @resource = Class.new(@superclass)
-        @machine = StateMachine::Machine.new(@resource, :action => :persist)
-        @machine.event :ignite do
-          transition :parked => :idling
+          @resource = Class.new(@superclass)
+          @machine = StateMachine::Machine.new(@resource, :action => :persist)
+          @machine.event :ignite do
+            transition :parked => :idling
+          end
+          
+          @record = @resource.new
+          @record.state = 'parked'
+          @record.state_event = 'ignite'
         end
         
-        @record = @resource.new
-        @record.state = 'parked'
-        @record.state_event = 'ignite'
-      end
-      
-      def test_should_not_transition_on_valid?
-        @record.valid?
-        assert_equal 'parked', @record.state
-      end
-      
-      def test_should_not_transition_on_save
-        @record.save
-        assert_equal 'parked', @record.state
-      end
-      
-      def test_should_transition_on_custom_action
-        @record.persist
-        assert_equal 'idling', @record.state
+        def test_should_not_transition_on_valid?
+          @record.valid?
+          assert_equal 'parked', @record.state
+        end
+        
+        def test_should_not_transition_on_save
+          @record.save
+          assert_equal 'parked', @record.state
+        end
+        
+        def test_should_transition_on_custom_action
+          @record.persist
+          assert_equal 'idling', @record.state
+        end
       end
     end
   rescue LoadError

@@ -604,7 +604,7 @@ Test specific versions of integrations like so:
 
 The following caveats should be noted when using state_machine:
 
-* DataMapper: dm-validations 0.9.4 - 0.9.6 causes +after+ callbacks for attribute-based event transitions to fail
+* DataMapper: Attribute-based event transitions are disabled when dm-validations 0.9.4 - 0.9.6 is in use
 * Overridden event methods won't get invoked when using attribute-based event transitions
 * around_transition callbacks in ORM integrations won't work on JRuby since it doesn't support continuations
 

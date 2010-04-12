@@ -319,8 +319,12 @@ module StateMachine
         
         # Adds hooks into validation for automatically firing events
         def define_action_helpers
+          # 0.9.4 - 0.9.6 fails to run after callbacks when validations are
+          # enabled because of the way dm-validations integrates
+          return if ::DataMapper::VERSION =~ /^0\.9\.[4-6]/ && supports_validations?
+          
           if action == :save
-            if super(::DataMapper::VERSION =~ /^(0\.\d\.)/ ? :save : :save_self) && supports_validations?
+            if super(::DataMapper::VERSION =~ /^0\.\d\./ ? :save : :save_self) && supports_validations?
               @instance_helper_module.class_eval do
                 define_method(:valid?) do |*args|
                   self.class.state_machines.transitions(self, :save, :after => false).perform { super(*args) }
