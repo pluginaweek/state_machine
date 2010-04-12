@@ -1477,23 +1477,27 @@ module StateMachine
       # Adds helper methods for automatically firing events when an action
       # is invoked
       def define_action_helpers(action_hook = self.action)
-        action = self.action
-        private_method = owner_class.private_method_defined?(action_hook)
+        private_action = owner_class.private_method_defined?(action_hook)
+        action_defined = owner_class.ancestors.any? do |ancestor|
+          ancestor != owner_class && (ancestor.method_defined?(action_hook) || ancestor.private_method_defined?(action_hook))
+        end
+        action_overridden = owner_class.state_machines.any? {|name, machine| machine.action == action && machine != self}
         
-        if (owner_class.method_defined?(action_hook) || private_method) && !owner_class.state_machines.any? {|name, machine| machine.action == action && machine != self}
-          # Action is defined and hasn't already been overridden by another machine
+        # Only define helper if:
+        # 1. Action was originally defined somewhere other than the owner class
+        # 2. It hasn't already been overridden by another machine
+        if action_defined && !action_overridden
+          action = self.action
           @instance_helper_module.class_eval do
-            # Override the default action to invoke the before / after hooks
             define_method(action_hook) do |*args|
               self.class.state_machines.transitions(self, action).perform { super(*args) }
             end
             
-            private action_hook if private_method
+            private action_hook if private_action
           end
           
           true
         else
-          # Action already defined: don't add integration-specific hooks
           false
         end
       end

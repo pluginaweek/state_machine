@@ -456,34 +456,6 @@ class MachineWithIntegrationTest < Test::Unit::TestCase
   end
 end
 
-class MachineWithActionTest < Test::Unit::TestCase
-  def setup
-    @klass = Class.new do
-      def save
-      end
-    end
-    
-    @machine = StateMachine::Machine.new(@klass, :action => :save)
-    @object = @klass.new
-  end
-  
-  def test_should_define_an_event_attribute_reader
-    assert @object.respond_to?(:state_event)
-  end
-  
-  def test_should_define_an_event_attribute_writer
-    assert @object.respond_to?(:state_event=)
-  end
-  
-  def test_should_define_an_event_transition_attribute_reader
-    assert @object.respond_to?(:state_event_transition)
-  end
-  
-  def test_should_define_an_event_transition_attribute_writer
-    assert @object.respond_to?(:state_event_transition=)
-  end
-end
-
 class MachineWithActionUndefinedTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
@@ -509,6 +481,171 @@ class MachineWithActionUndefinedTest < Test::Unit::TestCase
   
   def test_should_not_define_action
     assert !@object.respond_to?(:save)
+  end
+end
+
+class MachineWithActionDefinedInClassTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def save
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @object = @klass.new
+  end
+  
+  def test_should_define_an_event_attribute_reader
+    assert @object.respond_to?(:state_event)
+  end
+  
+  def test_should_define_an_event_attribute_writer
+    assert @object.respond_to?(:state_event=)
+  end
+  
+  def test_should_define_an_event_transition_attribute_reader
+    assert @object.respond_to?(:state_event_transition)
+  end
+  
+  def test_should_define_an_event_transition_attribute_writer
+    assert @object.respond_to?(:state_event_transition=)
+  end
+  
+  def test_should_not_define_action
+    assert !@klass.ancestors.any? {|ancestor| ancestor != @klass && ancestor.method_defined?(:save)}
+  end
+end
+
+class MachineWithActionDefinedInIncludedModuleTest < Test::Unit::TestCase
+  def setup
+    @mod = mod = Module.new do
+      def save
+      end
+    end
+    
+    @klass = Class.new do
+      include mod
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @object = @klass.new
+  end
+  
+  def test_should_define_an_event_attribute_reader
+    assert @object.respond_to?(:state_event)
+  end
+  
+  def test_should_define_an_event_attribute_writer
+    assert @object.respond_to?(:state_event=)
+  end
+  
+  def test_should_define_an_event_transition_attribute_reader
+    assert @object.respond_to?(:state_event_transition)
+  end
+  
+  def test_should_define_an_event_transition_attribute_writer
+    assert @object.respond_to?(:state_event_transition=)
+  end
+  
+  def test_should_define_action
+    assert @klass.ancestors.any? {|ancestor| ![@klass, @mod].include?(ancestor) && ancestor.method_defined?(:save)}
+  end
+  
+  def test_should_keep_action_public
+    assert @klass.public_method_defined?(:save)
+  end
+end
+
+class MachineWithActionDefinedInSuperclassTest < Test::Unit::TestCase
+  def setup
+    @superclass = Class.new do
+      def save
+      end
+    end
+    @klass = Class.new(@superclass)
+    
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @object = @klass.new
+  end
+  
+  def test_should_define_an_event_attribute_reader
+    assert @object.respond_to?(:state_event)
+  end
+  
+  def test_should_define_an_event_attribute_writer
+    assert @object.respond_to?(:state_event=)
+  end
+  
+  def test_should_define_an_event_transition_attribute_reader
+    assert @object.respond_to?(:state_event_transition)
+  end
+  
+  def test_should_define_an_event_transition_attribute_writer
+    assert @object.respond_to?(:state_event_transition=)
+  end
+  
+  def test_should_define_action
+    assert @klass.ancestors.any? {|ancestor| ![@klass, @superclass].include?(ancestor) && ancestor.method_defined?(:save)}
+  end
+  
+  def test_should_keep_action_public
+    assert @klass.public_method_defined?(:save)
+  end
+end
+
+class MachineWithPrivateActionTest < Test::Unit::TestCase
+  def setup
+    @superclass = Class.new do
+      private
+      def save
+      end
+    end
+    @klass = Class.new(@superclass)
+    
+    @machine = StateMachine::Machine.new(@klass, :action => :save)
+    @object = @klass.new
+  end
+  
+  def test_should_define_an_event_attribute_reader
+    assert @object.respond_to?(:state_event)
+  end
+  
+  def test_should_define_an_event_attribute_writer
+    assert @object.respond_to?(:state_event=)
+  end
+  
+  def test_should_define_an_event_transition_attribute_reader
+    assert @object.respond_to?(:state_event_transition)
+  end
+  
+  def test_should_define_an_event_transition_attribute_writer
+    assert @object.respond_to?(:state_event_transition=)
+  end
+  
+  def test_should_define_action
+    assert @klass.ancestors.any? {|ancestor| ![@klass, @superclass].include?(ancestor) && ancestor.private_method_defined?(:save)}
+  end
+  
+  def test_should_keep_action_private
+    assert @klass.private_method_defined?(:save)
+  end
+end
+
+class MachineWithActionAlreadyOverriddenTest < Test::Unit::TestCase
+  def setup
+    @superclass = Class.new do
+      def save
+      end
+    end
+    @klass = Class.new(@superclass)
+    
+    StateMachine::Machine.new(@klass, :action => :save)
+    StateMachine::Machine.new(@klass, :status, :action => :save)
+    @object = @klass.new
+  end
+  
+  def test_should_not_redefine_action
+    assert_equal 1, @klass.ancestors.select {|ancestor| ![@klass, @superclass].include?(ancestor) && ancestor.method_defined?(:save)}.length
   end
 end
 
