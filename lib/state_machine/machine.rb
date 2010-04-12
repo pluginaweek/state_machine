@@ -1274,10 +1274,11 @@ module StateMachine
     #   class Vehicle
     #     state_machine do
     #       around_transition :benchmark
-    #       
-    #       def benchmark
-    #         Benchmark.measure { yield }
-    #       end
+    #       ...
+    #     end
+    #     
+    #     def benchmark
+    #       Benchmark.measure { yield }
     #     end
     #   end
     # 
