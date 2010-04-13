@@ -482,6 +482,10 @@ class MachineWithActionUndefinedTest < Test::Unit::TestCase
   def test_should_not_define_action
     assert !@object.respond_to?(:save)
   end
+  
+  def test_should_not_mark_action_helper_as_defined
+    assert !@machine.action_helper_defined?
+  end
 end
 
 class MachineWithActionDefinedInClassTest < Test::Unit::TestCase
@@ -513,6 +517,10 @@ class MachineWithActionDefinedInClassTest < Test::Unit::TestCase
   
   def test_should_not_define_action
     assert !@klass.ancestors.any? {|ancestor| ancestor != @klass && ancestor.method_defined?(:save)}
+  end
+  
+  def test_should_not_mark_action_helper_as_defined
+    assert !@machine.action_helper_defined?
   end
 end
 
@@ -554,6 +562,10 @@ class MachineWithActionDefinedInIncludedModuleTest < Test::Unit::TestCase
   def test_should_keep_action_public
     assert @klass.public_method_defined?(:save)
   end
+  
+  def test_should_mark_action_helper_as_defined
+    assert @machine.action_helper_defined?
+  end
 end
 
 class MachineWithActionDefinedInSuperclassTest < Test::Unit::TestCase
@@ -590,6 +602,10 @@ class MachineWithActionDefinedInSuperclassTest < Test::Unit::TestCase
   
   def test_should_keep_action_public
     assert @klass.public_method_defined?(:save)
+  end
+  
+  def test_should_mark_action_helper_as_defined
+    assert @machine.action_helper_defined?
   end
 end
 
@@ -629,6 +645,10 @@ class MachineWithPrivateActionTest < Test::Unit::TestCase
   def test_should_keep_action_private
     assert @klass.private_method_defined?(:save)
   end
+  
+  def test_should_mark_action_helper_as_defined
+    assert @machine.action_helper_defined?
+  end
 end
 
 class MachineWithActionAlreadyOverriddenTest < Test::Unit::TestCase
@@ -640,12 +660,16 @@ class MachineWithActionAlreadyOverriddenTest < Test::Unit::TestCase
     @klass = Class.new(@superclass)
     
     StateMachine::Machine.new(@klass, :action => :save)
-    StateMachine::Machine.new(@klass, :status, :action => :save)
+    @machine = StateMachine::Machine.new(@klass, :status, :action => :save)
     @object = @klass.new
   end
   
   def test_should_not_redefine_action
     assert_equal 1, @klass.ancestors.select {|ancestor| ![@klass, @superclass].include?(ancestor) && ancestor.method_defined?(:save)}.length
+  end
+  
+  def test_should_mark_action_helper_as_defined
+    assert @machine.action_helper_defined?
   end
 end
 

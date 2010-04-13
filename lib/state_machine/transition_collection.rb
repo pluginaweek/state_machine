@@ -50,10 +50,21 @@ module StateMachine
     def perform(&block)
       reset
       
-      within_transaction do
-        catch(:halt) { run_callbacks(&block) }
-        rollback unless success?
-      end if valid?
+      if valid?
+        if use_event_attributes? && !block_given?
+          each do |transition|
+            transition.transient = true
+            transition.machine.write(object, :event_transition, transition)
+          end
+          
+          run_actions
+        else
+          within_transaction do
+            catch(:halt) { run_callbacks(&block) }
+            rollback unless success?
+          end
+        end
+      end
       
       if actions.length == 1 && results.include?(actions.first)
         results[actions.first]
@@ -89,6 +100,13 @@ module StateMachine
       # this will return an empty collection.
       def actions
         empty? ? [nil] : map {|transition| transition.action}.uniq
+      end
+      
+      # Determines whether an event attribute be used to trigger the transitions
+      # in this collection or whether the transitions be run directly *outside*
+      # of the action.
+      def use_event_attributes?
+        !skip_actions && !skip_after && actions.all? && actions.length == 1 && first.machine.action_helper_defined?
       end
       
       # Resets any information tracked from previous attempts to perform the
@@ -220,7 +238,7 @@ module StateMachine
       # Resets the event attribute so it can be re-evaluated if attempted again
       def rollback
         super
-        each {|transition| transition.machine.write(object, :event, transition.event)}
+        each {|transition| transition.machine.write(object, :event, transition.event) unless transition.transient?}
       end
   end
 end

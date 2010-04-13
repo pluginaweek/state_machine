@@ -49,11 +49,15 @@ module StateMachine
     # The result of invoking the action associated with the machine
     attr_reader :result
     
+    # Whether the transition is only existing temporarily for the object
+    attr_writer :transient
+    
     # Creates a new, specific transition
     def initialize(object, machine, event, from_name, to_name, read_state = true) #:nodoc:
       @object = object
       @machine = machine
       @args = []
+      @transient = false
       
       # Event information
       event = machine.events.fetch(event)
@@ -95,6 +99,13 @@ module StateMachine
     #   StateMachine::Transition.new(Vehicle.new, machine, :park, :idling, :parked).loopback?   # => false
     def loopback?
       from_name == to_name
+    end
+    
+    # Is this transition existing for a short period only?  If this is set, it
+    # indicates that the transition (or the event backing it) should not be
+    # written to the object if it fails.
+    def transient?
+      @transient
     end
     
     # A hash of all the core attributes defined for this transition with their

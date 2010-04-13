@@ -64,6 +64,9 @@ module StateMachine
     #   vehicle = Vehicle.create(:state_event => 'ignite')  # => #<Vehicle id: 1, name: nil, state: "idling">
     #   vehicle.state                                       # => "idling"
     # 
+    # This technique is always used for transitioning states when the +save+
+    # action (which is the default) is configured for the machine.
+    # 
     # === Security implications
     # 
     # Beware that public event attributes mean that events can be fired
@@ -130,6 +133,9 @@ module StateMachine
     #       ...
     #     end
     #   end
+    # 
+    # If using the +save+ action for the machine, this option will be ignored as
+    # the transaction will be created by ActiveRecord within +save+.
     # 
     # == Validation errors
     # 

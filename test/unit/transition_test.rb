@@ -61,6 +61,10 @@ class TransitionTest < Test::Unit::TestCase
     assert_nil @transition.action
   end
   
+  def test_should_not_be_transient
+    assert_equal false, @transition.transient?
+  end
+  
   def test_should_generate_attributes
     expected = {:object => @object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}
     assert_equal expected, @transition.attributes
@@ -1337,5 +1341,24 @@ class TransitionWithTransactionsTest < Test::Unit::TestCase
     end
     
     assert_equal @object, @result
+  end
+end
+
+class TransitionTransientTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked, :idling
+    @machine.event :ignite
+    
+    @object = @klass.new
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+    @transition.transient = true
+  end
+  
+  def test_should_be_transient
+    assert @transition.transient?
   end
 end

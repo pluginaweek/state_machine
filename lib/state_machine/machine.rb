@@ -100,7 +100,7 @@ module StateMachine
   # must be modified like so:
   # 
   #     def save
-  #       self.class.state_machines.fire_event_attributes(self, :save) do
+  #       self.class.state_machines.transitions(self, :save).perform do
   #         @saving_state = state
   #         fail != true
   #       end
@@ -1391,6 +1391,12 @@ module StateMachine
       end
     end
     
+    # Determines whether a helper method was defined for firing attribute-based
+    # event transitions when the configuration action gets called.
+    def action_helper_defined?
+      @action_helper_defined
+    end
+    
     protected
       # Runs additional initialization hooks.  By default, this is a no-op.
       def after_initialize
@@ -1478,7 +1484,7 @@ module StateMachine
       # is invoked
       def define_action_helpers(action_hook = self.action)
         private_action = owner_class.private_method_defined?(action_hook)
-        action_defined = owner_class.ancestors.any? do |ancestor|
+        action_defined = @action_helper_defined = owner_class.ancestors.any? do |ancestor|
           ancestor != owner_class && (ancestor.method_defined?(action_hook) || ancestor.private_method_defined?(action_hook))
         end
         action_overridden = owner_class.state_machines.any? {|name, machine| machine.action == action && machine != self}

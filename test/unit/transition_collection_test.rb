@@ -1152,6 +1152,345 @@ class TransitionCollectionWithSkippedAfterCallbacksTest < Test::Unit::TestCase
   end
 end
 
+class TransitionCollectionWithActionHelperBaseTest < Test::Unit::TestCase
+  def setup
+    @superclass = Class.new do
+      def save
+        true
+      end
+    end
+    
+    @klass = Class.new(@superclass) do
+      attr_reader :saved, :state_on_save, :state_event_on_save, :state_event_transition_on_save
+      
+      def save
+        @saved = true
+        @state_on_save = state
+        @state_event_on_save = state_event
+        @state_event_transition_on_save = state_event_transition
+        super
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
+    @machine.state :idling
+    @machine.event :ignite
+    
+    @object = @klass.new
+    
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+  end
+  
+  def default_test
+  end
+end
+
+class TransitionCollectionWithActionHelperAndSkippedActionTest < TransitionCollectionWithActionHelperBaseTest
+  def setup
+    super
+    @result = StateMachine::TransitionCollection.new([@transition], :actions => false).perform
+  end
+  
+  def test_should_succeed
+    assert_equal true, @result
+  end
+  
+  def test_should_not_run_action
+    assert !@object.saved
+  end
+end
+
+class TransitionCollectionWithActionHelperAndSkippedAfterCallbacksTest < TransitionCollectionWithActionHelperBaseTest
+  def setup
+    super
+    @result = StateMachine::TransitionCollection.new([@transition], :after => false).perform
+  end
+  
+  def test_should_succeed
+    assert_equal true, @result
+  end
+  
+  def test_should_run_action
+    assert @object.saved
+  end
+  
+  def test_should_have_already_persisted_when_running_action
+    assert_equal 'idling', @object.state_on_save
+  end
+  
+  def test_should_not_have_event_during_action
+    assert_nil @object.state_event_on_save
+  end
+  
+  def test_should_not_write_event
+    assert_nil @object.state_event
+  end
+  
+  def test_should_not_have_event_transition_during_save
+    assert_nil @object.state_event_transition_on_save
+  end
+  
+  def test_should_not_write_event_attribute
+    assert_nil @object.send(:state_event_transition)
+  end
+end
+
+class TransitionCollectionWithActionHelperAndBlockTest < TransitionCollectionWithActionHelperBaseTest
+  def setup
+    super
+    @result = StateMachine::TransitionCollection.new([@transition]).perform { true }
+  end
+  
+  def test_should_succeed
+    assert_equal true, @result
+  end
+  
+  def test_should_not_run_action
+    assert !@object.saved
+  end
+end
+
+class TransitionCollectionWithActionHelperInvalidTest < TransitionCollectionWithActionHelperBaseTest
+  def setup
+    super
+    @result = StateMachine::TransitionCollection.new([@transition, nil]).perform
+  end
+  
+  def test_should_not_succeed
+    assert_equal false, @result
+  end
+  
+  def test_should_not_run_action
+    assert !@object.saved
+  end
+end
+
+class TransitionCollectionWithActionHelperWithNilActionTest < TransitionCollectionWithActionHelperBaseTest
+  def setup
+    super
+    
+    @machine = StateMachine::Machine.new(@klass, :status, :initial => :parked)
+    @machine.state :idling
+    @machine.event :ignite
+    
+    @result = StateMachine::TransitionCollection.new([@transition, StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)]).perform
+  end
+  
+  def test_should_succeed
+    assert_equal true, @result
+  end
+  
+  def test_should_run_action
+    assert @object.saved
+  end
+  
+  def test_should_have_already_persisted_when_running_action
+    assert_equal 'idling', @object.state_on_save
+  end
+  
+  def test_should_not_have_event_during_action
+    assert_nil @object.state_event_on_save
+  end
+  
+  def test_should_not_write_event
+    assert_nil @object.state_event
+  end
+  
+  def test_should_not_have_event_transition_during_save
+    assert_nil @object.state_event_transition_on_save
+  end
+  
+  def test_should_not_write_event_attribute
+    assert_nil @object.send(:state_event_transition)
+  end
+end
+
+class TransitionCollectionWithActionHelperWithDifferentActionsTest < TransitionCollectionWithActionHelperBaseTest
+  def setup
+    super
+    
+    @klass.class_eval do
+      def save_status
+        true
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :status, :initial => :parked, :action => :save_status)
+    @machine.state :idling
+    @machine.event :ignite
+    
+    @result = StateMachine::TransitionCollection.new([@transition, StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)]).perform
+  end
+  
+  def test_should_succeed
+    assert_equal true, @result
+  end
+  
+  def test_should_run_action
+    assert @object.saved
+  end
+  
+  def test_should_have_already_persisted_when_running_action
+    assert_equal 'idling', @object.state_on_save
+  end
+  
+  def test_should_not_have_event_during_action
+    assert_nil @object.state_event_on_save
+  end
+  
+  def test_should_not_write_event
+    assert_nil @object.state_event
+  end
+  
+  def test_should_not_have_event_transition_during_save
+    assert_nil @object.state_event_transition_on_save
+  end
+  
+  def test_should_not_write_event_attribute
+    assert_nil @object.send(:state_event_transition)
+  end
+end
+
+class TransitionCollectionWithActionHelperTest < TransitionCollectionWithActionHelperBaseTest
+  def setup
+    super
+    @result = StateMachine::TransitionCollection.new([@transition]).perform
+  end
+  
+  def test_should_succeed
+    assert_equal true, @result
+  end
+  
+  def test_should_run_action
+    assert @object.saved
+  end
+  
+  def test_should_not_have_already_persisted_when_running_action
+    assert_equal 'parked', @object.state_on_save
+  end
+  
+  def test_should_persist
+    assert_equal 'idling', @object.state
+  end
+  
+  def test_should_not_have_event_during_action
+    assert_nil @object.state_event_on_save
+  end
+  
+  def test_should_not_write_event
+    assert_nil @object.state_event
+  end
+  
+  def test_should_have_event_transition_during_action
+    assert_equal @transition, @object.state_event_transition_on_save
+  end
+  
+  def test_should_not_write_event_transition
+    assert_nil @object.send(:state_event_transition)
+  end
+  
+  def test_should_mark_event_transition_as_transient
+    assert @transition.transient?
+  end
+end
+
+class TransitionCollectionWithActionHelperMultipleTest < TransitionCollectionWithActionHelperBaseTest
+  def setup
+    super
+    
+    @status_machine = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save)
+    @status_machine.state :second_gear
+    @status_machine.event :shift_up
+    
+    @klass.class_eval do
+      attr_reader :status_on_save, :status_event_on_save, :status_event_transition_on_save
+      
+      def save
+        @saved = true
+        @state_on_save = state
+        @state_event_on_save = state_event
+        @state_event_transition_on_save = state_event_transition
+        @status_on_save = status
+        @status_event_on_save = status_event
+        @status_event_transition_on_save = status_event_transition
+        super
+        1
+      end
+    end
+    
+    @object = @klass.new
+    @state_transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+    @status_transition = StateMachine::Transition.new(@object, @status_machine, :shift_up, :first_gear, :second_gear)
+    
+    @result = StateMachine::TransitionCollection.new([@state_transition, @status_transition]).perform
+  end
+  
+  def test_should_succeed
+    assert_equal 1, @result
+  end
+  
+  def test_should_run_action
+    assert @object.saved
+  end
+  
+  def test_should_not_have_already_persisted_when_running_action
+    assert_equal 'parked', @object.state_on_save
+    assert_equal 'first_gear', @object.status_on_save
+  end
+  
+  def test_should_persist
+    assert_equal 'idling', @object.state
+    assert_equal 'second_gear', @object.status
+  end
+  
+  def test_should_not_have_events_during_action
+    assert_nil @object.state_event_on_save
+    assert_nil @object.status_event_on_save
+  end
+  
+  def test_should_not_write_events
+    assert_nil @object.state_event
+    assert_nil @object.status_event
+  end
+  
+  def test_should_have_event_transitions_during_action
+    assert_equal @state_transition, @object.state_event_transition_on_save
+    assert_equal @status_transition, @object.status_event_transition_on_save
+  end
+  
+  def test_should_not_write_event_transitions
+    assert_nil @object.send(:state_event_transition)
+    assert_nil @object.send(:status_event_transition)
+  end
+  
+  def test_should_mark_event_transitions_as_transient
+    assert @state_transition.transient?
+    assert @status_transition.transient?
+  end
+end
+
+class TransitionCollectionWithActionHelperErrorTest < TransitionCollectionWithActionHelperBaseTest
+  def setup
+    super
+    
+    @superclass.class_eval do
+      def save
+        raise ArgumentError
+      end
+    end
+    
+    begin; StateMachine::TransitionCollection.new([@transition]).perform; rescue; end
+  end
+  
+  def test_should_not_write_event
+    assert_nil @object.state_event
+  end
+  
+  def test_should_not_write_event_transition
+    assert_nil @object.send(:state_event_transition)
+  end
+end
+
 class AttributeTransitionCollectionByDefaultTest < Test::Unit::TestCase
   def setup
     @transitions = StateMachine::AttributeTransitionCollection.new
