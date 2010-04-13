@@ -1,5 +1,7 @@
 == master
 
+== 0.9.0 / 2010-04-12
+
 * Use attribute-based event transitions whenever possible to ensure consistency
 * Fix action helpers being defined when the action is *only* defined in the machine's owner class
 * Disable attribute-based event transitions in DataMapper 0.9.4 - 0.9.6 when dm-validations is being used
