@@ -204,8 +204,8 @@ module StateMachine
       def bound_method(block)
         type = self.type
         arity = block.arity
-        arity += 1 if arity >= 0
-        arity += 1 if arity == 1 && type == :around 
+        arity += 1 if arity >= 0 # Make sure the object gets passed
+        arity += 1 if arity == 1 && type == :around  # Make sure the block gets passed
         
         method = if RUBY_VERSION >= '1.9'
           lambda do |object, *args|
