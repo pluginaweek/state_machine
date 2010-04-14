@@ -172,15 +172,15 @@ module StateMachine
       begin
         halted = !catch(:halt) { before(options[:after], &block); true }
       rescue Exception => error
-        raise unless @after_block
+        raise unless @resume_block
       end
       
       # After callbacks are only run if:
       # * There isn't an after block already running
       # * An around callback didn't halt after yielding
       # * They're enabled or the run didn't succeed
-      if @after_block
-        @after_block.call(halted, error)
+      if @resume_block
+        @resume_block.call(halted, error)
       elsif !(@before_run && halted) && (options[:after] || !@success)
         after
       end
@@ -247,7 +247,7 @@ module StateMachine
     # the state has already been persisted
     def reset
       @before_run = @persisted = @after_run = false
-      @around_block = nil
+      @paused_block = nil
     end
     
     # Generates a nicely formatted description of this transitions's contents.
@@ -278,16 +278,12 @@ module StateMachine
               # * The block fails and the callback doesn't run on failures OR
               # * The block succeeds, but after callbacks are disabled (in which
               #   case a continuation is stored for later execution)
-              return if catch(:pause) do
+              return if catch(:cancel) do
                 callback.call(object, context, self) do
                   before(complete, index, &block)
                   
-                  if @success && !complete && !@around_block && !@after_block
-                    require 'continuation' unless defined?(callcc)
-                    callcc {|block| @around_block = block}
-                  end
-                  
-                  throw :pause, true if @around_block && !@after_block || !callback.matches_success?(@success)
+                  pause if @success && !complete
+                  throw :cancel, true unless callback.matches_success?(@success)
                 end
               end
             else
@@ -301,6 +297,34 @@ module StateMachine
         
         action = {:success => true}.merge(block_given? ? yield : {})
         @result, @success = action[:result], action[:success]
+      end
+      
+      # Pauses the current callback execution.  This should only occur within
+      # around callbacks when the remainder of the callback will be executed at
+      # a later point in time.
+      def pause
+        unless @resume_block
+          require 'continuation' unless defined?(callcc)
+          callcc do |block|
+            @paused_block = block
+            throw :halt, true
+          end
+        end
+      end
+      
+      # Resumes the execution of a previously paused callback execution.  Once
+      # the paused callbacks complete, the current execution will continue.
+      def resume
+        if @paused_block
+          halted, error = callcc do |block|
+            @resume_block = block
+            @paused_block.call
+          end
+          
+          @resume_block = @paused_block = nil
+          throw :halt if halted
+          raise error if error
+        end
       end
       
       # Runs the machine's +after+ callbacks for this transition.  Only
@@ -319,17 +343,8 @@ module StateMachine
       def after
         unless @after_run
           catch(:halt) do
-            # First call any yielded around blocks
-            if @around_block
-              halted, error = callcc do |block|
-                @after_block = block
-                @around_block.call
-              end
-              
-              @after_block = @around_block = nil
-              raise error if error
-              throw :halt if halted
-            end
+            # First resume previously paused callbacks
+            resume
             
             # Call normal after callbacks in order
             after_context = context.merge(:success => @success)
