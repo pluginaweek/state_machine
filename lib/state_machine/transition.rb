@@ -167,23 +167,12 @@ module StateMachine
       options = {:after => true}.merge(options)
       @success = false
       
-      # Run before callbacks.  :halt is caught here so that it rolls up through
-      # any around callbacks.
-      begin
-        halted = !catch(:halt) { before(options[:after], &block); true }
-      rescue Exception => error
-        raise unless @resume_block
-      end
+      halted = pausable { before(options[:after], &block) }
       
       # After callbacks are only run if:
-      # * There isn't an after block already running
       # * An around callback didn't halt after yielding
       # * They're enabled or the run didn't succeed
-      if @resume_block
-        @resume_block.call(halted, error)
-      elsif !(@before_run && halted) && (options[:after] || !@success)
-        after
-      end
+      after if !(@before_run && halted) && (options[:after] || !@success)
       
       @before_run
     end
@@ -261,6 +250,57 @@ module StateMachine
     end
     
     private
+      # Runs a block that may get paused.  If the block doesn't pause, then
+      # execution will continue as normal.  If the block gets paused, then it
+      # will take care of switching the execution context when it's resumed.
+      # 
+      # This will return true if the given block halts for a reason other than
+      # getting paused.
+      def pausable
+        begin
+          halted = !catch(:halt) { yield; true }
+        rescue Exception => error
+          raise unless @resume_block
+        end
+        
+        if @resume_block
+          @resume_block.call(halted, error)
+        else
+          halted
+        end
+      end
+      
+      # Pauses the current callback execution.  This should only occur within
+      # around callbacks when the remainder of the callback will be executed at
+      # a later point in time.
+      def pause
+        unless @resume_block
+          require 'continuation' unless defined?(callcc)
+          callcc do |block|
+            @paused_block = block
+            throw :halt, true
+          end
+        end
+      end
+      
+      # Resumes the execution of a previously paused callback execution.  Once
+      # the paused callbacks complete, the current execution will continue.
+      def resume
+        if @paused_block
+          halted, error = callcc do |block|
+            @resume_block = block
+            @paused_block.call
+          end
+          
+          @resume_block = @paused_block = nil
+          
+          raise error if error
+          !halted
+        else
+          true
+        end
+      end
+      
       # Runs the machine's +before+ callbacks for this transition.  Only
       # callbacks that are configured to match the event, from state, and to
       # state will be invoked.
@@ -299,34 +339,6 @@ module StateMachine
         @result, @success = action[:result], action[:success]
       end
       
-      # Pauses the current callback execution.  This should only occur within
-      # around callbacks when the remainder of the callback will be executed at
-      # a later point in time.
-      def pause
-        unless @resume_block
-          require 'continuation' unless defined?(callcc)
-          callcc do |block|
-            @paused_block = block
-            throw :halt, true
-          end
-        end
-      end
-      
-      # Resumes the execution of a previously paused callback execution.  Once
-      # the paused callbacks complete, the current execution will continue.
-      def resume
-        if @paused_block
-          halted, error = callcc do |block|
-            @resume_block = block
-            @paused_block.call
-          end
-          
-          @resume_block = @paused_block = nil
-          throw :halt if halted
-          raise error if error
-        end
-      end
-      
       # Runs the machine's +after+ callbacks for this transition.  Only
       # callbacks that are configured to match the event, from state, and to
       # state will be invoked.
@@ -342,13 +354,12 @@ module StateMachine
       # should never halt the execution of a +perform+.
       def after
         unless @after_run
-          catch(:halt) do
-            # First resume previously paused callbacks
-            resume
-            
-            # Call normal after callbacks in order
-            after_context = context.merge(:success => @success)
-            machine.callbacks[:after].each {|callback| callback.call(object, after_context, self)}
+          # First resume previously paused callbacks
+          if resume
+            catch(:halt) do
+              after_context = context.merge(:success => @success)
+              machine.callbacks[:after].each {|callback| callback.call(object, after_context, self)}
+            end
           end
           
           @after_run = true
