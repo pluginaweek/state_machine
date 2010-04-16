@@ -1,5 +1,7 @@
 == master
 
+* Fix deprecation warning in Rails 3 railtie [Chris Yuan]
+
 == 0.9.0 / 2010-04-12
 
 * Use attribute-based event transitions whenever possible to ensure consistency
