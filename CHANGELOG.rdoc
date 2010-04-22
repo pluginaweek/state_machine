@@ -1,5 +1,6 @@
 == master
 
+* Fix integration with dirty attribute tracking on DataMapper 0.10.3
 * Fix observers failing in ActiveRecord 3.0.0.beta4+ integrations
 * Fix deprecation warning in Rails 3 railtie [Chris Yuan]
 

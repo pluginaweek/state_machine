@@ -512,7 +512,9 @@ module DataMapperTest
     end
     
     def test_should_track_attribute_change
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
+        assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
+      elsif Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
         assert_equal e = {@resource.properties[:state] => 'parked-ignored'}, @record.original_attributes
       else
         assert_equal e = {:state => 'parked-ignored'},  @record.original_values
@@ -580,7 +582,9 @@ module DataMapperTest
     end
     
     def test_should_track_attribute_changes
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
+        assert_equal e = {@resource.properties[:status] => 'parked'}, @record.original_attributes
+      elsif Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
         assert_equal e = {@resource.properties[:status] => 'parked-ignored'}, @record.original_attributes
       else
         assert_equal e = {:status => 'parked-ignored'},  @record.original_values
