@@ -12,10 +12,9 @@ FIXTURES_ROOT = File.dirname(__FILE__) + '/../../fixtures/'
 require 'active_support/test_case'
 require 'active_record/fixtures'
 
-require 'active_record/version'
-if ActiveRecord::VERSION::STRING >= '2.1.0'
+begin
   require 'active_record/test_case'
-else
+rescue LoadError
   class ActiveRecord::TestCase < ActiveSupport::TestCase
     self.fixture_path = FIXTURES_ROOT
     self.use_instantiated_fixtures = false

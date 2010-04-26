@@ -323,6 +323,7 @@ module StateMachine
       end
       
       def self.extended(base) #:nodoc:
+        require 'active_record/version'
         require 'state_machine/integrations/active_model/observer'
         
         ::ActiveRecord::Observer.class_eval do
