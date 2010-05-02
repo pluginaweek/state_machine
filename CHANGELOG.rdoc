@@ -1,5 +1,7 @@
 == master
 
+== 0.9.1 / 2010-05-02
+
 * Fix ActiveRecord 2.0.0 - 2.2.3 integrations failing if version info isn't already loaded
 * Fix integration with dirty attribute tracking on DataMapper 0.10.3
 * Fix observers failing in ActiveRecord 3.0.0.beta4+ integrations
