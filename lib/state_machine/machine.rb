@@ -419,7 +419,13 @@ module StateMachine
       assert_valid_keys(options, :attribute, :initial, :action, :plural, :namespace, :integration, :messages, :use_transactions)
       
       # Find an integration that matches this machine's owner class
-      if integration = options[:integration] ? StateMachine::Integrations.find(options[:integration]) : StateMachine::Integrations.match(owner_class)
+      if options.include?(:integration)
+        integration = StateMachine::Integrations.find(options[:integration]) if options[:integration]
+      else
+        integration = StateMachine::Integrations.match(owner_class)
+      end
+
+      if integration
         extend integration
         options = integration.defaults.merge(options) if integration.respond_to?(:defaults)
       end

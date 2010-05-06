@@ -1,5 +1,7 @@
 == master
 
+* Fix nil / false :integration configuration not being respected
+
 == 0.9.1 / 2010-05-02
 
 * Fix ActiveRecord 2.0.0 - 2.2.3 integrations failing if version info isn't already loaded

@@ -377,12 +377,33 @@ end
 
 class MachineWithCustomIntegrationTest < Test::Unit::TestCase
   def setup
-    StateMachine::Integrations.const_set('Custom', Module.new)
-    @machine = StateMachine::Machine.new(Class.new, :integration => :custom)
+    integration = Module.new do
+      def self.matches?(klass)
+        true
+      end
+    end
+    
+    StateMachine::Integrations.const_set('Custom', integration)
   end
   
-  def test_should_be_extended_by_the_integration
-    assert (class << @machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+  def test_should_be_extended_by_the_integration_if_explicit
+    machine = StateMachine::Machine.new(Class.new, :integration => :custom)
+    assert (class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+  end
+
+  def test_should_be_extended_by_the_integration_if_implicit
+    machine = StateMachine::Machine.new(Class.new)
+    assert (class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+  end
+
+  def test_should_not_be_extended_by_the_integration_if_nil
+    machine = StateMachine::Machine.new(Class.new, :integration => nil)
+    assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+  end
+  
+  def test_should_not_be_extended_by_the_integration_if_false
+    machine = StateMachine::Machine.new(Class.new, :integration => false)
+    assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
   
   def teardown
