@@ -110,8 +110,10 @@ Class definition:
       end
       
       event :repair do
+        # The first transition that matches the state and passes its conditions
+        # will be used
         transition :stalled => :parked, :if => :auto_shop_busy?
-        transition :stalled => same # Loopback if we have to
+        transition :stalled => same
       end
       
       state :parked do
