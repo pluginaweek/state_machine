@@ -74,4 +74,4 @@ task :release => :package do
   Rake::Task['gem:push'].invoke
 end
 
-load 'lib/tasks/state_machine.rake'
+load File.dirname(__FILE__) + '/lib/tasks/state_machine.rake'
