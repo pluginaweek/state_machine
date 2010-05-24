@@ -1,5 +1,7 @@
 == master
 
+== 0.9.2 / 2010-05-24
+
 * Fix MongoMapper integration failing in Ruby 1.9.2
 * Fix Rakefile not loading in Ruby 1.9.2 [Andrea Longhi]
 * Fix nil / false :integration configuration not being respected
