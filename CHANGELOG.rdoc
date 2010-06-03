@@ -1,5 +1,7 @@
 == master
 
+* Fix default error message translations overriding existing locales in ActiveModel / ActiveRecord
+
 == 0.9.2 / 2010-05-24
 
 * Fix MongoMapper integration failing in Ruby 1.9.2

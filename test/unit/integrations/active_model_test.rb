@@ -898,12 +898,44 @@ module ActiveModelTest
     end
     
     def test_should_only_add_locale_once_in_load_path
-      assert_equal 1, I18n.load_path.select {|path| path =~ %r{state_machine/integrations/active_model/locale\.rb$}}.length
+      assert_equal 1, I18n.load_path.select {|path| path =~ %r{active_model/locale\.rb$}}.length
       
       # Create another ActiveRecord model that will triger the i18n feature
       new_model
       
-      assert_equal 1, I18n.load_path.select {|path| path =~ %r{state_machine/integrations/active_model/locale\.rb$}}.length
+      assert_equal 1, I18n.load_path.select {|path| path =~ %r{active_model/locale\.rb$}}.length
+    end
+    
+    def test_should_add_locale_to_beginning_of_load_path
+      @original_load_path = I18n.load_path
+      I18n.backend = I18n::Backend::Simple.new
+      
+      app_locale = File.dirname(__FILE__) + '/../../files/en.yml'
+      default_locale = File.dirname(__FILE__) + '/../../../lib/state_machine/integrations/active_model/locale.rb'
+      I18n.load_path = [app_locale]
+      
+      StateMachine::Machine.new(@model)
+      
+      assert_equal [default_locale, app_locale].map {|path| File.expand_path(path)}, I18n.load_path.map {|path| File.expand_path(path)}
+    ensure
+      I18n.load_path = @original_load_path
+    end
+    
+    def test_should_prefer_other_locales_first
+      @original_load_path = I18n.load_path
+      I18n.backend = I18n::Backend::Simple.new
+      I18n.load_path = [File.dirname(__FILE__) + '/../../files/en.yml']
+      
+      machine = StateMachine::Machine.new(@model)
+      machine.state :parked, :idling
+      machine.event :ignite
+      
+      record = @model.new(:state => 'idling')
+      
+      machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+      assert_equal ['State cannot ignite'], record.errors.full_messages
+    ensure
+      I18n.load_path = @original_load_path
     end
   end
 end

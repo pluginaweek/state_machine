@@ -1,0 +1,9 @@
+en:
+  activerecord:
+    errors:
+      messages:
+        invalid_transition: "cannot {{event}}"
+  activemodel:
+    errors:
+      messages:
+        invalid_transition: "cannot {{event}}"

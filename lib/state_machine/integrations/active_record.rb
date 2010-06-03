@@ -332,7 +332,7 @@ module StateMachine
         
         if Object.const_defined?(:I18n)
           locale = "#{File.dirname(__FILE__)}/active_record/locale.rb"
-          I18n.load_path << locale unless I18n.load_path.include?(locale)
+          I18n.load_path.unshift(locale) unless I18n.load_path.include?(locale)
         end
       end
       
