@@ -784,7 +784,7 @@ module ActiveModelTest
     
     def test_should_use_defaults
       I18n.backend.store_translations(:en, {
-        :activemodel => {:errors => {:messages => {:invalid_transition => 'cannot {{event}}'}}}
+        :activemodel => {:errors => {:messages => {:invalid_transition => 'cannot %{event}'}}}
       })
       
       machine = StateMachine::Machine.new(@model, :action => :save)
@@ -799,7 +799,7 @@ module ActiveModelTest
     
     def test_should_allow_customized_error_key
       I18n.backend.store_translations(:en, {
-        :activemodel => {:errors => {:messages => {:bad_transition => 'cannot {{event}}'}}}
+        :activemodel => {:errors => {:messages => {:bad_transition => 'cannot %{event}'}}}
       })
       
       machine = StateMachine::Machine.new(@model, :action => :save, :messages => {:invalid_transition => :bad_transition})
@@ -813,7 +813,7 @@ module ActiveModelTest
     end
     
     def test_should_allow_customized_error_string
-      machine = StateMachine::Machine.new(@model, :action => :save, :messages => {:invalid_transition => 'cannot {{event}}'})
+      machine = StateMachine::Machine.new(@model, :action => :save, :messages => {:invalid_transition => 'cannot %{event}'})
       machine.state :parked, :idling
       
       record = @model.new(:state => 'idling')

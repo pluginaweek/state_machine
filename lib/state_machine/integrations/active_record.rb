@@ -276,8 +276,11 @@ module StateMachine
     #       errors:
     #         messages:
     #           invalid: "is invalid"
-    #           invalid_event: "cannot transition when {{state}}"
-    #           invalid_transition: "cannot transition via {{event}}"
+    #           invalid_event: "cannot transition when %{state}"
+    #           invalid_transition: "cannot transition via %{event}"
+    # 
+    # Notice that the interpolation syntax is %{key} in Rails 3+.  In Rails 2.x,
+    # the appropriate syntax is {{key}}.
     # 
     # You can override these for a specific model like so:
     # 
