@@ -56,6 +56,13 @@ module ActiveRecordTest
             @notifications = []
           end
         end
+        
+        (class << observer; self; end).class_eval do
+          define_method(:name) do
+            "#{model.name}Observer"
+          end
+        end
+        
         observer.observe(model)
         observer.class_eval(&block) if block_given?
         observer
