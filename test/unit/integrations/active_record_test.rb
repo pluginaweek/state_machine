@@ -1894,7 +1894,7 @@ module ActiveRecordTest
       
       private
         def interpolation_key(key)
-          ::ActiveRecord::VERSION::MAJOR < 3 ? "{{#{key}}}" : "%{#{key}}"
+          !defined?(I18n::VERSION) || I18n::VERSION < '0.4.0' ? "{{#{key}}}" : "%{#{key}}"
         end
     end
   else
