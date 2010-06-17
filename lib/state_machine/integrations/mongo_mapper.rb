@@ -282,13 +282,22 @@ module StateMachine
         # Creates a scope for finding records *with* a particular state or
         # states for the attribute
         def create_with_scope(name)
-          lambda {|model, values| model.all(:conditions => {attribute => {'$in' => values}})}
+          define_scope(name, lambda {|values| {:conditions => {attribute => {'$in' => values}}}})
         end
         
         # Creates a scope for finding records *without* a particular state or
         # states for the attribute
         def create_without_scope(name)
-          lambda {|model, values| model.all(:conditions => {attribute => {'$nin' => values}})}
+          define_scope(name, lambda {|values| {:conditions => {attribute => {'$nin' => values}}}})
+        end
+        
+        # Defines a new scope with the given name
+        def define_scope(name, scope)
+          if defined?(::MongoMapper::Version) && ::MongoMapper::Version >= '0.8.0'
+            lambda {|model, values| model.query.merge(model.query(scope.call(values)))}
+          else
+            lambda {|model, values| model.all(scope.call(values))}
+          end
         end
     end
   end

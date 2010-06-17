@@ -1268,7 +1268,7 @@ module MongoMapperTest
       parked = @model.create :state => 'parked'
       idling = @model.create :state => 'idling'
       
-      assert_equal [parked], @model.with_state(:parked)
+      assert_equal [parked], @model.with_state(:parked).to_a
     end
     
     def test_should_create_plural_with_scope
@@ -1279,7 +1279,7 @@ module MongoMapperTest
       parked = @model.create :state => 'parked'
       idling = @model.create :state => 'idling'
       
-      assert_equal [parked, idling], @model.with_states(:parked, :idling)
+      assert_equal [parked, idling], @model.with_states(:parked, :idling).to_a
     end
     
     def test_should_create_singular_without_scope
@@ -1290,7 +1290,7 @@ module MongoMapperTest
       parked = @model.create :state => 'parked'
       idling = @model.create :state => 'idling'
       
-      assert_equal [parked], @model.without_state(:idling)
+      assert_equal [parked], @model.without_state(:idling).to_a
     end
     
     def test_should_create_plural_without_scope
@@ -1302,7 +1302,16 @@ module MongoMapperTest
       idling = @model.create :state => 'idling'
       first_gear = @model.create :state => 'first_gear'
       
-      assert_equal [parked, idling], @model.without_states(:first_gear)
+      assert_equal [parked, idling], @model.without_states(:first_gear).to_a
+    end
+    
+    if defined?(MongoMapper::Version) && MongoMapper::Version >= '0.8.0'
+      def test_should_allow_chaining_scopes
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
+        
+        assert_equal [idling], @model.without_state(:parked).with_state(:idling).all
+      end
     end
   end
   
@@ -1320,7 +1329,7 @@ module MongoMapperTest
       parked = @subclass.create :state => 'parked'
       idling = @subclass.create :state => 'idling'
       
-      assert_equal [parked, idling], @subclass.with_states(:parked, :idling)
+      assert_equal [parked, idling], @subclass.with_states(:parked, :idling).to_a
     end
     
     def test_should_only_include_records_without_subclass_states_in_without_scope
@@ -1328,7 +1337,7 @@ module MongoMapperTest
       idling = @subclass.create :state => 'idling'
       first_gear = @subclass.create :state => 'first_gear'
       
-      assert_equal [parked, idling], @subclass.without_states(:first_gear)
+      assert_equal [parked, idling], @subclass.without_states(:first_gear).to_a
     end
   end
   

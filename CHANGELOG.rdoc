@@ -1,5 +1,6 @@
 == master
 
+* Allow MongoMapper 0.8.0+ scopes to be chainable
 * Fix i18n deprecation warnings in ActiveModel / ActiveRecord 3.0.0.beta4
 * Fix default error message translations overriding existing locales in ActiveModel / ActiveRecord
 
