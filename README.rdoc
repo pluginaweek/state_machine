@@ -181,6 +181,7 @@ like so:
   vehicle = Vehicle.new           # => #<Vehicle:0xb7cf4eac @state="parked", @seatbelt_on=false>
   vehicle.state                   # => "parked"
   vehicle.state_name              # => :parked
+  vehicle.human_state_name        # => "parked"
   vehicle.parked?                 # => true
   vehicle.can_ignite?             # => true
   vehicle.ignite_transition       # => #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>

@@ -29,6 +29,10 @@ class TransitionTest < Test::Unit::TestCase
     assert_equal :ignite, @transition.qualified_event
   end
   
+  def test_should_have_a_human_event
+    assert_equal 'ignite', @transition.human_event
+  end
+  
   def test_should_have_a_from_value
     assert_equal 'parked', @transition.from
   end
@@ -41,6 +45,10 @@ class TransitionTest < Test::Unit::TestCase
     assert_equal :parked, @transition.qualified_from_name
   end
   
+  def test_should_have_a_human_from_name
+    assert_equal 'parked', @transition.human_from_name
+  end
+  
   def test_should_have_a_to_value
     assert_equal 'idling', @transition.to
   end
@@ -51,6 +59,10 @@ class TransitionTest < Test::Unit::TestCase
   
   def test_should_have_a_qualified_to_name
     assert_equal :idling, @transition.qualified_to_name
+  end
+  
+  def test_should_have_a_human_to_name
+    assert_equal 'idling', @transition.human_to_name
   end
   
   def test_should_have_an_attribute
@@ -192,12 +204,20 @@ class TransitionWithNamespaceTest < Test::Unit::TestCase
     assert_equal :alarm_off, @transition.qualified_from_name
   end
   
+  def test_should_have_a_human_from_name
+    assert_equal 'off', @transition.human_from_name
+  end
+  
   def test_should_have_a_to_name
     assert_equal :active, @transition.to_name
   end
   
   def test_should_have_a_qualified_to_name
     assert_equal :alarm_active, @transition.qualified_to_name
+  end
+  
+  def test_should_have_a_human_to_name
+    assert_equal 'active', @transition.human_to_name
   end
 end
 

@@ -1059,6 +1059,10 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
         :parked
       end
       
+      def human_state_name
+        'parked'
+      end
+      
       def state_events
         [:ignite]
       end
@@ -1125,6 +1129,10 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
     assert_equal :parked, @object.state_name
   end
   
+  def test_should_not_redefine_attribute_human_name_reader
+    assert_equal 'parked', @object.human_state_name
+  end
+  
   def test_should_not_redefine_attribute_events_reader
     assert_equal [:ignite], @object.state_events
   end
@@ -1178,6 +1186,10 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
         super == :parked ? 1 : 0
       end
       
+      def human_state_name
+        super == 'parked' ? 1 : 0
+      end
+      
       def state_events
         super == []
       end
@@ -1199,6 +1211,7 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
     assert_equal 'idling', @object.status
     assert_equal 0, @object.state?(:parked)
     assert_equal 0, @object.state_name
+    assert_equal 0, @object.human_state_name
     assert_equal true, @object.state_events
     assert_equal true, @object.state_transitions
   end
@@ -1976,6 +1989,10 @@ class MachineWithCustomAttributeTest < Test::Unit::TestCase
     assert @object.respond_to?(:state_name)
   end
   
+  def test_should_define_a_human_name_reader_for_the_attribute
+    assert @object.respond_to?(:state_name)
+  end
+  
   def test_should_define_an_event_reader_for_the_attribute
     assert @object.respond_to?(:state_events)
   end
@@ -1984,11 +2001,11 @@ class MachineWithCustomAttributeTest < Test::Unit::TestCase
     assert @object.respond_to?(:state_transitions)
   end
   
-  def test_should_define_a_human_attribute_name_reader_for_the_attribute
+  def test_should_define_a_human_attribute_name_reader
     assert @klass.respond_to?(:human_state_name)
   end
   
-  def test_should_define_a_human_event_name_reader_for_the_attribute
+  def test_should_define_a_human_event_name_reader
     assert @klass.respond_to?(:human_state_event_name)
   end
   

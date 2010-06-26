@@ -1,5 +1,6 @@
 == master
 
+* Allow access to human state / event names in transitions and for the current state
 * Use human state / event names in error messages
 * Fix event names being used inconsistently in error messages
 * Allow access to the humanized version of state / event names via human_state_name / human_state_event_name

@@ -266,6 +266,7 @@ class VehicleUnsavedTest < Test::Unit::TestCase
     assert @vehicle.parked?
     assert @vehicle.state?(:parked)
     assert_equal :parked, @vehicle.state_name
+    assert_equal 'parked', @vehicle.human_state_name
   end
   
   def test_should_not_be_idling

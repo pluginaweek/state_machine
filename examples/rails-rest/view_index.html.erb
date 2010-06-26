@@ -10,8 +10,8 @@
 <% @users.each do |user| %>
   <tr>
     <td><%=h user.name %></td>
-    <td><%=h user.state %></td>
-    <td><%=h user.access_state %></td>
+    <td><%=h user.human_state_name %></td>
+    <td><%=h user.human_access_state_name %></td>
     <td><%= link_to 'Show', user %></td>
     <td><%= link_to 'Edit', edit_user_path(user) %></td>
   </tr>

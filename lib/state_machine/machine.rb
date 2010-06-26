@@ -1538,6 +1538,11 @@ module StateMachine
         define_instance_method(attribute(:name)) do |machine, object|
           machine.states.match!(object).name
         end
+        
+        # Gets the human state name for the current value
+        define_instance_method("human_#{attribute(:name)}") do |machine, object|
+          machine.states.match!(object).human_name(object.class)
+        end
       end
       
       # Defines the with/without scope helpers for this attribute.  Both the

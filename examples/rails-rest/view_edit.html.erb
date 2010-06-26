@@ -10,12 +10,12 @@
   
   <p>
     <%= f.label :state %><br />
-    <%= f.collection_select :state_event, @user.state_transitions, :event, :to_name, :include_blank => @user.state_name.to_s %>
+    <%= f.collection_select :state_event, @user.state_transitions, :event, :human_to_name, :include_blank => @user.human_state_name %>
   </p>
   
   <p>
     <%= f.label :access_state %><br />
-    <%= f.collection_select :access_state_event, @user.access_state_transitions, :event, :event, :include_blank => "don't change" %>
+    <%= f.collection_select :access_state_event, @user.access_state_transitions, :event, :human_event, :include_blank => "don't change" %>
   </p>
   
   <p><%= f.submit 'Update' %></p>

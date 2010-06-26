@@ -18,29 +18,11 @@ module StateMachine
     # The state machine for which this transition is defined
     attr_reader :machine
     
-    # The event that triggered the transition
-    attr_reader :event
-    
-    # The fully-qualified name of the event that triggered the transition
-    attr_reader :qualified_event
-    
     # The original state value *before* the transition
     attr_reader :from
     
-    # The original state name *before* the transition
-    attr_reader :from_name
-    
-    # The original fully-qualified state name *before* transition
-    attr_reader :qualified_from_name
-    
     # The new state value *after* the transition
     attr_reader :to
-    
-    # The new state name *after* the transition
-    attr_reader :to_name
-    
-    # The new fully-qualified state name *after* the transition
-    attr_reader :qualified_to_name
     
     # The arguments passed in to the event that triggered the transition
     # (does not include the +run_action+ boolean argument if specified)
@@ -59,22 +41,11 @@ module StateMachine
       @args = []
       @transient = false
       
-      # Event information
-      event = machine.events.fetch(event)
-      @event = event.name
-      @qualified_event = event.qualified_name
-      
-      # From state information
-      from_state = machine.states.fetch(from_name)
-      @from = read_state ? machine.read(object, :state) : from_state.value
-      @from_name = from_state.name
-      @qualified_from_name = from_state.qualified_name
-      
-      # To state information
-      to_state = machine.states.fetch(to_name)
-      @to = to_state.value
-      @to_name = to_state.name
-      @qualified_to_name = to_state.qualified_name
+      @event = machine.events.fetch(event)
+      @from_state = machine.states.fetch(from_name)
+      @from = read_state ? machine.read(object, :state) : @from_state.value
+      @to_state = machine.states.fetch(to_name)
+      @to = @to_state.value
       
       reset
     end
@@ -87,6 +58,51 @@ module StateMachine
     # The action that will be run when this transition is performed
     def action
       machine.action
+    end
+    
+    # The event that triggered the transition
+    def event
+      @event.name
+    end
+    
+    # The fully-qualified name of the event that triggered the transition
+    def qualified_event
+      @event.qualified_name
+    end
+    
+    # The human-readable name of the event that triggered the transition
+    def human_event
+      @event.human_name(@object.class)
+    end
+    
+    # The state name *before* the transition
+    def from_name
+      @from_state.name
+    end
+    
+    # The fully-qualified state name *before* the transition
+    def qualified_from_name
+      @from_state.qualified_name
+    end
+    
+    # The human-readable state name *before* the transition
+    def human_from_name
+      @from_state.human_name(@object.class)
+    end
+    
+    # The new state name *after* the transition
+    def to_name
+      @to_state.name
+    end
+    
+    # The new fully-qualified state name *after* the transition
+    def qualified_to_name
+      @to_state.qualified_name
+    end
+    
+    # The new human-readable state name *after* the transition
+    def human_to_name
+      @to_state.human_name(@object.class)
     end
     
     # Does this transition represent a loopback (i.e. the from and to state

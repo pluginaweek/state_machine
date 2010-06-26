@@ -131,6 +131,8 @@ module StateMachine
     # * <tt>state?(name)</tt> - Checks the given state name against the current
     #   state.  If the name is not a known state, then an ArgumentError is raised.
     # * <tt>state_name</tt> - Gets the name of the state for the current value
+    # * <tt>human_state_name</tt> - Gets the human-readable name of the state
+    #   for the current value
     # * <tt>state_events</tt> - Gets the list of events that can be fired on
     #   the current object's state (uses the *unqualified* event names)
     # * <tt>state_transitions(requirements = {})</tt> - Gets the list of possible
@@ -156,6 +158,7 @@ module StateMachine
     #   vehicle = Vehicle.new
     #   vehicle.state                     # => "parked"
     #   vehicle.state_name                # => :parked
+    #   vehicle.human_state_name          # => "parked"
     #   vehicle.state?(:parked)           # => true
     #   
     #   # Changing state
