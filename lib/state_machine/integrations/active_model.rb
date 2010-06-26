@@ -262,15 +262,8 @@ module StateMachine
       def invalidate(object, attribute, message, values = [])
         if supports_validations?
           attribute = self.attribute(attribute)
-          ancestors = ancestors_for(object.class)
-          
           options = values.inject({}) do |options, (key, value)|
-            # Generate all possible translation keys
-            group = key.to_s.pluralize
-            translations = ancestors.map {|ancestor| :"#{ancestor.model_name.underscore}.#{name}.#{group}.#{value}"}
-            translations.concat([:"#{name}.#{group}.#{value}", :"#{group}.#{value}", value.to_s])
-            
-            options[key] = I18n.translate(translations.shift, :default => translations, :scope => [i18n_scope, :state_machines])
+            options[key] = value
             options
           end
           
@@ -309,20 +302,41 @@ module StateMachine
           defined?(::ActiveModel::Dirty) && owner_class <= ::ActiveModel::Dirty && object.respond_to?("#{self.attribute}_changed?")
         end
         
+        # Gets the terminator to use for callbacks
+        def callback_terminator
+          @terminator ||= lambda {|result| result == false}
+        end
+        
         # Determines the base scope to use when looking up translations
         def i18n_scope
           owner_class.i18n_scope
+        end
+        
+        # Translates the given key / value combo.  Translation keys are looked
+        # up in the following order:
+        # * <tt>#{i18n_scope}.state_machines.#{model_name}.#{machine_name}.#{plural_key}.#{value}</tt>
+        # * <tt>#{i18n_scope}.state_machines.#{machine_name}.#{plural_key}.#{value}
+        # * <tt>#{i18n_scope}.state_machines.#{plural_key}.#{value}</tt>
+        # 
+        # Event translations will be looked for using the following keys:
+        # * <tt>#{i18n_scope}.state_machines.#{model_name}.#{machine_name}.#{plural_key}.#{value}</tt>
+        # * <tt>#{i18n_scope}.state_machines.#{machine_name}.#{plural_key}.#{value}
+        # * <tt>#{i18n_scope}.state_machines.#{plural_key}.#{value}</tt>
+        def translate(klass, key, value)
+          ancestors = ancestors_for(klass)
+          group = key.to_s.pluralize
+          value = value ? value.to_s : 'nil'
+          
+          # Generate all possible translation keys
+          translations = ancestors.map {|ancestor| :"#{ancestor.model_name.underscore}.#{name}.#{group}.#{value}"}
+          translations.concat([:"#{name}.#{group}.#{value}", :"#{group}.#{value}", value.humanize.downcase])
+          I18n.translate(translations.shift, :default => translations, :scope => [i18n_scope, :state_machines])
         end
         
         # Build a list of ancestors for the given class to use when
         # determining which localization key to use for a particular string.
         def ancestors_for(klass)
           klass.lookup_ancestors
-        end
-        
-        # Gets the terminator to use for callbacks
-        def callback_terminator
-          @terminator ||= lambda {|result| result == false}
         end
         
         # Adds the default callbacks for notifying ActiveModel observers
@@ -371,7 +385,20 @@ module StateMachine
           end
         end
         
-      private
+        # Configures new states with the built-in humanize scheme
+        def add_states(new_states)
+          super.each do |state|
+            state.human_name = lambda {|state, klass| translate(klass, :state, state.name)}
+          end
+        end
+        
+        # Configures new event with the built-in humanize scheme
+        def add_events(new_events)
+          super.each do |event|
+            event.human_name = lambda {|event, klass| translate(klass, :event, event.name)}
+          end
+        end
+        
         # Notifies observers on the given object that a callback occurred
         # involving the given transition.  This will attempt to call the
         # following methods on observers:

@@ -226,6 +226,11 @@ module StateMachine
         def callback_terminator
         end
         
+        # Don't allow translations
+        def translate(klass, key, value)
+          value.to_s.humanize.downcase
+        end
+        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object

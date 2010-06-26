@@ -1,5 +1,8 @@
 == master
 
+* Use human state / event names in error messages
+* Fix event names being used inconsistently in error messages
+* Allow access to the humanized version of state / event names via human_state_name / human_state_event_name
 * Allow MongoMapper 0.8.0+ scopes to be chainable
 * Fix i18n deprecation warnings in ActiveModel / ActiveRecord 3.0.0.beta4
 * Fix default error message translations overriding existing locales in ActiveModel / ActiveRecord

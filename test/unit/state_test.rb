@@ -18,6 +18,10 @@ class StateByDefaultTest < Test::Unit::TestCase
     assert_equal :parked, @state.name
   end
   
+  def test_should_have_a_human_name
+    assert_equal 'parked', @state.human_name
+  end
+  
   def test_should_use_stringify_the_name_as_the_value
     assert_equal 'parked', @state.value
   end
@@ -69,6 +73,11 @@ class StateTest < Test::Unit::TestCase
     assert_equal matcher, @state.matcher
   end
   
+  def test_should_allow_changing_human_name
+    @state.human_name = 'stopped'
+    assert_equal 'stopped', @state.human_name
+  end
+  
   def test_should_use_pretty_inspect
     assert_equal '#<StateMachine::State name=:parked value="parked" initial=false context=[]>', @state.inspect
   end
@@ -87,6 +96,10 @@ class StateWithoutNameTest < Test::Unit::TestCase
   
   def test_should_have_a_nil_qualified_name
     assert_nil @state.qualified_name
+  end
+  
+  def test_should_have_an_empty_human_name
+    assert_equal 'nil', @state.human_name
   end
   
   def test_should_have_a_nil_value
@@ -117,6 +130,10 @@ class StateWithNameTest < Test::Unit::TestCase
   
   def test_should_have_a_qualified_name
     assert_equal :parked, @state.name
+  end
+  
+  def test_should_have_a_human_name
+    assert_equal 'parked', @state.human_name
   end
   
   def test_should_use_stringify_the_name_as_the_value
@@ -320,6 +337,42 @@ class StateWithMatcherTest < Test::Unit::TestCase
   
   def test_should_match_evaluated_block
     assert @state.matches?(1)
+  end
+end
+
+class StateWithHumanNameTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @state = StateMachine::State.new(@machine, :parked, :human_name => 'stopped')
+  end
+  
+  def test_should_use_custom_human_name
+    assert_equal 'stopped', @state.human_name
+  end
+end
+
+class StateWithDynamicHumanNameTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @state = StateMachine::State.new(@machine, :parked, :human_name => lambda {|state, object| ['stopped', object]})
+  end
+  
+  def test_should_use_custom_human_name
+    human_name, klass = @state.human_name
+    assert_equal 'stopped', human_name
+    assert_equal @klass, klass
+  end
+  
+  def test_should_allow_custom_class_to_be_passed_through
+    human_name, klass = @state.human_name(1)
+    assert_equal 'stopped', human_name
+    assert_equal 1, klass
+  end
+  
+  def test_should_not_cache_value
+    assert_not_same @state.human_name, @state.human_name
   end
 end
 

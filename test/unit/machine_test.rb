@@ -129,6 +129,14 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert !@object.respond_to?(:state_event_transition=)
   end
   
+  def test_should_define_a_human_attribute_name_reader_for_the_attribute
+    assert @klass.respond_to?(:human_state_name)
+  end
+  
+  def test_should_define_a_human_event_name_reader_for_the_attribute
+    assert @klass.respond_to?(:human_state_event_name)
+  end
+  
   def test_should_not_define_singular_with_scope
     assert !@klass.respond_to?(:with_state)
   end
@@ -200,6 +208,14 @@ class MachineWithCustomNameTest < Test::Unit::TestCase
   
   def test_should_define_a_transition_reader_for_the_attribute
     assert @object.respond_to?(:status_transitions)
+  end
+  
+  def test_should_define_a_human_attribute_name_reader_for_the_attribute
+    assert @klass.respond_to?(:human_status_name)
+  end
+  
+  def test_should_define_a_human_event_name_reader_for_the_attribute
+    assert @klass.respond_to?(:human_status_event_name)
   end
 end
 
@@ -367,7 +383,7 @@ class MachineWithoutIntegrationTest < Test::Unit::TestCase
   end
   
   def test_invalidation_should_do_nothing
-    assert_nil @machine.invalidate(@object, :state, :invalid_transition, [[:event, :park]])
+    assert_nil @machine.invalidate(@object, :state, :invalid_transition, [[:event, 'park']])
   end
   
   def test_reset_should_do_nothing
@@ -754,7 +770,7 @@ class MachineWithCustomInvalidationTest < Test::Unit::TestCase
   end
   
   def test_use_custom_message
-    @machine.invalidate(@object, :state, :invalid_transition, [[:event, :park]])
+    @machine.invalidate(@object, :state, :invalid_transition, [[:event, 'park']])
     assert_equal 'cannot park', @object.error
   end
   
@@ -1017,6 +1033,14 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
         :without_states
       end
       
+      def self.human_state_name
+        :human_state_name
+      end
+      
+      def self.human_state_event_name
+        :human_state_event_name
+      end
+      
       attr_accessor :status
       
       def state
@@ -1056,6 +1080,7 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
     
     @machine = StateMachine::Machine.new(@klass, :integration => :custom)
     @machine.state :parked, :idling
+    @machine.event :ignite
     @object = @klass.new
   end
   
@@ -1073,6 +1098,14 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
   
   def test_should_not_redefine_plural_without_scope
     assert_equal :without_states, @klass.without_states
+  end
+  
+  def test_should_not_redefine_human_attribute_name_reader
+    assert_equal :human_state_name, @klass.human_state_name
+  end
+  
+  def test_should_not_redefine_human_event_name_reader
+    assert_equal :human_state_event_name, @klass.human_state_event_name
   end
   
   def test_should_not_redefine_attribute_writer
@@ -1118,6 +1151,14 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
         super == []
       end
       
+      def self.human_state_name(state)
+        super == 'parked'
+      end
+      
+      def self.human_state_event_name(event)
+        super == 'ignite'
+      end
+      
       attr_accessor :status
       
       def state
@@ -1150,6 +1191,8 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
     assert_equal true, @klass.with_states
     assert_equal true, @klass.without_state
     assert_equal true, @klass.without_states
+    assert_equal true, @klass.human_state_name(:parked)
+    assert_equal true, @klass.human_state_event_name(:ignite)
     
     assert_equal 'parked', @object.state
     @object.state = 'idling'
@@ -1316,6 +1359,15 @@ class MachineWithStatesTest < Test::Unit::TestCase
     assert_equal @parked, @machine.states['parked', :value]
   end
   
+  def test_should_allow_human_state_name_lookup
+    assert_equal 'parked', @klass.human_state_name(:parked)
+  end
+  
+  def test_should_raise_exception_on_invalid_human_state_name_lookup
+    exception = assert_raise(IndexError) {@klass.human_state_name(:invalid)}
+    assert_equal ':invalid is an invalid name', exception.message
+  end
+  
   def test_should_use_stringified_name_for_value
     assert_equal 'parked', @parked.value
   end
@@ -1346,6 +1398,22 @@ class MachineWithStatesWithCustomValuesTest < Test::Unit::TestCase
   
   def test_should_allow_lookup_by_custom_value
     assert_equal @state, @machine.states[1, :value]
+  end
+end
+
+class MachineWithStatesWithCustomHumanNamesTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @state = @machine.state :parked, :human_name => 'stopped'
+  end
+  
+  def test_should_use_custom_human_name
+    assert_equal 'stopped', @state.human_name
+  end
+  
+  def test_should_allow_human_state_name_lookup
+    assert_equal 'stopped', @klass.human_state_name(:parked)
   end
 end
 
@@ -1501,6 +1569,16 @@ class MachineWithEventsTest < Test::Unit::TestCase
     event = @machine.event(:ignite)
     assert_equal [event], @machine.events.to_a
   end
+  
+  def test_should_allow_human_state_name_lookup
+    @machine.event(:ignite)
+    assert_equal 'ignite', @klass.human_state_event_name(:ignite)
+  end
+  
+  def test_should_raise_exception_on_invalid_human_state_event_name_lookup
+    exception = assert_raise(IndexError) {@klass.human_state_event_name(:invalid)}
+    assert_equal ':invalid is an invalid name', exception.message
+  end
 end
 
 class MachineWithExistingEventTest < Test::Unit::TestCase
@@ -1516,6 +1594,22 @@ class MachineWithExistingEventTest < Test::Unit::TestCase
   
   def test_should_allow_accessing_event_without_block
     assert_equal @event, @machine.event(:ignite)
+  end
+end
+
+class MachineWithEventsWithCustomHumanNamesTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @event = @machine.event(:ignite, :human_name => 'start')
+  end
+  
+  def test_should_use_custom_human_name
+    assert_equal 'start', @event.human_name
+  end
+  
+  def test_should_allow_human_state_name_lookup
+    assert_equal 'start', @klass.human_state_event_name(:ignite)
   end
 end
 
@@ -1888,6 +1982,14 @@ class MachineWithCustomAttributeTest < Test::Unit::TestCase
   
   def test_should_define_a_transition_reader_for_the_attribute
     assert @object.respond_to?(:state_transitions)
+  end
+  
+  def test_should_define_a_human_attribute_name_reader_for_the_attribute
+    assert @klass.respond_to?(:human_state_name)
+  end
+  
+  def test_should_define_a_human_event_name_reader_for_the_attribute
+    assert @klass.respond_to?(:human_state_event_name)
   end
   
   def test_should_define_singular_with_scope

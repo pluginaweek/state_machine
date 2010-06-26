@@ -23,6 +23,9 @@ module StateMachine
     # namespace
     attr_reader :qualified_name
     
+    # The human-readable name for the state
+    attr_writer :human_name
+    
     # The value that is written to a machine's attribute when an object
     # transitions into this state
     attr_writer :value
@@ -56,12 +59,14 @@ module StateMachine
     # * <tt>:if</tt> - Determines whether a value matches this state
     #   (e.g. :value => lambda {Time.now}, :if => lambda {|state| !state.nil?}).
     #   By default, the configured value is matched.
+    # * <tt>:human_name</tt> - The human-readable version of this state's name
     def initialize(machine, name, options = {}) #:nodoc:
-      assert_valid_keys(options, :initial, :value, :cache, :if)
+      assert_valid_keys(options, :initial, :value, :cache, :if, :human_name)
       
       @machine = machine
       @name = name
       @qualified_name = name && machine.namespace ? :"#{machine.namespace}_#{name}" : name
+      @human_name = options[:human_name] || (@name ? @name.to_s.tr('_', ' ') : 'nil')
       @value = options.include?(:value) ? options[:value] : name && name.to_s
       @cache = options[:cache]
       @matcher = options[:if]
@@ -90,6 +95,12 @@ module StateMachine
           end
         end
       end
+    end
+    
+    # Transforms the state name into a more human-readable format, such as
+    # "first gear" instead of "first_gear"
+    def human_name(klass = @machine.owner_class)
+      @human_name.is_a?(Proc) ? @human_name.call(self, klass) : @human_name
     end
     
     # Generates a human-readable description of this state's name / value:

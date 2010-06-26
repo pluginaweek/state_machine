@@ -92,6 +92,18 @@ module SequelTest
     end
   end
   
+  class MachineWithStatesTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :first_gear
+    end
+    
+    def test_should_humanize_name
+      assert_equal 'first gear', @machine.state(:first_gear).human_name
+    end
+  end
+  
   class MachineWithStaticInitialStateTest < BaseTestCase
     def setup
       @model = new_model do
@@ -256,6 +268,18 @@ module SequelTest
       
       record = @model[@model.create(:state => nil).id]
       assert_nil record.state
+    end
+  end
+  
+  class MachineWithEventsTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.event :shift_up
+    end
+    
+    def test_should_humanize_name
+      assert_equal 'shift up', @machine.event(:shift_up).human_name
     end
   end
   
@@ -861,7 +885,7 @@ module SequelTest
     def test_should_invalidate_using_errors
       @record.state = 'parked'
       
-      @machine.invalidate(@record, :state, :invalid_transition, [[:event, :park]])
+      @machine.invalidate(@record, :state, :invalid_transition, [[:event, 'park']])
       assert_equal ['cannot transition via "park"'], @record.errors.on(:state)
     end
     

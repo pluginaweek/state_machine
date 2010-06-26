@@ -21,6 +21,10 @@ class EventByDefaultTest < Test::Unit::TestCase
     assert_equal :ignite, @event.qualified_name
   end
   
+  def test_should_have_a_human_name
+    assert_equal 'ignite', @event.human_name
+  end
+  
   def test_should_not_have_any_guards
     assert @event.guards.empty?
   end
@@ -67,6 +71,11 @@ class EventTest < Test::Unit::TestCase
     assert_equal new_machine, @event.machine
   end
   
+  def test_should_allow_changing_human_name
+    @event.human_name = 'Stop'
+    assert_equal 'Stop', @event.human_name
+  end
+  
   def test_should_provide_matcher_helpers_during_initialization
     matchers = []
     
@@ -79,6 +88,42 @@ class EventTest < Test::Unit::TestCase
   
   def test_should_use_pretty_inspect
     assert_match "#<StateMachine::Event name=:ignite transitions=[:parked => :idling]>", @event.inspect
+  end
+end
+
+class EventWithHumanNameTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, :ignite, :human_name => 'start')
+  end
+  
+  def test_should_use_custom_human_name
+    assert_equal 'start', @event.human_name
+  end
+end
+
+class EventWithDynamicHumanNameTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @event = StateMachine::Event.new(@machine, :ignite, :human_name => lambda {|event, object| ['start', object]})
+  end
+  
+  def test_should_use_custom_human_name
+    human_name, klass = @event.human_name
+    assert_equal 'start', human_name
+    assert_equal @klass, klass
+  end
+  
+  def test_should_allow_custom_class_to_be_passed_through
+    human_name, klass = @event.human_name(1)
+    assert_equal 'start', human_name
+    assert_equal 1, klass
+  end
+  
+  def test_should_not_cache_value
+    assert_not_same @event.human_name, @event.human_name
   end
 end
 
@@ -387,6 +432,12 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
   def test_should_invalidate_the_state
     @event.fire(@object)
     assert_equal ['cannot transition via "ignite"'], @object.errors
+  end
+  
+  def test_should_invalidate_with_human_event_name
+    @event.human_name = 'start'
+    @event.fire(@object)
+    assert_equal ['cannot transition via "start"'], @object.errors
   end
   
   def test_should_reset_existing_error

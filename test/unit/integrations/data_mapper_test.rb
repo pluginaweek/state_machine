@@ -114,6 +114,18 @@ module DataMapperTest
     end
   end
   
+  class MachineWithStatesTest < BaseTestCase
+    def setup
+      @resource = new_resource
+      @machine = StateMachine::Machine.new(@resource)
+      @machine.state :first_gear
+    end
+    
+    def test_should_humanize_name
+      assert_equal 'first gear', @machine.state(:first_gear).human_name
+    end
+  end
+  
   class MachineWithStaticInitialStateTest < BaseTestCase
     def setup
       @resource = new_resource do
@@ -251,6 +263,18 @@ module DataMapperTest
       
       record = @resource.get(@resource.create(:state => nil).id)
       assert_nil record.state
+    end
+  end
+  
+  class MachineWithEventsTest < BaseTestCase
+    def setup
+      @resource = new_resource
+      @machine = StateMachine::Machine.new(@resource)
+      @machine.event :shift_up
+    end
+    
+    def test_should_humanize_name
+      assert_equal 'shift up', @machine.event(:shift_up).human_name
     end
   end
   
@@ -896,7 +920,7 @@ module DataMapperTest
       def test_should_invalidate_using_errors
         @record.state = 'parked'
         
-        @machine.invalidate(@record, :state, :invalid_transition, [[:event, :park]])
+        @machine.invalidate(@record, :state, :invalid_transition, [[:event, 'park']])
         assert_equal ['cannot transition via "park"'], @record.errors.on(:state)
       end
       

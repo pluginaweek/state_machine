@@ -24,6 +24,9 @@ module StateMachine
     # The fully-qualified name of the event, scoped by the machine's namespace 
     attr_reader :qualified_name
     
+    # The human-readable name for the event
+    attr_writer :human_name
+    
     # The list of guards that determine what state this event transitions
     # objects to when fired
     attr_reader :guards
@@ -33,10 +36,16 @@ module StateMachine
     attr_reader :known_states
     
     # Creates a new event within the context of the given machine
-    def initialize(machine, name) #:nodoc:
+    # 
+    # Configuration options:
+    # * <tt>:human_name</tt> - The human-readable version of this event's name
+    def initialize(machine, name, options = {}) #:nodoc:
+      assert_valid_keys(options, :human_name)
+      
       @machine = machine
       @name = name
       @qualified_name = machine.namespace ? :"#{name}_#{machine.namespace}" : name
+      @human_name = options[:human_name] || @name.to_s.tr('_', ' ')
       @guards = []
       @known_states = []
       
@@ -49,6 +58,12 @@ module StateMachine
       super
       @guards = @guards.dup
       @known_states = @known_states.dup
+    end
+    
+    # Transforms the event name into a more human-readable format, such as
+    # "turn on" instead of "turn_on"
+    def human_name(klass = @machine.owner_class)
+      @human_name.is_a?(Proc) ? @human_name.call(self, klass) : @human_name
     end
     
     # Creates a new transition that determines what to change the current state
@@ -191,7 +206,7 @@ module StateMachine
       if transition = transition_for(object)
         transition.perform(*args)
       else
-        machine.invalidate(object, :state, :invalid_transition, [[:event, name]])
+        machine.invalidate(object, :state, :invalid_transition, [[:event, human_name(object.class)]])
         false
       end
     end

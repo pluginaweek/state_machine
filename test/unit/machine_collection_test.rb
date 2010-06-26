@@ -285,7 +285,7 @@ class MachineCollectionFireWithValidationsTest < Test::Unit::TestCase
     @object.alarm_state = 'off'
     
     assert !@machines.fire_events(@object, :ignite, :disable_alarm)
-    assert_equal ['cannot transition via "ignite"', 'cannot transition via "disable_alarm"'], @object.errors
+    assert_equal ['cannot transition via "ignite"', 'cannot transition via "disable"'], @object.errors
   end
   
   def teardown

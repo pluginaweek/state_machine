@@ -612,6 +612,9 @@ module StateMachine
     # * <tt>:if</tt> - Determines whether an object's value matches the state
     #   (e.g. :value => lambda {Time.now}, :if => lambda {|state| !state.nil?}).
     #   By default, the configured value is matched.
+    # * <tt>:human_name</tt> - The human-readable version of this state's name.
+    #   By default, this is either defined by the integration or stringifies the
+    #   name and converts underscores to spaces.
     # 
     # == Customizing the stored value
     # 
@@ -846,7 +849,7 @@ module StateMachine
     # options hash which contains at least <tt>:if</tt> condition support.
     def state(*names, &block)
       options = names.last.is_a?(Hash) ? names.pop : {}
-      assert_valid_keys(options, :value, :cache, :if)
+      assert_valid_keys(options, :value, :cache, :if, :human_name)
       
       states = add_states(names)
       states.each do |state|
@@ -855,6 +858,7 @@ module StateMachine
           self.states.update(state)
         end
         
+        state.human_name = options[:human_name] if options.include?(:human_name)
         state.cache = options[:cache] if options.include?(:cache)
         state.matcher = options[:if] if options.include?(:if)
         state.context(&block) if block_given?
@@ -906,6 +910,11 @@ module StateMachine
     # 
     # This method is also aliased as +on+ for improved compatibility with
     # using a domain-specific language.
+    # 
+    # Configuration options:
+    # * <tt>:human_name</tt> - The human-readable version of this event's name.
+    #   By default, this is either defined by the integration or stringifies the
+    #   name and converts underscores to spaces.
     # 
     # == Instance methods
     # 
@@ -1014,10 +1023,12 @@ module StateMachine
     #     end
     #   end
     def event(*names, &block)
-      events = names.collect do |name|
-        unless event = self.events[name]
-          self.events << event = Event.new(self, name)
-        end
+      options = names.last.is_a?(Hash) ? names.pop : {}
+      assert_valid_keys(options, :human_name)
+      
+      events = add_events(names)
+      events.each do |event|
+        event.human_name = options[:human_name] if options.include?(:human_name)
         
         if block_given?
           event.instance_eval(&block)
@@ -1415,11 +1426,7 @@ module StateMachine
         define_state_predicate
         define_event_helpers
         define_action_helpers if action
-        
-        # Gets the state name for the current value
-        define_instance_method(attribute(:name)) do |machine, object|
-          machine.states.match!(object).name
-        end
+        define_name_helpers
       end
       
       # Defines the initial values for state machine attributes.  Static values
@@ -1514,6 +1521,25 @@ module StateMachine
         end
       end
       
+      # Adds helper methods for accessing naming information about states and
+      # events on the owner class
+      def define_name_helpers
+        # Gets the humanized version of a state
+        define_class_method("human_#{attribute(:name)}") do |machine, klass, state|
+          machine.states.fetch(state).human_name(klass)
+        end
+        
+        # Gets the humanized version of an event
+        define_class_method("human_#{attribute(:event_name)}") do |machine, klass, event|
+          machine.events.fetch(event).human_name(klass)
+        end
+        
+        # Gets the state name for the current value
+        define_instance_method(attribute(:name)) do |machine, object|
+          machine.states.match!(object).name
+        end
+      end
+      
       # Defines the with/without scope helpers for this attribute.  Both the
       # singular and plural versions of the attribute are defined for each
       # scope helper.  A custom plural can be specified if it cannot be
@@ -1584,6 +1610,18 @@ module StateMachine
           end
           
           state
+        end
+      end
+      
+      # Tracks the given set of events in the list of all known events for
+      # this machine
+      def add_events(new_events)
+        new_events.map do |new_event|
+          unless event = events[new_event]
+            events << event = Event.new(self, new_event)
+          end
+          
+          event
         end
       end
   end

@@ -228,6 +228,13 @@ like so:
   vehicle.alarm_state_name                        # => :active
   
   vehicle.fire_events!(:ignite, :enable_alarm)    # => StateMachine::InvalidTransition: Cannot run events in parallel: ignite, enable_alarm
+  
+  # Human-friendly names can be accessed for states/events
+  Vehicle.human_state_name(:first_gear)               # => "first gear"
+  Vehicle.human_alarm_state_name(:active)             # => "active"
+  
+  Vehicle.human_state_event_name(:shift_down)         # => "shift down"
+  Vehicle.human_alarm_state_event_name(:enable_alarm) # => "enable alarm"
 
 == Integrations
 

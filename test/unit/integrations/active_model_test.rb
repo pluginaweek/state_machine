@@ -119,6 +119,18 @@ module ActiveModelTest
     end
   end
   
+  class MachineWithStatesTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :first_gear
+    end
+    
+    def test_should_humanize_name
+      assert_equal 'first gear', @machine.state(:first_gear).human_name
+    end
+  end
+  
   class MachineWithStaticInitialStateTest < BaseTestCase
     def setup
       @model = new_model
@@ -141,6 +153,18 @@ module ActiveModelTest
     def test_should_set_initial_state_on_created_object
       record = @model.new
       assert_equal 'parked', record.state
+    end
+  end
+  
+  class MachineWithEventsTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.event :shift_up
+    end
+    
+    def test_should_humanize_name
+      assert_equal 'shift up', @machine.event(:shift_up).human_name
     end
   end
   
@@ -523,7 +547,7 @@ module ActiveModelTest
       I18n.backend = I18n::Backend::Simple.new if Object.const_defined?(:I18n)
       @record.state = 'parked'
       
-      @machine.invalidate(@record, :state, :invalid_transition, [[:event, :park]])
+      @machine.invalidate(@record, :state, :invalid_transition, [[:event, 'park']])
       assert_equal ['State cannot transition via "park"'], @record.errors.full_messages
     end
     
@@ -793,7 +817,7 @@ module ActiveModelTest
       
       record = @model.new(:state => 'idling')
       
-      machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+      machine.invalidate(record, :state, :invalid_transition, [[:event, 'ignite']])
       assert_equal ['State cannot ignite'], record.errors.full_messages
     end
     
@@ -808,7 +832,7 @@ module ActiveModelTest
       record = @model.new
       record.state = 'idling'
       
-      machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+      machine.invalidate(record, :state, :invalid_transition, [[:event, 'ignite']])
       assert_equal ['State cannot ignite'], record.errors.full_messages
     end
     
@@ -818,7 +842,7 @@ module ActiveModelTest
       
       record = @model.new(:state => 'idling')
       
-      machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+      machine.invalidate(record, :state, :invalid_transition, [[:event, 'ignite']])
       assert_equal ['State cannot ignite'], record.errors.full_messages
     end
     
@@ -827,11 +851,10 @@ module ActiveModelTest
         :activemodel => {:state_machines => {:'active_model_test/foo' => {:state => {:states => {:parked => 'shutdown'}}}}}
       })
       
-      machine = StateMachine::Machine.new(@model, :initial => :parked, :action => :save)
-      record = @model.new
+      machine = StateMachine::Machine.new(@model)
+      machine.state :parked
       
-      machine.invalidate(record, :event, :invalid_event, [[:state, :parked]])
-      assert_equal ['State event cannot transition when shutdown'], record.errors.full_messages
+      assert_equal 'shutdown', machine.state(:parked).human_name
     end
     
     def test_should_allow_customized_state_key_scoped_to_machine
@@ -839,11 +862,10 @@ module ActiveModelTest
         :activemodel => {:state_machines => {:state => {:states => {:parked => 'shutdown'}}}}
       })
       
-      machine = StateMachine::Machine.new(@model, :initial => :parked, :action => :save)
-      record = @model.new
+      machine = StateMachine::Machine.new(@model)
+      machine.state :parked
       
-      machine.invalidate(record, :event, :invalid_event, [[:state, :parked]])
-      assert_equal ['State event cannot transition when shutdown'], record.errors.full_messages
+      assert_equal 'shutdown', machine.state(:parked).human_name
     end
     
     def test_should_allow_customized_state_key_unscoped
@@ -851,11 +873,10 @@ module ActiveModelTest
         :activemodel => {:state_machines => {:states => {:parked => 'shutdown'}}}
       })
       
-      machine = StateMachine::Machine.new(@model, :initial => :parked, :action => :save)
-      record = @model.new
+      machine = StateMachine::Machine.new(@model)
+      machine.state :parked
       
-      machine.invalidate(record, :event, :invalid_event, [[:state, :parked]])
-      assert_equal ['State event cannot transition when shutdown'], record.errors.full_messages
+      assert_equal 'shutdown', machine.state(:parked).human_name
     end
     
     def test_should_allow_customized_event_key_scoped_to_class_and_machine
@@ -863,12 +884,10 @@ module ActiveModelTest
         :activemodel => {:state_machines => {:'active_model_test/foo' => {:state => {:events => {:park => 'stop'}}}}}
       })
       
-      machine = StateMachine::Machine.new(@model, :action => :save)
+      machine = StateMachine::Machine.new(@model)
       machine.event :park
-      record = @model.new
       
-      machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
-      assert_equal ['State cannot transition via "stop"'], record.errors.full_messages
+      assert_equal 'stop', machine.event(:park).human_name
     end
     
     def test_should_allow_customized_event_key_scoped_to_machine
@@ -876,12 +895,10 @@ module ActiveModelTest
         :activemodel => {:state_machines => {:state => {:events => {:park => 'stop'}}}}
       })
       
-      machine = StateMachine::Machine.new(@model, :action => :save)
+      machine = StateMachine::Machine.new(@model)
       machine.event :park
-      record = @model.new
       
-      machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
-      assert_equal ['State cannot transition via "stop"'], record.errors.full_messages
+      assert_equal 'stop', machine.event(:park).human_name
     end
     
     def test_should_allow_customized_event_key_unscoped
@@ -889,12 +906,10 @@ module ActiveModelTest
         :activemodel => {:state_machines => {:events => {:park => 'stop'}}}
       })
       
-      machine = StateMachine::Machine.new(@model, :action => :save)
+      machine = StateMachine::Machine.new(@model)
       machine.event :park
-      record = @model.new
       
-      machine.invalidate(record, :state, :invalid_transition, [[:event, :park]])
-      assert_equal ['State cannot transition via "stop"'], record.errors.full_messages
+      assert_equal 'stop', machine.event(:park).human_name
     end
     
     def test_should_only_add_locale_once_in_load_path
@@ -932,7 +947,7 @@ module ActiveModelTest
       
       record = @model.new(:state => 'idling')
       
-      machine.invalidate(record, :state, :invalid_transition, [[:event, :ignite]])
+      machine.invalidate(record, :state, :invalid_transition, [[:event, 'ignite']])
       assert_equal ['State cannot ignite'], record.errors.full_messages
     ensure
       I18n.load_path = @original_load_path

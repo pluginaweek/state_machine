@@ -106,7 +106,7 @@ module StateMachine
         if event = self[event_name.to_sym, :name]
           event.transition_for(object) || begin
             # No valid transition: invalidate
-            machine.invalidate(object, :event, :invalid_event, [[:state, machine.states.match!(object).name || 'nil']]) if invalidate
+            machine.invalidate(object, :event, :invalid_event, [[:state, machine.states.match!(object).human_name(object.class)]]) if invalidate
             false
           end
         else

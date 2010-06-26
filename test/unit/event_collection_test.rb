@@ -250,7 +250,7 @@ class EventCollectionWithValidationsTest < Test::Unit::TestCase
     @events = StateMachine::EventCollection.new(@machine)
     
     @machine.event :ignite
-    @machine.state :parked, :idling
+    @parked, @idling = @machine.state :parked, :idling
     @events << @ignite = StateMachine::Event.new(@machine, :ignite)
     
     @object = @klass.new
@@ -271,15 +271,13 @@ class EventCollectionWithValidationsTest < Test::Unit::TestCase
     assert_equal ['cannot transition when idling'], @object.errors
   end
   
-  def test_should_invalidate_with_friendly_name_if_invalid_event_specified
-    # Add a valid nil state
-    @machine.state nil
-    
-    @object.state = nil
+  def test_should_invalidate_with_human_name_if_invalid_event_specified
+    @idling.human_name = 'waiting'
+    @object.state = 'idling'
     @object.state_event = 'ignite'
     @events.attribute_transition_for(@object, true)
     
-    assert_equal ['cannot transition when nil'], @object.errors
+    assert_equal ['cannot transition when waiting'], @object.errors
   end
   
   def test_should_not_invalidate_event_can_be_fired

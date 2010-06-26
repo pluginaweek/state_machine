@@ -374,6 +374,15 @@ module StateMachine
           :activerecord
         end
         
+        # Only allows translation of I18n is available
+        def translate(klass, key, value)
+          if Object.const_defined?(:I18n)
+            super
+          else
+            value ? value.to_s.humanize.downcase : 'nil'
+          end
+        end
+        
         # Attempts to look up a class's ancestors via:
         # * #lookup_ancestors
         # * #self_and_descendants_from_active_record

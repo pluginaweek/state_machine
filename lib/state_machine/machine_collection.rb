@@ -33,7 +33,7 @@ module StateMachine
         # Get the transition that will be performed for the event
         unless transition = event.transition_for(object)
           machine = event.machine
-          machine.invalidate(object, :state, :invalid_transition, [[:event, event_name]])
+          machine.invalidate(object, :state, :invalid_transition, [[:event, event.human_name]])
         end
         
         transition
