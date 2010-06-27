@@ -318,10 +318,7 @@ module StateMachine
         # * <tt>#{i18n_scope}.state_machines.#{machine_name}.#{plural_key}.#{value}
         # * <tt>#{i18n_scope}.state_machines.#{plural_key}.#{value}</tt>
         # 
-        # Event translations will be looked for using the following keys:
-        # * <tt>#{i18n_scope}.state_machines.#{model_name}.#{machine_name}.#{plural_key}.#{value}</tt>
-        # * <tt>#{i18n_scope}.state_machines.#{machine_name}.#{plural_key}.#{value}
-        # * <tt>#{i18n_scope}.state_machines.#{plural_key}.#{value}</tt>
+        # If no keys are found, then the humanized value will be the fallback.
         def translate(klass, key, value)
           ancestors = ancestors_for(klass)
           group = key.to_s.pluralize
