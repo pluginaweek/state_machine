@@ -1,5 +1,7 @@
 == master
 
+== 0.9.3 / 2010-06-26
+
 * Allow access to human state / event names in transitions and for the current state
 * Use human state / event names in error messages
 * Fix event names being used inconsistently in error messages
