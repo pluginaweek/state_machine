@@ -929,13 +929,14 @@ module StateMachine
     #   performed if the "park" event were to be fired now on the object or nil
     #   if no transitions can be performed.
     # * <tt>park(..., run_action = true)</tt> - Fires the "park" event,
-    #   transitioning from the current state to the next valid state.  The last
-    #   argument, if specified, controls whether the machine's action gets run.
+    #   transitioning from the current state to the next valid state.  If the
+    #   last argument is a boolean, it will control whether the machine's action
+    #   gets run.
     # * <tt>park!(..., run_action = true)</tt> - Fires the "park" event,
     #   transitioning from the current state to the next valid state.  If the
     #   transition fails, then a StateMachine::InvalidTransition error will be
-    #   raised.  The last argument, if specified, controls whether the machine's
-    #   action gets run.
+    #   raised.  If the last argument is a boolean, it will control whether the
+    #   machine's action gets run.
     # 
     # With a namespace of "car", the above names map to the following methods:
     # * <tt>can_park_car?</tt>
@@ -998,22 +999,21 @@ module StateMachine
     #   end
     # 
     # Note that +super+ is called instead of <tt>super(*args)</tt>.  This allows
-    # the caller to still be able to pass in the +run_action+ argument which
-    # controls whether the machine's action gets run when the event is
-    # triggered.  For example:
-    # 
-    #   vehicle.park                    # => Uses default args and runs machine action
-    #   vehicle.park(:parallel)         # => Specifies the +kind+ argument and runs the machine action
-    #   vehicle.park(:parallel, false)  # => Specifies the +kind+ argument and *skips* the machine action
-    # 
-    # 
-    # All arguments that are passed to the event will also be available through
+    # the entire arguments list to be accessed by transition callbacks through
     # StateMachine::Transition#args like so:
     # 
     #   after_transition :on => :park do |vehicle, transition|
     #     kind = *transition.args
     #     ...
     #   end
+    # 
+    # *Remember* that if the last argument is a boolean, it will be used as the
+    # +run_action+ parameter to the event action.  Using the +park+ action
+    # example from above, you can might call it like so:
+    # 
+    #   vehicle.park                    # => Uses default args and runs machine action
+    #   vehicle.park(:parallel)         # => Specifies the +kind+ argument and runs the machine action
+    #   vehicle.park(:parallel, false)  # => Specifies the +kind+ argument and *skips* the machine action
     # 
     # == Example
     # 
