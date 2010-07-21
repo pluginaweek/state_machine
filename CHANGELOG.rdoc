@@ -1,5 +1,7 @@
 == master
 
+* Fix mass-assignment sanitization breaking in ActiveRecord 3.0.0 beta5+ [Akira Matsuda]
+
 == 0.9.3 / 2010-06-26
 
 * Allow access to human state / event names in transitions and for the current state
