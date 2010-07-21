@@ -267,7 +267,8 @@ module StateMachine
             options
           end
           
-          object.errors.add(attribute, message, options.merge(:default => @messages[message]))
+          default_options = default_error_message_options(object, attribute, message)
+          object.errors.add(attribute, message, options.merge(default_options))
         end
       end
       
@@ -310,6 +311,12 @@ module StateMachine
         # Determines the base scope to use when looking up translations
         def i18n_scope
           owner_class.i18n_scope
+        end
+        
+        # The default options to use when generating messages for validation
+        # errors
+        def default_error_message_options(object, attribute, message)
+          {:message => @messages[message]}
         end
         
         # Translates the given key / value combo.  Translation keys are looked

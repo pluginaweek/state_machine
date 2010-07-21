@@ -374,6 +374,16 @@ module StateMachine
           :activerecord
         end
         
+        # The default options to use when generating messages for validation
+        # errors
+        def default_error_message_options(object, attribute, message)
+          if ::ActiveRecord::VERSION::MAJOR >= 3
+            super
+          else
+            {:default => @messages[message]}
+          end
+        end
+        
         # Only allows translation of I18n is available
         def translate(klass, key, value)
           if Object.const_defined?(:I18n)

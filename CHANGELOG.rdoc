@@ -1,5 +1,6 @@
 == master
 
+* Fix validation error warnings in ActiveModel / ActiveRecord 3.0.0 beta5+
 * Fix mass-assignment sanitization breaking in ActiveRecord 3.0.0 beta5+ [Akira Matsuda]
 
 == 0.9.3 / 2010-06-26
