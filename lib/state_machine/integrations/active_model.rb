@@ -222,7 +222,7 @@ module StateMachine
         def extended(base) #:nodoc:
           require 'state_machine/integrations/active_model/observer'
           
-          if Object.const_defined?(:I18n)
+          if defined?(I18n)
             locale = "#{File.dirname(__FILE__)}/active_model/locale.rb"
             I18n.load_path.unshift(locale) unless I18n.load_path.include?(locale)
           end

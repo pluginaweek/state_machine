@@ -483,7 +483,7 @@ module StateMachine
       end
       
       # Add class-/instance-level methods to the owner class for state initialization
-      unless owner_class.included_modules.include?(StateMachine::InstanceMethods)
+      unless owner_class < StateMachine::InstanceMethods
         owner_class.class_eval do
           extend StateMachine::ClassMethods
           include StateMachine::InstanceMethods

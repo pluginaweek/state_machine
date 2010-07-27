@@ -331,9 +331,9 @@ module StateMachine
         
         ::ActiveRecord::Observer.class_eval do
           include StateMachine::Integrations::ActiveModel::Observer
-        end unless ::ActiveRecord::Observer.included_modules.include?(StateMachine::Integrations::ActiveModel::Observer)
+        end unless ::ActiveRecord::Observer < StateMachine::Integrations::ActiveModel::Observer
         
-        if Object.const_defined?(:I18n)
+        if defined?(I18n)
           locale = "#{File.dirname(__FILE__)}/active_record/locale.rb"
           I18n.load_path.unshift(locale) unless I18n.load_path.include?(locale)
         end
@@ -341,7 +341,7 @@ module StateMachine
       
       # Adds a validation error to the given object 
       def invalidate(object, attribute, message, values = [])
-        if Object.const_defined?(:I18n)
+        if defined?(I18n)
           super
         else
           object.errors.add(self.attribute(attribute), generate_message(message, values))
@@ -366,7 +366,7 @@ module StateMachine
         
         # Only adds dirty tracking support if ActiveRecord supports it
         def supports_dirty_tracking?(object)
-          defined?(::ActiveRecord::Dirty) && object.respond_to?("#{self.attribute}_changed?") || super
+          defined?(::ActiveRecord::Dirty) && object.respond_to?("#{attribute}_changed?") || super
         end
         
         # Always uses the <tt>:activerecord</tt> translation scope
@@ -386,7 +386,7 @@ module StateMachine
         
         # Only allows translation of I18n is available
         def translate(klass, key, value)
-          if Object.const_defined?(:I18n)
+          if defined?(I18n)
             super
           else
             value ? value.to_s.humanize.downcase : 'nil'
@@ -394,9 +394,9 @@ module StateMachine
         end
         
         # Attempts to look up a class's ancestors via:
-        # * #lookup_ancestors
-        # * #self_and_descendants_from_active_record
-        # * #self_and_descendents_from_active_record
+        # * #lookup_ancestors (3.0.0+)
+        # * #self_and_descendants_from_active_record (2.3.2 - 2.3.x)
+        # * #self_and_descendents_from_active_record (2.0.0 - 2.3.1)
         def ancestors_for(klass)
           if ::ActiveRecord::VERSION::MAJOR >= 3
             super
