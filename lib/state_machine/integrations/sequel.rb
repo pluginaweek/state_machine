@@ -297,7 +297,11 @@ module StateMachine
                   super(*args)
                 end
                 
-                raise_on_save_failure && !yielded && !result ? save_failure(:validation) : result
+                if defined?(::Sequel::MAJOR) && (::Sequel::MAJOR > 3 || ::Sequel::MAJOR == 3 && ::Sequel::MINOR > 13)
+                  raise_on_failure?(args.first || {}) && !yielded && !result ? raise_hook_failure(:validation) : result
+                else
+                  raise_on_save_failure && !yielded && !result ? save_failure(:validation) : result
+                end
               end
               
               define_method(defined?(::Sequel::MAJOR) && (::Sequel::MAJOR >= 3 || ::Sequel::MAJOR == 2 && ::Sequel::MINOR == 12) ? :_save : :save) do |*args|
@@ -307,7 +311,13 @@ module StateMachine
                   super(*args)
                 end
                 
-                yielded || result ? result : save_failure(:save)
+                if yielded || result
+                  result
+                elsif defined?(::Sequel::MAJOR) && (::Sequel::MAJOR > 3 || ::Sequel::MAJOR == 3 && ::Sequel::MINOR > 13)
+                  raise_hook_failure(:save)
+                else
+                  save_failure(:save)
+                end
               end
             end unless owner_class.state_machines.any? {|name, machine| machine.action == :save && machine != self}
           else
