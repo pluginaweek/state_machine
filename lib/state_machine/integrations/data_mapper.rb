@@ -262,19 +262,18 @@ module StateMachine
       # state value actually changed
       def write(object, attribute, value)
         if attribute == :state
-          # Force to Dirty state in 0.10.3+
-          if !(::DataMapper::VERSION =~ /^0\.(9\.|10\.[0-2]$)/)
-            object.persisted_state = ::DataMapper::Resource::State::Dirty.new(object) if object.persisted_state.is_a?(::DataMapper::Resource::State::Clean)
-          end
-          
           result = super
           
           # Change original attributes in 0.9.4 - 0.10.2
           if ::DataMapper::VERSION =~ /^0\.9\./
             object.original_values[self.attribute] = "#{value}-ignored" if object.original_values[self.attribute] == value
-          elsif ::DataMapper::VERSION =~ /^0\.10\.[0-2]$/
+          elsif ::DataMapper::VERSION =~ /^0\.10\./
             property = owner_class.properties[self.attribute]
             object.original_attributes[property] = "#{value}-ignored" unless object.original_attributes.include?(property)
+          else
+            object.persisted_state = ::DataMapper::Resource::State::Dirty.new(object) if object.persisted_state.is_a?(::DataMapper::Resource::State::Clean)
+            property = owner_class.properties[self.attribute]
+            object.persisted_state.original_attributes[property] = value unless object.persisted_state.original_attributes.include?(property)
           end
         else
           result = super
