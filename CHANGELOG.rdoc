@@ -1,5 +1,7 @@
 == master
 
+== 0.9.4 / 2010-08-01
+
 * Fix validation / save hooks in Sequel 3.14.0+
 * Fix integration with dirty attribute tracking on DataMapper 1.0.1+
 * Fix DataMapper 1.0.1+ tests producing warnings
