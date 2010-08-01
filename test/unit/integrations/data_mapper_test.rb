@@ -26,13 +26,14 @@ module DataMapperTest
       def new_resource(create_table = :foo, &block)
         table_name = create_table || :foo
         
-        resource = Class.new do
+        resource = Class.new
+        resource.class_eval do
           include DataMapper::Resource
           
           storage_names[:default] = table_name.to_s
           def self.name; "DataMapperTest::#{storage_names[:default].capitalize}"; end
           
-          property :id, DataMapper::Types::Serial
+          property :id, resource.class_eval('Serial')
           property :state, String
           
           auto_migrate! if create_table
