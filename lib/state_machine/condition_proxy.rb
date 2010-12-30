@@ -66,6 +66,15 @@ module StateMachine
       end
       
       # Get any existing condition that may need to be merged
+      wrap_condition(options)
+
+      # Evaluate the method on the original class with the condition proxied
+      # through
+      @klass.send(*args, &block)
+    end
+
+    protected
+    def wrap_condition(options)
       if_condition = options.delete(:if)
       unless_condition = options.delete(:unless)
       
@@ -86,9 +95,12 @@ module StateMachine
         !Array(unless_condition).any? {|condition| proxy.evaluate_method(object, condition)}
       end
       
-      # Evaluate the method on the original class with the condition proxied
-      # through
-      @klass.send(*args, &block)
+      # Needed for active record when presence => { :if => :something? }
+      options.each do |key, value|
+        if value.is_a?(Hash)
+          wrap_condition(value)
+        end
+      end
     end
   end
 end
