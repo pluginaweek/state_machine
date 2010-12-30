@@ -66,7 +66,7 @@ module StateMachine
       end
       
       # Get any existing condition that may need to be merged
-      wrap_condition(options)
+      wrap_condition(options, true)
 
       # Evaluate the method on the original class with the condition proxied
       # through
@@ -74,7 +74,7 @@ module StateMachine
     end
 
     protected
-    def wrap_condition(options)
+    def wrap_condition(options, force = false)
       if_condition = options.delete(:if)
       unless_condition = options.delete(:unless)
       
@@ -93,7 +93,7 @@ module StateMachine
         proxy.evaluate_method(object, proxy_condition) &&
         Array(if_condition).all? {|condition| proxy.evaluate_method(object, condition)} &&
         !Array(unless_condition).any? {|condition| proxy.evaluate_method(object, condition)}
-      end
+      end if (force || !if_condition.nil? || !unless_condition.nil? )
       
       # Needed for active record when presence => { :if => :something? }
       options.each do |key, value|
