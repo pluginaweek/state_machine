@@ -440,7 +440,11 @@ class VehicleParkedTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_repair_not_allowed!
-    assert_raise(StateMachine::InvalidTransition) {@vehicle.repair!}
+    exception = assert_raise(StateMachine::InvalidTransition) {@vehicle.repair!}
+    assert_equal @vehicle, exception.object
+    assert_equal Vehicle.state_machine(:state), exception.machine
+    assert_equal :repair, exception.event
+    assert_equal 'parked', exception.from
   end
 end
 
@@ -721,7 +725,9 @@ class VehicleWithParallelEventsTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_any_event_cannot_transition_on_bang
-    assert_raise(StateMachine::InvalidTransition) { @vehicle.fire_events!(:ignite, :cancel_insurance) }
+    exception = assert_raise(StateMachine::InvalidParallelTransition) { @vehicle.fire_events!(:ignite, :cancel_insurance) }
+    assert_equal @vehicle, exception.object
+    assert_equal [:ignite, :cancel_insurance], exception.events
   end
   
   def test_should_not_raise_exception_if_all_events_transition_on_bang

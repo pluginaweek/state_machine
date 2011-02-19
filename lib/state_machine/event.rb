@@ -2,10 +2,19 @@ require 'state_machine/transition'
 require 'state_machine/guard'
 require 'state_machine/assertions'
 require 'state_machine/matcher_helpers'
+require 'state_machine/error'
 
 module StateMachine
   # An invalid event was specified
-  class InvalidEvent < StandardError
+  class InvalidEvent < Error
+    # The event that was attempted to be run
+    attr_reader :event
+    
+    def initialize(object, event_name) #:nodoc:
+      @event = event_name
+      
+      super(object, "#{event.inspect} is an unknown state machine event")
+    end
   end
   
   # An event defines an action that transitions an attribute from one state to
@@ -260,7 +269,7 @@ module StateMachine
         
         # Fires the event, raising an exception if it fails
         machine.define_instance_method("#{qualified_name}!") do |machine, object, *args|
-          object.send(qualified_name, *args) || raise(StateMachine::InvalidTransition, "Cannot transition #{machine.name} via :#{name} from #{machine.states.match!(object).name.inspect}")
+          object.send(qualified_name, *args) || raise(StateMachine::InvalidTransition.new(object, machine, name))
         end
       end
   end

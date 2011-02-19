@@ -1,5 +1,7 @@
 == master
 
+* Provide access to transition context when raising InvalidEvent / InvalidTransition exceptions
+
 == 0.9.4 / 2010-08-01
 
 * Fix validation / save hooks in Sequel 3.14.0+

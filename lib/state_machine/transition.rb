@@ -1,8 +1,55 @@
 require 'state_machine/transition_collection'
+require 'state_machine/error'
 
 module StateMachine
   # An invalid transition was attempted
-  class InvalidTransition < StandardError
+  class InvalidTransition < Error
+    # The machine attempting to be transitioned
+    attr_reader :machine
+    
+    # The current state value for the machine
+    attr_reader :from
+    
+    def initialize(object, machine, event) #:nodoc:
+      @machine = machine
+      @from_state = machine.states.match!(object)
+      @from = machine.read(object, :state)
+      @event = machine.events.fetch(event)
+      
+      super(object, "Cannot transition #{machine.name} via :#{self.event} from #{from_name.inspect}")
+    end
+    
+    # The event that triggered the failed transition
+    def event
+      @event.name
+    end
+    
+    # The fully-qualified name of the event that triggered the failed transition
+    def qualified_event
+      @event.qualified_name
+    end
+    
+    # The name for the current state
+    def from_name
+      @from_state.name
+    end
+    
+    # The fully-qualified name for the current state
+    def qualified_from_name
+      @from_state.qualified_name
+    end
+  end
+  
+  # A set of transition failed to run in parallel
+  class InvalidParallelTransition < Error
+    # The set of events that failed the transition(s)
+    attr_reader :events
+    
+    def initialize(object, events) #:nodoc:
+      @events = events
+      
+      super(object, "Cannot run events in parallel: #{events * ', '}")
+    end
   end
   
   # A transition represents a state change for a specific attribute.

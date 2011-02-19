@@ -28,7 +28,7 @@ module StateMachine
         event = nil
         detect {|name, machine| event = machine.events[event_name, :qualified_name]}
         
-        raise InvalidEvent, "#{event_name.inspect} is an unknown state machine event" unless event
+        raise(InvalidEvent.new(object, event_name)) unless event
         
         # Get the transition that will be performed for the event
         unless transition = event.transition_for(object)

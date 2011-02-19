@@ -147,10 +147,10 @@ class MachineCollectionFireTest < Test::Unit::TestCase
   
   def test_should_raise_exception_if_invalid_event_specified
     exception = assert_raise(StateMachine::InvalidEvent) { @machines.fire_events(@object, :invalid) }
-    assert_equal ':invalid is an unknown state machine event', exception.message
+    assert_equal :invalid, exception.event
     
     exception = assert_raise(StateMachine::InvalidEvent) { @machines.fire_events(@object, :ignite, :invalid) }
-    assert_equal ':invalid is an unknown state machine event', exception.message
+    assert_equal :invalid, exception.event
   end
   
   def test_should_fail_if_any_event_cannot_transition
