@@ -51,7 +51,7 @@ Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_dir = 'rdoc'
   rdoc.title    = spec.name
   rdoc.template = '../rdoc_template.rb'
-  rdoc.options << '--line-numbers' << '--inline-source'
+  rdoc.options << '--line-numbers' << '--inline-source' << '--main=README.rdoc'
   rdoc.rdoc_files.include('README.rdoc', 'CHANGELOG.rdoc', 'LICENSE', 'lib/**/*.rb')
 end
 
