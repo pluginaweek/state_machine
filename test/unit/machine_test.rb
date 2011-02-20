@@ -337,6 +337,42 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
   end
 end
 
+class MachineStateInitializationTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked)
+    
+    # Prevent the auto-initialization hook from firing
+    @klass.class_eval do
+      def initialize
+      end
+    end
+    
+    @object = @klass.new
+    @object.state = nil
+  end
+  
+  def test_should_set_states_if_nil
+    @machine.initialize_state(@object)
+    
+    assert_equal 'parked', @object.state
+  end
+  
+  def test_should_set_states_if_empty
+    @object.state = ''
+    @machine.initialize_state(@object)
+    
+    assert_equal 'parked', @object.state
+  end
+  
+  def test_should_not_set_states_if_not_empty
+    @object.state = 'idling'
+    @machine.initialize_state(@object)
+    
+    assert_equal 'idling', @object.state
+  end
+end
+
 class MachineWithCustomActionTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new, :action => :save)

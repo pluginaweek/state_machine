@@ -1,20 +1,26 @@
 module StateMachine
   # Represents a collection of state machines for a class
   class MachineCollection < Hash
-    # Initializes the state of each machine in the given object.  Initial
-    # values are only set if the machine's attribute doesn't already exist
-    # (which must mean the defaults are being skipped)
+    # Initializes the state of each machine in the given object.  This can allow
+    # states to be initialized in two groups: static and dynamic.  For example:
+    # 
+    #   machines.initialize_states(object) do
+    #     # After static state initialization, before dynamic state initialization
+    #   end
+    # 
+    # If no block is provided, then all states will still be initialized.
     def initialize_states(object, options = {})
-      if ignore = options[:ignore]
-        ignore = ignore.map {|attribute| attribute.to_sym}
+      each_value do |machine| 
+        machine.initialize_state(object, options) unless machine.dynamic_initial_state?
       end
       
+      result = yield if block_given?
+      
       each_value do |machine|
-        if (!ignore || !ignore.include?(machine.attribute)) && (!options.include?(:dynamic) || machine.dynamic_initial_state? == options[:dynamic])
-          value = machine.read(object, :state)
-          machine.initialize_state(object) if ignore || value.nil? || value.respond_to?(:empty?) && value.empty?
-        end
+        machine.initialize_state(object, options) if machine.dynamic_initial_state?
       end
+      
+      result
     end
     
     # Runs one or more events in parallel on the given object.  See

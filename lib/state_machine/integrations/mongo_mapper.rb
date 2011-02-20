@@ -231,24 +231,26 @@ module StateMachine
           value.to_s.humanize.downcase
         end
         
+        # Only allows state initialization on new records that aren't being
+        # created with a set of attributes that includes this machine's
+        # attribute.
+        def initialize_state?(object, options)
+          attributes = options[:attributes] || {}
+          
+          if !options[:from_database] && !attributes.stringify_keys.key?('_id')
+            filtered = object.respond_to?(:filter_protected_attrs) ? object.send(:filter_protected_attrs, attributes) : attributes 
+            ignore = filtered.keys
+            !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
+          end
+        end
+        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
         def define_state_initializer
           @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
             def initialize(attrs = {}, *args)
-              from_database = args.first
-              
-              if !from_database && (!attrs || !attrs.stringify_keys.key?('_id'))
-                filtered = respond_to?(:filter_protected_attrs) ? filter_protected_attrs(attrs) : attrs 
-                ignore = filtered ? filtered.keys : []
-                
-                initialize_state_machines(:dynamic => false, :ignore => ignore)
-                super
-                initialize_state_machines(:dynamic => true, :ignore => ignore)
-              else
-                super
-              end
+              initialize_state_machines(:attributes => attrs, :from_database => args.first) { super }
             end
           end_eval
         end

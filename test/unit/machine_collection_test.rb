@@ -31,84 +31,30 @@ class MachineCollectionStateInitializationTest < Test::Unit::TestCase
     @object.alarm_state = nil
   end
   
-  def test_should_set_states_if_nil
+  def test_should_only_initialize_static_states_prior_to_block
+    @machines.initialize_states(@object) do
+      @state_in_block = @object.state
+      @alarm_state_in_block = @object.alarm_state
+    end
+    
+    assert_equal 'parked', @state_in_block
+    assert_nil @alarm_state_in_block
+  end
+  
+  def test_should_only_initialize_dynamic_states_after_block
+    @machines.initialize_states(@object) do
+      @alarm_state_in_block = @object.alarm_state
+    end
+    
+    assert_nil @alarm_state_in_block
+    assert_equal 'active', @object.alarm_state
+  end
+  
+  def test_should_initialize_all_states_without_block
     @machines.initialize_states(@object)
     
     assert_equal 'parked', @object.state
     assert_equal 'active', @object.alarm_state
-  end
-  
-  def test_should_set_states_if_empty
-    @object.state = ''
-    @object.alarm_state = ''
-    @machines.initialize_states(@object)
-    
-    assert_equal 'parked', @object.state
-    assert_equal 'active', @object.alarm_state
-  end
-  
-  def test_should_not_set_states_if_not_empty
-    @object.state = 'idling'
-    @object.alarm_state = 'off'
-    @machines.initialize_states(@object)
-    
-    assert_equal 'idling', @object.state
-    assert_equal 'off', @object.alarm_state
-  end
-  
-  def test_should_only_initialize_static_states_if_dynamic_disabled
-    @machines.initialize_states(@object, :dynamic => false)
-    
-    assert_equal 'parked', @object.state
-    assert_nil @object.alarm_state
-  end
-  
-  def test_should_only_initialize_dynamic_states_if_dynamic_enabled
-    @machines.initialize_states(@object, :dynamic => true)
-    
-    assert_nil @object.state
-    assert_equal 'active', @object.alarm_state
-  end
-  
-  def test_should_not_set_states_if_ignored
-    @machines.initialize_states(@object, :ignore => [:state, :alarm_state])
-    
-    assert_nil @object.state
-    assert_nil @object.alarm_state
-  end
-  
-  def test_should_set_states_if_not_ignored_and_nil
-    @machines.initialize_states(@object, :ignore => [])
-    
-    assert_equal 'parked', @object.state
-    assert_equal 'active', @object.alarm_state
-  end
-  
-  def test_should_set_states_if_not_ignored_and_empty
-    @object.state = ''
-    @object.alarm_state = ''
-    @machines.initialize_states(@object, :ignore => [])
-    
-    assert_equal 'parked', @object.state
-    assert_equal 'active', @object.alarm_state
-  end
-  
-  def test_should_set_states_if_not_ignored_and_not_empty
-    @object.state = 'idling'
-    @object.alarm_state = 'inactive'
-    @machines.initialize_states(@object, :ignore => [])
-    
-    assert_equal 'parked', @object.state
-    assert_equal 'active', @object.alarm_state
-  end
-  
-  def test_should_not_modify_ignore_option
-    ignore = ['state', 'alarm_state']
-    @machines.initialize_states(@object, :ignore => ignore)
-    
-    assert_nil @object.state
-    assert_nil @object.alarm_state
-    assert_equal ['state', 'alarm_state'], ignore
   end
 end
 

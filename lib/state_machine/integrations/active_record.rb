@@ -407,6 +407,30 @@ module StateMachine
           end
         end
         
+        # Only allows state initialization on new records that aren't being
+        # created with a set of attributes that includes this machine's
+        # attribute.
+        def initialize_state?(object, options)
+          if object.new_record? && !object.instance_variable_defined?('@initialized_state_machines')
+            object.instance_variable_set('@initialized_state_machines', true)
+            
+            if attributes = options[:attributes]
+              attributes = attributes.dup
+              attributes.stringify_keys!
+              
+              if ::ActiveRecord::VERSION::MAJOR >= 3
+                ignore = object.send(:sanitize_for_mass_assignment, attributes).keys
+              else
+                ignore = object.send(:remove_attributes_protected_from_mass_assignment, attributes).keys
+              end
+            else
+              ignore = []
+            end
+            
+            !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
+          end
+        end
+        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
@@ -422,27 +446,7 @@ module StateMachine
             # Hooks in to attribute initialization to set the states *prior*
             # to the attributes being set
             def attributes=(new_attributes, *args)
-              if new_record? && !@initialized_state_machines
-                @initialized_state_machines = true
-                
-                ignore = if new_attributes
-                  attributes = new_attributes.dup
-                  attributes.stringify_keys!
-                  if ::ActiveRecord::VERSION::MAJOR >= 3
-                    sanitize_for_mass_assignment(attributes).keys
-                  else
-                    remove_attributes_protected_from_mass_assignment(attributes).keys
-                  end
-                else
-                  []
-                end
-                
-                initialize_state_machines(:dynamic => false, :ignore => ignore)
-                super
-                initialize_state_machines(:dynamic => true, :ignore => ignore)
-              else
-                super
-              end
+              initialize_state_machines(:attributes => new_attributes) { super }
             end
           end_eval
         end

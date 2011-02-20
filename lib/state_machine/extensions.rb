@@ -142,8 +142,8 @@ module StateMachine
     end
     
     protected
-      def initialize_state_machines(options = {}) #:nodoc:
-        self.class.state_machines.initialize_states(self, options)
+      def initialize_state_machines(options = {}, &block) #:nodoc:
+        self.class.state_machines.initialize_states(self, options, &block)
       end
   end
 end

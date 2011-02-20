@@ -508,10 +508,10 @@ module StateMachine
       states.each {|state| state.initial = (state.name == @initial_state)}
     end
     
-    # Initializes the state on the given object.  This will always write to the
-    # attribute regardless of whether a value is already present.
-    def initialize_state(object)
-      write(object, :state, initial_state(object).value)
+    # Initializes the state on the given object.  Initial values are only set if
+    # the machine's attribute hasn't been previously initialized.
+    def initialize_state(object, options = {})
+      write(object, :state, initial_state(object).value) if initialize_state?(object, options)
     end
     
     # Gets the actual name of the attribute on the machine's owner class that
@@ -1431,6 +1431,13 @@ module StateMachine
       def after_initialize
       end
       
+      # Determines if the machine's attribute needs to be initialized.  This
+      # will only be true if the machine's attribute is blank.
+      def initialize_state?(object, options = {})
+        value = read(object, :state)
+        value.nil? || value.respond_to?(:empty?) && value.empty?
+      end
+      
       # Adds helper methods for interacting with the state machine, including
       # for states, events, and transitions
       def define_helpers
@@ -1447,9 +1454,7 @@ module StateMachine
       def define_state_initializer
         @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
           def initialize(*args)
-            initialize_state_machines(:dynamic => false)
-            super
-            initialize_state_machines(:dynamic => true)
+            initialize_state_machines { super }
           end
         end_eval
       end

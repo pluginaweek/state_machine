@@ -252,6 +252,19 @@ module StateMachine
       end
       
       protected
+        # Only allows state initialization on new records that aren't being
+        # created with a set of attributes that includes this machine's
+        # attribute.
+        def initialize_state?(object, options)
+          if object.new? && !object.instance_variable_defined?('@initialized_state_machines')
+            object.instance_variable_set('@initialized_state_machines', true)
+            
+            attributes = options[:attributes]
+            ignore = object.send(:setter_methods, nil, nil).map {|setter| setter.chop.to_sym} & (attributes ? attributes.keys.map {|key| key.to_sym} : [])
+            !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
+          end
+        end
+        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
@@ -260,17 +273,7 @@ module StateMachine
             # Hooks in to attribute initialization to set the states *prior*
             # to the attributes being set
             def set(hash, *args)
-              if new? && !@initialized_state_machines
-                @initialized_state_machines = true
-                
-                ignore = setter_methods(nil, nil).map {|setter| setter.chop.to_sym} & (hash ? hash.keys.map {|attribute| attribute.to_sym} : [])
-                initialize_state_machines(:dynamic => false, :ignore => ignore)
-                result = super
-                initialize_state_machines(:dynamic => true, :ignore => ignore)
-                result
-              else
-                super
-              end
+              initialize_state_machines(:attributes => hash) { super }
             end
           end_eval
         end
