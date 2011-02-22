@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class CallbackTest < Test::Unit::TestCase
   def test_should_raise_exception_if_invalid_type_specified
     exception = assert_raise(ArgumentError) { StateMachine::Callback.new(:invalid) {} }
-    assert_equal 'Type must be :before, :after, or :around', exception.message
+    assert_equal 'Type must be :before, :after, :around, or :failure', exception.message
   end
   
   def test_should_not_raise_exception_if_using_before_type
@@ -16,6 +16,10 @@ class CallbackTest < Test::Unit::TestCase
   
   def test_should_not_raise_exception_if_using_around_type
     assert_nothing_raised { StateMachine::Callback.new(:around) {} }
+  end
+  
+  def test_should_not_raise_exception_if_using_failure_type
+    assert_nothing_raised { StateMachine::Callback.new(:failure) {} }
   end
   
   def test_should_raise_exception_if_no_methods_specified
@@ -693,36 +697,5 @@ class CallbackWithAroundTypeAndBoundMethodTest < Test::Unit::TestCase
     callback.call(@object, {}, 1, 2, 3)
     
     assert_equal [1, 2, 3], context
-  end
-end
-
-class CallbackSuccessMatcherTest < Test::Unit::TestCase
-  def setup
-    @object = Object.new
-  end
-  
-  def test_should_match_if_not_specified
-    callback = StateMachine::Callback.new(:before) {}
-    assert callback.matches_success?(true)
-  end
-  
-  def test_should_match_if_true_and_not_including_failures
-    callback = StateMachine::Callback.new(:before, :include_failures => false) {}
-    assert callback.matches_success?(true)
-  end
-  
-  def test_should_match_if_true_and_including_failures
-    callback = StateMachine::Callback.new(:before, :include_failures => true) {}
-    assert callback.matches_success?(true)
-  end
-  
-  def test_should_not_match_if_false_and_not_including_failures
-    callback = StateMachine::Callback.new(:before, :include_failures => false) {}
-    assert !callback.matches_success?(false)
-  end
-  
-  def test_Should_match_if_false_and_including_failures
-    callback = StateMachine::Callback.new(:before, :include_failures => true) {}
-    assert callback.matches_success?(false)
   end
 end

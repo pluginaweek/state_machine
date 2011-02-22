@@ -43,6 +43,10 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert @machine.callbacks[:after].empty?
   end
   
+  def test_should_not_have_any_failure_callbacks
+    assert @machine.callbacks[:failure].empty?
+  end
+  
   def test_should_not_have_an_action
     assert_nil @machine.action
   end
@@ -851,6 +855,7 @@ class MachineAfterBeingCopiedTest < Test::Unit::TestCase
     @machine.before_transition(lambda {})
     @machine.after_transition(lambda {})
     @machine.around_transition(lambda {})
+    @machine.after_failure(lambda {})
     
     @copied_machine = @machine.clone
   end
@@ -897,6 +902,10 @@ class MachineAfterBeingCopiedTest < Test::Unit::TestCase
   
   def test_should_not_have_the_same_after_callbacks
     assert_not_same @copied_machine.callbacks[:after], @machine.callbacks[:after]
+  end
+  
+  def test_should_not_have_the_same_failure_callbacks
+    assert_not_same @copied_machine.callbacks[:failure], @machine.callbacks[:failure]
   end
 end
 
@@ -1867,6 +1876,52 @@ class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   
   def test_should_define_predicates_for_each_state
     [:parked?, :idling?].each {|predicate| assert @object.respond_to?(predicate)}
+  end
+end
+
+class MachineWithFailureCallbacksTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      attr_accessor :callbacks
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+    @event = @machine.event :ignite
+    
+    @object = @klass.new
+    @object.callbacks = []
+  end
+  
+  def test_should_raise_exception_if_implicit_option_specified
+    exception = assert_raise(ArgumentError) {@machine.after_failure :invalid => :valid, :do => lambda {}}
+    assert_equal 'Invalid key(s): invalid', exception.message
+  end
+  
+  def test_should_raise_exception_if_method_not_specified
+    exception = assert_raise(ArgumentError) {@machine.after_failure :on => :ignite}
+    assert_equal 'Method(s) for callback must be specified', exception.message
+  end
+  
+  def test_should_invoke_callbacks_during_failed_transition
+    @machine.after_failure lambda {|object| object.callbacks << 'failure'}
+    
+    @event.fire(@object)
+    assert_equal %w(failure), @object.callbacks
+  end
+  
+  def test_should_allow_multiple_callbacks
+    @machine.after_failure lambda {|object| object.callbacks << 'failure1'}, lambda {|object| object.callbacks << 'failure2'}
+    
+    @event.fire(@object)
+    assert_equal %w(failure1 failure2), @object.callbacks
+  end
+  
+  def test_should_allow_multiple_callbacks_with_requirements
+    @machine.after_failure lambda {|object| object.callbacks << 'failure_ignite1'}, lambda {|object| object.callbacks << 'failure_ignite2'}, :on => :ignite
+    @machine.after_failure lambda {|object| object.callbacks << 'failure_park1'}, lambda {|object| object.callbacks << 'failure_park2'}, :on => :park
+    
+    @event.fire(@object)
+    assert_equal %w(failure_ignite1 failure_ignite2), @object.callbacks
   end
 end
 

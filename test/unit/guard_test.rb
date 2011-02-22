@@ -404,52 +404,6 @@ class GuardWithMultipleExceptOnRequirementsTest < Test::Unit::TestCase
   end
 end
 
-class GuardWithFailuresExcludedTest < Test::Unit::TestCase
-  def setup
-    @object = Object.new
-    @guard = StateMachine::Guard.new(:include_failures => false)
-  end
-  
-  def test_should_use_a_blacklist_matcher
-    assert_instance_of StateMachine::WhitelistMatcher, @guard.success_requirement
-  end
-  
-  def test_should_match_if_not_specified
-    assert @guard.matches?(@object)
-  end
-  
-  def test_should_match_if_true
-    assert @guard.matches?(@object, :success => true)
-  end
-  
-  def test_should_not_match_if_false
-    assert !@guard.matches?(@object, :success => false)
-  end
-end
-
-class GuardWithFailuresIncludedTest < Test::Unit::TestCase
-  def setup
-    @object = Object.new
-    @guard = StateMachine::Guard.new(:include_failures => true)
-  end
-  
-  def test_should_use_all_matcher
-    assert_equal StateMachine::AllMatcher.instance, @guard.success_requirement
-  end
-  
-  def test_should_match_if_not_specified
-    assert @guard.matches?(@object)
-  end
-  
-  def test_should_match_if_true
-    assert @guard.matches?(@object, :success => true)
-  end
-  
-  def test_should_match_if_false
-    assert @guard.matches?(@object, :success => false)
-  end
-end
-
 class GuardWithConflictingFromRequirementsTest < Test::Unit::TestCase
   def test_should_raise_an_exception
     exception = assert_raise(ArgumentError) { StateMachine::Guard.new(:from => :parked, :except_from => :parked) }

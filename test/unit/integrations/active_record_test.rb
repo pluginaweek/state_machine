@@ -858,13 +858,8 @@ module ActiveRecordTest
       @callbacks = []
       @machine.before_transition {@callbacks << :before}
       @machine.after_transition {@callbacks << :after}
-      @machine.after_transition(:include_failures => true) {@callbacks << :after_failure}
+      @machine.after_failure {@callbacks << :after_failure}
       @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
-      @machine.around_transition(:include_failures => true) do |block|
-        @callbacks << :around_before_failure
-        block.call
-        @callbacks << :around_after_failure
-      end
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -884,7 +879,7 @@ module ActiveRecordTest
     end
     
     def test_should_run_before_callbacks_and_after_callbacks_with_failures
-      assert_equal [:before, :around_before, :around_before_failure, :around_after_failure, :after_failure], @callbacks
+      assert_equal [:before, :around_before, :after_failure], @callbacks
     end
   end
   
@@ -1090,14 +1085,14 @@ module ActiveRecordTest
       assert !ran_callback
     end
     
-    def test_should_run_after_callbacks_with_failures_enabled_if_validation_fails
+    def test_should_run_after_callbacks_if_validation_fails
       @model.class_eval do
         attr_accessor :seatbelt
         validates_presence_of :seatbelt
       end
       
       ran_callback = false
-      @machine.after_transition(:include_failures => true) { ran_callback = true }
+      @machine.after_failure { ran_callback = true }
       
       @record.valid?
       assert ran_callback
@@ -1122,19 +1117,6 @@ module ActiveRecordTest
       
       @record.valid?
       assert !ran_callback
-    end
-    
-    def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_validation_fails
-      @model.class_eval do
-        attr_accessor :seatbelt
-        validates_presence_of :seatbelt
-      end
-      
-      ran_callback = false
-      @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback = true }
-      
-      @record.valid?
-      assert ran_callback
     end
     
     def test_should_not_run_before_transitions_within_transaction
@@ -1227,17 +1209,17 @@ module ActiveRecordTest
       assert !ran_callback
     end
     
-    def test_should_run_after_callbacks_with_failures_enabled_if_fails
+    def test_should_run_failure_callbacks__if_fails
       @model.before_create {|record| false}
       
       ran_callback = false
-      @machine.after_transition(:include_failures => true) { ran_callback = true }
+      @machine.after_failure { ran_callback = true }
       
       begin; @record.save; rescue; end
       assert ran_callback
     end
     
-    def test_should_not_run_around_callbacks_with_failures_disabled_if_fails
+    def test_should_not_run_around_callbacks_if_fails
       @model.before_create {|record| false}
       
       ran_callback = false
@@ -1252,16 +1234,6 @@ module ActiveRecordTest
       @machine.around_transition {|block| block.call; ran_callback = true }
       
       @record.save
-      assert ran_callback
-    end
-    
-    def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_fails
-      @model.before_create {|record| false}
-      
-      ran_callback = false
-      @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback = true }
-      
-      begin; @record.save; rescue; end
       assert ran_callback
     end
     
@@ -1546,6 +1518,48 @@ module ActiveRecordTest
       
       @transition.perform
       assert_equal [[@record, @transition]], instance.notifications
+    end
+  end
+  
+  class MachineWithFailureCallbacksTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :parked, :idling
+      @machine.event :ignite
+      @record = @model.new(:state => 'parked')
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+      
+      @notifications = []
+      
+      # Create callbacks
+      @machine.before_transition {false}
+      @machine.after_failure {@notifications << :callback_after_failure}
+      
+      # Create observer callbacks
+      observer = new_observer(@model) do
+        def after_failure_to_ignite(*args)
+          notifications << :observer_after_failure_ignite
+        end
+        
+        def after_failure_to_transition(*args)
+          notifications << :observer_after_failure_transition
+        end
+      end
+      instance = observer.instance
+      instance.notifications = @notifications
+      
+      @transition.perform
+    end
+    
+    def test_should_invoke_callbacks_in_specific_order
+      expected = [
+        :callback_after_failure,
+        :observer_after_failure_ignite,
+        :observer_after_failure_transition
+      ]
+      
+      assert_equal expected, @notifications
     end
   end
   

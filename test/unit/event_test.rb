@@ -308,7 +308,7 @@ class EventWithoutTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @object = @klass.new
   end
   
@@ -361,7 +361,7 @@ class EventWithoutMatchingTransitionsTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass)
     @machine.state :parked, :idling
     
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition(:parked => :idling)
     
     @object = @klass.new
@@ -405,7 +405,7 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass, :integration => :custom)
     @machine.state :parked, :idling
     
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition(:parked => :idling, :if => lambda {false})
     
     @object = @klass.new
@@ -445,6 +445,22 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
     
     @event.fire(@object)
     assert_equal ['cannot transition via "ignite"'], @object.errors
+  end
+  
+  def test_should_run_failure_callbacks
+    callback_args = nil
+    @machine.after_failure {|*args| callback_args = args}
+    
+    @event.fire(@object)
+    
+    object, transition = callback_args
+    assert_equal @object, object
+    assert_not_nil transition
+    assert_equal @object, transition.object
+    assert_equal @machine, transition.machine
+    assert_equal :ignite, transition.event
+    assert_equal :parked, transition.from_name
+    assert_equal :parked, transition.to_name
   end
   
   def teardown
@@ -711,6 +727,56 @@ class EventWithInvalidCurrentStateTest < Test::Unit::TestCase
   def test_should_raise_exception_when_firing
     exception = assert_raise(ArgumentError) { @event.fire(@object) }
     assert_equal '"invalid" is not a known state value', exception.message
+  end
+end
+
+class EventOnFailureTest < Test::Unit::TestCase
+  def setup
+    StateMachine::Integrations.const_set('Custom', Module.new do
+      def invalidate(object, attribute, message, values = [])
+        (object.errors ||= []) << generate_message(message, values)
+      end
+      
+      def reset(object)
+        object.errors = []
+      end
+    end)
+    
+    @klass = Class.new do
+      attr_accessor :errors
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :integration => :custom)
+    @machine.state :parked
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
+    
+    @object = @klass.new
+    @object.state = 'parked'
+  end
+  
+  def test_should_invalidate_the_state
+    @event.fire(@object)
+    assert_equal ['cannot transition via "ignite"'], @object.errors
+  end
+  
+  def test_should_run_failure_callbacks
+    callback_args = nil
+    @machine.after_failure {|*args| callback_args = args}
+    
+    @event.fire(@object)
+    
+    object, transition = callback_args
+    assert_equal @object, object
+    assert_not_nil transition
+    assert_equal @object, transition.object
+    assert_equal @machine, transition.machine
+    assert_equal :ignite, transition.event
+    assert_equal :parked, transition.from_name
+    assert_equal :parked, transition.to_name
+  end
+  
+  def teardown
+    StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
 

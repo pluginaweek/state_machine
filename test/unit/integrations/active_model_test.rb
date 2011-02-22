@@ -740,6 +740,48 @@ module ActiveModelTest
     end
   end
   
+  class MachineWithFailureCallbacksTest < BaseTestCase
+    def setup
+      @model = new_model { include ActiveModel::Observing }
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :parked, :idling
+      @machine.event :ignite
+      @record = @model.new(:state => 'parked')
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+      
+      @notifications = []
+      
+      # Create callbacks
+      @machine.before_transition {false}
+      @machine.after_failure {@notifications << :callback_after_failure}
+      
+      # Create observer callbacks
+      observer = new_observer(@model) do
+        def after_failure_to_ignite(*args)
+          notifications << :observer_after_failure_ignite
+        end
+        
+        def after_failure_to_transition(*args)
+          notifications << :observer_after_failure_transition
+        end
+      end
+      instance = observer.instance
+      instance.notifications = @notifications
+      
+      @transition.perform
+    end
+    
+    def test_should_invoke_callbacks_in_specific_order
+      expected = [
+        :callback_after_failure,
+        :observer_after_failure_ignite,
+        :observer_after_failure_transition
+      ]
+      
+      assert_equal expected, @notifications
+    end
+  end
+  
   class MachineWithMixedCallbacksTest < BaseTestCase
     def setup
       @model = new_model { include ActiveModel::Observing }

@@ -111,6 +111,15 @@ class MachineCollectionFireTest < Test::Unit::TestCase
     assert !@object.saved
   end
   
+  def test_should_run_failure_callbacks_if_any_event_cannot_transition
+    @machines[:state].after_failure {@state_failure_run = true}
+    @machines[:alarm_state].after_failure {@alarm_state_failure_run = true}
+    
+    assert !@machines.fire_events(@object, :park, :disable_alarm)
+    assert @state_failure_run
+    assert !@alarm_state_failure_run
+  end
+  
   def test_should_be_successful_if_all_events_transition
     assert @machines.fire_events(@object, :ignite, :disable_alarm)
     assert_equal 'idling', @object.state
@@ -181,6 +190,17 @@ class MachineCollectionFireWithTransactionsTest < Test::Unit::TestCase
     assert_equal 'active', @object.alarm_state
   end
   
+  def test_should_run_failure_callbacks_if_not_successful
+    @object.allow_save = false
+    
+    @machines[:state].after_failure {@state_failure_run = true}
+    @machines[:alarm_state].after_failure {@alarm_state_failure_run = true}
+    
+    assert !@machines.fire_events(@object, :ignite, :disable_alarm)
+    assert @state_failure_run
+    assert @alarm_state_failure_run
+  end
+  
   def teardown
     StateMachine::Integrations.send(:remove_const, 'Custom')
   end
@@ -232,6 +252,18 @@ class MachineCollectionFireWithValidationsTest < Test::Unit::TestCase
     
     assert !@machines.fire_events(@object, :ignite, :disable_alarm)
     assert_equal ['cannot transition via "ignite"', 'cannot transition via "disable"'], @object.errors
+  end
+  
+  def test_should_run_failure_callbacks_if_no_transitions_exist
+    @object.state = 'idling'
+    @object.alarm_state = 'off'
+    
+    @machines[:state].after_failure {@state_failure_run = true}
+    @machines[:alarm_state].after_failure {@alarm_state_failure_run = true}
+    
+    assert !@machines.fire_events(@object, :ignite, :disable_alarm)
+    assert @state_failure_run
+    assert @alarm_state_failure_run
   end
   
   def teardown

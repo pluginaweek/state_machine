@@ -1,5 +1,6 @@
 == master
 
+* Replace :include_failures after_transition option with new after_failure callback
 * Provide access to transition context when raising InvalidEvent / InvalidTransition exceptions
 
 == 0.9.4 / 2010-08-01

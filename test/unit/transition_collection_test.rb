@@ -646,13 +646,11 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
     end
     
     @callbacks = []
-    @state.after_transition(:include_failures => true) { @callbacks << :state_after }
-    @state.around_transition(:include_failures => true) {|block| block.call; @callbacks << :state_around }
-    @status.after_transition(:include_failures => true) { @callbacks << :status_after }
-    @status.around_transition(:include_failures => true) {|block| block.call; @callbacks << :status_around }
+    @state.after_failure { @callbacks << :state_after }
+    @status.after_failure { @callbacks << :status_after }
     
     @transitions.perform
-    assert_equal [:status_around, :status_after, :state_around, :state_after], @callbacks
+    assert_equal [:status_after, :state_after], @callbacks
   end
   
   def test_should_run_after_failure_callbacks_if_action_fails_for_second_transition
@@ -663,13 +661,11 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
     end
     
     @callbacks = []
-    @state.after_transition(:include_failures => true) { @callbacks << :state_after }
-    @state.around_transition(:include_failures => true) {|block| block.call; @callbacks << :state_around }
-    @status.after_transition(:include_failures => true) { @callbacks << :status_after }
-    @status.around_transition(:include_failures => true) {|block| block.call; @callbacks << :status_around }
+    @state.after_failure { @callbacks << :state_after }
+    @status.after_failure { @callbacks << :status_after }
     
     @transitions.perform
-    assert_equal [:status_around, :status_after, :state_around, :state_after], @callbacks
+    assert_equal [:status_after, :state_after], @callbacks
   end
 end
 
@@ -769,6 +765,7 @@ class TransitionCollectionWithActionFailedTest < Test::Unit::TestCase
     @around_before_count = 0
     @after_count = 0
     @around_after_count = 0
+    @failure_count = 0
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
     @machine.state :idling
@@ -776,9 +773,8 @@ class TransitionCollectionWithActionFailedTest < Test::Unit::TestCase
     
     @machine.before_transition {@before_count += 1}
     @machine.after_transition {@after_count += 1}
-    @machine.after_transition(:include_failures => true) {@after_count += 1}
     @machine.around_transition {|block| @around_before_count += 1; block.call; @around_after_count += 1}
-    @machine.around_transition(:include_failures => true) {|block| @around_before_count += 1; block.call; @around_after_count += 1}
+    @machine.after_failure {@failure_count += 1}
     
     @object = @klass.new
     
@@ -801,15 +797,19 @@ class TransitionCollectionWithActionFailedTest < Test::Unit::TestCase
   end
   
   def test_should_run_around_callbacks_before_yield
-    assert_equal 2, @around_before_count
+    assert_equal 1, @around_before_count
   end
   
-  def test_should_only_run_after_callbacks_that_include_failures
-    assert_equal 1, @after_count
+  def test_should_not_run_after_callbacks
+    assert_equal 0, @after_count
   end
   
-  def test_should_only_run_around_callbacks_after_yield_that_include_failures
-    assert_equal 1, @around_after_count
+  def test_should_not_run_around_callbacks
+    assert_equal 0, @around_after_count
+  end
+  
+  def test_should_run_failure_callbacks
+    assert_equal 1, @failure_count
   end
 end
 
@@ -824,6 +824,7 @@ class TransitionCollectionWithActionErrorTest < Test::Unit::TestCase
     @around_before_count = 0
     @after_count = 0
     @around_after_count = 0
+    @failure_count = 0
     
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
     @machine.state :idling
@@ -831,9 +832,8 @@ class TransitionCollectionWithActionErrorTest < Test::Unit::TestCase
     
     @machine.before_transition {@before_count += 1}
     @machine.after_transition {@after_count += 1}
-    @machine.after_transition(:include_failures => true) {@after_count += 1}
     @machine.around_transition {|block| @around_before_count += 1; block.call; @around_after_count += 1}
-    @machine.around_transition(:include_failures => true) {|block| @around_before_count += 1; block.call; @around_after_count += 1}
+    @machine.after_failure {@failure_count += 1}
     
     @object = @klass.new
     
@@ -862,7 +862,7 @@ class TransitionCollectionWithActionErrorTest < Test::Unit::TestCase
   end
   
   def test_should_run_around_callbacks_before_yield
-    assert_equal 2, @around_before_count
+    assert_equal 1, @around_before_count
   end
   
   def test_should_not_run_after_callbacks
@@ -871,6 +871,10 @@ class TransitionCollectionWithActionErrorTest < Test::Unit::TestCase
   
   def test_should_not_run_around_callbacks_after_yield
     assert_equal 0, @around_after_count
+  end
+  
+  def test_should_not_run_failure_callbacks
+    assert_equal 0, @failure_count
   end
 end
 
@@ -891,15 +895,15 @@ class TransitionCollectionWithCallbacksTest < Test::Unit::TestCase
     @state.state :idling
     @state.event :ignite
     @state.before_transition {@before_callbacks << :state_before}
-    @state.after_transition(:include_failures => true) {@after_callbacks << :state_after}
-    @state.around_transition(:include_failures => true) {|block| @before_callbacks << :state_around; block.call; @after_callbacks << :state_around}
+    @state.after_transition {@after_callbacks << :state_after}
+    @state.around_transition {|block| @before_callbacks << :state_around; block.call; @after_callbacks << :state_around}
     
     @status = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save)
     @status.state :second_gear
     @status.event :shift_up
     @status.before_transition {@before_callbacks << :status_before}
-    @status.after_transition(:include_failures => true) {@after_callbacks << :status_after}
-    @status.around_transition(:include_failures => true) {|block| @before_callbacks << :status_around; block.call; @after_callbacks << :status_around}
+    @status.after_transition {@after_callbacks << :status_after}
+    @status.around_transition {|block| @before_callbacks << :status_around; block.call; @after_callbacks << :status_around}
     
     @object = @klass.new
     @transitions = StateMachine::TransitionCollection.new([
@@ -947,14 +951,14 @@ class TransitionCollectionWithCallbacksTest < Test::Unit::TestCase
   end
   
   def test_should_not_halt_if_after_callback_halted_for_first_transition
-    @state.after_transition(:include_failures => true) {throw :halt}
+    @state.after_transition {throw :halt}
     
     assert_equal true, @transitions.perform
     assert_equal [:status_around, :status_after, :state_around, :state_after], @after_callbacks
   end
   
   def test_should_not_halt_if_around_callback_halted_for_second_transition
-    @status.around_transition(:include_failures => true) {|block| block.call; throw :halt}
+    @status.around_transition {|block| block.call; throw :halt}
     
     assert_equal true, @transitions.perform
     assert_equal [:state_around, :state_after], @after_callbacks

@@ -91,7 +91,7 @@ module StateMachine
         # Vehicle instance being transition).  This means that +self+ refers
         # to the vehicle record within each callback block.
         def before_transition(*args, &block)
-          add_transition_callback(:before, *args, &block)
+          add_transition_callback(:before_transition, *args, &block)
         end
         
         # Creates a callback that will be invoked *after* a transition is
@@ -101,7 +101,7 @@ module StateMachine
         # See +before_transition+ for a description of the possible configurations
         # for defining callbacks.
         def after_transition(*args, &block)
-          add_transition_callback(:after, *args, &block)
+          add_transition_callback(:after_transition, *args, &block)
         end
         
         # Creates a callback that will be invoked *around* a transition so long
@@ -137,7 +137,42 @@ module StateMachine
         # See +before_transition+ for a description of the possible configurations
         # for defining callbacks.
         def around_transition(*args, &block)
-          add_transition_callback(:around, *args, &block)
+          add_transition_callback(:around_transition, *args, &block)
+        end
+        
+        # Creates a callback that will be invoked *after* a transition failures to
+        # be performed so long as the given requirements match the transition.
+        # 
+        # == Example
+        # 
+        #   class Vehicle
+        #     include DataMapper::Resource
+        #     
+        #     property :id, Serial
+        #     property :state, :String
+        #     
+        #     state_machine :initial => :parked do
+        #       event :ignite do
+        #         transition :parked => :idling
+        #       end
+        #     end
+        #   end
+        #   
+        #   class VehicleObserver
+        #     after_transition_failure do |transition|
+        #       # log failure
+        #     end
+        #     
+        #     after_transition_failure :on => :ignite do
+        #       # log failure
+        #     end
+        #   end
+        # 
+        # See +before_transition+ for a description of the possible configurations
+        # for defining callbacks.  *Note* however that you cannot define the state
+        # requirements in these callbacks.  You may only define event requirements.
+        def after_transition_failure(*args, &block)
+          add_transition_callback(:after_failure, *args, &block)
         end
         
         private
@@ -162,7 +197,7 @@ module StateMachine
                   klass.state_machines.values
                 end
               
-              state_machines.each {|machine| machine.send("#{type}_transition", *args, &block)}
+              state_machines.each {|machine| machine.send(type, *args, &block)}
             end if observing
           end
       end

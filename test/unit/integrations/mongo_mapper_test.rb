@@ -740,13 +740,8 @@ module MongoMapperTest
       @callbacks = []
       @machine.before_transition {@callbacks << :before}
       @machine.after_transition {@callbacks << :after}
-      @machine.after_transition(:include_failures => true) {@callbacks << :after_failure}
+      @machine.after_failure {@callbacks << :after_failure}
       @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
-      @machine.around_transition(:include_failures => true) do |block|
-        @callbacks << :around_before_failure
-        block.call
-        @callbacks << :around_after_failure
-      end
       
       @record = @model.new(:state => 'parked')
       @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
@@ -766,7 +761,7 @@ module MongoMapperTest
     end
     
     def test_should_run_before_callbacks_and_after_callbacks_with_failures
-      assert_equal [:before, :around_before, :around_before_failure, :around_after_failure, :after_failure], @callbacks
+      assert_equal [:before, :around_before, :after_failure], @callbacks
     end
   end
   
@@ -995,27 +990,14 @@ module MongoMapperTest
       assert !ran_callback
     end
     
-    def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_validation_fails
+    def test_should_run_failure_callbacks_if_validation_fails
       @model.class_eval do
         attr_accessor :seatbelt
         validates_presence_of :seatbelt
       end
       
       ran_callback = false
-      @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback = true }
-      
-      @record.valid?
-      assert ran_callback
-    end
-    
-    def test_should_run_after_callbacks_with_failures_enabled_if_validation_fails
-      @model.class_eval do
-        attr_accessor :seatbelt
-        validates_presence_of :seatbelt
-      end
-      
-      ran_callback = false
-      @machine.after_transition(:include_failures => true) { ran_callback = true }
+      @machine.after_failure { ran_callback = true }
       
       @record.valid?
       assert ran_callback
@@ -1106,13 +1088,13 @@ module MongoMapperTest
       assert !ran_callback
     end
     
-    def test_should_run_after_callbacks_with_failures_enabled_if_fails
+    def test_should_run_failure_callbacks__if_fails
       @model.class_eval do
         validates_inclusion_of :state, :within => %w(first_gear)
       end
       
       ran_callback = false
-      @machine.after_transition(:include_failures => true) { ran_callback = true }
+      @machine.after_failure { ran_callback = true }
       
       begin; @record.save; rescue; end
       assert ran_callback
@@ -1135,18 +1117,6 @@ module MongoMapperTest
       @machine.around_transition {|block| block.call; ran_callback = true }
       
       @record.save
-      assert ran_callback
-    end
-    
-    def test_should_run_around_callbacks_after_yield_with_failures_enabled_if_fails
-      @model.class_eval do
-        validates_inclusion_of :state, :within => %w(first_gear)
-      end
-      
-      ran_callback = false
-      @machine.around_transition(:include_failures => true) {|block| block.call; ran_callback = true }
-      
-      begin; @record.save; rescue; end
       assert ran_callback
     end
   end

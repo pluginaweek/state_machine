@@ -121,7 +121,7 @@ module StateMachine
     # callback can be found in their attribute definitions.
     def initialize(type, *args, &block)
       @type = type
-      raise ArgumentError, 'Type must be :before, :after, or :around' unless [:before, :after, :around].include?(type)
+      raise ArgumentError, 'Type must be :before, :after, :around, or :failure' unless [:before, :after, :around, :failure].include?(type)
       
       options = args.last.is_a?(Hash) ? args.pop : {}
       @methods = args
@@ -160,12 +160,6 @@ module StateMachine
       else
         false
       end
-    end
-    
-    # Verifies that the success requirement for this callback matches the given
-    # value
-    def matches_success?(success)
-      guard.success_requirement.matches?(success)
     end
     
     private

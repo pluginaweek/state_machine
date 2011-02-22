@@ -438,7 +438,7 @@ module StateMachine
       @attribute = options[:attribute] || @name
       @events = EventCollection.new(self)
       @states = StateCollection.new(self)
-      @callbacks = {:before => [], :after => []}
+      @callbacks = {:before => [], :after => [], :failure => []}
       @namespace = options[:namespace]
       @messages = options[:messages] || {}
       @action = options[:action]
@@ -465,7 +465,7 @@ module StateMachine
       @events.machine = self
       @states = @states.dup
       @states.machine = self
-      @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup}
+      @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup, :failure => @callbacks[:failure].dup}
     end
     
     # Sets the class which is the owner of this state machine.  Any methods
@@ -1132,22 +1132,6 @@ module StateMachine
     #   before_transition :on => all - :ignite, :do => ...                  # Matches on every event except ignite
     #   before_transition :parked => :idling, :on => :ignite, :do => ...    # Matches from parked to idling on ignite
     # 
-    # == Result requirements
-    # 
-    # By default, +after_transition+ callbacks and code executed after an
-    # +around_transition+ callback yields will only be run if the transition
-    # was performed successfully.  A transition is successful if the machine's
-    # action is not configured or does not return false when it is invoked.
-    # In order to include failed attempts when running an +after_transition+ or
-    # +around_transition+ callback, the <tt>:include_failures</tt> option can be
-    # specified like so:
-    # 
-    #   after_transition :include_failures => true, :do => ...  # Runs on all attempts to transition, including failures
-    #   after_transition :do => ...                             # Runs only on successful attempts to transition
-    # 
-    #   around_transition :include_failures => true, :do => ... # Runs on all attempts to transition, including failures
-    #   around_transition :do => ...                            # Runs only on successful attempts to transition
-    # 
     # == Verbose Requirements
     # 
     # Requirements can also be defined using verbose options rather than the
@@ -1317,6 +1301,42 @@ module StateMachine
       options = (args.last.is_a?(Hash) ? args.pop : {})
       options[:do] = args if args.any?
       add_callback(:around, options, &block)
+    end
+    
+    # Creates a callback that will be invoked *after* a transition failures to
+    # be performed so long as the given requirements match the transition.
+    # 
+    # See +before_transition+ for a description of the possible configurations
+    # for defining callbacks.  *Note* however that you cannot define the state
+    # requirements in these callbacks.  You may only define event requirements.
+    # 
+    # = The callback
+    # 
+    # Failure callbacks get invoked whenever an event fails to execute.  This
+    # can happen when no transition is available, a +before+ callback halts
+    # execution, or the action associated with this machine fails to succeed.
+    # In any of these cases, any failure callback that matches the attempted
+    # transition will be run.
+    # 
+    # For example,
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       after_failure do |vehicle, transition|
+    #         logger.error "vehicle #{vehicle} failed to transition on #{transition.event}"
+    #       end
+    #       
+    #       after_failure :on => :ignite, :do => :log_ignition_failure
+    #       
+    #       ...
+    #     end
+    #   end
+    def after_failure(*args, &block)
+      options = (args.last.is_a?(Hash) ? args.pop : {})
+      options[:do] = args if args.any?
+      assert_valid_keys(options, :on, :do, :if, :unless)
+      
+      add_callback(:failure, options, &block)
     end
     
     # Marks the given object as invalid with the given message.

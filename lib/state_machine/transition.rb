@@ -222,6 +222,7 @@ module StateMachine
     # provided, then it will be executed between the before and after callbacks.
     # 
     # Configuration options:
+    # * +before+ - Whether to run before callbacks.
     # * +after+ - Whether to run after callbacks.  If false, then any around
     #   callbacks will be paused until called again with +after+ enabled.
     #   Default is true.
@@ -229,10 +230,10 @@ module StateMachine
     # This will return true if all before callbacks gets executed.  After
     # callbacks will not have an effect on the result.
     def run_callbacks(options = {}, &block)
-      options = {:after => true}.merge(options)
+      options = {:before => true, :after => true}.merge(options)
       @success = false
       
-      halted = pausable { before(options[:after], &block) }
+      halted = pausable { before(options[:after], &block) } if options[:before]
       
       # After callbacks are only run if:
       # * An around callback didn't halt after yielding
@@ -388,7 +389,7 @@ module StateMachine
                   before(complete, index, &block)
                   
                   pause if @success && !complete
-                  throw :cancel, true unless callback.matches_success?(@success)
+                  throw :cancel, true unless @success
                 end
               end
             else
@@ -422,8 +423,8 @@ module StateMachine
           # First resume previously paused callbacks
           if resume
             catch(:halt) do
-              after_context = context.merge(:success => @success)
-              machine.callbacks[:after].each {|callback| callback.call(object, after_context, self)}
+              type = @success ? :after : :failure
+              machine.callbacks[type].each {|callback| callback.call(object, context, self)}
             end
           end
           

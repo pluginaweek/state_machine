@@ -37,7 +37,7 @@ Some brief, high-level features include:
 * Defining state machines on any Ruby class
 * Multiple state machines on a single class
 * Namespaced state machines
-* before/after/around transition hooks with explicit transition requirements
+* before/after/around/failure transition hooks with explicit transition requirements
 * Integration with ActiveModel, ActiveRecord, DataMapper, MongoMapper, and Sequel
 * State predicates
 * State-driven instance / class behavior
@@ -78,6 +78,8 @@ Class definition:
       after_transition any => :parked do |vehicle, transition|
         vehicle.seatbelt_on = false
       end
+      
+      after_failure :on => :ignite, :do => :log_start_failure
       
       around_transition do |vehicle, transition, block|
         start = Time.now
@@ -168,6 +170,10 @@ Class definition:
     
     def fix
       # get the vehicle fixed by a mechanic
+    end
+    
+    def log_start_failure
+      # log a failed attempt to start the vehicle
     end
   end
 
@@ -305,6 +311,11 @@ observers.  For example,
     def after_transition(vehicle, transition)
       Audit.log(vehicle, transition)
     end
+    
+    # Generic callback after the transition fails to perform
+    def after_failure_to_transition(vehicle, transition)
+      Audit.error(vehicle, transition)
+    end
   end
 
 For more information about the various behaviors added for ActiveModel state
@@ -417,6 +428,11 @@ callbacks, validation errors, and observers.  For example,
       # mark start time
       block.call
       # mark stop time
+    end
+    
+    # Generic callback after the transition fails to perform
+    after_transition_failure do |transition|
+      Audit.log(self, transition) # self is the record
     end
   end
 
