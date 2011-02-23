@@ -4,7 +4,7 @@ class EventByDefaultTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     
     @object = @klass.new
   end
@@ -61,7 +61,7 @@ end
 class EventTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition :parked => :idling
   end
   
@@ -95,7 +95,7 @@ class EventWithHumanNameTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, :ignite, :human_name => 'start')
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite, :human_name => 'start')
   end
   
   def test_should_use_custom_human_name
@@ -107,7 +107,7 @@ class EventWithDynamicHumanNameTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, :ignite, :human_name => lambda {|event, object| ['start', object]})
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite, :human_name => lambda {|event, object| ['start', object]})
   end
   
   def test_should_use_custom_human_name
@@ -147,7 +147,7 @@ class EventWithConflictingHelpersTest < Test::Unit::TestCase
       end
     end
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @object = @klass.new
   end
   
@@ -198,11 +198,58 @@ class EventWithConflictingHelpersTest < Test::Unit::TestCase
   end
 end
 
+class EventWithConflictingMachineTest < Test::Unit::TestCase
+  def setup
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    @klass = Class.new
+    @state_machine = StateMachine::Machine.new(@klass, :state)
+    @state_machine.state :parked, :idling
+    @state_machine.events << @state_event = StateMachine::Event.new(@state_machine, :ignite)
+  end
+  
+  def test_should_not_overwrite_first_event
+    @status_machine = StateMachine::Machine.new(@klass, :status)
+    @status_machine.state :first_gear, :second_gear
+    @status_machine.events << @status_event = StateMachine::Event.new(@status_machine, :ignite)
+    
+    @object = @klass.new
+    @object.state = 'parked'
+    @object.status = 'first_gear'
+    
+    @state_event.transition(:parked => :idling)
+    @status_event.transition(:parked => :first_gear)
+    
+    @object.ignite
+    assert_equal 'idling', @object.state
+    assert_equal 'first_gear', @object.status
+  end
+  
+  def test_should_output_warning
+    @status_machine = StateMachine::Machine.new(@klass, :status)
+    @status_machine.events << @status_event = StateMachine::Event.new(@status_machine, :ignite)
+    
+    assert_equal "Event :ignite for :status is already defined in :state\n", $stderr.string
+  end
+  
+  def test_should_not_output_warning_if_using_different_namespace
+    @status_machine = StateMachine::Machine.new(@klass, :status, :namespace => 'alarm')
+    @status_machine.events << @status_event = StateMachine::Event.new(@status_machine, :ignite)
+    
+    assert_equal '', $stderr.string
+  end
+  
+  def teardown
+    $stderr = @original_stderr
+  end
+end
+
 class EventWithNamespaceTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :namespace => 'alarm')
-    @event = StateMachine::Event.new(@machine, :enable)
+    @machine.events << @event = StateMachine::Event.new(@machine, :enable)
     @object = @klass.new
   end
   
@@ -234,7 +281,7 @@ end
 class EventTransitionsTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
   end
   
   def test_should_not_raise_exception_if_implicit_option_specified
@@ -291,7 +338,7 @@ end
 class EventAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @copied_event = @event.dup
   end
   
@@ -334,7 +381,7 @@ class EventWithTransitionsTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition(:parked => :idling)
     @event.transition(:first_gear => :idling)
   end
@@ -486,9 +533,8 @@ class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
     
     @machine = StateMachine::Machine.new(@klass, :integration => :custom)
     @machine.state :parked, :idling
-    @machine.event :ignite
     
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition(:parked => :idling)
     
     @object = @klass.new
@@ -538,9 +584,8 @@ class EventWithTransitionWithoutToStateTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @machine.state :parked
-    @machine.event :park
     
-    @event = StateMachine::Event.new(@machine, :park)
+    @machine.events << @event = StateMachine::Event.new(@machine, :park)
     @event.transition(:from => :parked)
     
     @object = @klass.new
@@ -574,9 +619,8 @@ class EventWithTransitionWithNilToStateTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @machine.state nil, :idling
-    @machine.event :park
     
-    @event = StateMachine::Event.new(@machine, :park)
+    @machine.events << @event = StateMachine::Event.new(@machine, :park)
     @event.transition(:idling => nil)
     
     @object = @klass.new
@@ -610,9 +654,8 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @machine.state :parked, :idling
-    @machine.event :ignite
     
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition(:idling => :idling)
     @event.transition(:parked => :idling) # This one should get used
     @event.transition(:parked => :parked)
@@ -705,9 +748,8 @@ class EventWithInvalidCurrentStateTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @machine.state :parked, :idling
-    @machine.event :ignite
     
-    @event = StateMachine::Event.new(@machine, :ignite)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite)
     @event.transition(:parked => :idling)
     
     @object = @klass.new
@@ -840,7 +882,7 @@ begin
       graph = GraphViz.new('G')
       states.each {|state| graph.add_node(state.to_s)}
       
-      @event = StateMachine::Event.new(@machine , :park)
+      @machine.events << @event = StateMachine::Event.new(@machine , :park)
       @event.transition :parked => :idling
       @event.transition :first_gear => :parked
       @event.transition :except_from => :parked, :to => :parked

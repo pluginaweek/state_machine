@@ -29,6 +29,7 @@ class EventCollectionTest < Test::Unit::TestCase
     @events = StateMachine::EventCollection.new(machine)
     
     @events << @open = StateMachine::Event.new(machine, :enable)
+    machine.events.concat(@events)
   end
   
   def test_should_index_by_name
@@ -51,11 +52,12 @@ class EventCollectionWithEventsWithTransitionsTest < Test::Unit::TestCase
     @events = StateMachine::EventCollection.new(@machine)
     
     @machine.state :idling, :stalled
-    @machine.event :ignite
     
     @events << @ignite = StateMachine::Event.new(@machine, :ignite)
     @ignite.transition :parked => :idling
     @ignite.transition :stalled => :idling
+    
+    @machine.events.concat(@events)
   end
   
   def test_should_only_include_valid_events_for_an_object
@@ -103,6 +105,8 @@ class EventCollectionWithMultipleEventsTest < Test::Unit::TestCase
     
     @events << @shift_down = StateMachine::Event.new(@machine, :shift_down)
     @shift_down.transition :first_gear => :parked
+    
+    @machine.events.concat(@events)
   end
   
   def test_should_only_include_all_valid_events_for_an_object
@@ -117,9 +121,8 @@ class EventCollectionWithoutMachineActionTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @events = StateMachine::EventCollection.new(@machine)
-    
-    @machine.event :ignite
     @events << StateMachine::Event.new(@machine, :ignite)
+    @machine.events.concat(@events)
     
     @object = @klass.new
   end
@@ -139,9 +142,9 @@ class EventCollectionAttributeWithMachineActionTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save)
     @events = StateMachine::EventCollection.new(@machine)
     
-    @machine.event :ignite
     @machine.state :parked, :idling
     @events << @ignite = StateMachine::Event.new(@machine, :ignite)
+    @machine.events.concat(@events)
     
     @object = @klass.new
   end
@@ -200,9 +203,9 @@ class EventCollectionAttributeWithNamespacedMachineTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass, :namespace => 'alarm', :initial => :active, :action => :save)
     @events = StateMachine::EventCollection.new(@machine)
     
-    @machine.event :disable
     @machine.state :active, :off
     @events << @disable = StateMachine::Event.new(@machine, :disable)
+    @machine.events.concat(@events)
     
     @object = @klass.new
   end
@@ -249,9 +252,9 @@ class EventCollectionWithValidationsTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass, :initial => :parked, :action => :save, :integration => :custom)
     @events = StateMachine::EventCollection.new(@machine)
     
-    @machine.event :ignite
     @parked, @idling = @machine.state :parked, :idling
     @events << @ignite = StateMachine::Event.new(@machine, :ignite)
+    @machine.events.concat(@events)
     
     @object = @klass.new
   end
@@ -303,9 +306,9 @@ class EventCollectionWithCustomMachineAttributeTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass, :state, :attribute => :state_id, :initial => :parked, :action => :save)
     @events = StateMachine::EventCollection.new(@machine)
     
-    @machine.event :ignite
     @machine.state :parked, :idling
     @events << @ignite = StateMachine::Event.new(@machine, :ignite)
+    @machine.events.concat(@events)
     
     @object = @klass.new
   end

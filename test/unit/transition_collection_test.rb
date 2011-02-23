@@ -1273,11 +1273,11 @@ class TransitionCollectionWithActionHelperWithNilActionTest < TransitionCollecti
   def setup
     super
     
-    @machine = StateMachine::Machine.new(@klass, :status, :initial => :parked)
-    @machine.state :idling
-    @machine.event :ignite
+    @machine = StateMachine::Machine.new(@klass, :status, :initial => :first_gear)
+    @machine.state :second_gear
+    @machine.event :shift_up
     
-    @result = StateMachine::TransitionCollection.new([@transition, StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)]).perform
+    @result = StateMachine::TransitionCollection.new([@transition, StateMachine::Transition.new(@object, @machine, :shift_up, :first_gear, :second_gear)]).perform
   end
   
   def test_should_succeed
@@ -1319,11 +1319,11 @@ class TransitionCollectionWithActionHelperWithDifferentActionsTest < TransitionC
       end
     end
     
-    @machine = StateMachine::Machine.new(@klass, :status, :initial => :parked, :action => :save_status)
-    @machine.state :idling
-    @machine.event :ignite
+    @machine = StateMachine::Machine.new(@klass, :status, :initial => :first_gear, :action => :save_status)
+    @machine.state :second_gear
+    @machine.event :shift_up
     
-    @result = StateMachine::TransitionCollection.new([@transition, StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)]).perform
+    @result = StateMachine::TransitionCollection.new([@transition, StateMachine::Transition.new(@object, @machine, :shift_up, :first_gear, :second_gear)]).perform
   end
   
   def test_should_succeed

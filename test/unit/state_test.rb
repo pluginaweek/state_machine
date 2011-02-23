@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class StateByDefaultTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, :parked)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked)
   end
   
   def test_should_have_a_machine
@@ -43,7 +43,7 @@ end
 class StateTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, :parked)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked)
   end
   
   def test_should_raise_exception_if_invalid_option_specified
@@ -87,7 +87,7 @@ class StateWithoutNameTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, nil)
+    @machine.states << @state = StateMachine::State.new(@machine, nil)
   end
   
   def test_should_have_a_nil_name
@@ -121,7 +121,7 @@ class StateWithNameTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked)
   end
   
   def test_should_have_a_name
@@ -158,7 +158,7 @@ class StateWithNilValueTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked, :value => nil)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :value => nil)
   end
   
   def test_should_have_a_name
@@ -187,7 +187,7 @@ class StateWithSymbolicValueTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked, :value => :parked)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :value => :parked)
   end
   
   def test_should_use_custom_value
@@ -213,7 +213,7 @@ class StateWithIntegerValueTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked, :value => 1)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :value => 1)
   end
   
   def test_should_use_custom_value
@@ -241,7 +241,7 @@ class StateWithLambdaValueTest < Test::Unit::TestCase
     @args = nil
     @machine = StateMachine::Machine.new(@klass)
     @value = lambda {|*args| @args = args; :parked}
-    @state = StateMachine::State.new(@machine, :parked, :value => @value)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :value => @value)
   end
   
   def test_should_use_evaluated_value_by_default
@@ -328,7 +328,7 @@ class StateWithMatcherTest < Test::Unit::TestCase
     @klass = Class.new
     @args = nil
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked, :if => lambda {|value| value == 1})
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :if => lambda {|value| value == 1})
   end
   
   def test_should_not_match_actual_value
@@ -344,7 +344,7 @@ class StateWithHumanNameTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked, :human_name => 'stopped')
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :human_name => 'stopped')
   end
   
   def test_should_use_custom_human_name
@@ -356,7 +356,7 @@ class StateWithDynamicHumanNameTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :parked, :human_name => lambda {|state, object| ['stopped', object]})
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :human_name => lambda {|state, object| ['stopped', object]})
   end
   
   def test_should_use_custom_human_name
@@ -379,7 +379,7 @@ end
 class StateInitialTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, :parked, :initial => true)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :initial => true)
   end
   
   def test_should_be_initial
@@ -391,7 +391,7 @@ end
 class StateNotInitialTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, :parked, :initial => false)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked, :initial => false)
   end
   
   def test_should_not_be_initial
@@ -403,7 +403,7 @@ end
 class StateFinalTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, :parked)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked)
   end
   
   def test_should_be_final_without_input_transitions
@@ -430,7 +430,7 @@ end
 class StateNotFinalTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, :parked)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked)
   end
   
   def test_should_not_be_final_with_outgoing_whitelist_transitions
@@ -460,6 +460,9 @@ end
 
 class StateWithConflictingHelpersTest < Test::Unit::TestCase
   def setup
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
     @klass = Class.new do
       def parked?
         0
@@ -470,18 +473,62 @@ class StateWithConflictingHelpersTest < Test::Unit::TestCase
     @object = @klass.new
   end
   
-  def test_should_not_redefine_state_predicate
+  def test_should_not_override_state_predicate
     assert_equal 0, @object.parked?
   end
   
-  def test_should_allow_super_chaining
+  def test_should_not_allow_super_chaining
     @klass.class_eval do
       def parked?
         super ? 1 : 0
       end
     end
     
-    assert_equal 0, @object.parked?
+    assert_raise(NoMethodError) { @object.parked? }
+  end
+  
+  def test_should_output_warning
+    assert_equal "#parked? is already defined, use #state?(:parked) instead.\n", $stderr.string
+  end
+  
+  def teardown
+    $stderr = @original_stderr
+  end
+end
+
+class EventWithConflictingMachineTest < Test::Unit::TestCase
+  def setup
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    @klass = Class.new
+    @state_machine = StateMachine::Machine.new(@klass, :state)
+    @state_machine.states << @state = StateMachine::State.new(@state_machine, :parked)
+  end
+  
+  def test_should_output_warning_if_using_different_attribute
+    @status_machine = StateMachine::Machine.new(@klass, :status)
+    @status_machine.states << @state = StateMachine::State.new(@status_machine, :parked)
+    
+    assert_equal "State :parked for :status is already defined in :state\n", $stderr.string
+  end
+  
+  def test_should_not_output_warning_if_using_same_attribute
+    @status_machine = StateMachine::Machine.new(@klass, :status, :attribute => :state)
+    @status_machine.states << @state = StateMachine::State.new(@status_machine, :parked)
+    
+    assert_equal '', $stderr.string
+  end
+  
+  def test_should_not_output_warning_if_using_different_namespace
+    @status_machine = StateMachine::Machine.new(@klass, :status, :namespace => 'alarm')
+    @status_machine.states << @state = StateMachine::State.new(@status_machine, :parked)
+    
+    assert_equal '', $stderr.string
+  end
+  
+  def teardown
+    $stderr = @original_stderr
   end
 end
 
@@ -489,7 +536,7 @@ class StateWithNamespaceTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :namespace => 'alarm')
-    @state = StateMachine::State.new(@machine, :active)
+    @machine.states << @state = StateMachine::State.new(@machine, :active)
     @object = @klass.new
   end
   
@@ -509,7 +556,7 @@ end
 class StateAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
-    @state = StateMachine::State.new(@machine, :parked)
+    @machine.states << @state = StateMachine::State.new(@machine, :parked)
     @copied_state = @state.dup
   end
   
@@ -523,7 +570,7 @@ class StateWithContextTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @ancestors = @klass.ancestors
-    @state = StateMachine::State.new(@machine, :idling)
+    @machine.states << @state = StateMachine::State.new(@machine, :idling)
     
     speed_method = nil
     rpm_method = nil
@@ -568,7 +615,7 @@ class StateWithMultipleContextsTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @ancestors = @klass.ancestors
-    @state = StateMachine::State.new(@machine, :idling)
+    @machine.states << @state = StateMachine::State.new(@machine, :idling)
     
     speed_method = nil
     @state.context do
@@ -621,7 +668,7 @@ class StateWithExistingContextMethodTest < Test::Unit::TestCase
     @original_speed_method = @klass.instance_method(:speed)
     
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, :idling)
+    @machine.states << @state = StateMachine::State.new(@machine, :idling)
     @state.context do
       def speed
         0
@@ -638,7 +685,7 @@ class StateWithRedefinedContextMethodTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
-    @state = StateMachine::State.new(@machine, 'on')
+    @machine.states << @state = StateMachine::State.new(@machine, 'on')
     
     old_speed_method = nil
     @state.context do
@@ -669,7 +716,7 @@ class StateWithInvalidMethodCallTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @ancestors = @klass.ancestors
-    @state = StateMachine::State.new(@machine, :idling)
+    @machine.states << @state = StateMachine::State.new(@machine, :idling)
     @state.context do
       def speed
         0
@@ -689,7 +736,7 @@ class StateWithValidMethodCallTest < Test::Unit::TestCase
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @ancestors = @klass.ancestors
-    @state = StateMachine::State.new(@machine, :idling)
+    @machine.states << @state = StateMachine::State.new(@machine, :idling)
     @state.context do
       def speed(arg = nil)
         block_given? ? [arg, yield] : arg
@@ -725,10 +772,10 @@ begin
   class StateDrawingTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
+      @machine.states << @state = StateMachine::State.new(@machine, :parked, :value => 1)
       @machine.event :ignite do
         transition :parked => :idling
       end
-      @state = StateMachine::State.new(@machine, :parked, :value => 1)
       
       graph = GraphViz.new('G')
       @node = @state.draw(graph)
@@ -758,10 +805,10 @@ begin
   class StateDrawingInitialTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
+      @machine.states << @state = StateMachine::State.new(@machine, :parked, :initial => true)
       @machine.event :ignite do
         transition :parked => :idling
       end
-      @state = StateMachine::State.new(@machine, :parked, :initial => true)
       
       @graph = GraphViz.new('G')
       @node = @state.draw(@graph)
@@ -780,7 +827,7 @@ begin
   class StateDrawingNilNameTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
-      @state = StateMachine::State.new(@machine, nil)
+      @machine.states << @state = StateMachine::State.new(@machine, nil)
       
       graph = GraphViz.new('G')
       @node = @state.draw(graph)
@@ -798,7 +845,7 @@ begin
   class StateDrawingLambdaValueTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
-      @state = StateMachine::State.new(@machine, :parked, :value => lambda {})
+      @machine.states << @state = StateMachine::State.new(@machine, :parked, :value => lambda {})
       
       graph = GraphViz.new('G')
       @node = @state.draw(graph)
@@ -816,10 +863,10 @@ begin
   class StateDrawingNonFinalTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
+      @machine.states << @state = StateMachine::State.new(@machine, :parked)
       @machine.event :ignite do
         transition :parked => :idling
       end
-      @state = StateMachine::State.new(@machine, :parked)
       
       graph = GraphViz.new('G')
       @node = @state.draw(graph)
@@ -833,7 +880,7 @@ begin
   class StateDrawingFinalTest < Test::Unit::TestCase
     def setup
       @machine = StateMachine::Machine.new(Class.new)
-      @state = StateMachine::State.new(@machine, :parked)
+      @machine.states << @state = StateMachine::State.new(@machine, :parked)
       
       graph = GraphViz.new('G')
       @node = @state.draw(graph)

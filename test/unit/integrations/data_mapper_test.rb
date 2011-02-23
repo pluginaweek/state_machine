@@ -1583,7 +1583,7 @@ module DataMapperTest
       end
       
       def test_should_allow_targeting_specific_machine
-        @second_machine = StateMachine::Machine.new(@resource, :status)
+        @second_machine = StateMachine::Machine.new(@resource, :status, :namespace => 'alarm')
         @resource.auto_migrate!
         
         called_state = false
@@ -1606,7 +1606,7 @@ module DataMapperTest
       end
       
       def test_should_allow_targeting_multiple_specific_machines
-        @second_machine = StateMachine::Machine.new(@resource, :status)
+        @second_machine = StateMachine::Machine.new(@resource, :status, :namespace => 'alarm')
         @second_machine.state :parked, :idling
         @second_machine.event :ignite
         @resource.auto_migrate!

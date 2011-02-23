@@ -58,7 +58,13 @@ module StateMachine
       @guards = []
       @known_states = []
       
-      add_actions
+      # Output a warning if another event has a conflicting qualified name
+      if conflict = machine.owner_class.state_machines.detect {|name, other_machine| other_machine != @machine && other_machine.events[qualified_name, :qualified_name]}
+        name, other_machine = conflict
+        warn "Event #{qualified_name.inspect} for #{machine.name.inspect} is already defined in #{other_machine.name.inspect}"
+      else
+        add_actions
+      end
     end
     
     # Creates a copy of this event in addition to the list of associated

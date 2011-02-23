@@ -28,6 +28,7 @@ class StateCollectionTest < Test::Unit::TestCase
     @states << @nil = StateMachine::State.new(@machine, nil)
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
+    @machine.states.concat(@states)
     
     @object = @klass.new
   end
@@ -38,6 +39,10 @@ class StateCollectionTest < Test::Unit::TestCase
   
   def test_should_index_by_name_by_default
     assert_equal @parked, @states[:parked]
+  end
+  
+  def test_should_index_by_qualified_name
+    assert_equal @parked, @states[:parked, :qualified_name]
   end
   
   def test_should_index_by_value
@@ -79,6 +84,25 @@ class StateCollectionTest < Test::Unit::TestCase
   end
 end
 
+class StateCollectionWithNamespaceTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :namespace => 'vehicle')
+    @states = StateMachine::StateCollection.new(@machine)
+    
+    @states << @state = StateMachine::State.new(@machine, :parked)
+    @machine.states.concat(@states)
+  end
+  
+  def test_should_index_by_name
+    assert_equal @state, @states[:parked, :name]
+  end
+  
+  def test_should_index_by_qualified_name
+    assert_equal @state, @states[:vehicle_parked, :qualified_name]
+  end
+end
+
 class StateCollectionWithCustomStateValuesTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
@@ -86,6 +110,7 @@ class StateCollectionWithCustomStateValuesTest < Test::Unit::TestCase
     @states = StateMachine::StateCollection.new(@machine)
     
     @states << @state = StateMachine::State.new(@machine, :parked, :value => 1)
+    @machine.states.concat(@states)
     
     @object = @klass.new
     @object.state = 1
@@ -112,6 +137,7 @@ class StateCollectionWithStateMatchersTest < Test::Unit::TestCase
     @states = StateMachine::StateCollection.new(@machine)
     
     @states << @state = StateMachine::State.new(@machine, :parked, :if => lambda {|value| !value.nil?})
+    @machine.states.concat(@states)
     
     @object = @klass.new
     @object.state = 1
@@ -138,6 +164,7 @@ class StateCollectionWithInitialStateTest < Test::Unit::TestCase
     
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
+    @machine.states.concat(@states)
     
     @parked.initial = true
   end
@@ -175,6 +202,7 @@ class StateCollectionWithStateBehaviorsTest < Test::Unit::TestCase
     
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
+    @machine.states.concat(@states)
     
     @idling.context do
       def speed
@@ -212,6 +240,7 @@ class StateCollectionWithEventTransitionsTest < Test::Unit::TestCase
     
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
+    @machine.states.concat(@states)
     
     @machine.event :ignite do
       transition :to => :idling
@@ -249,6 +278,7 @@ class StateCollectionWithTransitionCallbacksTest < Test::Unit::TestCase
     
     @states << @parked = StateMachine::State.new(@machine, :parked)
     @states << @idling = StateMachine::State.new(@machine, :idling)
+    @machine.states.concat(@states)
     
     @machine.before_transition :to => :idling, :do => lambda {}
   end

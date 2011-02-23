@@ -73,7 +73,20 @@ module StateMachine
       @methods = {}
       @initial = options[:initial] == true
       
-      add_predicate
+      if name
+        conflicting_machines = machine.owner_class.state_machines.select {|name, other_machine| other_machine != machine && other_machine.states[qualified_name, :qualified_name]}
+        
+        # Output a warning if another machine has a conflicting qualified name
+        # for a different attribute
+        if conflict = conflicting_machines.detect {|name, other_machine| other_machine.attribute != machine.attribute}
+          name, other_machine = conflict
+          warn "State #{qualified_name.inspect} for #{machine.name.inspect} is already defined in #{other_machine.name.inspect}"
+        elsif conflicting_machines.empty?
+          # Only bother adding predicates when another machine for the same
+          # attribute hasn't already done so
+          add_predicate
+        end
+      end
     end
     
     # Creates a copy of this state in addition to the list of associated
@@ -247,13 +260,19 @@ module StateMachine
       end
       
       # Adds a predicate method to the owner class so long as a name has
-      # actually been configured for the state
+      # actually been configured for the state and the method isn't already
+      # defined in the owner class.
       def add_predicate
-        return unless name
-        
-        # Checks whether the current value matches this state
-        machine.define_instance_method("#{qualified_name}?") do |machine, object|
-          machine.states.matches?(object, name)
+        owner_class = machine.owner_class
+        predicate = "#{qualified_name}?"
+        if !owner_class.method_defined?(predicate) && !owner_class.private_method_defined?(predicate)
+          # Checks whether the current value matches this state
+          machine.define_instance_method(predicate) do |machine, object|
+            machine.states.matches?(object, name)
+          end
+        else
+          # Only output a warning since we can't defined the predicate
+          warn "#{owner_class.name}##{predicate} is already defined, use #{owner_class.name}##{machine.name}?(:#{name}) instead."
         end
       end
   end

@@ -34,7 +34,7 @@ module StateMachine
       nodes = @nodes
       @nodes = []
       @indices = @indices.inject({}) {|indices, (name, index)| indices[name] = {}; indices}
-      nodes.each {|node| self << node.dup}
+      concat(nodes.map {|n| n.dup})
     end
     
     # Changes the current machine associated with the collection.  In turn, this
@@ -60,6 +60,11 @@ module StateMachine
       @nodes << node
       @indices.each {|attribute, index| index[value(node, attribute)] = node}
       self
+    end
+    
+    # Appends a group of nodes to the collection
+    def concat(nodes)
+      nodes.each {|node| self << node}
     end
     
     # Updates the indexed keys for the given node.  If the node's attribute

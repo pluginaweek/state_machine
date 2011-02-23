@@ -138,12 +138,12 @@ end
 
 class NodeCollectionWithNodesTest < Test::Unit::TestCase
   def setup
-    machine = StateMachine::Machine.new(Class.new)
-    @collection = StateMachine::NodeCollection.new(machine)
+    @machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(@machine)
     
     @klass = Struct.new(:name, :machine)
-    @parked = @klass.new(:parked, machine)
-    @idling = @klass.new(:idling, machine)
+    @parked = @klass.new(:parked, @machine)
+    @idling = @klass.new(:idling, @machine)
     
     @collection << @parked
     @collection << @idling
@@ -154,6 +154,16 @@ class NodeCollectionWithNodesTest < Test::Unit::TestCase
     @collection.each {|object| order << object}
     
     assert_equal [@parked, @idling], order
+  end
+  
+  def test_should_be_able_to_concatenate_multiple_nodes
+    @first_gear = @klass.new(:first_gear, @machine)
+    @second_gear = @klass.new(:second_gear, @machine)
+    @collection.concat([@first_gear, @second_gear])
+    
+    order = []
+    @collection.each {|object| order << object}
+    assert_equal [@parked, @idling, @first_gear, @second_gear], order
   end
   
   def test_should_be_able_to_access_by_index
