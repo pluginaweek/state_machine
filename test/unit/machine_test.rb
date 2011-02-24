@@ -1393,6 +1393,16 @@ class MachinePersistenceTest < Test::Unit::TestCase
     @machine.write(@object, :event, 'ignite')
     assert_equal 'ignite', @object.state_event
   end
+  
+  def test_should_allow_writing_custom_instance_variables
+    @klass.class_eval do
+      attr_reader :state_value
+    end
+    
+    assert_raise(NoMethodError) { @machine.write(@object, :value, 1) }
+    assert_equal 1, @machine.write(@object, :value, 1, true)
+    assert_equal 1, @object.state_value
+  end
 end
 
 

@@ -254,11 +254,13 @@ module StateMachine
       
       # Forces the change in state to be recognized regardless of whether the
       # state value actually changed
-      def write(object, attribute, value)
+      def write(object, attribute, value, *args)
         result = super
-        if attribute == :state && supports_dirty_tracking?(object) && !object.send("#{self.attribute}_changed?")
+        
+        if (attribute == :state || attribute == :event && value) && supports_dirty_tracking?(object) && !object.send("#{self.attribute}_changed?")
           object.send("#{self.attribute}_will_change!")
         end
+        
         result
       end
       

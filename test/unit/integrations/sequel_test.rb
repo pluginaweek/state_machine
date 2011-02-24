@@ -592,6 +592,28 @@ module SequelTest
     end
   end
   
+  class MachineWithDirtyAttributeAndStateEventsTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @machine.event :ignite
+      
+      @record = @model.create
+      @record.state_event = 'ignite'
+    end
+    
+    def test_should_include_state_in_changed_attributes
+      assert_equal [:state], @record.changed_columns
+    end
+    
+    def test_should_not_include_state_in_changed_attributes_if_nil
+      @record = @model.create
+      @record.state_event = nil
+      
+      assert_equal [], @record.changed_columns
+    end
+  end
+  
   class MachineWithoutTransactionsTest < BaseTestCase
     def setup
       @model = new_model

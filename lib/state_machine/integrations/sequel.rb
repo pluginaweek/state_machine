@@ -234,10 +234,14 @@ module StateMachine
       
       # Forces the change in state to be recognized regardless of whether the
       # state value actually changed
-      def write(object, attribute, value)
+      def write(object, attribute, value, *args)
         result = super
+        
         column = self.attribute.to_sym
-        object.changed_columns << column if attribute == :state && owner_class.columns.include?(column) && !object.changed_columns.include?(column)
+        if (attribute == :state || attribute == :event && value) && owner_class.columns.include?(column) && !object.changed_columns.include?(column)
+          object.changed_columns << column
+        end
+        
         result
       end
       

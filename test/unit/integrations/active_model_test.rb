@@ -356,6 +356,40 @@ module ActiveModelTest
     end
   end
   
+  class MachineWithDirtyAttributeAndStateEventsTest < BaseTestCase
+    def setup
+      @model = new_model do
+        include ActiveModel::Dirty
+        define_attribute_methods [:state]
+      end
+      @machine = StateMachine::Machine.new(@model, :action => :save, :initial => :parked)
+      @machine.event :ignite
+      
+      @record = @model.create
+      @record.state_event = 'ignite'
+    end
+    
+    def test_should_include_state_in_changed_attributes
+      assert_equal %w(state), @record.changed
+    end
+    
+    def test_should_track_attribute_change
+      assert_equal %w(parked parked), @record.changes['state']
+    end
+    
+    def test_should_not_reset_changes_on_multiple_changes
+      @record.state_event = 'ignite'
+      assert_equal %w(parked parked), @record.changes['state']
+    end
+    
+    def test_should_not_include_state_in_changed_attributes_if_nil
+      @record = @model.create
+      @record.state_event = nil
+      
+      assert_equal [], @record.changed
+    end
+  end
+  
   class MachineWithCallbacksTest < BaseTestCase
     def setup
       @model = new_model

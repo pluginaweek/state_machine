@@ -1,5 +1,6 @@
 == master
 
+* Fix objects not getting marked as dirty in all integrations when #{attribute}_event is set
 * Generate warnings when conflicting state / event names are detected
 * Allow fallback to generic state predicates when individual predicates are already defined in the owner class
 * Replace :include_failures after_transition option with new after_failure callback

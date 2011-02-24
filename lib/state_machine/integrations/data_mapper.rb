@@ -260,9 +260,11 @@ module StateMachine
       
       # Forces the change in state to be recognized regardless of whether the
       # state value actually changed
-      def write(object, attribute, value)
-        if attribute == :state
-          result = super
+      def write(object, attribute, value, *args)
+        result = super
+        
+        if attribute == :state || attribute == :event && value
+          value = read(object, :state) if attribute == :event
           
           # Change original attributes in 0.9.4 - 0.10.2
           if ::DataMapper::VERSION =~ /^0\.9\./
@@ -275,8 +277,6 @@ module StateMachine
             property = owner_class.properties[self.attribute]
             object.persisted_state.original_attributes[property] = value unless object.persisted_state.original_attributes.include?(property)
           end
-        else
-          result = super
         end
         
         result

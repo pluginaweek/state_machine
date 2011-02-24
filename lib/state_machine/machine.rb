@@ -901,8 +901,9 @@ module StateMachine
     #   Vehicle.state_machine.write(vehicle, :event, 'park')    # => Equivalent to vehicle.state_event = 'park'
     #   vehicle.state                                           # => "idling"
     #   vehicle.event                                           # => "park"
-    def write(object, attribute, value)
-      object.send("#{self.attribute(attribute)}=", value)
+    def write(object, attribute, value, ivar = false)
+      attribute = self.attribute(attribute)
+      ivar ? object.instance_variable_set("@#{attribute}", value) : object.send("#{attribute}=", value)
     end
     
     # Defines one or more events for the machine and the transitions that can
@@ -1510,22 +1511,26 @@ module StateMachine
           machine.events.transitions_for(object, *args)
         end
         
-        # Add helpers for interacting with the action
+        # Add helpers for tracking the event / transition to invoke when the
+        # action is called
         if action
-          # Tracks the event / transition to invoke when the action is called
           event_attribute = attribute(:event)
-          event_transition_attribute = attribute(:event_transition)
-          @instance_helper_module.class_eval do
-            attr_writer event_attribute
-            
-            protected
-              attr_accessor event_transition_attribute
-          end
-          
-          # Interpret non-blank events as present
-          define_instance_method(attribute(:event)) do |machine, object|
+          define_instance_method(event_attribute) do |machine, object|
+            # Interpret non-blank events as present
             event = machine.read(object, :event, true)
             event && !(event.respond_to?(:empty?) && event.empty?) ? event.to_sym : nil
+          end
+          
+          # A roundabout way of writing the attribute is used here so that
+          # integrations can hook into this modification
+          define_instance_method("#{event_attribute}=") do |machine, object, value|
+            machine.write(object, :event, value, true)
+          end
+          
+          event_transition_attribute = attribute(:event_transition)
+          @instance_helper_module.class_eval do
+            protected
+              attr_accessor event_transition_attribute
           end
         end
       end

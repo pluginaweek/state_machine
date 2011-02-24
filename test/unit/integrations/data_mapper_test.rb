@@ -617,6 +617,50 @@ module DataMapperTest
     end
   end
   
+  class MachineWithDirtyAttributeAndStateEventsTest < BaseTestCase
+    def setup
+      @resource = new_resource
+      @machine = StateMachine::Machine.new(@resource, :initial => :parked)
+      @machine.event :ignite
+      
+      @record = @resource.create
+      @record.state_event = 'ignite'
+    end
+    
+    def test_should_include_state_in_changed_attributes
+      assert_equal e = {@resource.properties[:state] => 'parked'}, @record.dirty_attributes
+    end
+    
+    def test_should_track_attribute_change
+      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
+        assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
+      elsif Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+        assert_equal e = {@resource.properties[:state] => 'parked-ignored'}, @record.original_attributes
+      else
+        assert_equal e = {:state => 'parked-ignored'},  @record.original_values
+      end
+    end
+    
+    def test_should_not_reset_changes_on_multiple_changes
+      @record.state_event = 'ignite'
+      
+      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
+        assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
+      elsif Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+        assert_equal e = {@resource.properties[:state] => 'parked-ignored'}, @record.original_attributes
+      else
+        assert_equal e = {:state => 'parked-ignored'},  @record.original_values
+      end
+    end
+    
+    def test_should_not_include_state_in_changed_attributes_if_nil
+      @record = @resource.create
+      @record.state_event = nil
+      
+      assert_equal e = {}, @record.dirty_attributes
+    end
+  end
+  
   class MachineWithoutTransactionsTest < BaseTestCase
     def setup
       @resource = new_resource
