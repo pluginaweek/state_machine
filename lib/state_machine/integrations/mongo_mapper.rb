@@ -267,12 +267,7 @@ module StateMachine
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
           owner_class.key(attribute, String) unless owner_class.keys.include?(attribute)
-          
-          name = self.name
-          owner_class.validates_each(attribute, :logic => lambda {|*|
-            machine = self.class.state_machine(name)
-            machine.invalidate(self, :state, :invalid) unless machine.states.match(self)
-          })
+          super
         end
         
         # Adds support for defining the attribute predicate, while providing

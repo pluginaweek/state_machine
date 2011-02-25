@@ -25,6 +25,22 @@ module StateMachine
           lambda {|model, values| model.all(scope.call(values))}
         end
       end
+      
+      version '0.5.x - 0.8.x' do
+        def self.active?
+          !defined?(::MongoMapper::Version) || ::MongoMapper::Version < '0.9.0'
+        end
+        
+        def define_state_accessor
+          owner_class.key(attribute, String) unless owner_class.keys.include?(attribute)
+          
+          name = self.name
+          owner_class.validates_each(attribute, :logic => lambda {|*|
+            machine = self.class.state_machine(name)
+            machine.invalidate(self, :state, :invalid) unless machine.states.match(self)
+          })
+        end
+      end
     end
   end
 end

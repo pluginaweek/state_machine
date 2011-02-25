@@ -3,16 +3,21 @@ require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 # Load library
 require 'rubygems'
 
-if ENV['VERSION'] && Gem::Version.new(ENV['VERSION']) <= Gem::Version.new('0.7.0') || !Gem.available?('>=0.7.0')
-  gem 'activesupport', '~>2.3'
-  require 'active_support'
+if ENV['VERSION']
+  if Gem::Version.new(ENV['VERSION']) >= Gem::Version.new('0.9.0')
+    gem 'activesupport', '~>3.0'
+    require 'active_support'
+  elsif Gem::Version.new(ENV['VERSION']) <= Gem::Version.new('0.7.0') || !Gem.available?('>=0.7.0')
+    gem 'activesupport', '~>2.3'
+    require 'active_support'
+  end
 end
 
 gem 'mongo_mapper', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=0.5.5'
 require 'mongo_mapper'
 
 # Establish database connection
-MongoMapper.connection = Mongo::Connection.new('127.0.0.1', 27017, {:logger => Logger.new("#{File.dirname(__FILE__)}/../../mongo_mapper.log")})
+MongoMapper.connection = Mongo::Connection.new('127.0.0.1', 27017, {:logger => Logger.new("#{File.dirname(__FILE__)}/../../mongo_mapper.log"), :slave_ok => true})
 MongoMapper.database = 'test'
 
 module MongoMapperTest
@@ -25,11 +30,13 @@ module MongoMapperTest
       def new_model(table_name = :foo, &block)
         
         model = Class.new do
+          class_eval "def self.name; 'MongoMapperTest::#{table_name}' end"
+          class_eval "def self.to_s; 'MongoMapperTest::#{table_name}' end"
+        end
+        
+        model.class_eval do
           include MongoMapper::Document
           set_collection_name(table_name)
-          
-          def self.name; "MongoMapperTest::#{collection_name}"; end
-          def self.to_s; "MongoMapperTest::#{collection_name}"; end
           
           key :state, String
         end
@@ -761,7 +768,7 @@ module MongoMapperTest
   class MachineWithFailedActionTest < BaseTestCase
     def setup
       @model = new_model do
-        validates_inclusion_of :state, :within => %w(first_gear)
+        validates_numericality_of :state
       end
       
       @machine = StateMachine::Machine.new(@model)
@@ -1109,7 +1116,7 @@ module MongoMapperTest
     
     def test_should_not_run_after_callbacks_with_failures_disabled_if_fails
       @model.class_eval do
-        validates_inclusion_of :state, :within => %w(first_gear)
+        validates_numericality_of :state
       end
       
       ran_callback = false
@@ -1121,7 +1128,7 @@ module MongoMapperTest
     
     def test_should_run_failure_callbacks__if_fails
       @model.class_eval do
-        validates_inclusion_of :state, :within => %w(first_gear)
+        validates_numericality_of :state
       end
       
       ran_callback = false
@@ -1133,7 +1140,7 @@ module MongoMapperTest
     
     def test_should_not_run_around_callbacks_with_failures_disabled_if_fails
       @model.class_eval do
-        validates_inclusion_of :state, :within => %w(first_gear)
+        validates_numericality_of :state
       end
       
       ran_callback = false
