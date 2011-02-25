@@ -28,7 +28,7 @@ task :default => :test
 desc "Test the #{spec.name} plugin."
 Rake::TestTask.new(:test) do |t|
   t.libs << 'lib'
-  t.test_files = ENV['INTEGRATION'] ? Dir["test/unit/integrations/#{ENV['INTEGRATION']}_test.rb"] : Dir['test/{functional,unit}/*_test.rb']
+  t.test_files = ENV['INTEGRATION'] ? Dir["test/unit/integrations/#{ENV['INTEGRATION']}_test.rb"] : Dir['test/{functional,unit}/*_test.rb'] + ['test/unit/integrations/base_test.rb']
   t.verbose = true
 end
 

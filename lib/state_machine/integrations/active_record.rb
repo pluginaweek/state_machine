@@ -313,7 +313,10 @@ module StateMachine
     #         events:
     #           park: 'estacionarse'
     module ActiveRecord
+      include Base
       include ActiveModel
+      
+      require 'state_machine/integrations/active_record/versions'
       
       # The default options to use for state machines using this integration
       @defaults = {:action => :save}
@@ -327,28 +330,23 @@ module StateMachine
       
       def self.extended(base) #:nodoc:
         require 'active_record/version'
-        require 'state_machine/integrations/active_model/observer'
-        
-        ::ActiveRecord::Observer.class_eval do
-          include StateMachine::Integrations::ActiveModel::Observer
-        end unless ::ActiveRecord::Observer < StateMachine::Integrations::ActiveModel::Observer
-        
-        if defined?(I18n)
-          locale = "#{File.dirname(__FILE__)}/active_record/locale.rb"
-          I18n.load_path.unshift(locale) unless I18n.load_path.include?(locale)
-        end
-      end
-      
-      # Adds a validation error to the given object 
-      def invalidate(object, attribute, message, values = [])
-        if defined?(I18n)
-          super
-        else
-          object.errors.add(self.attribute(attribute), generate_message(message, values))
-        end
+        super
       end
       
       protected
+        # The path to the locale file containing state_machine translations
+        def locale_path
+          "#{File.dirname(__FILE__)}/active_record/locale.rb"
+        end
+        
+        # Loads extensions to ActiveRecord's Observers
+        def load_observer_extensions
+          super
+          ::ActiveRecord::Observer.class_eval do
+            include StateMachine::Integrations::ActiveModel::Observer
+          end unless ::ActiveRecord::Observer < StateMachine::Integrations::ActiveModel::Observer
+        end
+        
         # Always adds observer support
         def supports_observers?
           true
@@ -364,47 +362,9 @@ module StateMachine
           action == :save
         end
         
-        # Only adds dirty tracking support if ActiveRecord supports it
-        def supports_dirty_tracking?(object)
-          defined?(::ActiveRecord::Dirty) && object.respond_to?("#{attribute}_changed?") || super
-        end
-        
         # Always uses the <tt>:activerecord</tt> translation scope
         def i18n_scope
           :activerecord
-        end
-        
-        # The default options to use when generating messages for validation
-        # errors
-        def default_error_message_options(object, attribute, message)
-          if ::ActiveRecord::VERSION::MAJOR >= 3
-            super
-          else
-            {:default => @messages[message]}
-          end
-        end
-        
-        # Only allows translation of I18n is available
-        def translate(klass, key, value)
-          if defined?(I18n)
-            super
-          else
-            value ? value.to_s.humanize.downcase : 'nil'
-          end
-        end
-        
-        # Attempts to look up a class's ancestors via:
-        # * #lookup_ancestors (3.0.0+)
-        # * #self_and_descendants_from_active_record (2.3.2 - 2.3.x)
-        # * #self_and_descendents_from_active_record (2.0.0 - 2.3.1)
-        def ancestors_for(klass)
-          if ::ActiveRecord::VERSION::MAJOR >= 3
-            super
-          elsif ::ActiveRecord::VERSION::MINOR == 3 && ::ActiveRecord::VERSION::TINY >= 2
-            klass.self_and_descendants_from_active_record
-          else
-            klass.self_and_descendents_from_active_record
-          end
         end
         
         # Only allows state initialization on new records that aren't being
@@ -418,17 +378,19 @@ module StateMachine
               attributes = attributes.dup
               attributes.stringify_keys!
               
-              if ::ActiveRecord::VERSION::MAJOR >= 3
-                ignore = object.send(:sanitize_for_mass_assignment, attributes).keys
-              else
-                ignore = object.send(:remove_attributes_protected_from_mass_assignment, attributes).keys
-              end
+              ignore = filter_attributes(object, attributes).keys
             else
               ignore = []
             end
             
             !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
           end
+        end
+        
+        # Filters attributes that cannot be assigned through the initialization
+        # of the object
+        def filter_attributes(object, attributes)
+          object.send(:sanitize_for_mass_assignment, attributes)
         end
         
         # Defines an initialization hook into the owner class for setting the
@@ -493,33 +455,9 @@ module StateMachine
           object.class.transaction {raise ::ActiveRecord::Rollback unless yield}
         end
         
-      private
         # Defines a new named scope with the given name
         def define_scope(name, scope)
-          if ::ActiveRecord::VERSION::MAJOR >= 3
-            lambda {|model, values| model.where(scope.call(values)[:conditions])}
-          else
-            if owner_class.respond_to?(:named_scope)
-              name = name.to_sym
-              machine_name = self.name
-              
-              # Since ActiveRecord does not allow direct access to the model
-              # being used within the evaluation of a dynamic named scope, the
-              # scope must be generated manually.  It's necessary to have access
-              # to the model so that the state names can be translated to their
-              # associated values and so that inheritance is respected properly.
-              owner_class.named_scope(name)
-              owner_class.scopes[name] = lambda do |model, *states|
-                machine_states = model.state_machine(machine_name).states
-                values = states.flatten.map {|state| machine_states.fetch(state).value}
-                
-                ::ActiveRecord::NamedScope::Scope.new(model, scope.call(values))
-              end
-            end
-            
-            # Prevent the Machine class from wrapping the scope
-            false
-          end
+          lambda {|model, values| model.where(scope.call(values)[:conditions])}
         end
     end
   end

@@ -221,16 +221,6 @@ module StateMachine
       module ClassMethods
         # The default options to use for state machines using this integration
         attr_reader :defaults
-        
-        # Loads additional files specific to ActiveModel
-        def extended(base) #:nodoc:
-          require 'state_machine/integrations/active_model/observer'
-          
-          if defined?(I18n)
-            locale = "#{File.dirname(__FILE__)}/active_model/locale.rb"
-            I18n.load_path.unshift(locale) unless I18n.load_path.include?(locale)
-          end
-        end
       end
       
       def self.included(base) #:nodoc:
@@ -239,6 +229,7 @@ module StateMachine
         end
       end
       
+      include Base
       extend ClassMethods
       
       # Should this integration be used for state machines in the given class?
@@ -349,9 +340,30 @@ module StateMachine
           klass.lookup_ancestors
         end
         
-        # Adds the default callbacks for notifying ActiveModel observers
-        # before/after a transition has been performed.
+        # Initializes class-level extensions and defaults for this machine
         def after_initialize
+          load_locale
+          load_observer_extensions
+          add_default_callbacks
+        end
+        
+        # Loads any locale files needed for translating validation errors
+        def load_locale
+          I18n.load_path.unshift(locale_path) unless I18n.load_path.include?(locale_path)
+        end
+        
+        # The path to the locale file containing state_machine translations
+        def locale_path
+          "#{File.dirname(__FILE__)}/active_model/locale.rb"
+        end
+        
+        # Loads extensions to ActiveModel's Observers
+        def load_observer_extensions
+          require 'state_machine/integrations/active_model/observer'
+        end
+        
+        # Adds a set of default callbacks that utilize the Observer extensions
+        def add_default_callbacks
           if supports_observers?
             callbacks[:before] << Callback.new(:before) {|object, transition| notify(:before, object, transition)}
             callbacks[:after] << Callback.new(:after) {|object, transition| notify(:after, object, transition)}

@@ -216,6 +216,10 @@ module StateMachine
     # Note, also, that the transition can be accessed by simply defining
     # additional arguments in the callback block.
     module Sequel
+      include Base
+      
+      require 'state_machine/integrations/sequel/versions'
+      
       # The default options to use for state machines using this integration
       class << self; attr_reader :defaults; end
       @defaults = {:action => :save}
@@ -225,11 +229,6 @@ module StateMachine
       # integration.
       def self.matches?(klass)
         defined?(::Sequel::Model) && klass <= ::Sequel::Model
-      end
-      
-      # Loads additional files specific to Sequel
-      def self.extended(base) #:nodoc:
-        require 'sequel/extensions/inflector' if ::Sequel.const_defined?('VERSION') && ::Sequel::VERSION >= '2.12.0'
       end
       
       # Forces the change in state to be recognized regardless of whether the
@@ -255,7 +254,18 @@ module StateMachine
         object.errors.clear
       end
       
+      # Pluralizes the name using the built-in inflector
+      def pluralize(word)
+        load_inflector
+        super
+      end
+      
       protected
+        # Loads the built-in inflector
+        def load_inflector
+          require 'sequel/extensions/inflector'
+        end
+        
         # Only allows state initialization on new records that aren't being
         # created with a set of attributes that includes this machine's
         # attribute.
@@ -294,24 +304,24 @@ module StateMachine
         # Adds hooks into validation for automatically firing events.  This is
         # a bit more complicated than other integrations since Sequel doesn't
         # provide an easy way to hook around validation / save calls
-         def define_action_helpers
-           if action == :save
-             @instance_helper_module.class_eval do
-               define_method(:valid?) do |*args|
+        def define_action_helpers
+          if action == :save
+            save_hook = self.save_hook
+            handle_validation_failure = self.handle_validation_failure
+            handle_save_failure = self.handle_save_failure
+            
+            @instance_helper_module.class_eval do
+              define_method(:valid?) do |*args|
                 yielded = false
                 result = self.class.state_machines.transitions(self, :save, :after => false).perform do
                   yielded = true
                   super(*args)
                 end
                 
-                if defined?(::Sequel::MAJOR) && (::Sequel::MAJOR > 3 || ::Sequel::MAJOR == 3 && ::Sequel::MINOR > 13)
-                  raise_on_failure?(args.first || {}) && !yielded && !result ? raise_hook_failure(:validation) : result
-                else
-                  raise_on_save_failure && !yielded && !result ? save_failure(:validation) : result
-                end
+                !yielded && !result ? handle_validation_failure.call(self, args, yielded, result) : result
               end
               
-              define_method(defined?(::Sequel::MAJOR) && (::Sequel::MAJOR >= 3 || ::Sequel::MAJOR == 2 && ::Sequel::MINOR == 12) ? :_save : :save) do |*args|
+              define_method(save_hook) do |*args|
                 yielded = false
                 result = self.class.state_machines.transitions(self, :save).perform do
                   yielded = true
@@ -320,15 +330,36 @@ module StateMachine
                 
                 if yielded || result
                   result
-                elsif defined?(::Sequel::MAJOR) && (::Sequel::MAJOR > 3 || ::Sequel::MAJOR == 3 && ::Sequel::MINOR > 13)
-                  raise_hook_failure(:save)
                 else
-                  save_failure(:save)
+                  handle_save_failure.call(self)
                 end
               end
             end unless owner_class.state_machines.any? {|name, machine| machine.action == :save && machine != self}
           else
             super
+          end
+        end
+        
+        # The save action to hook into
+        def save_hook
+          :_save
+        end
+        
+        # Handles whether validation errors should be raised
+        def handle_validation_failure
+          lambda do |object, args, yielded, result|
+            object.instance_eval do
+              raise_on_failure?(args.first || {}) ? raise_hook_failure(:validation) : result
+            end
+          end
+        end
+        
+        # Handles how save failures are raised
+        def handle_save_failure
+          lambda do |object|
+            object.instance_eval do
+              raise_hook_failure(:save)
+            end
           end
         end
         

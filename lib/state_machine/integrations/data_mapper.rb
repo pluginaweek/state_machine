@@ -241,6 +241,10 @@ module StateMachine
     # support for DataMapper observers.  See StateMachine::Integrations::DataMapper::Observer
     # for more information.
     module DataMapper
+      include Base
+      
+      require 'state_machine/integrations/data_mapper/versions'
+      
       # The default options to use for state machines using this integration
       class << self; attr_reader :defaults; end
       @defaults = {:action => :save, :use_transactions => false}
@@ -255,7 +259,7 @@ module StateMachine
       # Loads additional files specific to DataMapper
       def self.extended(base) #:nodoc:
         require 'dm-core/version' unless ::DataMapper.const_defined?('VERSION')
-        require 'state_machine/integrations/data_mapper/observer' if ::DataMapper.const_defined?('Observer')
+        super
       end
       
       # Forces the change in state to be recognized regardless of whether the
@@ -265,18 +269,7 @@ module StateMachine
         
         if attribute == :state || attribute == :event && value
           value = read(object, :state) if attribute == :event
-          
-          # Change original attributes in 0.9.4 - 0.10.2
-          if ::DataMapper::VERSION =~ /^0\.9\./
-            object.original_values[self.attribute] = "#{value}-ignored" if object.original_values[self.attribute] == value
-          elsif ::DataMapper::VERSION =~ /^0\.10\./
-            property = owner_class.properties[self.attribute]
-            object.original_attributes[property] = "#{value}-ignored" unless object.original_attributes.include?(property)
-          else
-            object.persisted_state = ::DataMapper::Resource::State::Dirty.new(object) if object.persisted_state.is_a?(::DataMapper::Resource::State::Clean)
-            property = owner_class.properties[self.attribute]
-            object.persisted_state.original_attributes[property] = value unless object.persisted_state.original_attributes.include?(property)
-          end
+          mark_dirty(object, value)
         end
         
         result
@@ -293,6 +286,16 @@ module StateMachine
       end
       
       protected
+        # Initializes class-level extensions and defaults for this machine
+        def after_initialize
+          load_observer_extensions
+        end
+        
+        # Loads extensions to DataMapper's Observers
+        def load_observer_extensions
+          require 'state_machine/integrations/data_mapper/observer' if ::DataMapper.const_defined?('Observer')
+        end
+        
         # Is validation support currently loaded?
         def supports_validations?
           @supports_validations ||= ::DataMapper.const_defined?('Validate')
@@ -337,12 +340,8 @@ module StateMachine
         
         # Adds hooks into validation for automatically firing events
         def define_action_helpers
-          # 0.9.4 - 0.9.6 fails to run after callbacks when validations are
-          # enabled because of the way dm-validations integrates
-          return if ::DataMapper::VERSION =~ /^0\.9\.[4-6]/ && supports_validations?
-          
           if action == :save
-            if super(::DataMapper::VERSION =~ /^0\.\d\./ ? :save : :save_self) && supports_validations?
+            if super(save_hook) && supports_validations?
               @instance_helper_module.class_eval do
                 define_method(:valid?) do |*args|
                   self.class.state_machines.transitions(self, :save, :after => false).perform { super(*args) }
@@ -352,6 +351,11 @@ module StateMachine
           else
             super
           end
+        end
+        
+        # The save action to hook into
+        def save_hook
+          :save_self
         end
         
         # Creates a scope for finding records *with* a particular state or
@@ -378,6 +382,14 @@ module StateMachine
         def add_callback(type, options, &block)
           options[:bind_to_object] = true
           super
+        end
+        
+        # Marks the object's state as dirty so that the record will be saved
+        # even if no actual modifications have been made to the data
+        def mark_dirty(object, value)
+          object.persisted_state = ::DataMapper::Resource::State::Dirty.new(object) if object.persisted_state.is_a?(::DataMapper::Resource::State::Clean)
+          property = owner_class.properties[self.attribute]
+          object.persisted_state.original_attributes[property] = value unless object.persisted_state.original_attributes.include?(property)
         end
     end
   end

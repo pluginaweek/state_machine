@@ -184,7 +184,10 @@ module StateMachine
     # Note, also, that the transition can be accessed by simply defining
     # additional arguments in the callback block.
     module MongoMapper
+      include Base
       include ActiveModel
+      
+      require 'state_machine/integrations/mongo_mapper/versions'
       
       # The default options to use for state machines using this integration
       @defaults = {:action => :save}
@@ -237,11 +240,17 @@ module StateMachine
         def initialize_state?(object, options)
           attributes = options[:attributes] || {}
           
-          if !options[:from_database] && !attributes.stringify_keys.key?('_id')
-            filtered = object.respond_to?(:filter_protected_attrs) ? object.send(:filter_protected_attrs, attributes) : attributes 
+          if !options[:from_database]
+            filtered = filter_attributes(object, attributes) 
             ignore = filtered.keys
             !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
           end
+        end
+        
+        # Filters attributes that cannot be assigned through the initialization
+        # of the object
+        def filter_attributes(object, attributes)
+          object.send(:filter_protected_attrs, attributes)
         end
         
         # Defines an initialization hook into the owner class for setting the
@@ -300,11 +309,7 @@ module StateMachine
         
         # Defines a new scope with the given name
         def define_scope(name, scope)
-          if defined?(::MongoMapper::Version) && ::MongoMapper::Version >= '0.8.0'
-            lambda {|model, values| model.query.merge(model.query(scope.call(values)))}
-          else
-            lambda {|model, values| model.all(scope.call(values))}
-          end
+          lambda {|model, values| model.query.merge(model.query(scope.call(values)))}
         end
     end
   end

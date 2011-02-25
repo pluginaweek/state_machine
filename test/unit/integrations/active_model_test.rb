@@ -14,7 +14,7 @@ module ActiveModelTest
     end
     
     protected
-      # Creates a new ActiveRecord model (and the associated table)
+      # Creates a new ActiveModel model (and the associated table)
       def new_model(&block)
         # Simple ActiveModel superclass
         parent = Class.new do
@@ -58,7 +58,7 @@ module ActiveModelTest
         model
       end
       
-      # Creates a new ActiveRecord observer
+      # Creates a new ActiveModel observer
       def new_observer(model, &block)
         observer = Class.new(ActiveModel::Observer) do
           attr_accessor :notifications
@@ -991,7 +991,7 @@ module ActiveModelTest
     def test_should_only_add_locale_once_in_load_path
       assert_equal 1, I18n.load_path.select {|path| path =~ %r{active_model/locale\.rb$}}.length
       
-      # Create another ActiveRecord model that will triger the i18n feature
+      # Create another ActiveModel model that will triger the i18n feature
       new_model
       
       assert_equal 1, I18n.load_path.select {|path| path =~ %r{active_model/locale\.rb$}}.length
