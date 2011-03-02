@@ -30,8 +30,10 @@ module MongoMapperTest
       def new_model(table_name = :foo, &block)
         
         model = Class.new do
-          class_eval "def self.name; 'MongoMapperTest::#{table_name}' end"
-          class_eval "def self.to_s; 'MongoMapperTest::#{table_name}' end"
+          (class << self; self; end).class_eval do
+            define_method(:name) { "MongoMapperTest::#{table_name.to_s.capitalize}" }
+            define_method(:to_s) { name }
+          end
         end
         
         model.class_eval do
