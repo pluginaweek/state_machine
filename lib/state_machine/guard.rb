@@ -107,14 +107,22 @@ module StateMachine
     # * <tt>:on</tt> - One or more events that fired the transition.  If none
     #   are specified, then this will always match.
     # 
+    # In order to skip :if/:unless conditions, pass <tt>false</tt> in *args.
+    #
     # == Examples
     # 
     #   guard = StateMachine::Guard.new(:parked => :idling, :on => :ignite)
     #   
     #   guard.match(object, :on => :ignite) # => {:to => ..., :from => ..., :on => ...}
     #   guard.match(object, :on => :park)   # => nil
-    def match(object, query = {})
-      if (match = match_query(query)) && matches_conditions?(object)
+    #
+    #
+    # # Skip :if/:unless conditions
+    # guard.match(object, {:on => :ignite}, false) # => {:to => ..., :from => ..., :on => ...}
+    
+    def match(object, query = {}, *args)
+      match_condition = args.empty? ? true : args.pop
+      if (match = match_query(query)) && (match_condition ? matches_conditions?(object) : true)
         match
       end
     end

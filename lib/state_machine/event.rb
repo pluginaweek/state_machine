@@ -186,17 +186,17 @@ module StateMachine
     # on the current state of the given object.
     # 
     # If the event can't be fired, then this will return false, otherwise true.
-    def can_fire?(object)
-      !transition_for(object).nil?
+    def can_fire?(object, *args)
+      !transition_for(object, {}, *args).nil?
     end
     
     # Finds and builds the next transition that can be performed on the given
     # object.  If no transitions can be made, then this will return nil.
-    def transition_for(object, requirements = {})
+    def transition_for(object, requirements = {}, *args)
       requirements[:from] = machine.states.match!(object).name unless custom_from_state = requirements.include?(:from)
       
       guards.each do |guard|
-        if match = guard.match(object, requirements)
+        if match = guard.match(object, requirements, *args)
           # Guard allows for the transition to occur
           from = requirements[:from]
           to = match[:to].values.empty? ? from : match[:to].values.first
@@ -267,8 +267,8 @@ module StateMachine
       # the current event
       def add_actions
         # Checks whether the event can be fired on the current object
-        machine.define_instance_method("can_#{qualified_name}?") do |machine, object|
-          machine.event(name).can_fire?(object)
+        machine.define_instance_method("can_#{qualified_name}?") do |machine, object, *args|
+          machine.event(name).can_fire?(object, *args)
         end
         
         # Gets the next transition that would be performed if the event were
