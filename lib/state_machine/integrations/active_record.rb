@@ -334,6 +334,21 @@ module StateMachine
       end
       
       protected
+        # Loads locale files needed for translations
+        def load_locale
+          load_i18n_version
+          super
+        end
+        
+        # Loads the version of the i18n library so that that proper
+        # interpolation syntax can be used
+        def load_i18n_version
+          begin
+            require 'i18n/version'
+          rescue Exception => ex
+          end
+        end
+        
         # The path to the locale file containing state_machine translations
         def locale_path
           "#{File.dirname(__FILE__)}/active_record/locale.rb"
