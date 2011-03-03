@@ -639,6 +639,11 @@ class GuardWithIfConditionalTest < Test::Unit::TestCase
     guard = StateMachine::Guard.new(:if => lambda {false})
     assert_nil guard.match(@object)
   end
+
+  def test_should_match_if_false_and_skip_conditions
+    guard = StateMachine::Guard.new(:if => lambda {false})
+    assert guard.match(@object, {}, :skip_conditions => true)
+  end
 end
 
 class GuardWithMultipleIfConditionalsTest < Test::Unit::TestCase
@@ -658,6 +663,14 @@ class GuardWithMultipleIfConditionalsTest < Test::Unit::TestCase
     guard = StateMachine::Guard.new(:if => [lambda {false}, lambda {true}])
     assert !guard.match(@object)
   end
+
+  def test_should_match_if_any_are_false_and_skip_conditions
+    guard = StateMachine::Guard.new(:if => [lambda {true}, lambda {false}])
+    assert guard.match(@object, {}, :skip_conditions => true)
+
+    guard = StateMachine::Guard.new(:if => [lambda {false}, lambda {true}])
+    assert guard.match(@object, {}, :skip_conditions => true)
+  end	
 end
 
 class GuardWithUnlessConditionalTest < Test::Unit::TestCase
@@ -684,6 +697,11 @@ class GuardWithUnlessConditionalTest < Test::Unit::TestCase
     guard = StateMachine::Guard.new(:unless => lambda {true})
     assert_nil guard.match(@object)
   end
+
+  def test_should_match_if_false_and_skip_conditions
+    guard = StateMachine::Guard.new(:unless => lambda {true})
+    assert guard.match(@object, {}, :skip_conditions => true)
+  end  
 end
 
 class GuardWithMultipleUnlessConditionalsTest < Test::Unit::TestCase
@@ -703,6 +721,14 @@ class GuardWithMultipleUnlessConditionalsTest < Test::Unit::TestCase
     guard = StateMachine::Guard.new(:unless => [lambda {false}, lambda {true}])
     assert !guard.match(@object)
   end
+
+  def test_should_match_if_any_are_false_and_skip_conditions
+    guard = StateMachine::Guard.new(:unless => [lambda {true}, lambda {false}])
+    assert guard.match(@object, {}, :skip_conditions => true)
+
+    guard = StateMachine::Guard.new(:unless => [lambda {false}, lambda {true}])
+    assert guard.match(@object, {}, :skip_conditions => true)
+  end  
 end
 
 class GuardWithConflictingConditionalsTest < Test::Unit::TestCase

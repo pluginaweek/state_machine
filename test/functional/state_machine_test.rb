@@ -285,7 +285,7 @@ class VehicleUnsavedTest < Test::Unit::TestCase
     assert !@vehicle.stalled?
   end
   
-  def test_should_not_be_able_to_park
+  def test_should_not_be_able_to_park    
     assert !@vehicle.can_park?
   end
   
@@ -641,6 +641,16 @@ class VehicleStalledTest < Test::Unit::TestCase
     assert @vehicle.stalled?
   end
   
+  def test_should_not_be_able_to_repair
+    @vehicle.auto_shop.fix_vehicle
+    assert !@vehicle.can_repair?
+  end
+
+  def test_should_be_able_to_repair_if_skip_conditions
+    @vehicle.auto_shop.fix_vehicle
+    assert @vehicle.can_repair?(:skip_conditions => true)
+  end  
+
   def test_should_be_towed
     assert @vehicle.auto_shop.busy?
     assert_equal 1, @vehicle.auto_shop.num_customers
