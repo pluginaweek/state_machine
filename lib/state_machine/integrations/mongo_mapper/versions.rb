@@ -31,6 +31,10 @@ module StateMachine
           !defined?(::MongoMapper::Version) || ::MongoMapper::Version < '0.9.0'
         end
         
+        def invalidate(object, attribute, message, values = [])
+          object.errors.add(self.attribute(attribute), generate_message(message, values))
+        end
+        
         def define_state_accessor
           owner_class.key(attribute, String) unless owner_class.keys.include?(attribute)
           
@@ -39,6 +43,25 @@ module StateMachine
             machine = self.class.state_machine(name)
             machine.invalidate(self, :state, :invalid) unless machine.states.match(self)
           })
+        end
+        
+        def load_locale
+        end
+        
+        def supports_observers?
+          false
+        end
+        
+        def supports_validations?
+          true
+        end
+        
+        def supports_dirty_tracking?(object)
+          true
+        end
+        
+        def translate(klass, key, value)
+          value.to_s.humanize.downcase
         end
       end
     end

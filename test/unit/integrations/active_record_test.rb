@@ -1801,6 +1801,7 @@ module ActiveRecordTest
         I18n.backend = I18n::Backend::Simple.new
         
         # Initialize the backend
+        StateMachine::Machine.new(new_model)
         I18n.backend.translate(:en, 'activerecord.errors.messages.invalid_transition', :event => 'ignite', :value => 'idling')
         
         @model = new_model
