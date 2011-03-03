@@ -121,8 +121,7 @@ module StateMachine
     # guard.match(object, {:on => :ignite}, :skip_conditions => false) # => {:to => ..., :from => ..., :on => ...}
     
     def match(object, query = {}, *args)
-      options = args.extract_options! unless args.empty?
-      options ||= {}
+      options = args.last.is_a?(Hash) ? args.pop : {}
       options[:skip_conditions] ||= false      
       if (match = match_query(query)) && (options[:skip_conditions] ? true : matches_conditions?(object))
         match
