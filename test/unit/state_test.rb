@@ -794,7 +794,7 @@ begin
     end
     
     def test_should_use_stringified_name_as_name
-      assert_equal 'parked', @node.name
+      assert_equal 'parked', Gem::Version.new(Constants::RGV_VERSION) <= Gem::Version.new('0.9.11') ? @node.name : @node.id
     end
     
     def test_should_use_description_as_label
@@ -834,7 +834,7 @@ begin
     end
     
     def test_should_use_stringified_nil_as_name
-      assert_equal 'nil', @node.name
+      assert_equal 'nil', Gem::Version.new(Constants::RGV_VERSION) <= Gem::Version.new('0.9.11') ? @node.name : @node.id
     end
     
     def test_should_use_description_as_label
@@ -852,7 +852,7 @@ begin
     end
     
     def test_should_use_stringified_name_as_name
-      assert_equal 'parked', @node.name
+      assert_equal 'parked', Gem::Version.new(Constants::RGV_VERSION) <= Gem::Version.new('0.9.11') ? @node.name : @node.id
     end
     
     def test_should_use_description_as_label
