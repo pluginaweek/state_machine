@@ -8,6 +8,7 @@ module StateMachine
     # following features need to be included in order for the integration to be
     # detected:
     # * ActiveModel::Dirty
+    # * ActiveModel::MassAssignmentSecurity
     # * ActiveModel::Observing
     # * ActiveModel::Validations
     # 
@@ -16,6 +17,7 @@ module StateMachine
     # 
     #   class Vehicle
     #     include ActiveModel::Dirty
+    #     include ActiveModel::MassAssignmentSecurity
     #     include ActiveModel::Observing
     #     include ActiveModel::Validations
     #     
@@ -64,6 +66,44 @@ module StateMachine
     #   vehicle = Vehicle.new
     #   vehicle.ignite                # => false
     #   vehicle.errors.full_messages  # => ["State cannot transition via \"ignite\""]
+    # 
+    # === Security implications
+    # 
+    # Beware that public event attributes mean that events can be fired
+    # whenever mass-assignment is being used.  If you want to prevent malicious
+    # users from tampering with events through URLs / forms, the attribute
+    # should be protected like so:
+    # 
+    #   class Vehicle
+    #     include ActiveModel::MassAssignmentSecurity
+    #     attr_accessor :state
+    #     
+    #     attr_protected :state_event
+    #     # attr_accessible ... # Alternative technique
+    #     
+    #     state_machine do
+    #       ...
+    #     end
+    #   end
+    # 
+    # If you want to only have *some* events be able to fire via mass-assignment,
+    # you can build two state machines (one public and one protected) like so:
+    # 
+    #   class Vehicle
+    #     include ActiveModel::MassAssignmentSecurity
+    #     attr_accessor :state
+    #     
+    #     attr_protected :state_event # Prevent access to events in the first machine
+    #     
+    #     state_machine do
+    #       # Define private events here
+    #     end
+    #     
+    #     # Public machine targets the same state as the private machine
+    #     state_machine :public_state, :attribute => :state do
+    #       # Define public events here
+    #     end
+    #   end
     # 
     # == Callbacks
     # 
@@ -233,11 +273,11 @@ module StateMachine
       extend ClassMethods
       
       # Should this integration be used for state machines in the given class?
-      # Classes that include ActiveModel::Dirty, ActiveModel::Observing, or
-      # ActiveModel::Validations will automatically use the ActiveModel
-      # integration.
+      # Classes that include ActiveModel::Dirty, ActiveModel::MassAssignmentSecurity,
+      # ActiveModel::Observing, or ActiveModel::Validations will automatically
+      # use the ActiveModel integration.
       def self.matches?(klass)
-        features = %w(Dirty Observing Validations)
+        features = %w(Dirty MassAssignmentSecurity Observing Validations)
         defined?(::ActiveModel) && features.any? {|feature| ::ActiveModel.const_defined?(feature) && klass <= ::ActiveModel.const_get(feature)}
       end
       
@@ -300,6 +340,13 @@ module StateMachine
           defined?(::ActiveModel::Dirty) && owner_class <= ::ActiveModel::Dirty && object.respond_to?("#{self.attribute}_changed?")
         end
         
+        # Whether the protection of attributes via mass-assignment is supported
+        # in this integration.  Only true if the ActiveModel feature is enabled
+        # on the owner class.
+        def supports_mass_assignment_security?
+          defined?(::ActiveModel::MassAssignmentSecurity) && owner_class <= ::ActiveModel::MassAssignmentSecurity
+        end
+        
         # Gets the terminator to use for callbacks
         def callback_terminator
           @terminator ||= lambda {|result| result == false}
@@ -308,6 +355,25 @@ module StateMachine
         # Determines the base scope to use when looking up translations
         def i18n_scope
           owner_class.i18n_scope
+        end
+        
+        # Only allows state initialization on new records that aren't being
+        # created with a set of attributes that includes this machine's
+        # attribute.
+        def initialize_state?(object, options)
+          if supports_mass_assignment_security?
+            attributes = (options[:attributes] || {}).dup.stringify_keys!
+            ignore = filter_attributes(object, attributes).keys
+            !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
+          else
+            super
+          end
+        end
+        
+        # Filters attributes that cannot be assigned through the initialization
+        # of the object
+        def filter_attributes(object, attributes)
+          object.send(:sanitize_for_mass_assignment, attributes)
         end
         
         # The default options to use when generating messages for validation

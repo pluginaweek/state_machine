@@ -79,6 +79,10 @@ module ActiveModelTest
       assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::Dirty })
     end
     
+    def test_should_match_if_class_includes_mass_assignment_security_feature
+      assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::MassAssignmentSecurity })
+    end
+    
     def test_should_match_if_class_includes_observing_feature
       assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::Observing })
     end
@@ -238,6 +242,26 @@ module ActiveModelTest
     def test_should_should_not_use_initialized_state_when_dynamic
       @machine.initial_state = lambda {:parked}
       record = @model.new(:state => nil)
+      assert_equal 'parked', record.state
+    end
+    
+    def test_should_use_default_state_if_protected
+      @model.class_eval do
+        include ActiveModel::MassAssignmentSecurity
+        attr_protected :state
+        
+        def initialize(attrs = {})
+          initialize_state_machines(:attributes => attrs) do
+            sanitize_for_mass_assignment(attrs).each {|attr, value| send("#{attr}=", value)} if attrs
+            @changed_attributes = {}
+          end
+        end
+      end
+      
+      record = @model.new(:state => 'idling')
+      assert_equal 'parked', record.state
+      
+      record = @model.new(nil)
       assert_equal 'parked', record.state
     end
   end

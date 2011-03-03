@@ -25,7 +25,7 @@ module StateMachine
               machine_states = model.state_machine(machine_name).states
               values = states.flatten.map {|state| machine_states.fetch(state).value}
               
-              ::ActiveRecord::NamedScope::Scope.new(model, scope.call(values))
+              ::ActiveRecord::NamedScope::Scope.new(model, :conditions => scope.call(values))
             end
           end
           
@@ -47,6 +47,18 @@ module StateMachine
           else
             value ? value.to_s.humanize.downcase : 'nil'
           end
+        end
+        
+        def supports_observers?
+          true
+        end
+        
+        def supports_validations?
+          true
+        end
+        
+        def supports_mass_assignment_security?
+          true
         end
         
         def filter_attributes(object, attributes)

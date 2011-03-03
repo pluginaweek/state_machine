@@ -362,16 +362,6 @@ module StateMachine
           end unless ::ActiveRecord::Observer < StateMachine::Integrations::ActiveModel::Observer
         end
         
-        # Always adds observer support
-        def supports_observers?
-          true
-        end
-        
-        # Always adds validation support
-        def supports_validations?
-          true
-        end
-        
         # Only runs validations on the action if using <tt>:save</tt>
         def runs_validations_on_action?
           action == :save
@@ -388,24 +378,8 @@ module StateMachine
         def initialize_state?(object, options)
           if object.new_record? && !object.instance_variable_defined?('@initialized_state_machines')
             object.instance_variable_set('@initialized_state_machines', true)
-            
-            if attributes = options[:attributes]
-              attributes = attributes.dup
-              attributes.stringify_keys!
-              
-              ignore = filter_attributes(object, attributes).keys
-            else
-              ignore = []
-            end
-            
-            !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
+            super
           end
-        end
-        
-        # Filters attributes that cannot be assigned through the initialization
-        # of the object
-        def filter_attributes(object, attributes)
-          object.send(:sanitize_for_mass_assignment, attributes)
         end
         
         # Defines an initialization hook into the owner class for setting the
@@ -451,7 +425,7 @@ module StateMachine
         # Creates a scope for finding records *with* a particular state or
         # states for the attribute
         def create_with_scope(name)
-          define_scope(name, lambda {|values| {:conditions => {attribute => values}}})
+          define_scope(name, lambda {|values| {attribute => values}})
         end
         
         # Creates a scope for finding records *without* a particular state or
@@ -459,7 +433,7 @@ module StateMachine
         def create_without_scope(name)
           define_scope(name, lambda {|values|
             connection = owner_class.connection
-            {:conditions => ["#{connection.quote_table_name(owner_class.table_name)}.#{connection.quote_column_name(attribute)} NOT IN (?)", values]}
+            ["#{connection.quote_table_name(owner_class.table_name)}.#{connection.quote_column_name(attribute)} NOT IN (?)", values]
           })
         end
         
@@ -472,7 +446,7 @@ module StateMachine
         
         # Defines a new named scope with the given name
         def define_scope(name, scope)
-          lambda {|model, values| model.where(scope.call(values)[:conditions])}
+          lambda {|model, values| model.where(scope.call(values))}
         end
     end
   end
