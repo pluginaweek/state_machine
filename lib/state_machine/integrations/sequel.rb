@@ -273,8 +273,8 @@ module StateMachine
           if object.new? && !object.instance_variable_defined?('@initialized_state_machines')
             object.instance_variable_set('@initialized_state_machines', true)
             
-            attributes = options[:attributes]
-            ignore = object.send(:setter_methods, nil, nil).map {|setter| setter.chop.to_sym} & (attributes ? attributes.keys.map {|key| key.to_sym} : [])
+            attributes = options[:attributes] || {}
+            ignore = object.send(:setter_methods, nil, nil).map {|setter| setter.chop.to_sym} & attributes.keys.map {|key| key.to_sym}
             !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
           end
         end

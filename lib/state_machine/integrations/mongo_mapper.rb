@@ -224,8 +224,7 @@ module StateMachine
         # attribute.
         def initialize_state?(object, options)
           attributes = options[:attributes] || {}
-          filtered = filter_attributes(object, attributes) 
-          ignore = filtered.keys
+          ignore = filter_attributes(object, attributes).keys 
           !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
         end
         
