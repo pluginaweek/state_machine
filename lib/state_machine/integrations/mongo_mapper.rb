@@ -224,12 +224,9 @@ module StateMachine
         # attribute.
         def initialize_state?(object, options)
           attributes = options[:attributes] || {}
-          
-          if !options[:from_database]
-            filtered = filter_attributes(object, attributes) 
-            ignore = filtered.keys
-            !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
-          end
+          filtered = filter_attributes(object, attributes) 
+          ignore = filtered.keys
+          !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
         end
         
         # Filters attributes that cannot be assigned through the initialization
@@ -243,8 +240,8 @@ module StateMachine
         # object
         def define_state_initializer
           @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
-            def initialize(attrs = {}, *args)
-              initialize_state_machines(:attributes => attrs, :from_database => args.first) { super }
+            def initialize(attrs = {})
+              initialize_state_machines(:attributes => attrs) { super }
             end
           end_eval
         end
