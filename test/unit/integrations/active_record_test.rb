@@ -3,6 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 # Load library
 require 'rubygems'
 
+gem 'i18n', '<0.5' if ENV['VERSION'] && ENV['VERSION'] >= '2.3.5' && ENV['VERSION'] < '3.0.0'
 gem 'activerecord', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=2.0.0'
 require 'active_record'
 
@@ -40,7 +41,9 @@ module ActiveRecordTest
           connection.create_table(table_name, :force => true) {|t| t.string(:state)} if create_table
           set_table_name(table_name.to_s)
           
-          def self.name; "ActiveRecordTest::#{table_name.capitalize}"; end
+          (class << self; self; end).class_eval do
+            define_method(:name) { "ActiveRecordTest::#{table_name.to_s.capitalize}" }
+          end
         end
         model.class_eval(&block) if block_given?
         model
@@ -1798,6 +1801,7 @@ module ActiveRecordTest
         I18n.backend = I18n::Backend::Simple.new
         
         # Initialize the backend
+        StateMachine::Machine.new(new_model)
         I18n.backend.translate(:en, 'activerecord.errors.messages.invalid_transition', :event => 'ignite', :value => 'idling')
         
         @model = new_model

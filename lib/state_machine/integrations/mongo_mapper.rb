@@ -199,39 +199,24 @@ module StateMachine
         defined?(::MongoMapper::Document) && klass <= ::MongoMapper::Document
       end
       
-      # Adds a validation error to the given object (no i18n support)
-      def invalidate(object, attribute, message, values = [])
-        object.errors.add(self.attribute(attribute), generate_message(message, values))
-      end
-      
       protected
-        # Does not support observers
-        def supports_observers?
-          false
-        end
-        
-        # Always adds validation support
-        def supports_validations?
-          true
-        end
-        
         # Only runs validations on the action if using <tt>:save</tt>
         def runs_validations_on_action?
           action == :save
-        end
-        
-        # Always adds dirty tracking support
-        def supports_dirty_tracking?(object)
-          true
         end
         
         # Don't allow callback terminators
         def callback_terminator
         end
         
-        # Don't allow translations
-        def translate(klass, key, value)
-          value.to_s.humanize.downcase
+        # The path to the locale file containing state_machine translations
+        def locale_path
+          "#{File.dirname(__FILE__)}/mongo_mapper/locale.rb"
+        end
+        
+        # Always uses the <tt>:mongo_mapper</tt> translation scope
+        def i18n_scope
+          :mongo_mapper
         end
         
         # Only allows state initialization on new records that aren't being
@@ -239,12 +224,9 @@ module StateMachine
         # attribute.
         def initialize_state?(object, options)
           attributes = options[:attributes] || {}
-          
-          if !options[:from_database]
-            filtered = filter_attributes(object, attributes) 
-            ignore = filtered.keys
-            !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
-          end
+          filtered = filter_attributes(object, attributes) 
+          ignore = filtered.keys
+          !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
         end
         
         # Filters attributes that cannot be assigned through the initialization
@@ -258,8 +240,8 @@ module StateMachine
         # object
         def define_state_initializer
           @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
-            def initialize(attrs = {}, *args)
-              initialize_state_machines(:attributes => attrs, :from_database => args.first) { super }
+            def initialize(attrs = {})
+              initialize_state_machines(:attributes => attrs) { super }
             end
           end_eval
         end

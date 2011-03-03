@@ -26,7 +26,9 @@ module SequelTest
         end if create_table
         model = Class.new(Sequel::Model(table_name)) do
           self.raise_on_save_failure = false
-          def self.name; "SequelTest::#{table_name.to_s.capitalize}"; end
+          (class << self; self; end).class_eval do
+            define_method(:name) { "SequelTest::#{table_name.to_s.capitalize}" }
+          end
         end
         model.plugin(:validation_class_methods) if model.respond_to?(:plugin)
         model.plugin(:hook_class_methods) if model.respond_to?(:plugin)

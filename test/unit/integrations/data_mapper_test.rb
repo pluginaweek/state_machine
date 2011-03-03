@@ -26,12 +26,16 @@ module DataMapperTest
       def new_resource(create_table = :foo, &block)
         table_name = create_table || :foo
         
-        resource = Class.new
+        resource = Class.new do
+          (class << self; self; end).class_eval do
+            define_method(:name) { "DataMapperTest::#{table_name.to_s.capitalize}" }
+          end
+        end
+        
         resource.class_eval do
           include DataMapper::Resource
           
           storage_names[:default] = table_name.to_s
-          def self.name; "DataMapperTest::#{storage_names[:default].capitalize}"; end
           
           property :id, resource.class_eval('Serial')
           property :state, String

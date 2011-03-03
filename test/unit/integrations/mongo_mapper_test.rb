@@ -30,8 +30,10 @@ module MongoMapperTest
       def new_model(table_name = :foo, &block)
         
         model = Class.new do
-          class_eval "def self.name; 'MongoMapperTest::#{table_name}' end"
-          class_eval "def self.to_s; 'MongoMapperTest::#{table_name}' end"
+          (class << self; self; end).class_eval do
+            define_method(:name) { "MongoMapperTest::#{table_name.to_s.capitalize}" }
+            define_method(:to_s) { name }
+          end
         end
         
         model.class_eval do
@@ -847,6 +849,7 @@ module MongoMapperTest
     end
     
     def test_should_invalidate_using_errors
+      I18n.backend = I18n::Backend::Simple.new if Object.const_defined?(:ActiveModel)
       @record.state = 'parked'
       
       @machine.invalidate(@record, :state, :invalid_transition, [[:event, 'park']])
@@ -1386,5 +1389,167 @@ module MongoMapperTest
     def test_should_create_plural_with_scope
       assert @model.respond_to?(:with_statuses)
     end
+  end
+  
+  if defined?(ActiveModel)
+    class MachineWithInternationalizationTest < BaseTestCase
+      def setup
+        I18n.backend = I18n::Backend::Simple.new
+        
+        # Initialize the backend
+        StateMachine::Machine.new(new_model)
+        I18n.backend.translate(:en, 'mongo_mapper.errors.messages.invalid_transition', :event => 'ignite', :value => 'idling')
+        
+        @model = new_model
+      end
+      
+      def test_should_use_defaults
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:errors => {:messages => {:invalid_transition => 'cannot %{event}'}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.state :parked, :idling
+        machine.event :ignite
+        
+        record = @model.new(:state => 'idling')
+        
+        machine.invalidate(record, :state, :invalid_transition, [[:event, 'ignite']])
+        assert_equal ['State cannot ignite'], record.errors.full_messages
+      end
+      
+      def test_should_allow_customized_error_key
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:errors => {:messages => {:bad_transition => 'cannot %{event}'}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model, :messages => {:invalid_transition => :bad_transition})
+        machine.state :parked, :idling
+        
+        record = @model.new(:state => 'idling')
+        
+        machine.invalidate(record, :state, :invalid_transition, [[:event, 'ignite']])
+        assert_equal ['State cannot ignite'], record.errors.full_messages
+      end
+      
+      def test_should_allow_customized_error_string
+        machine = StateMachine::Machine.new(@model, :messages => {:invalid_transition => 'cannot %{event}'})
+        machine.state :parked, :idling
+        
+        record = @model.new(:state => 'idling')
+        
+        machine.invalidate(record, :state, :invalid_transition, [[:event, 'ignite']])
+        assert_equal ['State cannot ignite'], record.errors.full_messages
+      end
+      
+      def test_should_allow_customized_state_key_scoped_to_class_and_machine
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:state_machines => {:'mongo_mapper_test/foo' => {:state => {:states => {:parked => 'shutdown'}}}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.state :parked
+        
+        assert_equal 'shutdown', machine.state(:parked).human_name
+      end
+      
+      def test_should_allow_customized_state_key_scoped_to_machine
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:state_machines => {:state => {:states => {:parked => 'shutdown'}}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.state :parked
+        
+        assert_equal 'shutdown', machine.state(:parked).human_name
+      end
+      
+      def test_should_allow_customized_state_key_unscoped
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:state_machines => {:states => {:parked => 'shutdown'}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.state :parked
+        
+        assert_equal 'shutdown', machine.state(:parked).human_name
+      end
+      
+      def test_should_allow_customized_event_key_scoped_to_class_and_machine
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:state_machines => {:'mongo_mapper_test/foo' => {:state => {:events => {:park => 'stop'}}}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.event :park
+        
+        assert_equal 'stop', machine.event(:park).human_name
+      end
+      
+      def test_should_allow_customized_event_key_scoped_to_machine
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:state_machines => {:state => {:events => {:park => 'stop'}}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.event :park
+        
+        assert_equal 'stop', machine.event(:park).human_name
+      end
+      
+      def test_should_allow_customized_event_key_unscoped
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:state_machines => {:events => {:park => 'stop'}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.event :park
+        
+        assert_equal 'stop', machine.event(:park).human_name
+      end
+      
+      def test_should_only_add_locale_once_in_load_path
+        assert_equal 1, I18n.load_path.select {|path| path =~ %r{mongo_mapper/locale\.rb$}}.length
+        
+        # Create another MongoMapper model that will triger the i18n feature
+        new_model
+        
+        assert_equal 1, I18n.load_path.select {|path| path =~ %r{mongo_mapper/locale\.rb$}}.length
+      end
+      
+      def test_should_add_locale_to_beginning_of_load_path
+        @original_load_path = I18n.load_path
+        I18n.backend = I18n::Backend::Simple.new
+        
+        app_locale = File.dirname(__FILE__) + '/../../files/en.yml'
+        default_locale = File.dirname(__FILE__) + '/../../../lib/state_machine/integrations/mongo_mapper/locale.rb'
+        I18n.load_path = [app_locale]
+        
+        StateMachine::Machine.new(@model)
+        
+        assert_equal [default_locale, app_locale].map {|path| File.expand_path(path)}, I18n.load_path.map {|path| File.expand_path(path)}
+      ensure
+        I18n.load_path = @original_load_path
+      end
+      
+      def test_should_prefer_other_locales_first
+        @original_load_path = I18n.load_path
+        I18n.backend = I18n::Backend::Simple.new
+        I18n.load_path = [File.dirname(__FILE__) + '/../../files/en.yml']
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.state :parked, :idling
+        machine.event :ignite
+        
+        record = @model.new(:state => 'idling')
+        
+        machine.invalidate(record, :state, :invalid_transition, [[:event, 'ignite']])
+        assert_equal ['State cannot transition'], record.errors.full_messages
+      ensure
+        I18n.load_path = @original_load_path
+      end
+    end
+  else
+    $stderr.puts 'Skipping MongoMapper I18n tests. `gem install mongo_mapper` >= v0.9.0 and try again.'
   end
 end

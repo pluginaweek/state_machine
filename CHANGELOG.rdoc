@@ -1,5 +1,7 @@
 == master
 
+* Add support for more observer hooks within MongoMapper integrations
+* Add i18n support for MongoMapper validation errors
 * Update support for MongoMapper integration based on rails3 branch
 * Fix objects not getting marked as dirty in all integrations when #{attribute}_event is set
 * Generate warnings when conflicting state / event names are detected

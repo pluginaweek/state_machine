@@ -74,6 +74,15 @@ module StateMachine
         end
       end
       
+      version '2.0 - 2.3.4' do
+        def self.active?
+          ::ActiveRecord::VERSION::MAJOR == 2 && (::ActiveRecord::VERSION::MINOR < 3 || ::ActiveRecord::VERSION::TINY < 5)
+        end
+        
+        def load_i18n_version
+        end
+      end
+      
       version '2.0.x' do
         def self.active?
           ::ActiveRecord::VERSION::MAJOR == 2 && ::ActiveRecord::VERSION::MINOR == 0
