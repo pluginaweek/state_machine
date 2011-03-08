@@ -340,22 +340,20 @@ module StateMachine
         
         # Adds hooks into validation for automatically firing events
         def define_action_helpers
-          if action == :save
-            if super(save_hook) && supports_validations?
-              @instance_helper_module.class_eval do
-                define_method(:valid?) do |*args|
-                  self.class.state_machines.transitions(self, :save, :after => false).perform { super(*args) }
-                end
+          super
+          
+          if action == :save && supports_validations?
+            @instance_helper_module.class_eval do
+              define_method(:valid?) do |*args|
+                self.class.state_machines.transitions(self, :save, :after => false).perform { super(*args) }
               end
             end
-          else
-            super
           end
         end
         
-        # The save action to hook into
-        def save_hook
-          :save_self
+        # Uses internal save hooks if using the :save action
+        def action_hook
+          action == :save ? :save_self : super
         end
         
         # Creates a scope for finding records *with* a particular state or

@@ -45,6 +45,10 @@ module StateMachine
           })
         end
         
+        def action_hook
+          action == :save ? :create_or_update : super
+        end
+        
         def load_locale
         end
         
@@ -76,6 +80,18 @@ module StateMachine
               args.first ? super : initialize_state_machines(:attributes => attrs) { super }
             end
           end_eval
+        end
+      end
+      
+      version '0.9.x' do
+        def self.active?
+          !defined?(::MongoMapper::Version) || ::MongoMapper::Version =~ /^0\.9\./
+        end
+        
+        def define_action_hook
+          # +around+ callbacks don't have direct access to results until AS 3.1
+          owner_class.set_callback(:save, :after, 'value', :prepend => true) if action_hook == :save
+          super
         end
       end
     end

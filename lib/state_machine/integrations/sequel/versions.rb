@@ -31,8 +31,8 @@ module StateMachine
         def load_inflector
         end
         
-        def save_hook
-          :save
+        def action_hook
+          action == :save ? :save : super
         end
       end
     end

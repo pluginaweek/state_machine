@@ -106,7 +106,7 @@ module StateMachine
       # in this collection or whether the transitions be run directly *outside*
       # of the action.
       def use_event_attributes?
-        !skip_actions && !skip_after && actions.all? && actions.length == 1 && first.machine.action_helper_defined?
+        !skip_actions && !skip_after && actions.all? && actions.length == 1 && first.machine.action_hook?
       end
       
       # Resets any information tracked from previous attempts to perform the

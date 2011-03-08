@@ -231,6 +231,8 @@ end
 class EventCollectionWithValidationsTest < Test::Unit::TestCase
   def setup
     StateMachine::Integrations.const_set('Custom', Module.new do
+      include StateMachine::Integrations::Base
+      
       def invalidate(object, attribute, message, values = [])
         (object.errors ||= []) << generate_message(message, values)
       end

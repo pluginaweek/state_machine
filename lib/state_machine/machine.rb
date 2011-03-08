@@ -427,7 +427,7 @@ module StateMachine
 
       if integration
         extend integration
-        options = integration.defaults.merge(options) if integration.respond_to?(:defaults)
+        options = (integration.defaults || {}).merge(options)
       end
       
       # Add machine-wide defaults
@@ -1441,10 +1441,10 @@ module StateMachine
       end
     end
     
-    # Determines whether a helper method was defined for firing attribute-based
-    # event transitions when the configuration action gets called.
-    def action_helper_defined?
-      @action_helper_defined
+    # Determines whether an action hook was defined for firing attribute-based
+    # event transitions when the configured action gets called.
+    def action_hook?(self_only = false)
+      @action_hook_defined || !self_only && owner_class.state_machines.any? {|name, machine| machine.action == action && machine != self && machine.action_hook?(true)}
     end
     
     protected
@@ -1465,7 +1465,7 @@ module StateMachine
         define_state_accessor
         define_state_predicate
         define_event_helpers
-        define_action_helpers if action
+        define_action_helpers if define_action_helpers?
         define_name_helpers
       end
       
@@ -1535,32 +1535,50 @@ module StateMachine
         end
       end
       
+      # Determines whether action helpers should be defined for this machine.
+      # This is only true if there is an action configured and no other machines
+      # have process this same configuration already.
+      def define_action_helpers?
+        action && !owner_class.state_machines.any? {|name, machine| machine.action == action && machine != self}
+      end
+      
       # Adds helper methods for automatically firing events when an action
       # is invoked
-      def define_action_helpers(action_hook = self.action)
-        private_action = owner_class.private_method_defined?(action_hook)
-        action_defined = @action_helper_defined = owner_class.ancestors.any? do |ancestor|
-          ancestor != owner_class && (ancestor.method_defined?(action_hook) || ancestor.private_method_defined?(action_hook))
+      def define_action_helpers
+        if action_hook
+          @action_hook_defined = true
+          define_action_hook
         end
-        action_overridden = owner_class.state_machines.any? {|name, machine| machine.action == action && machine != self}
+      end
+      
+      # Hooks directly into actions by defining the same method in an included
+      # module.  As a result, when the action gets invoked, any state events
+      # defined for the object will get run.  Method visibility is preserved.
+      def define_action_hook
+        action_hook = self.action_hook
+        action = self.action
+        private_action_hook = owner_class.private_method_defined?(action_hook)
         
-        # Only define helper if:
-        # 1. Action was originally defined somewhere other than the owner class
-        # 2. It hasn't already been overridden by another machine
-        if action_defined && !action_overridden
-          action = self.action
-          @instance_helper_module.class_eval do
-            define_method(action_hook) do |*args|
-              self.class.state_machines.transitions(self, action).perform { super(*args) }
-            end
-            
-            private action_hook if private_action
+        # Only define helper if it hasn't 
+        @instance_helper_module.class_eval do
+          define_method(action_hook) do |*args|
+            self.class.state_machines.transitions(self, action).perform { super(*args) }
           end
           
-          true
-        else
-          false
+          private action_hook if private_action_hook
         end
+      end
+      
+      # The method to hook into for triggering transitions when invoked.  By
+      # default, this is the action configured for the machine.
+      # 
+      # Since the default hook technique relies on module inheritance, the
+      # action must be defined in an ancestor of the owner classs in order for
+      # it to be the action hook.
+      def action_hook
+        owner_class.ancestors.any? do |ancestor|
+          ancestor != owner_class && (ancestor.method_defined?(action) || ancestor.private_method_defined?(action))
+        end && action
       end
       
       # Adds helper methods for accessing naming information about states and

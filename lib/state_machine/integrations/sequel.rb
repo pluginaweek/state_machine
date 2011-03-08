@@ -303,13 +303,12 @@ module StateMachine
         
         # Adds hooks into validation for automatically firing events.  This is
         # a bit more complicated than other integrations since Sequel doesn't
-        # provide an easy way to hook around validation / save calls
+        # provide an easy way to hook around validation calls
         def define_action_helpers
+          super
+          
           if action == :save
-            save_hook = self.save_hook
             handle_validation_failure = self.handle_validation_failure
-            handle_save_failure = self.handle_save_failure
-            
             @instance_helper_module.class_eval do
               define_method(:valid?) do |*args|
                 yielded = false
@@ -320,8 +319,21 @@ module StateMachine
                 
                 !yielded && !result ? handle_validation_failure.call(self, args, yielded, result) : result
               end
-              
-              define_method(save_hook) do |*args|
+            end
+          end
+        end
+        
+        # Uses custom hooks for :save actions in order to preserve failure
+        # behavior within Sequel.  This is a bit more complicated than other
+        # integrations since Sequel doesn't provide an easy way to hook around
+        # save calls.
+        def define_action_hook
+          if action == :save
+            action_hook = self.action_hook
+            handle_save_failure = self.handle_save_failure
+            
+            @instance_helper_module.class_eval do
+              define_method(action_hook) do |*args|
                 yielded = false
                 result = self.class.state_machines.transitions(self, :save).perform do
                   yielded = true
@@ -334,15 +346,15 @@ module StateMachine
                   handle_save_failure.call(self)
                 end
               end
-            end unless owner_class.state_machines.any? {|name, machine| machine.action == :save && machine != self}
+            end
           else
             super
           end
         end
         
-        # The save action to hook into
-        def save_hook
-          :_save
+        # Uses internal save hooks if using the :save action
+        def action_hook
+          action == :save ? :_save : super
         end
         
         # Handles whether validation errors should be raised

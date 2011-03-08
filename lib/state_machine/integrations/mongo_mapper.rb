@@ -1,3 +1,5 @@
+require 'state_machine/integrations/active_model'
+
 module StateMachine
   module Integrations #:nodoc:
     # Adds support for integrating state machines with MongoMapper models.
@@ -266,9 +268,18 @@ module StateMachine
           end
         end
         
-        # Adds hooks into validation for automatically firing events
-        def define_action_helpers
-          super(action == :save ? :create_or_update : action)
+        # Uses around callbacks to run state events if using the :save hook
+        def define_action_hook
+          if action_hook == :save
+            owner_class.set_callback(:save, :around, self, :prepend => true)
+          else
+            super
+          end
+        end
+        
+        # Runs state events around the machine's :save action
+        def around_save(object)
+          object.class.state_machines.transitions(object, action).perform { yield }
         end
         
         # Creates a scope for finding records *with* a particular state or

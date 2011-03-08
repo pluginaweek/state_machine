@@ -244,7 +244,7 @@ module StateMachine
     #     end
     #     
     #     protected
-    #       def runs_validation_on_action?
+    #       def runs_validations_on_action?
     #         action == :persist
     #       end
     #       
@@ -258,19 +258,16 @@ module StateMachine
     # must add these independent of the ActiveModel integration.  See the
     # ActiveRecord implementation for examples of these customizations.
     module ActiveModel
-      module ClassMethods
-        # The default options to use for state machines using this integration
-        attr_reader :defaults
-      end
-      
       def self.included(base) #:nodoc:
-        base.class_eval do
-          extend ClassMethods
-        end
+        base.versions.unshift(*versions)
       end
       
       include Base
       extend ClassMethods
+      
+      require 'state_machine/integrations/active_model/versions'
+      
+      @defaults = {}
       
       # Should this integration be used for state machines in the given class?
       # Classes that include ActiveModel::Dirty, ActiveModel::MassAssignmentSecurity,
@@ -280,8 +277,6 @@ module StateMachine
         features = %w(Dirty MassAssignmentSecurity Observing Validations)
         defined?(::ActiveModel) && features.any? {|feature| ::ActiveModel.const_defined?(feature) && klass <= ::ActiveModel.const_get(feature)}
       end
-      
-      @defaults = {}
       
       # Forces the change in state to be recognized regardless of whether the
       # state value actually changed
@@ -448,15 +443,20 @@ module StateMachine
         end
         
         # Adds hooks into validation for automatically firing events
-        def define_action_helpers(*args)
+        def define_action_helpers
           super
-          
-          action = self.action
-          @instance_helper_module.class_eval do
-            define_method(:valid?) do |*args|
-              self.class.state_machines.transitions(self, action, :after => false).perform { super(*args) }
-            end
-          end if runs_validations_on_action?
+          define_validation_hook if runs_validations_on_action?
+        end
+        
+        # Hooks into validations by defining around callbacks for the
+        # :validation event
+        def define_validation_hook
+          owner_class.set_callback(:validation, :around, self, :prepend => true)
+        end
+        
+        # Runs state events around the object's validation process
+        def around_validation(object)
+          object.class.state_machines.transitions(object, action, :after => false).perform { yield }
         end
         
         # Creates a new callback in the callback chain, always inserting it

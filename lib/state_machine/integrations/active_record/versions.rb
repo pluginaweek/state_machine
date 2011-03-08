@@ -61,6 +61,10 @@ module StateMachine
           true
         end
         
+        def action_hook
+          action == :save ? :create_or_update : super
+        end
+        
         def filter_attributes(object, attributes)
           object.send(:remove_attributes_protected_from_mass_assignment, attributes)
         end
@@ -122,6 +126,18 @@ module StateMachine
         
         def ancestors_for(klass)
           klass.self_and_descendants_from_active_record
+        end
+      end
+      
+      version '3.0.x' do
+        def self.active?
+          ::ActiveRecord::VERSION::MAJOR == 3 && ::ActiveRecord::VERSION::MINOR == 0
+        end
+        
+        def define_action_hook
+          # +around+ callbacks don't have direct access to results until AS 3.1
+          owner_class.set_callback(:save, :after, 'value', :prepend => true) if action_hook == :save
+          super
         end
       end
     end

@@ -14,6 +14,9 @@ module StateMachine
       end
       
       module ClassMethods
+        # The default options to use for state machines using this integration
+        attr_reader :defaults
+        
         # Tracks the various version overrides for an integration
         def versions
           @versions ||= []

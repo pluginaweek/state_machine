@@ -20,6 +20,10 @@ module BaseTest
       end
     end
     
+    def test_should_not_have_any_defaults
+      assert_nil @integration.defaults
+    end
+    
     def test_should_not_have_any_versions
       assert_equal [], @integration.versions
     end

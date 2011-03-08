@@ -1156,7 +1156,7 @@ class TransitionCollectionWithSkippedAfterCallbacksTest < Test::Unit::TestCase
   end
 end
 
-class TransitionCollectionWithActionHelperBaseTest < Test::Unit::TestCase
+class TransitionCollectionWithActionHookBaseTest < Test::Unit::TestCase
   def setup
     @superclass = Class.new do
       def save
@@ -1189,7 +1189,7 @@ class TransitionCollectionWithActionHelperBaseTest < Test::Unit::TestCase
   end
 end
 
-class TransitionCollectionWithActionHelperAndSkippedActionTest < TransitionCollectionWithActionHelperBaseTest
+class TransitionCollectionWithActionHookAndSkippedActionTest < TransitionCollectionWithActionHookBaseTest
   def setup
     super
     @result = StateMachine::TransitionCollection.new([@transition], :actions => false).perform
@@ -1204,7 +1204,7 @@ class TransitionCollectionWithActionHelperAndSkippedActionTest < TransitionColle
   end
 end
 
-class TransitionCollectionWithActionHelperAndSkippedAfterCallbacksTest < TransitionCollectionWithActionHelperBaseTest
+class TransitionCollectionWithActionHookAndSkippedAfterCallbacksTest < TransitionCollectionWithActionHookBaseTest
   def setup
     super
     @result = StateMachine::TransitionCollection.new([@transition], :after => false).perform
@@ -1239,7 +1239,7 @@ class TransitionCollectionWithActionHelperAndSkippedAfterCallbacksTest < Transit
   end
 end
 
-class TransitionCollectionWithActionHelperAndBlockTest < TransitionCollectionWithActionHelperBaseTest
+class TransitionCollectionWithActionHookAndBlockTest < TransitionCollectionWithActionHookBaseTest
   def setup
     super
     @result = StateMachine::TransitionCollection.new([@transition]).perform { true }
@@ -1254,7 +1254,7 @@ class TransitionCollectionWithActionHelperAndBlockTest < TransitionCollectionWit
   end
 end
 
-class TransitionCollectionWithActionHelperInvalidTest < TransitionCollectionWithActionHelperBaseTest
+class TransitionCollectionWithActionHookInvalidTest < TransitionCollectionWithActionHookBaseTest
   def setup
     super
     @result = StateMachine::TransitionCollection.new([@transition, nil]).perform
@@ -1269,7 +1269,7 @@ class TransitionCollectionWithActionHelperInvalidTest < TransitionCollectionWith
   end
 end
 
-class TransitionCollectionWithActionHelperWithNilActionTest < TransitionCollectionWithActionHelperBaseTest
+class TransitionCollectionWithActionHookWithNilActionTest < TransitionCollectionWithActionHookBaseTest
   def setup
     super
     
@@ -1309,7 +1309,7 @@ class TransitionCollectionWithActionHelperWithNilActionTest < TransitionCollecti
   end
 end
 
-class TransitionCollectionWithActionHelperWithDifferentActionsTest < TransitionCollectionWithActionHelperBaseTest
+class TransitionCollectionWithActionHookWithDifferentActionsTest < TransitionCollectionWithActionHookBaseTest
   def setup
     super
     
@@ -1355,7 +1355,7 @@ class TransitionCollectionWithActionHelperWithDifferentActionsTest < TransitionC
   end
 end
 
-class TransitionCollectionWithActionHelperTest < TransitionCollectionWithActionHelperBaseTest
+class TransitionCollectionWithActionHookTest < TransitionCollectionWithActionHookBaseTest
   def setup
     super
     @result = StateMachine::TransitionCollection.new([@transition]).perform
@@ -1398,7 +1398,7 @@ class TransitionCollectionWithActionHelperTest < TransitionCollectionWithActionH
   end
 end
 
-class TransitionCollectionWithActionHelperMultipleTest < TransitionCollectionWithActionHelperBaseTest
+class TransitionCollectionWithActionHookMultipleTest < TransitionCollectionWithActionHookBaseTest
   def setup
     super
     
@@ -1473,7 +1473,7 @@ class TransitionCollectionWithActionHelperMultipleTest < TransitionCollectionWit
   end
 end
 
-class TransitionCollectionWithActionHelperErrorTest < TransitionCollectionWithActionHelperBaseTest
+class TransitionCollectionWithActionHookErrorTest < TransitionCollectionWithActionHookBaseTest
   def setup
     super
     

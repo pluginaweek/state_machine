@@ -394,7 +394,8 @@ end
 class MachineWithNilActionTest < Test::Unit::TestCase
   def setup
     integration = Module.new do
-      class << self; attr_reader :defaults; end
+      include StateMachine::Integrations::Base
+      
       @defaults = {:action => :save}
     end
     StateMachine::Integrations.const_set('Custom', integration)
@@ -438,6 +439,8 @@ end
 class MachineWithCustomIntegrationTest < Test::Unit::TestCase
   def setup
     integration = Module.new do
+      include StateMachine::Integrations::Base
+      
       def self.matches?(klass)
         true
       end
@@ -474,7 +477,8 @@ end
 class MachineWithIntegrationTest < Test::Unit::TestCase
   def setup
     StateMachine::Integrations.const_set('Custom', Module.new do  
-      class << self; attr_reader :defaults; end
+      include StateMachine::Integrations::Base
+      
       @defaults = {:action => :save, :use_transactions => false}
           
       attr_reader :initialized, :with_scopes, :without_scopes, :ran_transaction
@@ -564,8 +568,8 @@ class MachineWithActionUndefinedTest < Test::Unit::TestCase
     assert !@object.respond_to?(:save)
   end
   
-  def test_should_not_mark_action_helper_as_defined
-    assert !@machine.action_helper_defined?
+  def test_should_not_mark_action_hook_as_defined
+    assert !@machine.action_hook?
   end
 end
 
@@ -600,8 +604,8 @@ class MachineWithActionDefinedInClassTest < Test::Unit::TestCase
     assert !@klass.ancestors.any? {|ancestor| ancestor != @klass && ancestor.method_defined?(:save)}
   end
   
-  def test_should_not_mark_action_helper_as_defined
-    assert !@machine.action_helper_defined?
+  def test_should_not_mark_action_hook_as_defined
+    assert !@machine.action_hook?
   end
 end
 
@@ -644,8 +648,8 @@ class MachineWithActionDefinedInIncludedModuleTest < Test::Unit::TestCase
     assert @klass.public_method_defined?(:save)
   end
   
-  def test_should_mark_action_helper_as_defined
-    assert @machine.action_helper_defined?
+  def test_should_mark_action_hook_as_defined
+    assert @machine.action_hook?
   end
 end
 
@@ -685,8 +689,8 @@ class MachineWithActionDefinedInSuperclassTest < Test::Unit::TestCase
     assert @klass.public_method_defined?(:save)
   end
   
-  def test_should_mark_action_helper_as_defined
-    assert @machine.action_helper_defined?
+  def test_should_mark_action_hook_as_defined
+    assert @machine.action_hook?
   end
 end
 
@@ -727,8 +731,8 @@ class MachineWithPrivateActionTest < Test::Unit::TestCase
     assert @klass.private_method_defined?(:save)
   end
   
-  def test_should_mark_action_helper_as_defined
-    assert @machine.action_helper_defined?
+  def test_should_mark_action_hook_as_defined
+    assert @machine.action_hook?
   end
 end
 
@@ -749,14 +753,16 @@ class MachineWithActionAlreadyOverriddenTest < Test::Unit::TestCase
     assert_equal 1, @klass.ancestors.select {|ancestor| ![@klass, @superclass].include?(ancestor) && ancestor.method_defined?(:save)}.length
   end
   
-  def test_should_mark_action_helper_as_defined
-    assert @machine.action_helper_defined?
+  def test_should_mark_action_hook_as_defined
+    assert @machine.action_hook?
   end
 end
 
 class MachineWithCustomPluralTest < Test::Unit::TestCase
   def setup
     @integration = Module.new do
+      include StateMachine::Integrations::Base
+      
       class << self; attr_accessor :with_scopes, :without_scopes; end
       @with_scopes = []
       @without_scopes = []
@@ -792,6 +798,8 @@ end
 class MachineWithCustomInvalidationTest < Test::Unit::TestCase
   def setup
     @integration = Module.new do
+      include StateMachine::Integrations::Base
+      
       def invalidate(object, attribute, message, values = [])
         object.error = generate_message(message, values)
       end
@@ -1122,6 +1130,8 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
     end
     
     StateMachine::Integrations.const_set('Custom', Module.new do
+      include StateMachine::Integrations::Base
+      
       def create_with_scope(name)
         lambda {|klass, values| []}
       end
@@ -2057,7 +2067,8 @@ end
 class MachineWithCustomAttributeTest < Test::Unit::TestCase
   def setup
     StateMachine::Integrations.const_set('Custom', Module.new do  
-      class << self; attr_reader :defaults; end
+      include StateMachine::Integrations::Base
+      
       @defaults = {:action => :save, :use_transactions => false}
       
       def create_with_scope(name)
@@ -2188,6 +2199,8 @@ end
 class MachineFinderWithExistingMachineOnSuperclassTest < Test::Unit::TestCase
   def setup
     integration = Module.new do
+      include StateMachine::Integrations::Base
+      
       def self.matches?(klass)
         false
       end

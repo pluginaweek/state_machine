@@ -16,8 +16,8 @@ module StateMachine
           ::DataMapper::VERSION =~ /^0\.\d\./
         end
         
-        def save_hook
-          :save
+        def action_hook
+          action
         end
       end
       
@@ -28,8 +28,8 @@ module StateMachine
         
         # 0.9.4 - 0.9.6 fails to run after callbacks when validations are
         # enabled because of the way dm-validations integrates
-        def define_action_helpers
-          super unless supports_validations?
+        def define_action_helpers?
+          super if action != :save || !supports_validations?
         end
       end
       
