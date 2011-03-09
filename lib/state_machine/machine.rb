@@ -90,8 +90,8 @@ module StateMachine
   # action being invoked (and not a superclass), then it must manually run the
   # StateMachine hook that checks for event attributes.
   # 
-  # For example, in ActiveRecord, DataMapper, MongoMapper, and Sequel, the
-  # default action (+save+) is already defined in a base class.  As a result,
+  # For example, in ActiveRecord, DataMapper, Mongoid, MongoMapper, and Sequel,
+  # the default action (+save+) is already defined in a base class.  As a result,
   # when a state machine is defined in a model / resource, StateMachine can
   # automatically hook into the +save+ action.
   # 
@@ -290,10 +290,10 @@ module StateMachine
   # 
   # When a state machine is defined for classes using any of the above libraries,
   # it will try to automatically determine the integration to use (Agnostic,
-  # ActiveModel, ActiveRecord, DataMapper, MongoMapper, or Sequel) based on the
-  # class definition.  To see how each integration affects the machine's
-  # behavior, refer to all constants defined under the StateMachine::Integrations
-  # namespace.
+  # ActiveModel, ActiveRecord, DataMapper, Mongoid, MongoMapper, or Sequel)
+  # based on the class definition.  To see how each integration affects the
+  # machine's behavior, refer to all constants defined under the
+  # StateMachine::Integrations namespace.
   class Machine
     include Assertions
     include EvalHelpers

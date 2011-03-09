@@ -7,6 +7,10 @@ en:
     errors:
       messages:
         invalid_transition: "cannot %{event}"
+  mongoid:
+    errors:
+      messages:
+        invalid_transition: "cannot transition"
   mongo_mapper:
     errors:
       messages:

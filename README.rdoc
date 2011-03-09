@@ -38,7 +38,7 @@ Some brief, high-level features include:
 * Multiple state machines on a single class
 * Namespaced state machines
 * before/after/around/failure transition hooks with explicit transition requirements
-* Integration with ActiveModel, ActiveRecord, DataMapper, MongoMapper, and Sequel
+* Integration with ActiveModel, ActiveRecord, DataMapper, Mongoid, MongoMapper, and Sequel
 * State predicates
 * State-driven instance / class behavior
 * State values of any data type
@@ -254,6 +254,7 @@ The integrations currently available include:
 * ActiveModel classes
 * ActiveRecord models
 * DataMapper resources
+* Mongoid models
 * MongoMapper models
 * Sequel models
 
@@ -441,6 +442,44 @@ when the dm-observer library is installed.
 
 For more information about the various behaviors added for DataMapper state
 machines, see StateMachine::Integrations::DataMapper.
+
+=== Mongoid
+
+The Mongoid integration adds support for automatically saving the record,
+basic scopes, validation errors and callbacks.  For example,
+
+  class Vehicle
+    include Mongoid::Document
+    
+    state_machine :initial => :parked do
+      before_transition :parked => any - :parked, :do => :put_on_seatbelt
+      after_transition any => :parked do |vehicle, transition|
+        vehicle.seatbelt = 'off' # self is the record
+      end
+      around_transition :benchmark
+      
+      event :ignite do
+        transition :parked => :idling
+      end
+      
+      state :first_gear, :second_gear do
+        validates_presence_of :seatbelt_on
+      end
+    end
+    
+    def put_on_seatbelt
+      ...
+    end
+    
+    def benchmark
+      ...
+      yield
+      ...
+    end
+  end
+
+For more information about the various behaviors added for Mongoid state
+machines, see StateMachine::Integrations::Mongoid.
 
 === MongoMapper
 

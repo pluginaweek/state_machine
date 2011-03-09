@@ -1,5 +1,6 @@
 == master
 
+* Add Mongoid 2.0.0+ support
 * Use around hooks to improve compatibility with other libraries in ActiveModel / ActiveRecord / MongoMapper integrations
 * Add support for MassAssignmentSecurity feature in ActiveModel integrations
 * Add support for more observer hooks within MongoMapper integrations

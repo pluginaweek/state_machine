@@ -46,6 +46,10 @@ module StateMachine
     #     include DataMapper::Resource
     #   end
     #   
+    #   class MongoidVehicle
+    #     include Mongoid::Document
+    #   end
+    #   
     #   class MongoMapperVehicle
     #     include MongoMapper::Document
     #   end
@@ -57,6 +61,7 @@ module StateMachine
     #   StateMachine::Integrations.match(ActiveModelVehicle)  # => StateMachine::Integrations::ActiveModel
     #   StateMachine::Integrations.match(ActiveRecordVehicle) # => StateMachine::Integrations::ActiveRecord
     #   StateMachine::Integrations.match(DataMapperVehicle)   # => StateMachine::Integrations::DataMapper
+    #   StateMachine::Integrations.match(MongoidVehicle)      # => StateMachine::Integrations::Mongoid
     #   StateMachine::Integrations.match(MongoMapperVehicle)  # => StateMachine::Integrations::MongoMapper
     #   StateMachine::Integrations.match(SequelVehicle)       # => StateMachine::Integrations::Sequel
     def self.match(klass)
@@ -74,6 +79,7 @@ module StateMachine
     #   StateMachine::Integrations.find(:active_record)   # => StateMachine::Integrations::ActiveRecord
     #   StateMachine::Integrations.find(:active_model)    # => StateMachine::Integrations::ActiveModel
     #   StateMachine::Integrations.find(:data_mapper)     # => StateMachine::Integrations::DataMapper
+    #   StateMachine::Integrations.find(:mongoid)         # => StateMachine::Integrations::Mongoid
     #   StateMachine::Integrations.find(:mongo_mapper)    # => StateMachine::Integrations::MongoMapper
     #   StateMachine::Integrations.find(:sequel)          # => StateMachine::Integrations::Sequel
     #   StateMachine::Integrations.find(:invalid)         # => NameError: wrong constant name Invalid
