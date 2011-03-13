@@ -231,6 +231,37 @@ class MachineWithCustomNameTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithoutInitializationTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def initialize(attributes = {})
+        attributes.each {|attr, value| send("#{attr}=", value)}
+        super()
+      end
+    end
+    
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked, :initialize => false)
+  end
+  
+  def test_should_not_have_an_initial_state
+    object = @klass.new
+    assert_nil object.state
+  end
+  
+  def test_should_still_allow_manual_initialization
+    @klass.class_eval do
+      def initialize(attributes = {})
+        attributes.each {|attr, value| send("#{attr}=", value)}
+        super()
+        initialize_state_machines
+      end
+    end
+    
+    object = @klass.new
+    assert_equal 'parked', object.state
+  end
+end
+
 class MachineWithStaticInitialStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do

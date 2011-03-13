@@ -15,6 +15,8 @@ module StateMachine
     #   static state or a lambda block which will be evaluated at runtime
     #   (e.g. lambda {|vehicle| vehicle.speed == 0 ? :parked : :idling}).
     #   Default is nil.
+    # * <tt>:initialize</tt> - Whether to automatically initialize the attribute
+    #   by hooking into #initialize on the owner class.  Default is true.
     # * <tt>:action</tt> - The instance method to invoke when an object
     #   transitions. Default is nil unless otherwise specified by the
     #   configured integration.

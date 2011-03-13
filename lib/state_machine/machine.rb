@@ -417,7 +417,7 @@ module StateMachine
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :attribute, :initial, :action, :plural, :namespace, :integration, :messages, :use_transactions)
+      assert_valid_keys(options, :attribute, :initial, :initialize, :action, :plural, :namespace, :integration, :messages, :use_transactions)
       
       # Find an integration that matches this machine's owner class
       if options.include?(:integration)
@@ -432,7 +432,7 @@ module StateMachine
       end
       
       # Add machine-wide defaults
-      options = {:use_transactions => true}.merge(options)
+      options = {:use_transactions => true, :initialize => true}.merge(options)
       
       # Set machine configuration
       @name = args.first || :state
@@ -444,6 +444,7 @@ module StateMachine
       @messages = options[:messages] || {}
       @action = options[:action]
       @use_transactions = options[:use_transactions]
+      @initialize_state = options[:initialize]
       self.owner_class = owner_class
       self.initial_state = options[:initial]
       
@@ -490,7 +491,7 @@ module StateMachine
           include StateMachine::InstanceMethods
         end
         
-        define_state_initializer
+        define_state_initializer if @initialize_state
       end
       
       # Record this machine as matched to the name in the current owner class.
