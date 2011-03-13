@@ -695,6 +695,7 @@ If using specific integrations:
 * ActiveModel[http://rubyonrails.org] integration: 3.0.0 or later
 * ActiveRecord[http://rubyonrails.org] integration: 2.0.0 or later
 * DataMapper[http://datamapper.org] integration: 0.9.4 or later
+* Mongoid[http://mongoid.org] integration: 2.0.0 or later
 * MongoMapper[http://mongomapper.com] integration: 0.5.5 or later
 * Sequel[http://sequel.rubyforge.org] integration: 2.8.0 or later
 
