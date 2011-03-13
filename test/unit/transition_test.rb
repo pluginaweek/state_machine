@@ -1488,3 +1488,54 @@ class TransitionTransientTest < Test::Unit::TestCase
     assert @transition.transient?
   end
 end
+
+class TransitionEqualityTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked, :idling
+    @machine.event :ignite
+    
+    @object = @klass.new
+    @object.state = 'parked'
+    @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+  end
+  
+  def test_should_be_equal_with_same_properties
+    transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+    assert_equal transition, @transition
+  end
+  
+  def test_should_not_be_equal_with_different_machines
+    machine = StateMachine::Machine.new(@klass, :namespace => :other)
+    machine.state :parked, :idling
+    machine.event :ignite
+    transition = StateMachine::Transition.new(@object, machine, :ignite, :parked, :idling)
+    
+    assert_not_equal transition, @transition
+  end
+  
+  def test_should_not_be_equal_with_different_objects
+    transition = StateMachine::Transition.new(@klass.new, @machine, :ignite, :parked, :idling)
+    assert_not_equal transition, @transition
+  end
+  
+  def test_should_not_be_equal_with_different_event_names
+    @machine.event :park
+    transition = StateMachine::Transition.new(@object, @machine, :park, :parked, :idling)
+    assert_not_equal transition, @transition
+  end
+  
+  def test_should_not_be_equal_with_different_from_state_names
+    @machine.state :first_gear
+    transition = StateMachine::Transition.new(@object, @machine, :ignite, :first_gear, :idling)
+    assert_not_equal transition, @transition
+  end
+  
+  def test_should_not_be_equal_with_different_to_state_names
+    @machine.state :first_gear
+    transition = StateMachine::Transition.new(@object, @machine, :ignite, :idling, :first_gear)
+    assert_not_equal transition, @transition
+  end
+end

@@ -8,6 +8,7 @@ require 'state_machine/callback'
 require 'state_machine/node_collection'
 require 'state_machine/state_collection'
 require 'state_machine/event_collection'
+require 'state_machine/path_collection'
 require 'state_machine/matcher_helpers'
 
 module StateMachine
@@ -1340,6 +1341,79 @@ module StateMachine
       add_callback(:failure, options, &block)
     end
     
+    # Generates a list of the possible transition sequences that can be run on
+    # the given object.  These paths can reveal all of the possible states and
+    # events that can be encountered in the object's state machine based on the
+    # object's current state.
+    # 
+    # Configuration options:
+    # * +from+ - The initial state to start all paths from.  By default, this
+    #   is the object's current state.
+    # * +to+ - The target state to end all paths on.  By default, paths will
+    #   end when they loop back to the first transition on the path.
+    # * +deep+ - Whether to allow the target state to be crossed more than once
+    #   in a path.  By default, paths will immediately stop when the target
+    #   state (if specified) is reached.  If this is enabled, then paths can
+    #   continue even after reaching the target state; they will stop when
+    #   reaching the target state a second time.
+    # 
+    # *Note* that the object is never modified when the list of paths is
+    # generated.
+    # 
+    # == Examples
+    # 
+    #   class Vehicle
+    #     state_machine :initial => :parked do
+    #       event :ignite do
+    #         transition :parked => :idling
+    #       end
+    #       
+    #       event :shift_up do
+    #         transition :idling => :first_gear, :first_gear => :second_gear
+    #       end
+    #       
+    #       event :shift_down do
+    #         transition :second_gear => :first_gear, :first_gear => :idling
+    #       end
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new   # => #<Vehicle:0xb7c27024 @state="parked">
+    #   vehicle.state           # => "parked"
+    #   
+    #   vehicle.state_paths
+    #   # => [
+    #   #     [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>,
+    #   #      #<StateMachine::Transition attribute=:state event=:shift_up from="idling" from_name=:idling to="first_gear" to_name=:first_gear>,
+    #   #      #<StateMachine::Transition attribute=:state event=:shift_up from="first_gear" from_name=:first_gear to="second_gear" to_name=:second_gear>,
+    #   #      #<StateMachine::Transition attribute=:state event=:shift_down from="second_gear" from_name=:second_gear to="first_gear" to_name=:first_gear>,
+    #   #      #<StateMachine::Transition attribute=:state event=:shift_down from="first_gear" from_name=:first_gear to="idling" to_name=:idling>],
+    #   #       
+    #   #     [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>,
+    #   #      #<StateMachine::Transition attribute=:state event=:shift_up from="idling" from_name=:idling to="first_gear" to_name=:first_gear>,
+    #   #      #<StateMachine::Transition attribute=:state event=:shift_down from="first_gear" from_name=:first_gear to="idling" to_name=:idling>]
+    #   #    ]
+    #   
+    #   vehicle.state_paths(:from => :parked, :to => :second_gear)
+    #   # => [
+    #   #     [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>,
+    #   #      #<StateMachine::Transition attribute=:state event=:shift_up from="idling" from_name=:idling to="first_gear" to_name=:first_gear>,
+    #   #      #<StateMachine::Transition attribute=:state event=:shift_up from="first_gear" from_name=:first_gear to="second_gear" to_name=:second_gear>]
+    #   #    ]
+    # 
+    # In addition to getting the possible paths that can be accessed, you can
+    # also get summary information about the states / events that can be
+    # accessed at some point along one of the paths.  For example:
+    # 
+    #   # Get the list of states that can be accessed from the current state
+    #   vehicle.state_paths.to_states # => [:idling, :first_gear, :second_gear]
+    #   
+    #   # Get the list of events that can be accessed from the current state
+    #   vehicle.state_paths.events    # => [:ignite, :shift_up, :shift_down]
+    def paths_for(object, options = {})
+      PathCollection.new(object, self, options)
+    end
+    
     # Marks the given object as invalid with the given message.
     # 
     # By default, this is a no-op.
@@ -1465,6 +1539,7 @@ module StateMachine
         define_state_accessor
         define_state_predicate
         define_event_helpers
+        define_path_helpers
         define_action_helpers if define_action_helpers?
         define_name_helpers
       end
@@ -1532,6 +1607,15 @@ module StateMachine
             protected
               attr_accessor event_transition_attribute
           end
+        end
+      end
+      
+      # Adds helper methods for getting information about this state machine's
+      # available transition paths
+      def define_path_helpers
+        # Gets the paths of transitions available to the current object
+        define_instance_method(attribute(:paths)) do |machine, object, *args|
+          machine.paths_for(object, *args)
         end
       end
       

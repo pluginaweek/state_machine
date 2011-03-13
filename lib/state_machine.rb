@@ -140,6 +140,11 @@ module StateMachine
     #   requirements, such as the :from / :to state and :on event can be specified
     #   to restrict the transitions to select.  By default, the current state
     #   will be used for the :from state.
+    # * <tt>state_paths(requirements = {})</tt> - Gets the list of possible
+    #   sequences of transitions that can be run from the current object's state.
+    #   Additional requirements, such as the :from / :to state can be specified
+    #   to restrict the paths to generate.  By default, the current state will
+    #   be used for the :from state.
     # 
     # For example,
     # 
@@ -175,6 +180,12 @@ module StateMachine
     #   vehicle.state_transitions         # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
     #   vehicle.ignite
     #   vehicle.state_transitions         # => [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
+    #   
+    #   # Getting current path availability
+    #   vehicle.state_paths               # => [
+    #                                     #     [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>,
+    #                                     #      #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
+    #                                     #   ]
     # 
     # == Attribute initialization
     # 

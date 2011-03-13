@@ -45,6 +45,7 @@ Some brief, high-level features include:
 * Dynamically-generated state values
 * Event parallelization
 * Attribute-based event transitions
+* Path analysis
 * Inheritance
 * Internationalization
 * GraphViz visualization creator
@@ -64,6 +65,7 @@ Below is an example of many of the features offered by this plugin, including:
 * State-driven instance behavior
 * Customized state values
 * Parallel events
+* Path analysis
 
 Class definition:
 
@@ -241,7 +243,18 @@ like so:
   Vehicle.human_alarm_state_name(:active)             # => "active"
   
   Vehicle.human_state_event_name(:shift_down)         # => "shift down"
-  Vehicle.human_alarm_state_event_name(:enable_alarm) # => "enable alarm"
+  Vehicle.human_alarm_state_event_name(:enable)       # => "enable"
+  
+  # Available transition paths can be analyzed for an object
+  vehicle.state_paths                                       # => [[#<StateMachine::Transition ...], [#<StateMachine::Transition ...], ...]
+  vehicle.state_paths.to_states                             # => [:parked, :idling, :first_gear, :stalled, :second_gear, :third_gear]
+  vehicle.state_paths.events                                # => [:park, :ignite, :shift_up, :idle, :crash, :repair, :shift_down]
+  
+  # Find all paths that start and end on certain states
+  vehicle.state_paths(:from => :parked, :to => :first_gear) # => [[
+                                                            #       #<StateMachine::Transition attribute=:state event=:ignite from="parked" ...>,
+                                                            #       #<StateMachine::Transition attribute=:state event=:shift_up from="idling" ...>
+                                                            #    ]]
 
 == Integrations
 

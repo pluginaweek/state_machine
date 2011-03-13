@@ -121,6 +121,10 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert @object.respond_to?(:state_transitions)
   end
   
+  def test_should_define_a_path_reader_for_the_attribute
+    assert @object.respond_to?(:state_paths)
+  end
+  
   def test_should_not_define_an_event_attribute_reader
     assert !@object.respond_to?(:state_event)
   end
@@ -1127,6 +1131,10 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
       def state_transitions
         [{:parked => :idling}]
       end
+      
+      def state_paths
+        [[{:parked => :idling}]]
+      end
     end
     
     StateMachine::Integrations.const_set('Custom', Module.new do
@@ -1200,6 +1208,10 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
     assert_equal [{:parked => :idling}], @object.state_transitions
   end
   
+  def test_should_not_redefine_attribute_paths_reader
+    assert_equal [[{:parked => :idling}]], @object.state_paths
+  end
+  
   def test_should_allow_super_chaining
     @klass.class_eval do
       def self.with_state(*states)
@@ -1256,6 +1268,10 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
       def state_transitions
         super == []
       end
+      
+      def state_paths
+        super == []
+      end
     end
     
     assert_equal true, @klass.with_state
@@ -1273,6 +1289,7 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
     assert_equal 0, @object.human_state_name
     assert_equal true, @object.state_events
     assert_equal true, @object.state_transitions
+    assert_equal true, @object.state_paths
   end
   
   def teardown
@@ -1949,6 +1966,30 @@ class MachineWithFailureCallbacksTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithPathsTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.event :ignite do
+      transition :parked => :idling
+    end
+    @machine.event :shift_up do
+      transition :first_gear => :second_gear
+    end
+    
+    @object = @klass.new
+    @object.state = 'parked'
+  end
+  
+  def test_should_have_paths
+    assert_equal [[StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)]], @machine.paths_for(@object)
+  end
+  
+  def test_should_allow_requirement_configuration
+    assert_equal [[StateMachine::Transition.new(@object, @machine, :shift_up, :first_gear, :second_gear)]], @machine.paths_for(@object, :from => :first_gear)
+  end
+end
+
 class MachineWithOwnerSubclassTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
@@ -2115,6 +2156,10 @@ class MachineWithCustomAttributeTest < Test::Unit::TestCase
   
   def test_should_define_a_transition_reader_for_the_attribute
     assert @object.respond_to?(:state_transitions)
+  end
+  
+  def test_should_define_a_path_reader_for_the_attribute
+    assert @object.respond_to?(:state_paths)
   end
   
   def test_should_define_a_human_attribute_name_reader

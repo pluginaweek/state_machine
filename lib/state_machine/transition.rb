@@ -305,6 +305,17 @@ module StateMachine
       @paused_block = nil
     end
     
+    # Determines equality of transitions by testing whether the object, states,
+    # and event involved in the transition are equal
+    def ==(other)
+      other.instance_of?(self.class) &&
+      other.object == object &&
+      other.machine == machine &&
+      other.from_name == from_name &&
+      other.to_name == to_name &&
+      other.event == event
+    end
+    
     # Generates a nicely formatted description of this transitions's contents.
     # 
     # For example,
