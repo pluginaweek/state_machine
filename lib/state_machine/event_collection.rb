@@ -7,6 +7,16 @@ module StateMachine
     
     # Gets the list of events that can be fired on the given object.
     # 
+    # Valid requirement options:
+    # * <tt>:from</tt> - One or more states being transitioned from.  If none
+    #   are specified, then this will be the object's current state.
+    # * <tt>:to</tt> - One or more states being transitioned to.  If none are
+    #   specified, then this will match any to state.
+    # * <tt>:on</tt> - One or more events that fire the transition.  If none
+    #   are specified, then this will match any event.
+    # * <tt>:guard</tt> - Whether to guard transitions with the if/unless
+    #   conditionals defined for each one.  Default is true.
+    # 
     # == Examples
     # 
     #   class Vehicle
@@ -28,8 +38,8 @@ module StateMachine
     #   
     #   vehicle.state = 'idling'
     #   events.valid_for(vehicle)           # => [#<StateMachine::Event name=:park transitions=[:idling => :parked]>]
-    def valid_for(object)
-      select {|event| event.can_fire?(object)}
+    def valid_for(object, requirements = {})
+      match(requirements).select {|event| event.can_fire?(object, requirements)}
     end
     
     # Gets the list of transitions that can be run on the given object.
@@ -41,6 +51,8 @@ module StateMachine
     #   specified, then this will match any to state.
     # * <tt>:on</tt> - One or more events that fire the transition.  If none
     #   are specified, then this will match any event.
+    # * <tt>:guard</tt> - Whether to guard transitions with the if/unless
+    #   conditionals defined for each one.  Default is true.
     # 
     # == Examples
     # 
@@ -67,7 +79,7 @@ module StateMachine
     #   # Search for explicit transitions regardless of the current state
     #   events.transitions_for(vehicle, :from => :parked) # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
     def transitions_for(object, requirements = {})
-      map {|event| event.transition_for(object, requirements)}.compact
+      match(requirements).map {|event| event.transition_for(object, requirements)}.compact
     end
     
     # Gets the transition that should be performed for the event stored in the
@@ -118,5 +130,10 @@ module StateMachine
       
       result
     end
+    
+    private
+      def match(requirements) #:nodoc:
+        requirements && requirements[:on] ? [fetch(requirements.delete(:on))] : self
+      end
   end
 end

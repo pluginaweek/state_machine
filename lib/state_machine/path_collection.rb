@@ -21,17 +21,20 @@ module StateMachine
     # Creates a new collection of paths with the given requirements.
     # 
     # Configuration options:
-    # * +from+ - The initial state to start from
-    # * +to+ - The target end state
-    # * +deep+ - Whether to enable deep searches for the target state
+    # * <tt>:from</tt> - The initial state to start from
+    # * <tt>:to</tt> - The target end state
+    # * <tt>:deep</tt> - Whether to enable deep searches for the target state.
+    # * <tt>:guard</tt> - Whether to guard transitions with the if/unless
+    #   conditionals defined for each one
     def initialize(object, machine, options = {})
       options = {:deep => false, :from => machine.states.match!(object).name}.merge(options)
-      assert_valid_keys(options, :from, :to, :deep)
+      assert_valid_keys(options, :from, :to, :deep, :guard)
       
       @object = object
       @machine = machine
       @from_name = machine.states.fetch(options[:from]).name
       @to_name = options[:to] && machine.states.fetch(options[:to]).name
+      @guard = options[:guard]
       @deep = options[:deep]
       
       initial_paths.each {|path| walk(path)}
@@ -60,8 +63,8 @@ module StateMachine
     private
       # Gets the initial set of paths to walk
       def initial_paths
-        machine.events.transitions_for(object, :from => from_name).map do |transition|
-          path = Path.new(object, machine, :target => to_name)
+        machine.events.transitions_for(object, :from => from_name, :guard => @guard).map do |transition|
+          path = Path.new(object, machine, :target => to_name, :guard => @guard)
           path << transition
           path
         end

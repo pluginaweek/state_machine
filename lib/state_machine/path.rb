@@ -16,13 +16,16 @@ module StateMachine
     # an initial transition.
     # 
     # Configuration options:
-    # * +target+ - The target state to end the path on
+    # * <tt>:target</tt> - The target state to end the path on
+    # * <tt>:guard</tt> - Whether to guard transitions with the if/unless
+    #   conditionals defined for each one
     def initialize(object, machine, options = {})
-      assert_valid_keys(options, :target)
+      assert_valid_keys(options, :target, :guard)
       
       @object = object
       @machine = machine
       @target = options[:target]
+      @guard = options[:guard]
     end
     
     def initialize_copy(orig) #:nodoc:
@@ -86,7 +89,7 @@ module StateMachine
     # Determines whether the given transition has been walked down in this path.
     # 
     # Configuration options:
-    # * +since_target+ - Whether to only detect the transition since the target
+    # * <tt>:since_target</tt> - Whether to only detect the transition since the target
     #   has been walked to (if a target was configured for this path)
     def walked?(transition, options = {})
       transitions = self
@@ -126,7 +129,7 @@ module StateMachine
       # Get the next set of transitions that can be walked to starting from the
       # end of this path
       def transitions
-        @transitions ||= empty? ? [] : machine.events.transitions_for(object, :from => to_name).select {|transition| can_walk_to?(transition)}
+        @transitions ||= empty? ? [] : machine.events.transitions_for(object, :from => to_name, :guard => @guard).select {|transition| can_walk_to?(transition)}
       end
   end
 end

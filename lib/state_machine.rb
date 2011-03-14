@@ -135,18 +135,25 @@ module StateMachine
     # * <tt>state_name</tt> - Gets the name of the state for the current value
     # * <tt>human_state_name</tt> - Gets the human-readable name of the state
     #   for the current value
-    # * <tt>state_events</tt> - Gets the list of events that can be fired on
-    #   the current object's state (uses the *unqualified* event names)
-    # * <tt>state_transitions(requirements = {})</tt> - Gets the list of possible
-    #   transitions that can be made on the current object's state.  Additional
-    #   requirements, such as the :from / :to state and :on event can be specified
-    #   to restrict the transitions to select.  By default, the current state
-    #   will be used for the :from state.
-    # * <tt>state_paths(requirements = {})</tt> - Gets the list of possible
-    #   sequences of transitions that can be run from the current object's state.
-    #   Additional requirements, such as the :from / :to state can be specified
-    #   to restrict the paths to generate.  By default, the current state will
-    #   be used for the :from state.
+    # * <tt>state_events(requirements = {})</tt> - Gets the list of events that
+    #   can be fired on the current object's state (uses the *unqualified* event
+    #   names)
+    # * <tt>state_transitions(requirements = {})</tt> - Gets the list of
+    #   transitions that can be made on the current object's state
+    # * <tt>state_paths(requirements = {})</tt> - Gets the list of sequences of
+    #   transitions that can be run from the current object's state
+    # 
+    # The <tt>state_events</tt>, <tt>state_transitions</tt>, and <tt>state_paths</tt>
+    # helpers all take an optional set of requirements for determining what's
+    # available for the current object.  These requirements include:
+    # * <tt>:from</tt> - One or more states to transition from.  If none are
+    #   specified, then this will be the object's current state.
+    # * <tt>:to</tt> - One or more states to transition to.  If none are
+    #   specified, then this will match any to state.
+    # * <tt>:on</tt> - One or more events to transition on.  If none are
+    #   specified, then this will match any event.
+    # * <tt>:guard</tt> - Whether to guard transitions with the if/unless
+    #   conditionals defined for each one.  Default is true.
     # 
     # For example,
     # 
@@ -163,31 +170,39 @@ module StateMachine
     #   end
     #   
     #   vehicle = Vehicle.new
-    #   vehicle.state                     # => "parked"
-    #   vehicle.state_name                # => :parked
-    #   vehicle.human_state_name          # => "parked"
-    #   vehicle.state?(:parked)           # => true
+    #   vehicle.state                             # => "parked"
+    #   vehicle.state_name                        # => :parked
+    #   vehicle.human_state_name                  # => "parked"
+    #   vehicle.state?(:parked)                   # => true
     #   
     #   # Changing state
     #   vehicle.state = 'idling'
-    #   vehicle.state                     # => "idling"
-    #   vehicle.state_name                # => :idling
-    #   vehicle.state?(:parked)           # => false
+    #   vehicle.state                             # => "idling"
+    #   vehicle.state_name                        # => :idling
+    #   vehicle.state?(:parked)                   # => false
     #   
     #   # Getting current event / transition availability
-    #   vehicle.state_events              # => [:park]
-    #   vehicle.park                      # => true
-    #   vehicle.state_events              # => [:ignite]
+    #   vehicle.state_events                      # => [:park]
+    #   vehicle.park                              # => true
+    #   vehicle.state_events                      # => [:ignite]
+    #   vehicle.state_events(:from => :idling)    # => [:park]
+    #   vehicle.state_events(:to => :parked)      # => []
     #   
-    #   vehicle.state_transitions         # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
+    #   vehicle.state_transitions                 # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
     #   vehicle.ignite
-    #   vehicle.state_transitions         # => [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
+    #   vehicle.state_transitions                 # => [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
+    #   
+    #   vehicle.state_transitions(:on => :ignite) # => []
     #   
     #   # Getting current path availability
-    #   vehicle.state_paths               # => [
-    #                                     #     [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>,
-    #                                     #      #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
-    #                                     #   ]
+    #   vehicle.state_paths                       # => [
+    #                                             #     [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>,
+    #                                             #      #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
+    #                                             #   ]
+    #   vehicle.state_paths(:guard => false)      # => 
+    #                                             #     [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>,
+    #                                             #      #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
+    #                                             #   ]
     # 
     # == Attribute initialization
     # 

@@ -106,6 +106,8 @@ module StateMachine
     #   specified, then this will always match.
     # * <tt>:on</tt> - One or more events that fired the transition.  If none
     #   are specified, then this will always match.
+    # * <tt>:guard</tt> - Whether to guard matches with the if/unless
+    #   conditionals defined for this branch
     # 
     # == Examples
     # 
@@ -114,7 +116,9 @@ module StateMachine
     #   branch.match(object, :on => :ignite)  # => {:to => ..., :from => ..., :on => ...}
     #   branch.match(object, :on => :park)    # => nil
     def match(object, query = {})
-      if (match = match_query(query)) && matches_conditions?(object)
+      assert_valid_keys(query, :from, :to, :on, :guard)
+      
+      if (match = match_query(query)) && matches_conditions?(object, query)
         match
       end
     end
@@ -211,7 +215,8 @@ module StateMachine
       
       # Verifies that the conditionals for this branch evaluate to true for the
       # given object
-      def matches_conditions?(object)
+      def matches_conditions?(object, query)
+        query[:guard] == false ||
         Array(if_condition).all? {|condition| evaluate_method(object, condition)} &&
         !Array(unless_condition).any? {|condition| evaluate_method(object, condition)}
       end

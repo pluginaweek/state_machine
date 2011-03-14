@@ -1,5 +1,7 @@
 == master
 
+* Allow transition guards to be bypassed for event / transition / path helpers
+* Allow state / condition requirements to be specified for all event / transition / path helpers
 * Add the ability to skip automatically initializing state machines on #initialize
 * Add #{name}_paths for walking the available paths in a state machine
 * Add Mongoid 2.0.0+ support

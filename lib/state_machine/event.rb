@@ -186,13 +186,22 @@ module StateMachine
     # on the current state of the given object.
     # 
     # If the event can't be fired, then this will return false, otherwise true.
-    def can_fire?(object)
-      !transition_for(object).nil?
+    def can_fire?(object, requirements = {})
+      !transition_for(object, requirements).nil?
     end
     
     # Finds and builds the next transition that can be performed on the given
     # object.  If no transitions can be made, then this will return nil.
+    # 
+    # Valid requirement options:
+    # * <tt>:from</tt> - One or more states being transitioned from.  If none
+    #   are specified, then this will be the object's current state.
+    # * <tt>:to</tt> - One or more states being transitioned to.  If none are
+    #   specified, then this will match any to state.
+    # * <tt>:guard</tt> - Whether to guard transitions with the if/unless
+    #   conditionals defined for each one.  Default is true.
     def transition_for(object, requirements = {})
+      assert_valid_keys(requirements, :from, :to, :guard)
       requirements[:from] = machine.states.match!(object).name unless custom_from_state = requirements.include?(:from)
       
       branches.each do |branch|
@@ -267,14 +276,14 @@ module StateMachine
       # the current event
       def add_actions
         # Checks whether the event can be fired on the current object
-        machine.define_instance_method("can_#{qualified_name}?") do |machine, object|
-          machine.event(name).can_fire?(object)
+        machine.define_instance_method("can_#{qualified_name}?") do |machine, object, *args|
+          machine.event(name).can_fire?(object, *args)
         end
         
         # Gets the next transition that would be performed if the event were
         # fired now
-        machine.define_instance_method("#{qualified_name}_transition") do |machine, object|
-          machine.event(name).transition_for(object)
+        machine.define_instance_method("#{qualified_name}_transition") do |machine, object, *args|
+          machine.event(name).transition_for(object, *args)
         end
         
         # Fires the event

@@ -51,43 +51,72 @@ class EventCollectionWithEventsWithTransitionsTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @events = StateMachine::EventCollection.new(@machine)
     
-    @machine.state :idling, :stalled
+    @machine.state :idling, :first_gear
     
     @events << @ignite = StateMachine::Event.new(@machine, :ignite)
     @ignite.transition :parked => :idling
-    @ignite.transition :stalled => :idling
+    
+    @events << @park = StateMachine::Event.new(@machine, :park)
+    @park.transition :idling => :parked
+    
+    @events << @shift_up = StateMachine::Event.new(@machine, :shift_up)
+    @shift_up.transition :parked => :first_gear
+    @shift_up.transition :idling => :first_gear, :if => lambda{false}
     
     @machine.events.concat(@events)
+    
+    @object = @klass.new
   end
   
-  def test_should_only_include_valid_events_for_an_object
-    object = @klass.new
-    object.state = 'parked'
-    assert_equal [@ignite], @events.valid_for(object)
-    
-    object.state = 'stalled'
-    assert_equal [@ignite], @events.valid_for(object)
-    
-    object.state = 'idling'
-    assert_equal [], @events.valid_for(object)
+  def test_should_find_valid_events_based_on_current_state
+    assert_equal [@ignite, @shift_up], @events.valid_for(@object)
   end
   
-  def test_should_only_include_valid_transitions_for_an_object
-    object = @klass.new
-    object.state = 'parked'
-    assert_equal [{:object => object, :attribute => :state, :event => :ignite, :from => 'parked', :to => 'idling'}], @events.transitions_for(object).map {|transition| transition.attributes}
-    
-    object.state = 'stalled'
-    assert_equal [{:object => object, :attribute => :state, :event => :ignite, :from => 'stalled', :to => 'idling'}], @events.transitions_for(object).map {|transition| transition.attributes}
-    
-    object.state = 'idling'
-    assert_equal [], @events.transitions_for(object)
+  def test_should_filter_valid_events_by_from_state
+    assert_equal [@park], @events.valid_for(@object, :from => :idling)
   end
   
-  def test_should_filter_valid_transitions_for_an_object_if_requirements_specified
-    object = @klass.new
-    assert_equal [{:object => object, :attribute => :state, :event => :ignite, :from => 'stalled', :to => 'idling'}], @events.transitions_for(object, :from => :stalled).map {|transition| transition.attributes}
-    assert_equal [], @events.transitions_for(object, :from => :idling).map {|transition| transition.attributes}
+  def test_should_filter_valid_events_by_to_state
+    assert_equal [@shift_up], @events.valid_for(@object, :to => :first_gear)
+  end
+  
+  def test_should_filter_valid_events_by_event
+    assert_equal [@ignite], @events.valid_for(@object, :on => :ignite)
+  end
+  
+  def test_should_filter_valid_events_by_multiple_requirements
+    assert_equal [], @events.valid_for(@object, :from => :idling, :to => :first_gear)
+  end
+  
+  def test_should_allow_finding_valid_events_without_guards
+    assert_equal [@shift_up], @events.valid_for(@object, :from => :idling, :to => :first_gear, :guard => false)
+  end
+  
+  def test_should_find_valid_transitions_based_on_current_state
+    assert_equal [
+      StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling),
+      StateMachine::Transition.new(@object, @machine, :shift_up, :parked, :first_gear)
+    ], @events.transitions_for(@object)
+  end
+  
+  def test_should_filter_valid_transitions_by_from_state
+    assert_equal [StateMachine::Transition.new(@object, @machine, :park, :idling, :parked)], @events.transitions_for(@object, :from => :idling)
+  end
+  
+  def test_should_filter_valid_transitions_by_to_state
+    assert_equal [StateMachine::Transition.new(@object, @machine, :shift_up, :parked, :first_gear)], @events.transitions_for(@object, :to => :first_gear)
+  end
+  
+  def test_should_filter_valid_transitions_by_event
+    assert_equal [StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)], @events.transitions_for(@object, :on => :ignite)
+  end
+  
+  def test_should_filter_valid_transitions_by_multiple_requirements
+    assert_equal [], @events.transitions_for(@object, :from => :idling, :to => :first_gear)
+  end
+  
+  def test_should_allow_finding_valid_transitions_without_guards
+    assert_equal [StateMachine::Transition.new(@object, @machine, :shift_up, :idling, :first_gear)], @events.transitions_for(@object, :from => :idling, :to => :first_gear, :guard => false)
   end
 end
 

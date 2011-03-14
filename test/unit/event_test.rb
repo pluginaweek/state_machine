@@ -419,8 +419,16 @@ class EventWithoutMatchingTransitionsTest < Test::Unit::TestCase
     assert !@event.can_fire?(@object)
   end
   
+  def test_should_be_able_to_fire_with_custom_from_state
+    assert @event.can_fire?(@object, :from => :parked)
+  end
+  
   def test_should_not_have_a_transition
     assert_nil @event.transition_for(@object)
+  end
+  
+  def test_should_have_a_transition_with_custom_from_state
+    assert_not_nil @event.transition_for(@object, :from => :parked)
   end
   
   def test_should_not_fire
@@ -465,8 +473,16 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
     assert !@event.can_fire?(@object)
   end
   
+  def test_should_be_able_to_fire_with_disabled_guards
+    assert @event.can_fire?(@object, :guard => false)
+  end
+  
   def test_should_not_have_a_transition
     assert_nil @event.transition_for(@object)
+  end
+  
+  def test_should_have_a_transition_with_disabled_guards
+    assert_not_nil @event.transition_for(@object, :guard => false)
   end
   
   def test_should_not_fire
@@ -698,12 +714,9 @@ class EventWithMultipleTransitionsTest < Test::Unit::TestCase
     assert_equal :ignite, transition.event
   end
   
-  def test_should_allow_specific_transition_selection_using_on
-    transition = @event.transition_for(@object, :on => :park)
-    assert_nil transition
-    
-    transition = @event.transition_for(@object, :on => :ignite)
-    assert_not_nil transition
+  def test_should_not_allow_specific_transition_selection_using_on
+    exception = assert_raise(ArgumentError) { @event.transition_for(@object, :on => :park) }
+    assert_equal 'Invalid key(s): on', exception.message
   end
   
   def test_should_fire

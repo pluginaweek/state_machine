@@ -923,14 +923,6 @@ module StateMachine
     # 
     # The following instance methods are generated when a new event is defined
     # (the "park" event is used as an example):
-    # * <tt>can_park?</tt> - Checks whether the "park" event can be fired given
-    #   the current state of the object.  This will *not* run validations in
-    #   ORM integrations.  To check whether an event can fire *and* passes
-    #   validations, use event attributes (e.g. state_event) as described in the
-    #   "Events" documentation of each ORM integration.
-    # * <tt>park_transition</tt> -  Gets the next transition that would be
-    #   performed if the "park" event were to be fired now on the object or nil
-    #   if no transitions can be performed.
     # * <tt>park(..., run_action = true)</tt> - Fires the "park" event,
     #   transitioning from the current state to the next valid state.  If the
     #   last argument is a boolean, it will control whether the machine's action
@@ -940,12 +932,30 @@ module StateMachine
     #   transition fails, then a StateMachine::InvalidTransition error will be
     #   raised.  If the last argument is a boolean, it will control whether the
     #   machine's action gets run.
+    # * <tt>can_park?(requirements = {})</tt> - Checks whether the "park" event can be fired given
+    #   the current state of the object.  This will *not* run validations in
+    #   ORM integrations.  To check whether an event can fire *and* passes
+    #   validations, use event attributes (e.g. state_event) as described in the
+    #   "Events" documentation of each ORM integration.
+    # * <tt>park_transition(requirements = {})</tt> -  Gets the next transition that would be
+    #   performed if the "park" event were to be fired now on the object or nil
+    #   if no transitions can be performed.
     # 
     # With a namespace of "car", the above names map to the following methods:
     # * <tt>can_park_car?</tt>
     # * <tt>park_car_transition</tt>
     # * <tt>park_car</tt>
     # * <tt>park_car!</tt>
+    # 
+    # The <tt>can_park?</tt> and <tt>park_transition</tt> helpers both take an
+    # optional set of requirements for determining what transitions are available
+    # for the current object.  These requirements include:
+    # * <tt>:from</tt> - One or more states to transition from.  If none are
+    #   specified, then this will be the object's current state.
+    # * <tt>:to</tt> - One or more states to transition to.  If none are
+    #   specified, then this will match any to state.
+    # * <tt>:guard</tt> - Whether to guard transitions with the if/unless
+    #   conditionals defined for each one.  Default is true.
     # 
     # == Defining transitions
     # 
@@ -1411,8 +1421,8 @@ module StateMachine
     #   
     #   # Get the list of events that can be accessed from the current state
     #   vehicle.state_paths.events    # => [:ignite, :shift_up, :shift_down]
-    def paths_for(object, options = {})
-      PathCollection.new(object, self, options)
+    def paths_for(object, requirements = {})
+      PathCollection.new(object, self, requirements)
     end
     
     # Marks the given object as invalid with the given message.
@@ -1577,8 +1587,8 @@ module StateMachine
       # events
       def define_event_helpers
         # Gets the events that are allowed to fire on the current object
-        define_instance_method(attribute(:events)) do |machine, object|
-          machine.events.valid_for(object).map {|event| event.name}
+        define_instance_method(attribute(:events)) do |machine, object, *args|
+          machine.events.valid_for(object, *args).map {|event| event.name}
         end
         
         # Gets the next possible transitions that can be run on the current

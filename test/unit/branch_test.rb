@@ -20,6 +20,11 @@ class BranchTest < Test::Unit::TestCase
   def test_should_have_a_state_requirement
     assert_equal 1, @branch.state_requirements.length
   end
+  
+  def test_should_raise_an_exception_if_invalid_match_option_specified
+    exception = assert_raise(ArgumentError) { @branch.match(Object.new, :invalid => true) }
+    assert_equal 'Invalid key(s): invalid', exception.message
+  end
 end
 
 class BranchWithNoRequirementsTest < Test::Unit::TestCase
@@ -40,10 +45,6 @@ class BranchWithNoRequirementsTest < Test::Unit::TestCase
     assert_equal StateMachine::AllMatcher.instance, @branch.state_requirements.first[:to]
   end
   
-  def test_should_match_nil_query
-    assert @branch.matches?(@object, nil)
-  end
-  
   def test_should_match_empty_query
     assert @branch.matches?(@object, {})
   end
@@ -53,7 +54,7 @@ class BranchWithNoRequirementsTest < Test::Unit::TestCase
   end
   
   def test_should_include_all_requirements_in_match
-    match = @branch.match(@object, nil)
+    match = @branch.match(@object, {})
     
     assert_equal @branch.state_requirements.first[:from], match[:from]
     assert_equal @branch.state_requirements.first[:to], match[:to]
@@ -724,6 +725,32 @@ class BranchWithConflictingConditionalsTest < Test::Unit::TestCase
   def test_should_not_match_if_if_is_true_and_unless_is_true
     branch = StateMachine::Branch.new(:if => lambda {true}, :unless => lambda {true})
     assert !branch.match(@object)
+  end
+end
+
+class BranchWithoutGuardsTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+  end
+  
+  def test_should_match_if_if_is_false
+    branch = StateMachine::Branch.new(:if => lambda {false})
+    assert branch.matches?(@object, :guard => false)
+  end
+  
+  def test_should_match_if_if_is_true
+    branch = StateMachine::Branch.new(:if => lambda {true})
+    assert branch.matches?(@object, :guard => false)
+  end
+  
+  def test_should_match_if_unless_is_false
+    branch = StateMachine::Branch.new(:unless => lambda {false})
+    assert branch.matches?(@object, :guard => false)
+  end
+  
+  def test_should_match_if_unless_is_true
+    branch = StateMachine::Branch.new(:unless => lambda {true})
+    assert branch.matches?(@object, :guard => false)
   end
 end
 
