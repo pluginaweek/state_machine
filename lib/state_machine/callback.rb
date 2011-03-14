@@ -1,4 +1,4 @@
-require 'state_machine/guard'
+require 'state_machine/branch'
 require 'state_machine/eval_helpers'
 
 module StateMachine
@@ -98,17 +98,17 @@ module StateMachine
     #   end
     attr_reader :terminator
     
-    # The guard that determines whether or not this callback can be invoked
+    # The branch that determines whether or not this callback can be invoked
     # based on the context of the transition.  The event, from state, and
-    # to state must all match in order for the guard to pass.
+    # to state must all match in order for the branch to pass.
     # 
-    # See StateMachine::Guard for more information.
-    attr_reader :guard
+    # See StateMachine::Branch for more information.
+    attr_reader :branch
     
     # Creates a new callback that can get called based on the configured
     # options.
     # 
-    # In addition to the possible configuration options for guards, the
+    # In addition to the possible configuration options for branches, the
     # following options can be configured:
     # * <tt>:bind_to_object</tt> - Whether to bind the callback to the object involved.
     #   If set to false, the object will be passed as a parameter instead.
@@ -138,23 +138,23 @@ module StateMachine
       end
       
       @terminator = options.delete(:terminator)
-      @guard = Guard.new(options)
+      @branch = Branch.new(options)
     end
     
     # Gets a list of the states known to this callback by looking at the
-    # guard's known states
+    # branch's known states
     def known_states
-      guard.known_states
+      branch.known_states
     end
     
-    # Runs the callback as long as the transition context matches the guard
+    # Runs the callback as long as the transition context matches the branch
     # requirements configured for this callback.  If a block is provided, it
     # will be called when the last method has run.
     # 
     # If a terminator has been configured and it matches the result from the
     # evaluated method, then the callback chain should be halted.
     def call(object, context = {}, *args, &block)
-      if @guard.matches?(object, context)
+      if @branch.matches?(object, context)
         run_methods(object, context, 0, *args, &block)
         true
       else

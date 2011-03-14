@@ -4,10 +4,10 @@ require 'state_machine/assertions'
 
 module StateMachine
   # Represents a set of requirements that must be met in order for a transition
-  # or callback to occur.  Guards verify that the event, from state, and to
+  # or callback to occur.  Branches verify that the event, from state, and to
   # state of the transition match, in addition to if/unless conditionals for
   # an object's state.
-  class Guard
+  class Branch
     include Assertions
     include EvalHelpers
     
@@ -17,20 +17,20 @@ module StateMachine
     # The condition that must *not* be met on an object
     attr_reader :unless_condition
     
-    # The requirement for verifying the event being guarded
+    # The requirement for verifying the event being matched
     attr_reader :event_requirement
     
-    # One or more requirements for verifying the states being guarded.  All
+    # One or more requirements for verifying the states being matched.  All
     # requirements contain a mapping of {:from => matcher, :to => matcher}.
     attr_reader :state_requirements
     
-    # A list of all of the states known to this guard.  This will pull states
+    # A list of all of the states known to this branch.  This will pull states
     # from the following options (in the same order):
     # * +from+ / +except_from+
     # * +to+ / +except_to+
     attr_reader :known_states
     
-    # Creates a new guard
+    # Creates a new branch
     def initialize(options = {}) #:nodoc:
       # Build conditionals
       @if_condition = options.delete(:if)
@@ -64,34 +64,34 @@ module StateMachine
     end
     
     # Determines whether the given object / query matches the requirements
-    # configured for this guard.  In addition to matching the event, from state,
+    # configured for this branch.  In addition to matching the event, from state,
     # and to state, this will also check whether the configured :if/:unless
     # conditions pass on the given object.
     # 
     # == Examples
     # 
-    #   guard = StateMachine::Guard.new(:parked => :idling, :on => :ignite)
+    #   branch = StateMachine::Branch.new(:parked => :idling, :on => :ignite)
     #   
     #   # Successful
-    #   guard.matches?(object, :on => :ignite)                                    # => true
-    #   guard.matches?(object, :from => nil)                                      # => true
-    #   guard.matches?(object, :from => :parked)                                  # => true
-    #   guard.matches?(object, :to => :idling)                                    # => true
-    #   guard.matches?(object, :from => :parked, :to => :idling)                  # => true
-    #   guard.matches?(object, :on => :ignite, :from => :parked, :to => :idling)  # => true
+    #   branch.matches?(object, :on => :ignite)                                   # => true
+    #   branch.matches?(object, :from => nil)                                     # => true
+    #   branch.matches?(object, :from => :parked)                                 # => true
+    #   branch.matches?(object, :to => :idling)                                   # => true
+    #   branch.matches?(object, :from => :parked, :to => :idling)                 # => true
+    #   branch.matches?(object, :on => :ignite, :from => :parked, :to => :idling) # => true
     #   
     #   # Unsuccessful
-    #   guard.matches?(object, :on => :park)                                      # => false
-    #   guard.matches?(object, :from => :idling)                                  # => false
-    #   guard.matches?(object, :to => :first_gear)                                # => false
-    #   guard.matches?(object, :from => :parked, :to => :first_gear)              # => false
-    #   guard.matches?(object, :on => :park, :from => :parked, :to => :idling)    # => false
+    #   branch.matches?(object, :on => :park)                                     # => false
+    #   branch.matches?(object, :from => :idling)                                 # => false
+    #   branch.matches?(object, :to => :first_gear)                               # => false
+    #   branch.matches?(object, :from => :parked, :to => :first_gear)             # => false
+    #   branch.matches?(object, :on => :park, :from => :parked, :to => :idling)   # => false
     def matches?(object, query = {})
       !match(object, query).nil?
     end
     
     # Attempts to match the given object / query against the set of requirements
-    # configured for this guard.  In addition to matching the event, from state,
+    # configured for this branch.  In addition to matching the event, from state,
     # and to state, this will also check whether the configured :if/:unless
     # conditions pass on the given object.
     # 
@@ -109,18 +109,18 @@ module StateMachine
     # 
     # == Examples
     # 
-    #   guard = StateMachine::Guard.new(:parked => :idling, :on => :ignite)
+    #   branch = StateMachine::Branch.new(:parked => :idling, :on => :ignite)
     #   
-    #   guard.match(object, :on => :ignite) # => {:to => ..., :from => ..., :on => ...}
-    #   guard.match(object, :on => :park)   # => nil
+    #   branch.match(object, :on => :ignite)  # => {:to => ..., :from => ..., :on => ...}
+    #   branch.match(object, :on => :park)    # => nil
     def match(object, query = {})
       if (match = match_query(query)) && matches_conditions?(object)
         match
       end
     end
     
-    # Draws a representation of this guard on the given graph.  This will draw
-    # an edge between every state this guard matches *from* to either the
+    # Draws a representation of this branch on the given graph.  This will draw
+    # an edge between every state this branch matches *from* to either the
     # configured to state or, if none specified, then a loopback to the from
     # state.
     # 
@@ -209,7 +209,7 @@ module StateMachine
         !query.include?(option) || requirement.matches?(query[option], query)
       end
       
-      # Verifies that the conditionals for this guard evaluate to true for the
+      # Verifies that the conditionals for this branch evaluate to true for the
       # given object
       def matches_conditions?(object)
         Array(if_condition).all? {|condition| evaluate_method(object, condition)} &&

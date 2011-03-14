@@ -25,8 +25,8 @@ class EventByDefaultTest < Test::Unit::TestCase
     assert_equal 'ignite', @event.human_name
   end
   
-  def test_should_not_have_any_guards
-    assert @event.guards.empty?
+  def test_should_not_have_any_branches
+    assert @event.branches.empty?
   end
   
   def test_should_have_no_known_states
@@ -294,9 +294,9 @@ class EventTransitionsTest < Test::Unit::TestCase
   end
   
   def test_should_automatically_set_on_option
-    guard = @event.transition(:to => :idling)
-    assert_instance_of StateMachine::WhitelistMatcher, guard.event_requirement
-    assert_equal [:ignite], guard.event_requirement.values
+    branch = @event.transition(:to => :idling)
+    assert_instance_of StateMachine::WhitelistMatcher, branch.event_requirement
+    assert_equal [:ignite], branch.event_requirement.values
   end
   
   def test_should_not_allow_except_to_option
@@ -330,8 +330,8 @@ class EventTransitionsTest < Test::Unit::TestCase
   end
   
   def test_should_have_transitions
-    guard = @event.transition(:to => :idling)
-    assert_equal [guard], @event.guards
+    branch = @event.transition(:to => :idling)
+    assert_equal [branch], @event.branches
   end
 end
 
@@ -342,8 +342,8 @@ class EventAfterBeingCopiedTest < Test::Unit::TestCase
     @copied_event = @event.dup
   end
   
-  def test_should_not_have_the_same_collection_of_guards
-    assert_not_same @event.guards, @copied_event.guards
+  def test_should_not_have_the_same_collection_of_branches
+    assert_not_same @event.branches, @copied_event.branches
   end
   
   def test_should_not_have_the_same_collection_of_known_states

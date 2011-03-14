@@ -65,10 +65,10 @@ class CallbackByDefaultTest < Test::Unit::TestCase
     assert_nil @callback.terminator
   end
   
-  def test_should_have_a_guard_with_all_matcher_requirements
-    assert_equal StateMachine::AllMatcher.instance, @callback.guard.event_requirement
-    assert_equal StateMachine::AllMatcher.instance, @callback.guard.state_requirements.first[:from]
-    assert_equal StateMachine::AllMatcher.instance, @callback.guard.state_requirements.first[:to]
+  def test_should_have_a_branch_with_all_matcher_requirements
+    assert_equal StateMachine::AllMatcher.instance, @callback.branch.event_requirement
+    assert_equal StateMachine::AllMatcher.instance, @callback.branch.state_requirements.first[:from]
+    assert_equal StateMachine::AllMatcher.instance, @callback.branch.state_requirements.first[:to]
   end
   
   def test_should_not_have_any_known_states

@@ -1,5 +1,5 @@
 require 'state_machine/transition'
-require 'state_machine/guard'
+require 'state_machine/branch'
 require 'state_machine/assertions'
 require 'state_machine/matcher_helpers'
 require 'state_machine/error'
@@ -19,7 +19,7 @@ module StateMachine
   
   # An event defines an action that transitions an attribute from one state to
   # another.  The state that an attribute is transitioned to depends on the
-  # guards configured for the event.
+  # branches configured for the event.
   class Event
     include Assertions
     include MatcherHelpers
@@ -36,12 +36,12 @@ module StateMachine
     # The human-readable name for the event
     attr_writer :human_name
     
-    # The list of guards that determine what state this event transitions
+    # The list of branches that determine what state this event transitions
     # objects to when fired
-    attr_reader :guards
+    attr_reader :branches
     
     # A list of all of the states known to this event using the configured
-    # guards/transitions as the source
+    # branches/transitions as the source
     attr_reader :known_states
     
     # Creates a new event within the context of the given machine
@@ -55,7 +55,7 @@ module StateMachine
       @name = name
       @qualified_name = machine.namespace ? :"#{name}_#{machine.namespace}" : name
       @human_name = options[:human_name] || @name.to_s.tr('_', ' ')
-      @guards = []
+      @branches = []
       @known_states = []
       
       # Output a warning if another event has a conflicting qualified name
@@ -68,10 +68,10 @@ module StateMachine
     end
     
     # Creates a copy of this event in addition to the list of associated
-    # guards to prevent conflicts across events within a class hierarchy.
+    # branches to prevent conflicts across events within a class hierarchy.
     def initialize_copy(orig) #:nodoc:
       super
-      @guards = @guards.dup
+      @branches = @branches.dup
       @known_states = @known_states.dup
     end
     
@@ -177,9 +177,9 @@ module StateMachine
       # requirements
       assert_valid_keys(options, :from, :to, :except_from, :if, :unless) if (options.keys - [:from, :to, :on, :except_from, :except_to, :except_on, :if, :unless]).empty?
       
-      guards << guard = Guard.new(options.merge(:on => name))
-      @known_states |= guard.known_states
-      guard
+      branches << branch = Branch.new(options.merge(:on => name))
+      @known_states |= branch.known_states
+      branch
     end
     
     # Determines whether any transitions can be performed for this event based
@@ -195,9 +195,9 @@ module StateMachine
     def transition_for(object, requirements = {})
       requirements[:from] = machine.states.match!(object).name unless custom_from_state = requirements.include?(:from)
       
-      guards.each do |guard|
-        if match = guard.match(object, requirements)
-          # Guard allows for the transition to occur
+      branches.each do |branch|
+        if match = branch.match(object, requirements)
+          # Branch allows for the transition to occur
           from = requirements[:from]
           to = match[:to].values.empty? ? from : match[:to].values.first
           
@@ -236,13 +236,13 @@ module StateMachine
     end
     
     # Draws a representation of this event on the given graph.  This will
-    # create 1 or more edges on the graph for each guard (i.e. transition)
+    # create 1 or more edges on the graph for each branch (i.e. transition)
     # configured.
     # 
     # A collection of the generated edges will be returned.
     def draw(graph)
       valid_states = machine.states.by_priority.map {|state| state.name}
-      guards.collect {|guard| guard.draw(graph, name, valid_states)}.flatten
+      branches.collect {|branch| branch.draw(graph, name, valid_states)}.flatten
     end
     
     # Generates a nicely formatted description of this event's contents.
@@ -253,8 +253,8 @@ module StateMachine
     #   event.transition all - :idling => :parked, :idling => same
     #   event   # => #<StateMachine::Event name=:park transitions=[all - :idling => :parked, :idling => same]>
     def inspect
-      transitions = guards.map do |guard|
-        guard.state_requirements.map do |state_requirement|
+      transitions = branches.map do |branch|
+        branch.state_requirements.map do |state_requirement|
           "#{state_requirement[:from].description} => #{state_requirement[:to].description}"
         end * ', '
       end

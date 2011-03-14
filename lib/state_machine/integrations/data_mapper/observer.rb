@@ -5,8 +5,8 @@ module StateMachine
       # DataMapper observer.  These callbacks behave very similar to
       # before/after hooks during save/update/destroy/etc., but with the
       # following modifications:
-      # * Each callback can define a set of transition conditions (i.e. guards)
-      # that must be met in order for the callback to get invoked.
+      # * Each callback can define a set of transition requirements that must be
+      # met in order for the callback to get invoked.
       # * An additional transition parameter is available that provides
       # contextual information about the event (see StateMachine::Transition
       # for more information)

@@ -102,8 +102,8 @@ module StateMachine
     # machine's definition.
     def final?
       !machine.events.any? do |event|
-        event.guards.any? do |guard|
-          guard.state_requirements.any? do |requirement|
+        event.branches.any? do |branch|
+          branch.state_requirements.any? do |requirement|
             requirement[:from].matches?(name) && !requirement[:to].matches?(name, :from => name)
           end
         end

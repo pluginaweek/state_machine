@@ -1792,7 +1792,7 @@ class MachineWithMultipleEventsTest < Test::Unit::TestCase
   end
   
   def test_should_define_transitions_for_each_event
-    [@park, @shift_down].each {|event| assert_equal 1, event.guards.size}
+    [@park, @shift_down].each {|event| assert_equal 1, event.branches.size}
   end
   
   def test_should_transition_the_same_for_each_event
