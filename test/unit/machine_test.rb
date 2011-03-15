@@ -2525,14 +2525,14 @@ begin
     end
     
     def test_should_load_files
-      StateMachine::Machine.draw('Switch', :file => "#{File.dirname(__FILE__)}/../files/switch.rb")
+      StateMachine::Machine.draw('Switch', :file => File.expand_path("#{File.dirname(__FILE__)}/../files/switch.rb"))
       assert defined?(::Switch)
     ensure
       FileUtils.rm('./Switch_state.png')
     end
     
     def test_should_allow_path_and_format_to_be_customized
-      StateMachine::Machine.draw('Switch', :file => "#{File.dirname(__FILE__)}/../files/switch.rb", :path => "#{File.dirname(__FILE__)}/", :format => 'jpg')
+      StateMachine::Machine.draw('Switch', :file => File.expand_path("#{File.dirname(__FILE__)}/../files/switch.rb"), :path => "#{File.dirname(__FILE__)}/", :format => 'jpg')
       assert File.exist?("#{File.dirname(__FILE__)}/Switch_state.jpg")
     ensure
       FileUtils.rm("#{File.dirname(__FILE__)}/Switch_state.jpg")
