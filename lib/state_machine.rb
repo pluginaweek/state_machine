@@ -30,10 +30,9 @@ module StateMachine
     #   :sequel.  By default, this is determined automatically.
     # 
     # Configuration options relevant to ORM integrations:
-    # * <tt>:plural</tt> - The pluralized name of the attribute.  By default,
-    #   this will attempt to call +pluralize+ on the attribute.  If this
-    #   method is not available, an "s" is appended.  This is used for
-    #   generating scopes.
+    # * <tt>:plural</tt> - The pluralized version of the name.  By default, this
+    #   will attempt to call +pluralize+ on the name.  If this method is not
+    #   available, an "s" is appended.  This is used for generating scopes.
     # * <tt>:messages</tt> - The error messages to use when invalidating
     #   objects due to failed transitions.  Messages include:
     #   * <tt>:invalid</tt>

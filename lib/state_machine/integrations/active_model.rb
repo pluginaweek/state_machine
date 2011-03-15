@@ -380,7 +380,7 @@ module StateMachine
         # Translates the given key / value combo.  Translation keys are looked
         # up in the following order:
         # * <tt>#{i18n_scope}.state_machines.#{model_name}.#{machine_name}.#{plural_key}.#{value}</tt>
-        # * <tt>#{i18n_scope}.state_machines.#{machine_name}.#{plural_key}.#{value}
+        # * <tt>#{i18n_scope}.state_machines.#{machine_name}.#{plural_key}.#{value}</tt>
         # * <tt>#{i18n_scope}.state_machines.#{plural_key}.#{value}</tt>
         # 
         # If no keys are found, then the humanized value will be the fallback.
@@ -491,15 +491,15 @@ module StateMachine
         # Notifies observers on the given object that a callback occurred
         # involving the given transition.  This will attempt to call the
         # following methods on observers:
-        # * #{type}_#{qualified_event}_from_#{from}_to_#{to}
-        # * #{type}_#{qualified_event}_from_#{from}
-        # * #{type}_#{qualified_event}_to_#{to}
-        # * #{type}_#{qualified_event}
-        # * #{type}_transition_#{machine_name}_from_#{from}_to_#{to}
-        # * #{type}_transition_#{machine_name}_from_#{from}
-        # * #{type}_transition_#{machine_name}_to_#{to}
-        # * #{type}_transition_#{machine_name}
-        # * #{type}_transition
+        # * <tt>#{type}_#{qualified_event}_from_#{from}_to_#{to}</tt>
+        # * <tt>#{type}_#{qualified_event}_from_#{from}</tt>
+        # * <tt>#{type}_#{qualified_event}_to_#{to}</tt>
+        # * <tt>#{type}_#{qualified_event}</tt>
+        # * <tt>#{type}_transition_#{machine_name}_from_#{from}_to_#{to}</tt>
+        # * <tt>#{type}_transition_#{machine_name}_from_#{from}</tt>
+        # * <tt>#{type}_transition_#{machine_name}_to_#{to}</tt>
+        # * <tt>#{type}_transition_#{machine_name}</tt>
+        # * <tt>#{type}_transition</tt>
         # 
         # This will always return true regardless of the results of the
         # callbacks.

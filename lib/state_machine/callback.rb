@@ -67,6 +67,7 @@ module StateMachine
     # * +before+
     # * +after+
     # * +around+
+    # * +failure+
     attr_accessor :type
     
     # An optional block for determining whether to cancel the callback chain

@@ -116,6 +116,9 @@ module StateMachine
     #   transition :parked => same                          # Loops :parked back to :parked
     #   transition [:parked, :stalled] => same              # Loops either :parked or :stalled back to the same state
     #   transition all - :parked => same                    # Loops every state but :parked back to the same state
+    #   
+    #   # Transitions to :idling if :parked, :first_gear if :idling, or :second_gear if :first_gear
+    #   transition :parked => :idling, :idling => :first_gear, :first_gear => :second_gear
     # 
     # == Verbose transitions
     # 
@@ -161,6 +164,7 @@ module StateMachine
     # 
     #   transition :parked => :idling, :if => :moving?
     #   transition :parked => :idling, :unless => :stopped?
+    #   transition :idling => :first_gear, :first_gear => :second_gear, :if => :seatbelt_on?
     #   
     #   transition :from => :parked, :to => :idling, :if => :moving?
     #   transition :from => :parked, :to => :idling, :unless => :stopped?

@@ -107,7 +107,7 @@ module StateMachine
     # * <tt>:on</tt> - One or more events that fired the transition.  If none
     #   are specified, then this will always match.
     # * <tt>:guard</tt> - Whether to guard matches with the if/unless
-    #   conditionals defined for this branch
+    #   conditionals defined for this branch.  Default is true.
     # 
     # == Examples
     # 

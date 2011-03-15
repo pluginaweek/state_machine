@@ -64,9 +64,12 @@ module StateMachine
           # supports yielding within blocks)
           if block_given? && Proc === method && arity != 0
             if [1, 2].include?(arity)
+              # Force the block to be either the only argument or the 2nd one
+              # after the object (may mean additional arguments get discarded)
               limit = arity
               args.insert(limit - 1, block)
             else
+              # Tack the block to the end of the args
               limit += 1 unless limit < 0
               args.push(block)
             end

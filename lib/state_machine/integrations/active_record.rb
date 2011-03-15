@@ -221,15 +221,15 @@ module StateMachine
     # *are* supported.  For example, if a transition for a record's +state+
     # attribute changes the state from +parked+ to +idling+ via the +ignite+
     # event, the following observer methods are supported:
-    # * before/after_ignite_from_parked_to_idling
-    # * before/after_ignite_from_parked
-    # * before/after_ignite_to_idling
-    # * before/after_ignite
-    # * before/after_transition_state_from_parked_to_idling
-    # * before/after_transition_state_from_parked
-    # * before/after_transition_state_to_idling
-    # * before/after_transition_state
-    # * before/after_transition
+    # * before/after/after_failure_to-_ignite_from_parked_to_idling
+    # * before/after/after_failure_to-_ignite_from_parked
+    # * before/after/after_failure_to-_ignite_to_idling
+    # * before/after/after_failure_to-_ignite
+    # * before/after/after_failure_to-_transition_state_from_parked_to_idling
+    # * before/after/after_failure_to-_transition_state_from_parked
+    # * before/after/after_failure_to-_transition_state_to_idling
+    # * before/after/after_failure_to-_transition_state
+    # * before/after/after_failure_to-_transition
     # 
     # The following class shows an example of some of these hooks:
     # 
