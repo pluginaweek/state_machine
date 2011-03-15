@@ -1506,16 +1506,12 @@ module StateMachine
         
         # Generate the graph
         graphvizVersion = Constants::RGV_VERSION.split('.')
+        file = File.join(options[:path], "#{options[:name]}.#{options[:format]}")
         
         if graphvizVersion[1] == '9' && graphvizVersion[2] == '0'
-          outputOptions = {
-            :output => options[:format],
-            :file => File.join(options[:path], "#{options[:name]}.#{options[:format]}")
-          }
+          outputOptions = {:output => options[:format], :file => file}
         else
-          outputOptions = {
-            options[:format] => File.join(options[:path], "#{options[:name]}.#{options[:format]}")
-          }
+          outputOptions = {options[:format] => file}
         end
         
         graph.output(outputOptions)
