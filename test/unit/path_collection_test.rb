@@ -28,6 +28,10 @@ class PathCollectionByDefaultTest < Test::Unit::TestCase
     assert_nil @paths.to_name
   end
   
+  def test_should_have_no_from_states
+    assert_equal [], @paths.from_states
+  end
+  
   def test_should_have_no_to_states
     assert_equal [], @paths.to_states
   end
@@ -97,6 +101,10 @@ class PathCollectionWithPathsTest < Test::Unit::TestCase
     assert_nil @paths.to_name
   end
   
+  def test_should_have_from_states
+    assert_equal [:parked, :idling], @paths.from_states
+  end
+  
   def test_should_have_to_states
     assert_equal [:idling, :first_gear], @paths.to_states
   end
@@ -146,6 +154,10 @@ class PathCollectionWithDuplicateNodesTest < Test::Unit::TestCase
     @object.state = 'parked'
     
     @paths = StateMachine::PathCollection.new(@object, @machine)
+  end
+  
+  def test_should_not_include_duplicates_in_from_states
+    assert_equal [:parked, :idling, :first_gear], @paths.from_states
   end
   
   def test_should_not_include_duplicates_in_to_states

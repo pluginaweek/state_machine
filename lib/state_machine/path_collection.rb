@@ -40,12 +40,22 @@ module StateMachine
       initial_paths.each {|path| walk(path)}
     end
     
-    # Lists all of the states that can be reached through the paths in this
-    # collection.
+    # Lists all of the states that can be transitioned from through the paths in
+    # this collection.
     # 
     # For example,
     # 
-    #   paths.to_states # => [:parked, :first_gear, :second_gear, ...]
+    #   paths.from_states # => [:parked, :idling, :first_gear, ...]
+    def from_states
+      map {|path| path.from_states}.flatten.uniq
+    end
+    
+    # Lists all of the states that can be transitioned to through the paths in
+    # this collection.
+    # 
+    # For example,
+    # 
+    #   paths.to_states # => [:idling, :first_gear, :second_gear, ...]
     def to_states
       map {|path| path.to_states}.flatten.uniq
     end
