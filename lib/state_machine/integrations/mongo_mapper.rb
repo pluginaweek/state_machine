@@ -207,6 +207,13 @@ module StateMachine
           action == :save
         end
         
+        # MongoMapper uses its own implementation of mass-assignment security
+        # instead of ActiveModel's, but still has a similar enough API that it
+        # can get enabled
+        def supports_mass_assignment_security?
+          true
+        end
+        
         # Don't allow callback terminators
         def callback_terminator
         end
@@ -219,15 +226,6 @@ module StateMachine
         # Always uses the <tt>:mongo_mapper</tt> translation scope
         def i18n_scope
           :mongo_mapper
-        end
-        
-        # Only allows state initialization on new records that aren't being
-        # created with a set of attributes that includes this machine's
-        # attribute.
-        def initialize_state?(object, options)
-          attributes = options[:attributes] || {}
-          ignore = filter_attributes(object, attributes).keys 
-          !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
         end
         
         # Filters attributes that cannot be assigned through the initialization
