@@ -280,23 +280,23 @@ module StateMachine
       # the current event
       def add_actions
         # Checks whether the event can be fired on the current object
-        machine.define_instance_method("can_#{qualified_name}?") do |machine, object, *args|
+        machine.define_helper(:instance, "can_#{qualified_name}?") do |machine, object, _super, *args|
           machine.event(name).can_fire?(object, *args)
         end
         
         # Gets the next transition that would be performed if the event were
         # fired now
-        machine.define_instance_method("#{qualified_name}_transition") do |machine, object, *args|
+        machine.define_helper(:instance, "#{qualified_name}_transition") do |machine, object, _super, *args|
           machine.event(name).transition_for(object, *args)
         end
         
         # Fires the event
-        machine.define_instance_method(qualified_name) do |machine, object, *args|
+        machine.define_helper(:instance, qualified_name) do |machine, object, _super, *args|
           machine.event(name).fire(object, *args)
         end
         
         # Fires the event, raising an exception if it fails
-        machine.define_instance_method("#{qualified_name}!") do |machine, object, *args|
+        machine.define_helper(:instance, "#{qualified_name}!") do |machine, object, _super, *args|
           object.send(qualified_name, *args) || raise(StateMachine::InvalidTransition.new(object, machine, name))
         end
       end

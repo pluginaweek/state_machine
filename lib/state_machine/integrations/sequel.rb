@@ -283,13 +283,11 @@ module StateMachine
         # initial state of the machine *before* any attributes are set on the
         # object
         def define_state_initializer
-          @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
-            # Hooks in to attribute initialization to set the states *prior*
-            # to the attributes being set
-            def set(hash, *args)
-              initialize_state_machines(:attributes => hash) { super }
-            end
-          end_eval
+          # Hooks in to attribute initialization to set the states *prior* to
+          # the attributes being set
+          define_helper(:instance, :set) do |machine, object, _super, *args|
+            object.class.state_machines.initialize_states(object, :attributes => args.first) { _super.call }
+          end
         end
         
         # Skips defining reader/writer methods since this is done automatically
@@ -309,16 +307,14 @@ module StateMachine
           
           if action == :save
             handle_validation_failure = self.handle_validation_failure
-            @instance_helper_module.class_eval do
-              define_method(:valid?) do |*args|
-                yielded = false
-                result = self.class.state_machines.transitions(self, :save, :after => false).perform do
-                  yielded = true
-                  super(*args)
-                end
-                
-                !yielded && !result ? handle_validation_failure.call(self, args, yielded, result) : result
+            define_helper(:instance, :valid?) do |machine, object, _super, *args|
+              yielded = false
+              result = object.class.state_machines.transitions(object, :save, :after => false).perform do
+                yielded = true
+                _super.call
               end
+              
+              !yielded && !result ? handle_validation_failure.call(object, args, yielded, result) : result
             end
           end
         end
@@ -332,19 +328,17 @@ module StateMachine
             action_hook = self.action_hook
             handle_save_failure = self.handle_save_failure
             
-            @instance_helper_module.class_eval do
-              define_method(action_hook) do |*args|
-                yielded = false
-                result = self.class.state_machines.transitions(self, :save).perform do
-                  yielded = true
-                  super(*args)
-                end
-                
-                if yielded || result
-                  result
-                else
-                  handle_save_failure.call(self)
-                end
+            define_helper(:instance, action_hook) do |machine, object, _super, *|
+              yielded = false
+              result = object.class.state_machines.transitions(object, :save).perform do
+                yielded = true
+                _super.call
+              end
+              
+              if yielded || result
+                result
+              else
+                handle_save_failure.call(object)
               end
             end
           else

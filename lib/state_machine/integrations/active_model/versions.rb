@@ -8,10 +8,8 @@ module StateMachine
         
         def define_validation_hook
           action = self.action
-          @instance_helper_module.class_eval do
-            define_method(:valid?) do |*args|
-              self.class.state_machines.transitions(self, action, :after => false).perform { super(*args) }
-            end
+          define_helper(:instance, :valid?) do |machine, object, _super, *|
+            object.class.state_machines.transitions(object, action, :after => false).perform { _super.call }
           end
         end
       end

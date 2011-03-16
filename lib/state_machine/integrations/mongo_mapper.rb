@@ -240,32 +240,15 @@ module StateMachine
         # initial state of the machine *before* any attributes are set on the
         # object
         def define_state_initializer
-          @instance_helper_module.class_eval <<-end_eval, __FILE__, __LINE__
-            def initialize(attrs = {})
-              initialize_state_machines(:attributes => attrs) { super }
-            end
-          end_eval
+          define_helper(:instance, :initialize) do |machine, object, _super, *args|
+            object.class.state_machines.initialize_states(object, :attributes => args.first) { _super.call }
+          end
         end
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
           owner_class.key(attribute, String) unless owner_class.keys.include?(attribute)
           super
-        end
-        
-        # Adds support for defining the attribute predicate, while providing
-        # compatibility with the default predicate which determines whether
-        # *anything* is set for the attribute's value
-        def define_state_predicate
-          name = self.name
-          
-          # Still use class_eval here instance of define_instance_method since
-          # we need to be able to call +super+
-          @instance_helper_module.class_eval do
-            define_method("#{name}?") do |*args|
-              args.empty? ? super(*args) : self.class.state_machine(name).states.matches?(self, *args)
-            end
-          end
         end
         
         # Uses around callbacks to run state events if using the :save hook
@@ -297,6 +280,13 @@ module StateMachine
         # Defines a new scope with the given name
         def define_scope(name, scope)
           lambda {|model, values| model.query.merge(model.query(scope.call(values)))}
+        end
+        
+        # ActiveModel's use of method_missing / respond_to for attribute methods
+        # breaks both ancestor lookups and defined?(super).  Need to special-case
+        # the existence of query attribute methods.
+        def owner_class_ancestor_has_method?(method)
+          method == "#{name}?" || super
         end
     end
   end

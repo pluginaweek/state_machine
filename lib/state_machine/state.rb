@@ -267,7 +267,7 @@ module StateMachine
         predicate = "#{qualified_name}?"
         if !owner_class.method_defined?(predicate) && !owner_class.private_method_defined?(predicate)
           # Checks whether the current value matches this state
-          machine.define_instance_method(predicate) do |machine, object|
+          machine.define_helper(:instance, predicate) do |machine, object|
             machine.states.matches?(object, name)
           end
         else
