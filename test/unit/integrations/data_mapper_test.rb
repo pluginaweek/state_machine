@@ -520,7 +520,7 @@ module DataMapperTest
     
       def test_should_have_changes_when_loaded_from_database
         record = @resource.get(@record.id)
-        assert record.dirty_attributes.blank?
+        assert record.dirty_attributes.empty?
       end
   end
   
