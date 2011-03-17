@@ -303,7 +303,7 @@ module StateMachine
         
         # Pluralizes the name using the built-in inflector
         def pluralize(word)
-          defined?(Extlib::Inflection) ? Extlib::Inflection.pluralize(word.to_s) : super
+          ::DataMapper::Inflector.pluralize(word.to_s)
         end
         
         # Only allows state initialization on new records that aren't being

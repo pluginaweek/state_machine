@@ -6,6 +6,10 @@ module StateMachine
           ::DataMapper::VERSION =~ /^0\.9\./
         end
         
+        def action_hook
+          action
+        end
+        
         def mark_dirty(object, value)
           object.original_values[self.attribute] = "#{value}-ignored" if object.original_values[self.attribute] == value
         end
@@ -13,11 +17,21 @@ module StateMachine
       
       version '0.9.x - 0.10.x' do
         def self.active?
-          ::DataMapper::VERSION =~ /^0\.\d\./
+          ::DataMapper::VERSION =~ /^0\.\d\./ || ::DataMapper::VERSION =~ /^0\.10\./
         end
         
-        def action_hook
-          action
+        def pluralize(word)
+          ::Extlib::Inflection.pluralize(word.to_s)
+        end
+      end
+      
+      version '1.0.0' do
+        def self.active?
+          ::DataMapper::VERSION == '1.0.0'
+        end
+        
+        def pluralize(word)
+          (defined?(::ActiveSupport::Inflector) ? ::ActiveSupport::Inflector : ::Extlib::Inflection).pluralize(word.to_s)
         end
       end
       
