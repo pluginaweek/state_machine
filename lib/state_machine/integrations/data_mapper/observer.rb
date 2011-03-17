@@ -1,10 +1,10 @@
 module StateMachine
   module Integrations #:nodoc:
     module DataMapper
-      # Adds support for creating before/after transition callbacks within a
-      # DataMapper observer.  These callbacks behave very similar to
-      # before/after hooks during save/update/destroy/etc., but with the
-      # following modifications:
+      # Adds support for creating before/after/around/failure transition
+      # callbacks within a DataMapper observer.  These callbacks behave very
+      # similar to hooks during save/update/destroy/etc., but with the following
+      # modifications:
       # * Each callback can define a set of transition requirements that must be
       #   met in order for the callback to get invoked.
       # * An additional transition parameter is available that provides

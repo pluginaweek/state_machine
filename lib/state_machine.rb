@@ -357,7 +357,7 @@ module StateMachine
     # Within the +state_machine+ block, you can also define callbacks for
     # transitions.  For more information about defining these callbacks,
     # see StateMachine::Machine#before_transition, StateMachine::Machine#after_transition,
-    # and StateMachine::Machine#around_transition.
+    # and StateMachine::Machine#around_transition, and StateMachine::Machine#after_failure.
     # 
     # == Namespaces
     # 
