@@ -86,44 +86,29 @@ module StateMachine
       !empty? && (@target ? to_name == @target : transitions.empty?)
     end
     
-    # Determines whether the given transition has been walked down in this path.
-    # 
-    # Configuration options:
-    # * <tt>:since_target</tt> - Whether to only detect the transition since the target
-    #   has been walked to (if a target was configured for this path)
-    def walked?(transition, options = {})
-      transitions = self
-      if options[:since_target] && @target && @target != to_name && target_transition = detect {|t| t.to_name == @target}
-        transitions = transitions[index(target_transition) + 1..-1]
-      end
-      
-      transitions.include?(transition)
-    end
-    
-    # Determines whether the given state has been walked to in this path
-    def walked_to?(state)
-      times_walked_to(state) > 0
-    end
-    
     private
       # Calculates the number of times the given state has been walked to
       def times_walked_to(state)
         select {|transition| transition.to_name == state}.length
       end
       
-      # Determines whether it's possible to walk to the given transition from
-      # the current path
-      def can_walk_to?(transition)
-        if @target
-          # Can walk to the transition if:
-          # * The target has not been walked to twice yet and
-          # * The transition has not been walked since we last reached the target
-          times_walked_to(@target) < 2 && !walked?(transition, :since_target => true)
-        else
-          # Can walk to the transition if:
-          # * The transition has not been walked already
-          !walked?(transition)
+      # Determines whether the given transition has been recently walked down in
+      # this path.  If a target is configured for this path, then this will only
+      # look at transitions walked down since the target was last reached.
+      def recently_walked?(transition)
+        transitions = self
+        if @target && @target != to_name && target_transition = detect {|t| t.to_name == @target}
+          transitions = transitions[index(target_transition) + 1..-1]
         end
+        transitions.include?(transition)
+      end
+      
+      # Determines whether it's possible to walk to the given transition from
+      # the current path.  A transition can be walked to if:
+      # * It has not been recently walked and
+      # * If a target is specified, it has not been walked to twice yet
+      def can_walk_to?(transition)
+        !recently_walked?(transition) && (!@target || times_walked_to(@target) < 2)
       end
       
       # Get the next set of transitions that can be walked to starting from the

@@ -17,6 +17,10 @@ class PathByDefaultTest < Test::Unit::TestCase
     assert_equal @machine, @path.machine
   end
   
+  def test_should_not_have_walked_anywhere
+    assert_equal [], @path
+  end
+  
   def test_should_not_have_a_from_name
     assert_nil @path.from_name
   end
@@ -45,19 +49,6 @@ class PathByDefaultTest < Test::Unit::TestCase
   
   def test_should_not_be_complete
     assert_equal false, @path.complete?
-  end
-  
-  def test_should_not_have_walked_anywhere
-    @machine.state :parked, :idling
-    @machine.event :ignite
-    transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
-    
-    assert_equal false, @path.walked?(transition)
-  end
-  
-  def test_should_not_have_walked_to_anywhere
-    @machine.state :parked
-    assert_equal false, @path.walked_to?(:parked)
   end
 end
 
@@ -145,25 +136,6 @@ class PathWithTransitionsTest < Test::Unit::TestCase
   
   def test_should_be_complete
     assert_equal true, @path.complete?
-  end
-  
-  def test_should_have_walked_to_each_transition_in_path
-    assert_equal true, @path.walked?(@ignite_transition)
-    assert_equal true, @path.walked?(@shift_up_transition)
-  end
-  
-  def test_should_not_have_walked_transitions_not_in_path
-    transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :first_gear)
-    assert_equal false, @path.walked?(transition)
-  end
-  
-  def test_should_have_walked_to_each_to_state_in_path
-    assert_equal true, @path.walked_to?(:idling)
-    assert_equal true, @path.walked_to?(:first_gear)
-  end
-  
-  def test_should_not_have_walked_to_states_not_in_path
-    assert_equal false, @path.walked_to?(:parked)
   end
 end
 
@@ -347,20 +319,6 @@ class PathWithUnreachedTargetTest < Test::Unit::TestCase
     assert_equal false, @path.complete?
   end
   
-  def test_should_have_walked_to_each_transition_in_path
-    assert_equal true, @path.walked?(@ignite_transition)
-  end
-  
-  def test_should_have_walked_to_transitions_since_target
-    assert_equal true, @path.walked?(@ignite_transition, :since_target => true)
-  end
-  
-  def test_should_not_have_walked_transitions_not_in_path
-    @machine.event :park
-    transition = StateMachine::Transition.new(@object, @machine, :park, :idling, :parked)
-    assert_equal false, @path.walked?(transition)
-  end
-  
   def test_should_not_be_able_to_walk
     walked = false
     @path.walk { walked = true }
@@ -392,16 +350,6 @@ class PathWithReachedTargetTest < Test::Unit::TestCase
   
   def test_should_be_complete
     assert_equal true, @path.complete?
-  end
-  
-  def test_should_have_walked_to_each_transition_in_path
-    assert_equal true, @path.walked?(@ignite_transition)
-    assert_equal true, @path.walked?(@park_transition)
-  end
-  
-  def test_should_have_walked_to_any_transitions_since_target
-    assert_equal true, @path.walked?(@ignite_transition, :since_target => true)
-    assert_equal true, @path.walked?(@park_transition, :since_target => true)
   end
   
   def test_should_not_be_able_to_walk
@@ -479,15 +427,6 @@ class PathWithDeepTargetTest < Test::Unit::TestCase
     assert_equal false, @path.complete?
   end
   
-  def test_should_not_have_walked_to_each_transition_prior_to_target
-    assert_equal false, @path.walked?(@ignite_transition, :since_target => true)
-    assert_equal false, @path.walked?(@park_transition, :since_target => true)
-  end
-  
-  def test_should_have_walked_to_any_transitions_since_target
-    assert_equal true, @path.walked?(@shift_up_transition, :since_target => true)
-  end
-  
   def test_should_be_able_to_walk
     paths = []
     @path.walk {|path| paths << path}
@@ -526,16 +465,6 @@ class PathWithDeepTargetReachedTest < Test::Unit::TestCase
   
   def test_should_be_complete
     assert_equal true, @path.complete?
-  end
-  
-  def test_should_not_have_walked_to_each_transition_prior_to_target
-    assert_equal true, @path.walked?(@ignite_transition, :since_target => true)
-    assert_equal true, @path.walked?(@park_transition, :since_target => true)
-  end
-  
-  def test_should_have_walked_to_any_transitions_since_first_target
-    assert_equal true, @path.walked?(@shift_up_transition, :since_target => true)
-    assert_equal true, @path.walked?(@park_transition_2, :since_target => true)
   end
   
   def test_should_not_be_able_to_walk
