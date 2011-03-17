@@ -82,6 +82,7 @@ module StateMachine
         end
       end
       
+      # Assumes MongoMapper 0.10+ uses ActiveModel 3.1+
       version '0.9.x' do
         def self.active?
           !defined?(::MongoMapper::Version) || ::MongoMapper::Version =~ /^0\.9\./
