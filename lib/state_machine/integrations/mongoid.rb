@@ -230,10 +230,6 @@ module StateMachine
           action == :save
         end
         
-        # Don't allow callback terminators
-        def callback_terminator
-        end
-        
         # Only allows state initialization on new records that aren't being
         # created with a set of attributes that includes this machine's
         # attribute.
