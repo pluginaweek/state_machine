@@ -344,7 +344,7 @@ module MongoMapperTest
     end
     
     def test_should_define_a_new_key_for_the_attribute
-      assert_not_nil @model.keys[:status]
+      assert_not_nil @model.keys['status']
     end
     
     def test_should_define_a_reader_attribute_for_the_attribute
