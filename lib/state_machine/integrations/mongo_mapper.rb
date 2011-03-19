@@ -223,11 +223,6 @@ module StateMachine
           "#{File.dirname(__FILE__)}/mongo_mapper/locale.rb"
         end
         
-        # Always uses the <tt>:mongo_mapper</tt> translation scope
-        def i18n_scope
-          :mongo_mapper
-        end
-        
         # Filters attributes that cannot be assigned through the initialization
         # of the object
         def filter_attributes(object, attributes)

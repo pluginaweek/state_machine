@@ -348,8 +348,8 @@ module StateMachine
         end
         
         # Determines the base scope to use when looking up translations
-        def i18n_scope
-          owner_class.i18n_scope
+        def i18n_scope(klass)
+          klass.i18n_scope
         end
         
         # Only allows state initialization on new records that aren't being
@@ -392,7 +392,7 @@ module StateMachine
           # Generate all possible translation keys
           translations = ancestors.map {|ancestor| :"#{ancestor.model_name.underscore}.#{name}.#{group}.#{value}"}
           translations.concat([:"#{name}.#{group}.#{value}", :"#{group}.#{value}", value.humanize.downcase])
-          I18n.translate(translations.shift, :default => translations, :scope => [i18n_scope, :state_machines])
+          I18n.translate(translations.shift, :default => translations, :scope => [i18n_scope(klass), :state_machines])
         end
         
         # Build a list of ancestors for the given class to use when

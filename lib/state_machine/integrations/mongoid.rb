@@ -234,11 +234,6 @@ module StateMachine
           "#{File.dirname(__FILE__)}/mongoid/locale.rb"
         end
         
-        # Always uses the <tt>:mongoid</tt> translation scope
-        def i18n_scope
-          :mongoid
-        end
-        
         # Only allows state initialization on new records that aren't being
         # created with a set of attributes that includes this machine's
         # attribute.

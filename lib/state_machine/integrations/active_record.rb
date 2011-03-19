@@ -369,11 +369,6 @@ module StateMachine
           action == :save
         end
         
-        # Always uses the <tt>:activerecord</tt> translation scope
-        def i18n_scope
-          :activerecord
-        end
-        
         # Only allows state initialization on new records that aren't being
         # created with a set of attributes that includes this machine's
         # attribute.

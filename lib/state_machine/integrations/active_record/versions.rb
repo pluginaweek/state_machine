@@ -61,6 +61,10 @@ module StateMachine
           true
         end
         
+        def i18n_scope(klass)
+          :activerecord
+        end
+        
         def action_hook
           action == :save ? :create_or_update : super
         end
