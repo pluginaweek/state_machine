@@ -10,15 +10,17 @@ module StateMachine
     # 
     # If no block is provided, then all states will still be initialized.
     def initialize_states(object, options = {})
+      options = {:static => true, :dynamic => true}.merge(options)
+      
       each_value do |machine| 
         machine.initialize_state(object, options) unless machine.dynamic_initial_state?
-      end
+      end if options[:static]
       
       result = yield if block_given?
       
       each_value do |machine|
         machine.initialize_state(object, options) if machine.dynamic_initial_state?
-      end
+      end if options[:dynamic]
       
       result
     end

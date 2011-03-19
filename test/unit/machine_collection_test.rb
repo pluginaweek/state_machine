@@ -56,6 +56,18 @@ class MachineCollectionStateInitializationTest < Test::Unit::TestCase
     assert_equal 'parked', @object.state
     assert_equal 'active', @object.alarm_state
   end
+  
+  def test_should_skip_static_states_if_disabled
+    @machines.initialize_states(@object, :static => false)
+    assert_nil @object.state
+    assert_equal 'active', @object.alarm_state
+  end
+  
+  def test_should_skip_dynamic_states_if_disabled
+    @machines.initialize_states(@object, :dynamic => false)
+    assert_equal 'parked', @object.state
+    assert_nil @object.alarm_state
+  end
 end
 
 class MachineCollectionFireTest < Test::Unit::TestCase
