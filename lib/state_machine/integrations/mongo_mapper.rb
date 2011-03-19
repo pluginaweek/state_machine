@@ -219,10 +219,6 @@ module StateMachine
           true
         end
         
-        # Don't allow callback terminators
-        def callback_terminator
-        end
-        
         # Filters attributes that cannot be assigned through the initialization
         # of the object
         def filter_attributes(object, attributes)

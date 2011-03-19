@@ -1,5 +1,6 @@
 == master
 
+* Support callback terminators in MongoMapper 0.9.0+
 * Fix pluralization integration on DataMapper 1.0.0 and 1.1.0
 * Allow transition guards to be bypassed for event / transition / path helpers
 * Allow state / condition requirements to be specified for all event / transition / path helpers

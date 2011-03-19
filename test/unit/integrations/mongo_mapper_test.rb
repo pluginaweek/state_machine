@@ -750,20 +750,38 @@ module MongoMapperTest
       @result = @transition.perform
     end
     
-    def test_should_be_successful
-      assert @result
-    end
-    
-    def test_should_change_current_state
-      assert_equal 'idling', @record.state
-    end
-    
-    def test_should_run_action
-      assert !@record.new_record?
-    end
-    
-    def test_should_run_further_callbacks
-      assert_equal [:before_1, :before_2, :around_before, :around_after, :after], @callbacks
+    if defined?(MongoMapper::Version) && MongoMapper::Version >= '0.9.0'
+      def test_should_not_be_successful
+        assert !@result
+      end
+      
+      def test_should_not_change_current_state
+        assert_equal 'parked', @record.state
+      end
+      
+      def test_should_not_run_action
+        assert @record.new_record?
+      end
+      
+      def test_should_not_run_further_callbacks
+        assert_equal [:before_1], @callbacks
+      end
+    else
+      def test_should_be_successful
+        assert @result
+      end
+      
+      def test_should_change_current_state
+        assert_equal 'idling', @record.state
+      end
+      
+      def test_should_run_action
+        assert !@record.new_record?
+      end
+      
+      def test_should_run_further_callbacks
+        assert_equal [:before_1, :before_2, :around_before, :around_after, :after], @callbacks
+      end
     end
   end
   
@@ -834,8 +852,14 @@ module MongoMapperTest
       assert !@record.new_record?
     end
     
-    def test_should_still_run_further_after_callbacks
-      assert_equal [:around_before, :around_after, :after_1, :after_2], @callbacks
+    if defined?(MongoMapper::Version) && MongoMapper::Version >= '0.9.0'
+      def test_should_not_run_further_after_callbacks
+        assert_equal [:around_before, :around_after, :after_1], @callbacks
+      end
+    else
+      def test_should_still_run_further_after_callbacks
+        assert_equal [:around_before, :around_after, :after_1, :after_2], @callbacks
+      end
     end
   end
   

@@ -64,6 +64,9 @@ module StateMachine
           true
         end
         
+        def callback_terminator
+        end
+        
         def translate(klass, key, value)
           value.to_s.humanize.downcase
         end
