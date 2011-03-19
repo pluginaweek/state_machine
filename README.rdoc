@@ -675,6 +675,7 @@ Test specific versions of integrations like so:
   rake test INTEGRATION=active_model VERSION=3.0.0
   rake test INTEGRATION=active_record VERSION=2.0.0
   rake test INTEGRATION=data_mapper VERSION=0.9.4
+  rake test INTEGRATION=mongoid VERSION=2.0.0
   rake test INTEGRATION=mongo_mapper VERSION=0.5.5
   rake test INTEGRATION=sequel VERSION=2.8.0
 
