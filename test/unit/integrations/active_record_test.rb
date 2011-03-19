@@ -46,6 +46,7 @@ module ActiveRecordTest
           end
         end
         model.class_eval(&block) if block_given?
+        model.reset_column_information if create_table
         model
       end
       
