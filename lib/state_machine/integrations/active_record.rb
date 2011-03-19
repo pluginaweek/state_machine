@@ -336,6 +336,11 @@ module StateMachine
       end
       
       protected
+        # The name of this integration
+        def integration
+          :active_record
+        end
+        
         # Loads locale files needed for translations
         def load_locale
           load_i18n_version
@@ -349,11 +354,6 @@ module StateMachine
             require 'i18n/version'
           rescue Exception => ex
           end
-        end
-        
-        # The path to the locale file containing state_machine translations
-        def locale_path
-          "#{File.dirname(__FILE__)}/active_record/locale.rb"
         end
         
         # Loads extensions to ActiveRecord's Observers

@@ -202,6 +202,11 @@ module StateMachine
       end
       
       protected
+        # The name of this integration
+        def integration
+          :mongo_mapper
+        end
+        
         # Only runs validations on the action if using <tt>:save</tt>
         def runs_validations_on_action?
           action == :save
@@ -216,11 +221,6 @@ module StateMachine
         
         # Don't allow callback terminators
         def callback_terminator
-        end
-        
-        # The path to the locale file containing state_machine translations
-        def locale_path
-          "#{File.dirname(__FILE__)}/mongo_mapper/locale.rb"
         end
         
         # Filters attributes that cannot be assigned through the initialization

@@ -310,6 +310,11 @@ module StateMachine
       end
       
       protected
+        # The name of this integration
+        def integration
+          :active_model
+        end
+        
         # Whether observers are supported in the integration.  Only true if
         # ActiveModel::Observer is available.
         def supports_observers?
@@ -415,7 +420,7 @@ module StateMachine
         
         # The path to the locale file containing state_machine translations
         def locale_path
-          "#{File.dirname(__FILE__)}/active_model/locale.rb"
+          "#{File.dirname(__FILE__)}/#{integration}/locale.rb"
         end
         
         # Loads extensions to ActiveModel's Observers
