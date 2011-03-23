@@ -270,9 +270,7 @@ module StateMachine
         # created with a set of attributes that includes this machine's
         # attribute.
         def initialize_state?(object, options)
-          if object.new? && !object.instance_variable_defined?('@initialized_state_machines')
-            object.instance_variable_set('@initialized_state_machines', true)
-            
+          if object.new?
             attributes = options[:attributes] || {}
             ignore = object.send(:setter_methods, nil, nil).map {|setter| setter.chop.to_sym} & attributes.keys.map {|key| key.to_sym}
             !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
@@ -286,7 +284,12 @@ module StateMachine
           # Hooks in to attribute initialization to set the states *prior* to
           # the attributes being set
           define_helper(:instance, :set) do |machine, object, _super, *args|
-            object.class.state_machines.initialize_states(object, :attributes => args.first) { _super.call }
+            if !object.instance_variable_defined?('@initialized_state_machines')
+              object.class.state_machines.initialize_states(object, :attributes => args.first) { _super.call }
+              object.instance_variable_set('@initialized_state_machines', true)
+            else
+              _super.call
+            end
           end
         end
         

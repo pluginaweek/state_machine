@@ -234,10 +234,7 @@ module StateMachine
         # created with a set of attributes that includes this machine's
         # attribute.
         def initialize_state?(object, options)
-          if object.new_record? && !object.instance_variable_defined?('@initialized_state_machines')
-            object.instance_variable_set('@initialized_state_machines', true)
-            super
-          end
+          super if object.new_record?
         end
         
         # Defines an initialization hook into the owner class for setting the
@@ -245,7 +242,12 @@ module StateMachine
         # object
         def define_state_initializer
           define_helper(:instance, :process) do |machine, object, _super, *args|
-            object.class.state_machines.initialize_states(object, :attributes => args.first) { _super.call }
+            if !object.instance_variable_defined?('@initialized_state_machines')
+              object.class.state_machines.initialize_states(object, :attributes => args.first) { _super.call }
+              object.instance_variable_set('@initialized_state_machines', true)
+            else
+              _super.call
+            end
           end
         end
         

@@ -1,5 +1,7 @@
 == master
 
+* Fix classes with multiple state machines failing to initialize in ActiveRecord / Mongoid / Sequel integrations
+
 == 0.10.0 / 2011-03-19
 
 * Support callback terminators in MongoMapper 0.9.0+

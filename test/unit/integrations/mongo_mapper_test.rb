@@ -450,6 +450,22 @@ module MongoMapperTest
     end
   end
   
+  class MachineMultipleTest < BaseTestCase
+    def setup
+      @model = new_model do
+        key :status, String, :default => 'idling'
+      end
+      @state_machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @status_machine = StateMachine::Machine.new(@model, :status, :initial => :idling)
+    end
+    
+    def test_should_should_initialize_each_state
+      record = @model.new
+      assert_equal 'parked', record.state
+      assert_equal 'idling', record.status
+    end
+  end
+  
   class MachineWithLoopbackTest < BaseTestCase
     def setup
       @model = new_model do

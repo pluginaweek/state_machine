@@ -454,6 +454,23 @@ module DataMapperTest
     end
   end
   
+  class MachineMultipleTest < BaseTestCase
+    def setup
+      @resource = new_resource do
+        property :status, String
+        auto_migrate!
+      end
+      @state_machine = StateMachine::Machine.new(@resource, :initial => :parked)
+      @status_machine = StateMachine::Machine.new(@resource, :status, :initial => :idling)
+    end
+    
+    def test_should_should_initialize_each_state
+      record = @resource.new
+      assert_equal 'parked', record.state
+      assert_equal 'idling', record.status
+    end
+  end
+  
   class MachineWithLoopbackTest < BaseTestCase
     def setup
       @resource = new_resource do
