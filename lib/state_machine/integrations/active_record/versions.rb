@@ -72,6 +72,13 @@ module StateMachine
         def filter_attributes(object, attributes)
           object.send(:remove_attributes_protected_from_mass_assignment, attributes)
         end
+        
+        def load_observer_extensions
+          super
+          ::ActiveRecord::Observer.class_eval do
+            include StateMachine::Integrations::ActiveModel::Observer
+          end unless ::ActiveRecord::Observer < StateMachine::Integrations::ActiveModel::Observer
+        end
       end
       
       version '2.0 - 2.2.x' do

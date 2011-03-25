@@ -356,14 +356,6 @@ module StateMachine
           end
         end
         
-        # Loads extensions to ActiveRecord's Observers
-        def load_observer_extensions
-          super
-          ::ActiveRecord::Observer.class_eval do
-            include StateMachine::Integrations::ActiveModel::Observer
-          end unless ::ActiveRecord::Observer < StateMachine::Integrations::ActiveModel::Observer
-        end
-        
         # Only runs validations on the action if using <tt>:save</tt>
         def runs_validations_on_action?
           action == :save
