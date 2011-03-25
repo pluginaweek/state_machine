@@ -179,6 +179,62 @@ module StateMachine
     # 
     # Note, also, that the transition can be accessed by simply defining
     # additional arguments in the callback block.
+    # 
+    # == Observers
+    # 
+    # In addition to support for Mongoid-like hooks, there is additional support
+    # for Mongoid observers.  Because of the way Mongoid observers are designed,
+    # there is less flexibility around the specific transitions that can be
+    # hooked in.  However, a large number of hooks *are* supported.  For
+    # example, if a transition for a record's +state+ attribute changes the
+    # state from +parked+ to +idling+ via the +ignite+ event, the following
+    # observer methods are supported:
+    # * before/after/after_failure_to-_ignite_from_parked_to_idling
+    # * before/after/after_failure_to-_ignite_from_parked
+    # * before/after/after_failure_to-_ignite_to_idling
+    # * before/after/after_failure_to-_ignite
+    # * before/after/after_failure_to-_transition_state_from_parked_to_idling
+    # * before/after/after_failure_to-_transition_state_from_parked
+    # * before/after/after_failure_to-_transition_state_to_idling
+    # * before/after/after_failure_to-_transition_state
+    # * before/after/after_failure_to-_transition
+    # 
+    # The following class shows an example of some of these hooks:
+    # 
+    #   class VehicleObserver < Mongoid::Observer
+    #     def before_save(vehicle)
+    #       # log message
+    #     end
+    #     
+    #     # Callback for :ignite event *before* the transition is performed
+    #     def before_ignite(vehicle, transition)
+    #       # log message
+    #     end
+    #     
+    #     # Callback for :ignite event *after* the transition has been performed
+    #     def after_ignite(vehicle, transition)
+    #       # put on seatbelt
+    #     end
+    #     
+    #     # Generic transition callback *before* the transition is performed
+    #     def after_transition(vehicle, transition)
+    #       Audit.log(vehicle, transition)
+    #     end
+    #   end
+    # 
+    # More flexible transition callbacks can be defined directly within the
+    # model as described in StateMachine::Machine#before_transition
+    # and StateMachine::Machine#after_transition.
+    # 
+    # To define a single observer for multiple state machines:
+    # 
+    #   class StateMachineObserver < Mongoid::Observer
+    #     observe Vehicle, Switch, Project
+    #     
+    #     def after_transition(record, transition)
+    #       Audit.log(record, transition)
+    #     end
+    #   end
     module Mongoid
       include Base
       include ActiveModel
