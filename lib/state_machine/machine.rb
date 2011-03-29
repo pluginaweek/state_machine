@@ -445,7 +445,6 @@ module StateMachine
       @action = options[:action]
       @use_transactions = options[:use_transactions]
       @initialize_state = options[:initialize]
-      @helpers = {:instance => {}, :class => {}}
       self.owner_class = owner_class
       self.initial_state = options[:initial]
       
@@ -469,7 +468,6 @@ module StateMachine
       @states = @states.dup
       @states.machine = self
       @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup, :failure => @callbacks[:failure].dup}
-      @helpers = {:instance => @helpers[:instance].dup, :class => @helpers[:class].dup}
     end
     
     # Sets the class which is the owner of this state machine.  Any methods
@@ -509,56 +507,6 @@ module StateMachine
       
       # Update all states to reflect the new initial state
       states.each {|state| state.initial = (state.name == @initial_state)}
-    end
-    
-    # Initializes the state on the given object.  Initial values are only set if
-    # the machine's attribute hasn't been previously initialized.
-    def initialize_state(object, options = {})
-      write(object, :state, initial_state(object).value) if initialize_state?(object, options)
-    end
-    
-    # Gets the actual name of the attribute on the machine's owner class that
-    # stores data with the given name.
-    def attribute(name = :state)
-      name == :state ? @attribute : :"#{self.name}_#{name}"
-    end
-    
-    # Defines a new helper method in an instance or class scope with the given
-    # name.  If the method is already defined in the scope, then this will not
-    # override it.
-    # 
-    # Example:
-    # 
-    #   # Instance helper
-    #   machine.define_helper(:instance, :state_name) do |machine, object, _super|
-    #     machine.states.match(object)
-    #   end
-    #   
-    #   # Class helper
-    #   machine.define_helper(:class, :state_machine_name) do |machine, klass, _super|
-    #     "State"
-    #   end
-    def define_helper(scope, method, &block)
-      @helpers.fetch(scope)[method] = block
-      @helper_modules.fetch(scope).class_eval <<-end_eval, __FILE__, __LINE__
-        def #{method}(*args)
-          _super = lambda {|*new_args| new_args.empty? ? super(*args) : super(*new_args)}
-          #{scope == :class ? 'self' : 'self.class'}.state_machine(#{name.inspect}).call_helper(#{scope.inspect}, #{method.inspect}, self, _super, *args)
-        end
-      end_eval
-    end
-    
-    # Invokes the helper method defined in the given scope.
-    # 
-    # Example:
-    # 
-    #   # Instance helper
-    #   machine.call_helper(:instance, :state_name, self, lambda {super})
-    #   
-    #   # Class helper
-    #   machine.call_helper(:class, :state_machine_name, self, lambda {super})
-    def call_helper(scope, method, object, _super, *args)
-      @helpers.fetch(scope).fetch(method).call(self, object, _super, *args)
     end
     
     # Gets the initial state of the machine for the given object. If a dynamic
@@ -602,6 +550,62 @@ module StateMachine
     # Whether a dynamic initial state is being used in the machine
     def dynamic_initial_state?
       @initial_state.is_a?(Proc)
+    end
+    
+    # Initializes the state on the given object.  Initial values are only set if
+    # the machine's attribute hasn't been previously initialized.
+    def initialize_state(object, options = {})
+      write(object, :state, initial_state(object).value) if initialize_state?(object, options)
+    end
+    
+    # Gets the actual name of the attribute on the machine's owner class that
+    # stores data with the given name.
+    def attribute(name = :state)
+      name == :state ? @attribute : :"#{self.name}_#{name}"
+    end
+    
+    # Defines a new helper method in an instance or class scope with the given
+    # name.  If the method is already defined in the scope, then this will not
+    # override it.
+    # 
+    # Example:
+    # 
+    #   # Instance helper
+    #   machine.define_helper(:instance, :state_name) do |machine, object|
+    #     machine.states.match(object).name
+    #   end
+    #   
+    #   # Class helper
+    #   machine.define_helper(:class, :state_machine_name) do |machine, klass|
+    #     "State"
+    #   end
+    # 
+    # You can also define helpers using string evaluation like so:
+    # 
+    #   # Instance helper
+    #   machine.define_helper :instance, <<-end_eval, __FILE__, __LINE__
+    #     def state_name
+    #       self.class.state_machine(:state).states.match(self).name
+    #     end
+    #   end_eval
+    #   
+    #   # Class helper
+    #   machine.define_helper :class, <<-end_eval, __FILE__, __LINE__
+    #     def state_machine_name
+    #       "State"
+    #     end
+    #   end_eval
+    def define_helper(scope, method, *args, &block)
+      if block_given?
+        name = self.name
+        @helper_modules.fetch(scope).class_eval do
+          define_method(method) do |*args|
+            block.call((scope == :instance ? self.class : self).state_machine(name), self, *args)
+          end
+        end
+      else
+        @helper_modules.fetch(scope).class_eval(method, *args)
+      end
     end
     
     # Customizes the definition of one or more states in the machine.
@@ -1555,9 +1559,11 @@ module StateMachine
       # are set prior to the original initialize method and dynamic values are
       # set *after* the initialize method in case it is dependent on it.
       def define_state_initializer
-        define_helper(:instance, :initialize) do |machine, object, _super, *|
-          object.class.state_machines.initialize_states(object) { _super.call }
-        end
+        define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+          def initialize(*)
+            self.class.state_machines.initialize_states(self, :ignore_values => false) { super }
+          end
+        end_eval
       end
       
       # Adds reader/writer methods for accessing the state attribute
@@ -1571,22 +1577,24 @@ module StateMachine
       # current state
       def define_state_predicate
         call_super = owner_class_ancestor_has_method?("#{name}?")
-        define_helper(:instance, "#{name}?") do |machine, object, _super, *args|
-          args.empty? && call_super ? _super.call : machine.states.matches?(object, args.first)
-        end
+        define_helper :instance, <<-end_eval, __FILE__, __LINE__
+          def #{name}?(*args)
+            args.empty? && #{call_super} ? super : self.class.state_machine(#{name.inspect}).states.matches?(self, *args)
+          end
+        end_eval
       end
       
       # Adds helper methods for getting information about this state machine's
       # events
       def define_event_helpers
         # Gets the events that are allowed to fire on the current object
-        define_helper(:instance, attribute(:events)) do |machine, object, _super, *args|
+        define_helper(:instance, attribute(:events)) do |machine, object, *args|
           machine.events.valid_for(object, *args).map {|event| event.name}
         end
         
         # Gets the next possible transitions that can be run on the current
         # object
-        define_helper(:instance, attribute(:transitions)) do |machine, object, _super, *args|
+        define_helper(:instance, attribute(:transitions)) do |machine, object, *args|
           machine.events.transitions_for(object, *args)
         end
         
@@ -1594,7 +1602,7 @@ module StateMachine
         # action is called
         if action
           event_attribute = attribute(:event)
-          define_helper(:instance, event_attribute) do |machine, object, *|
+          define_helper(:instance, event_attribute) do |machine, object|
             # Interpret non-blank events as present
             event = machine.read(object, :event, true)
             event && !(event.respond_to?(:empty?) && event.empty?) ? event.to_sym : nil
@@ -1602,12 +1610,14 @@ module StateMachine
           
           # A roundabout way of writing the attribute is used here so that
           # integrations can hook into this modification
-          define_helper(:instance, "#{event_attribute}=") do |machine, object, _super, value|
+          define_helper(:instance, "#{event_attribute}=") do |machine, object, value|
             machine.write(object, :event, value, true)
           end
           
           event_transition_attribute = attribute(:event_transition)
-          @helper_modules[:instance].class_eval { protected; attr_accessor event_transition_attribute }
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__
+            protected; attr_accessor #{event_transition_attribute.inspect}
+          end_eval
         end
       end
       
@@ -1615,7 +1625,7 @@ module StateMachine
       # available transition paths
       def define_path_helpers
         # Gets the paths of transitions available to the current object
-        define_helper(:instance, attribute(:paths)) do |machine, object, _super, *args|
+        define_helper(:instance, attribute(:paths)) do |machine, object, *args|
           machine.paths_for(object, *args)
         end
       end
@@ -1645,11 +1655,13 @@ module StateMachine
         private_action_hook = owner_class.private_method_defined?(action_hook)
         
         # Only define helper if it hasn't 
-        define_helper(:instance, action_hook) do |machine, object, _super, *args|
-          object.class.state_machines.transitions(object, action).perform { _super.call }
-        end
-        
-        @helper_modules[:instance].class_eval { private action_hook } if private_action_hook
+        define_helper :instance, <<-end_eval, __FILE__, __LINE__
+          def #{action_hook}(*)
+            self.class.state_machines.transitions(self, #{action.inspect}).perform { super }
+          end
+          
+          private #{action_hook.inspect} if #{private_action_hook}
+        end_eval
       end
       
       # The method to hook into for triggering transitions when invoked.  By
@@ -1674,22 +1686,22 @@ module StateMachine
       # events on the owner class
       def define_name_helpers
         # Gets the humanized version of a state
-        define_helper(:class, "human_#{attribute(:name)}") do |machine, klass, _super, state|
+        define_helper(:class, "human_#{attribute(:name)}") do |machine, klass, state|
           machine.states.fetch(state).human_name(klass)
         end
         
         # Gets the humanized version of an event
-        define_helper(:class, "human_#{attribute(:event_name)}") do |machine, klass, _super, event|
+        define_helper(:class, "human_#{attribute(:event_name)}") do |machine, klass, event|
           machine.events.fetch(event).human_name(klass)
         end
         
         # Gets the state name for the current value
-        define_helper(:instance, attribute(:name)) do |machine, object, *|
+        define_helper(:instance, attribute(:name)) do |machine, object|
           machine.states.match!(object).name
         end
         
         # Gets the human state name for the current value
-        define_helper(:instance, "human_#{attribute(:name)}") do |machine, object, *|
+        define_helper(:instance, "human_#{attribute(:name)}") do |machine, object|
           machine.states.match!(object).human_name(object.class)
         end
       end
@@ -1709,7 +1721,7 @@ module StateMachine
             if scope = send("create_#{kind}_scope", method)
               # Converts state names to their corresponding values so that they
               # can be looked up properly
-              define_helper(:class, method) do |machine, klass, _super, *states|
+              define_helper(:class, method) do |machine, klass, *states|
                 values = states.flatten.map {|state| machine.states.fetch(state).value}
                 scope.call(klass, values)
               end

@@ -7,19 +7,11 @@ module StateMachine
         end
         
         def handle_validation_failure
-          lambda do |object, args, yielded, result|
-            object.instance_eval do
-              raise_on_save_failure ? save_failure(:validation) : result
-            end
-          end
+          'raise_on_save_failure ? save_failure(:validation) : result'
         end
         
         def handle_save_failure
-          lambda do |object|
-            object.instance_eval do
-              save_failure(:save)
-            end
-          end
+          'save_failure(:save)'
         end
       end
       

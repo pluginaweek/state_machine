@@ -78,10 +78,12 @@ module StateMachine
         end
         
         def define_state_initializer
-          define_helper(:instance, :initialize) do |machine, object, _super, *args|
-            attrs, from_db = args
-            from_db ? _super.call : object.class.state_machines.initialize_states(object, :attributes => attrs) { _super.call }
-          end
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+            def initialize(*args)
+              attrs, from_db = args
+              from_db ? super : self.class.state_machines.initialize_states(self, :attributes => attrs) { super }
+            end
+          end_eval
         end
       end
       

@@ -1021,11 +1021,6 @@ class MachineWithHelpersTest < Test::Unit::TestCase
   def test_should_throw_exception_with_invalid_scope
     assert_raise(RUBY_VERSION < '1.9' ? IndexError : KeyError) { @machine.define_helper(:invalid, :state) {} }
   end
-  
-  def test_should_throw_exception_if_calling_helper_directly_with_invalid_scope
-    @machine.define_helper(:instance, :state) {}
-    assert_raise(RUBY_VERSION < '1.9' ? IndexError : KeyError) { @machine.call_helper(:invalid, :state, lambda {}, @object) }
-  end
 end
 
 class MachineWithInstanceHelpersTest < Test::Unit::TestCase
@@ -1079,61 +1074,25 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
     helper_args = nil
     @machine.define_helper(:instance, :state) {|*args| helper_args = args}
     @object.state
-    assert_equal 3, helper_args.length
-    assert_equal [@machine, @object], helper_args[0..1]
+    assert_equal 2, helper_args.length
+    assert_equal [@machine, @object], helper_args
   end
   
   def test_should_pass_method_arguments_through
     helper_args = nil
     @machine.define_helper(:instance, :state) {|*args| helper_args = args}
     @object.state(1, 2, 3)
-    assert_equal 6, helper_args.length
-    assert_equal [@machine, @object], helper_args[0..1]
-    assert_equal [1, 2, 3], helper_args[3..5]
+    assert_equal 5, helper_args.length
+    assert_equal [@machine, @object, 1, 2, 3], helper_args
   end
   
-  def test_should_allow_super_calls
-    @klass = Class.new
-    @klass.class_eval do
-      include(Module.new {
-        def state
-          'original'
-        end
-      })
-    end
-    @machine = StateMachine::Machine.new(@klass)
-    @object = @klass.new
-    
-    @machine.define_helper(:instance, :state) {|machine, object, _super| _super.call}
-    assert_equal 'original', @object.state
-  end
-  
-  def test_should_allow_rewrite_of_super_args
-    @klass = Class.new
-    @klass.class_eval do
-      include(Module.new {
-        def state(value)
-          value
-        end
-      })
-    end
-    @machine = StateMachine::Machine.new(@klass)
-    @object = @klass.new
-    
-    @machine.define_helper(:instance, :state) {|machine, object, _super, *args| _super.call('override')}
-    assert_equal 'override', @object.state(1)
-  end
-  
-  def test_should_throw_exception_if_calling_helper_directly_with_invalid_method
-    assert_raise(RUBY_VERSION < '1.9' ? IndexError : KeyError) { @machine.call_helper(:instance, :invalid, @object, lambda {}) }
-  end
-  
-  def test_should_be_able_to_call_helper_directly
-    helper_args = nil
-    @machine.define_helper(:instance, :state) {|*args| helper_args = args}
-    
-    @machine.call_helper(:instance, :state, @object, _super = lambda {}, 1, 2, 3)
-    assert_equal [@machine, @object, _super, 1, 2, 3], helper_args
+  def test_should_allow_string_evaluation
+    @machine.define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+      def state
+        'parked'
+      end
+    end_eval
+    assert_equal 'parked', @object.state
   end
 end
 
@@ -1187,59 +1146,25 @@ class MachineWithClassHelpersTest < Test::Unit::TestCase
     helper_args = nil
     @machine.define_helper(:class, :states) {|*args| helper_args = args}
     @klass.states
-    assert_equal 3, helper_args.length
-    assert_equal [@machine, @klass], helper_args[0..1]
+    assert_equal 2, helper_args.length
+    assert_equal [@machine, @klass], helper_args
   end
   
   def test_should_pass_method_arguments_through
     helper_args = nil
     @machine.define_helper(:class, :states) {|*args| helper_args = args}
     @klass.states(1, 2, 3)
-    assert_equal 6, helper_args.length
-    assert_equal [@machine, @klass], helper_args[0..1]
-    assert_equal [1, 2, 3], helper_args[3..5]
+    assert_equal 5, helper_args.length
+    assert_equal [@machine, @klass, 1, 2, 3], helper_args
   end
   
-  def test_should_allow_super_calls
-    @klass = Class.new
-    @klass.class_eval do
-      extend(Module.new {
-        def states
-          'original'
-        end
-      })
-    end
-    @machine = StateMachine::Machine.new(@klass)
-    
-    @machine.define_helper(:class, :states) {|machine, klass, _super| _super.call}
-    assert_equal 'original', @klass.states
-  end
-  
-  def test_should_allow_rewrite_of_super_args
-    @klass = Class.new
-    @klass.class_eval do
-      extend(Module.new {
-        def states(value)
-          value
-        end
-      })
-    end
-    @machine = StateMachine::Machine.new(@klass)
-    
-    @machine.define_helper(:class, :states) {|machine, klass, _super, *args| _super.call('override')}
-    assert_equal 'override', @klass.states(1)
-  end
-  
-  def test_should_throw_exception_if_calling_helper_directly_with_invalid_method
-    assert_raise(RUBY_VERSION < '1.9' ? IndexError : KeyError) { @machine.call_helper(:class, :invalid, @klass, lambda {}) }
-  end
-  
-  def test_should_be_able_to_call_helper_directly
-    helper_args = nil
-    @machine.define_helper(:class, :states) {|*args| helper_args = args}
-    
-    @machine.call_helper(:class, :states, @klass, _super = lambda {}, 1, 2, 3)
-    assert_equal [@machine, @klass, _super, 1, 2, 3], helper_args
+  def test_should_allow_string_evaluation
+    @machine.define_helper :class, <<-end_eval, __FILE__, __LINE__ + 1
+      def states
+        []
+      end
+    end_eval
+    assert_equal [], @klass.states
   end
 end
 
@@ -2171,37 +2096,6 @@ class MachineWithOwnerSubclassTest < Test::Unit::TestCase
   
   def test_should_have_the_same_attribute_associated_state_machines
     assert_equal @klass.state_machines, @subclass.state_machines
-  end
-end
-
-class MachineWithOwnerSubclassHelpersTest < Test::Unit::TestCase
-  def setup
-    @base = Class.new
-    @base_machine = StateMachine::Machine.new(@base)
-    @base_machine.define_helper(:instance, :transition) { :base }
-    
-    @subclass = Class.new(@base)
-    @subclass_machine = @subclass.state_machine {}
-    @subclass_machine.define_helper(:instance, :run) { :subclass }
-    
-    @base_object = @base.new
-    @subclass_object = @subclass.new
-  end
-  
-  def test_should_be_able_to_call_base_helper_on_base
-    assert_equal :base, @base_machine.call_helper(:instance, :transition, @base_object, lambda {})
-  end
-  
-  def test_should_be_able_to_call_base_helper_on_subclass
-    assert_equal :base, @subclass_machine.call_helper(:instance, :transition, @subclass_object, lambda {})
-  end
-  
-  def test_should_not_be_able_to_call_subclass_helper_on_base
-    assert_raise(RUBY_VERSION < '1.9' ? IndexError : KeyError) { @base_machine.call_helper(:instance, :run, @base_object, lambda {}) }
-  end
-  
-  def test_should_be_able_to_call_subclass_helper_on_base
-    assert_equal :subclass, @subclass_machine.call_helper(:instance, :run, @subclass_object, lambda {})
   end
 end
 

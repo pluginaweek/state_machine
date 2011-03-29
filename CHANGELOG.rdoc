@@ -1,5 +1,7 @@
 == master
 
+* Fix instance / class helpers failing when used with certain libraries (such as Thin)
+
 == 0.10.1 / 2011-03-22
 
 * Fix classes with multiple state machines failing to initialize in ActiveRecord / Mongoid / Sequel integrations

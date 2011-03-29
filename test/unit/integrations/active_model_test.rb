@@ -186,7 +186,8 @@ module ActiveModelTest
     end
     
     def test_should_raise_exception_for_predicate_without_parameters
-      assert_raise(IndexError) { @record.state? }
+      exception = assert_raise(ArgumentError) { @record.state? }
+      assert_equal 'wrong number of arguments (1 for 2)', exception.message
     end
     
     def test_should_return_false_for_predicate_if_does_not_match_current_value

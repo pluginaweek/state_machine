@@ -229,9 +229,11 @@ module StateMachine
         # initial state of the machine *before* any attributes are set on the
         # object
         def define_state_initializer
-          define_helper(:instance, :initialize) do |machine, object, _super, *args|
-            object.class.state_machines.initialize_states(object, :attributes => args.first) { _super.call }
-          end
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+            def initialize(*args)
+              self.class.state_machines.initialize_states(self, :attributes => args.first) { super }
+            end
+          end_eval
         end
         
         # Skips defining reader/writer methods since this is done automatically

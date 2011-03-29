@@ -372,22 +372,24 @@ module StateMachine
         # initial state of the machine *before* any attributes are set on the
         # object
         def define_state_initializer
-          # Ensure that the attributes setter gets used to force initialization
-          # of the state machines
-          define_helper(:instance, :initialize) do |machine, object, _super, *args|
-            _super.call(args.shift || {}, *args)
-          end
-          
-          # Hooks in to attribute initialization to set the states *prior*
-          # to the attributes being set
-          define_helper(:instance, :attributes=) do |machine, object, _super, new_attributes, *|
-            if !object.instance_variable_defined?('@initialized_state_machines')
-              object.class.state_machines.initialize_states(object, :attributes => new_attributes) { _super.call }
-              object.instance_variable_set('@initialized_state_machines', true)
-            else
-              _super.call
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+            # Ensure that the attributes setter gets used to force initialization
+            # of the state machines
+            def initialize(*args)
+              super(args.shift || {}, *args)
             end
-          end
+            
+            # Hooks in to attribute initialization to set the states *prior*
+            # to the attributes being set
+            def attributes=(new_attributes, *)
+              if !@initialized_state_machines
+                self.class.state_machines.initialize_states(self, :attributes => new_attributes) { super }
+                @initialized_state_machines = true
+              else
+                super
+              end
+            end
+          end_eval
         end
         
         # Uses around callbacks to run state events if using the :save hook

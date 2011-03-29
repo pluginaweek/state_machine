@@ -283,14 +283,16 @@ module StateMachine
         def define_state_initializer
           # Hooks in to attribute initialization to set the states *prior* to
           # the attributes being set
-          define_helper(:instance, :set) do |machine, object, _super, *args|
-            if !object.instance_variable_defined?('@initialized_state_machines')
-              object.class.state_machines.initialize_states(object, :attributes => args.first) { _super.call }
-              object.instance_variable_set('@initialized_state_machines', true)
-            else
-              _super.call
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+            def set(*args)
+              if !@initialized_state_machines
+                self.class.state_machines.initialize_states(self, :attributes => args.first) { super }
+                @initialized_state_machines = true
+              else
+                super
+              end
             end
-          end
+          end_eval
         end
         
         # Skips defining reader/writer methods since this is done automatically
@@ -309,16 +311,21 @@ module StateMachine
           super
           
           if action == :save
-            handle_validation_failure = self.handle_validation_failure
-            define_helper(:instance, :valid?) do |machine, object, _super, *args|
-              yielded = false
-              result = object.class.state_machines.transitions(object, :save, :after => false).perform do
-                yielded = true
-                _super.call
+            define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+              def valid?(*args)
+                yielded = false
+                result = self.class.state_machines.transitions(self, :save, :after => false).perform do
+                  yielded = true
+                  super
+                end
+                
+                if yielded || result
+                  result
+                else
+                  #{handle_validation_failure}
+                end
               end
-              
-              !yielded && !result ? handle_validation_failure.call(object, args, yielded, result) : result
-            end
+            end_eval
           end
         end
         
@@ -328,22 +335,21 @@ module StateMachine
         # save calls.
         def define_action_hook
           if action == :save
-            action_hook = self.action_hook
-            handle_save_failure = self.handle_save_failure
-            
-            define_helper(:instance, action_hook) do |machine, object, _super, *|
-              yielded = false
-              result = object.class.state_machines.transitions(object, :save).perform do
-                yielded = true
-                _super.call
+            define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+              def #{action_hook}(*)
+                yielded = false
+                result = self.class.state_machines.transitions(self, :save).perform do
+                  yielded = true
+                  super
+                end
+                
+                if yielded || result
+                  result
+                else
+                  #{handle_save_failure}
+                end
               end
-              
-              if yielded || result
-                result
-              else
-                handle_save_failure.call(object)
-              end
-            end
+            end_eval
           else
             super
           end
@@ -356,20 +362,12 @@ module StateMachine
         
         # Handles whether validation errors should be raised
         def handle_validation_failure
-          lambda do |object, args, yielded, result|
-            object.instance_eval do
-              raise_on_failure?(args.first || {}) ? raise_hook_failure(:validation) : result
-            end
-          end
+          'raise_on_failure?(args.first || {}) ? raise_hook_failure(:validation) : result'
         end
         
         # Handles how save failures are raised
         def handle_save_failure
-          lambda do |object|
-            object.instance_eval do
-              raise_hook_failure(:save)
-            end
-          end
+          'raise_hook_failure(:save)'
         end
         
         # Creates a scope for finding records *with* a particular state or
