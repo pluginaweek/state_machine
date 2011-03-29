@@ -583,14 +583,14 @@ module StateMachine
     # You can also define helpers using string evaluation like so:
     # 
     #   # Instance helper
-    #   machine.define_helper :instance, <<-end_eval, __FILE__, __LINE__
+    #   machine.define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
     #     def state_name
     #       self.class.state_machine(:state).states.match(self).name
     #     end
     #   end_eval
     #   
     #   # Class helper
-    #   machine.define_helper :class, <<-end_eval, __FILE__, __LINE__
+    #   machine.define_helper :class, <<-end_eval, __FILE__, __LINE__ + 1
     #     def state_machine_name
     #       "State"
     #     end
@@ -1577,7 +1577,7 @@ module StateMachine
       # current state
       def define_state_predicate
         call_super = owner_class_ancestor_has_method?("#{name}?")
-        define_helper :instance, <<-end_eval, __FILE__, __LINE__
+        define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
           def #{name}?(*args)
             args.empty? && #{call_super} ? super : self.class.state_machine(#{name.inspect}).states.matches?(self, *args)
           end
@@ -1615,7 +1615,7 @@ module StateMachine
           end
           
           event_transition_attribute = attribute(:event_transition)
-          define_helper :instance, <<-end_eval, __FILE__, __LINE__
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             protected; attr_accessor #{event_transition_attribute.inspect}
           end_eval
         end
@@ -1655,7 +1655,7 @@ module StateMachine
         private_action_hook = owner_class.private_method_defined?(action_hook)
         
         # Only define helper if it hasn't 
-        define_helper :instance, <<-end_eval, __FILE__, __LINE__
+        define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
           def #{action_hook}(*)
             self.class.state_machines.transitions(self, #{action.inspect}).perform { super }
           end

@@ -190,7 +190,7 @@ module StateMachine
         methods[method.to_sym] = context.instance_method(method)
         
         # Calls the method defined by the current state of the machine
-        context.class_eval <<-end_eval, __FILE__, __LINE__
+        context.class_eval <<-end_eval, __FILE__, __LINE__ + 1
           def #{method}(*args, &block)
             self.class.state_machine(#{machine_name.inspect}).states.match!(self).call(self, #{method.inspect}, lambda {super}, *args, &block)
           end
