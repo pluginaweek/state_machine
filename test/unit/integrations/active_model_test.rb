@@ -235,15 +235,30 @@ module ActiveModelTest
       @machine.state nil, :idling
     end
     
-    def test_should_should_use_initialized_state_when_static
+    def test_should_allow_nil_initial_state_when_static
+      @machine.state nil
+      
       record = @model.new(:state => nil)
       assert_nil record.state
     end
     
-    def test_should_should_not_use_initialized_state_when_dynamic
+    def test_should_allow_nil_initial_state_when_dynamic
+      @machine.state nil
+      
       @machine.initial_state = lambda {:parked}
       record = @model.new(:state => nil)
-      assert_equal 'parked', record.state
+      assert_nil record.state
+    end
+    
+    def test_should_allow_different_initial_state_when_static
+      record = @model.new(:state => 'idling')
+      assert_equal 'idling', record.state
+    end
+    
+    def test_should_allow_different_initial_state_when_dynamic
+      @machine.initial_state = lambda {:parked}
+      record = @model.new(:state => 'idling')
+      assert_equal 'idling', record.state
     end
     
     def test_should_use_default_state_if_protected

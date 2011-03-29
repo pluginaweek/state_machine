@@ -414,6 +414,13 @@ class MachineStateInitializationTest < Test::Unit::TestCase
     
     assert_equal 'idling', @object.state
   end
+  
+  def test_should_not_set_state_if_nil_and_nil_is_valid_state
+    @machine.state :initial, :value => nil
+    @machine.initialize_state(@object)
+    
+    assert_nil @object.state
+  end
 end
 
 class MachineWithCustomActionTest < Test::Unit::TestCase

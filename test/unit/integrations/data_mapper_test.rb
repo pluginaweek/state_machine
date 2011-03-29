@@ -419,15 +419,19 @@ module DataMapperTest
     def setup
       @resource = new_resource
       @machine = StateMachine::Machine.new(@resource, :initial => :parked)
-      @machine.state nil, :idling
+      @machine.state :idling
     end
     
     def test_should_allow_nil_initial_state_when_static
+      @machine.state nil
+      
       record = @resource.new(:state => nil)
       assert_nil record.state
     end
     
     def test_should_allow_nil_initial_state_when_dynamic
+      @machine.state nil
+      
       @machine.initial_state = lambda {:parked}
       record = @resource.new(:state => nil)
       assert_nil record.state

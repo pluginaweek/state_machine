@@ -418,15 +418,19 @@ module SequelTest
     def setup
       @model = new_model
       @machine = StateMachine::Machine.new(@model, :initial => :parked)
-      @machine.state nil, :idling
+      @machine.state :idling
     end
     
     def test_should_allow_nil_initial_state_when_static
+      @machine.state nil
+      
       record = @model.new(:state => nil)
       assert_nil record.state
     end
     
     def test_should_allow_nil_initial_state_when_dynamic
+      @machine.state nil
+      
       @machine.initial_state = lambda {:parked}
       record = @model.new(:state => nil)
       assert_nil record.state

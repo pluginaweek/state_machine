@@ -1541,7 +1541,7 @@ module StateMachine
       # will only be true if the machine's attribute is blank.
       def initialize_state?(object, options = {})
         value = read(object, :state)
-        value.nil? || value.respond_to?(:empty?) && value.empty?
+        (value.nil? || value.respond_to?(:empty?) && value.empty?) && !states[value, :value]
       end
       
       # Adds helper methods for interacting with the state machine, including

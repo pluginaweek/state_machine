@@ -1,5 +1,6 @@
 == master
 
+* Only initialize states if state is blank and blank is not a valid state
 * Fix instance / class helpers failing when used with certain libraries (such as Thin)
 
 == 0.10.1 / 2011-03-22
