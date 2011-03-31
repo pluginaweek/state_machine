@@ -446,7 +446,7 @@ module StateMachine
       @use_transactions = options[:use_transactions]
       @initialize_state = options[:initialize]
       self.owner_class = owner_class
-      self.initial_state = options[:initial]
+      self.initial_state = options[:initial] unless owner_class.state_machines.any? {|name, machine| machine.attribute == attribute && machine != self}
       
       # Define class integration
       define_helpers
@@ -544,7 +544,7 @@ module StateMachine
     #   vehicle.force_idle = false
     #   Vehicle.state_machine.initial_state(vehicle)  # => #<StateMachine::State name=:parked value="parked" initial=false>
     def initial_state(object)
-      states.fetch(dynamic_initial_state? ? evaluate_method(object, @initial_state) : @initial_state)
+      states.fetch(dynamic_initial_state? ? evaluate_method(object, @initial_state) : @initial_state) if instance_variable_defined?('@initial_state')
     end
     
     # Whether a dynamic initial state is being used in the machine
@@ -555,7 +555,9 @@ module StateMachine
     # Initializes the state on the given object.  Initial values are only set if
     # the machine's attribute hasn't been previously initialized.
     def initialize_state(object, options = {})
-      write(object, :state, initial_state(object).value) if initialize_state?(object, options)
+      if (state = initial_state(object)) && initialize_state?(object, options)
+        write(object, :state, state.value)
+      end
     end
     
     # Gets the actual name of the attribute on the machine's owner class that
