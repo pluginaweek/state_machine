@@ -63,12 +63,12 @@ module MongoidTest
       assert_equal :save, @machine.action
     end
     
-    def test_should_not_have_any_before_callbacks
-      assert_equal 0, @machine.callbacks[:before].size
+    def test_should_create_notifier_before_callback
+      assert_equal 1, @machine.callbacks[:before].size
     end
     
-    def test_should_not_have_any_after_callbacks
-      assert_equal 0, @machine.callbacks[:after].size
+    def test_should_create_notifier_after_callback
+      assert_equal 1, @machine.callbacks[:after].size
     end
   end
   
@@ -1349,9 +1349,15 @@ module MongoidTest
       
       MongoidTest.const_set('Foo', @model)
       
-      @subclass = Class.new(@model)
+      @subclass = Class.new(@model) do
+        def self.name
+          'MongoidTest::SubFoo'
+        end
+      end
       @subclass_machine = @subclass.state_machine(:state) {}
       @subclass_machine.state :parked, :idling, :first_gear
+      
+      MongoidTest.const_set('SubFoo', @subclass)
     end
     
     def test_should_only_include_records_with_subclass_states_in_with_scope
@@ -1370,6 +1376,7 @@ module MongoidTest
     end
     
     def teardown
+      MongoidTest.send(:remove_const, 'SubFoo')
       MongoidTest.send(:remove_const, 'Foo')
     end
   end
