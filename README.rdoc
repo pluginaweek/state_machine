@@ -459,7 +459,7 @@ machines, see StateMachine::Integrations::DataMapper.
 === Mongoid
 
 The Mongoid integration adds support for automatically saving the record,
-basic scopes, validation errors and callbacks.  For example,
+basic scopes, validation errors, and observers.  For example,
 
   class Vehicle
     include Mongoid::Document
@@ -488,6 +488,18 @@ basic scopes, validation errors and callbacks.  For example,
       ...
       yield
       ...
+    end
+  end
+  
+  class VehicleObserver < Mongoid::Observer
+    # Callback for :ignite event *before* the transition is performed
+    def before_ignite(vehicle, transition)
+      # log message
+    end
+    
+    # Generic transition callback *after* the transition is performed
+    def after_transition(vehicle, transition)
+      Audit.log(vehicle, transition)
     end
   end
 
