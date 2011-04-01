@@ -1,5 +1,7 @@
 == master
 
+== 0.10.2 / 2011-03-31
+
 * Use more integrated state initialization hooks for ActiveRecord, Mongoid, and Sequel
 * Remove mass-assignment filtering usage in all ORM integrations
 * Only support official Mongoid 2.0.0 release and up (no more RC support)
