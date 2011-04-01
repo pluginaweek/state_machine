@@ -405,30 +405,33 @@ module ActiveRecordTest
       @record = @model.new
     end
     
-    def test_should_not_define_a_reader_attribute_for_the_attribute
-      assert !@record.respond_to?(:status)
+    def test_should_not_define_a_column_for_the_attribute
+      assert_nil @model.columns_hash['status']
     end
     
-    def test_should_not_define_a_writer_attribute_for_the_attribute
-      assert !@record.respond_to?(:status=)
+    def test_should_define_a_reader_attribute_for_the_attribute
+      assert @record.respond_to?(:status)
+    end
+    
+    def test_should_define_a_writer_attribute_for_the_attribute
+      assert @record.respond_to?(:status=)
     end
     
     def test_should_define_an_attribute_predicate
       assert @record.respond_to?(:status?)
-    end
-    
-    def test_should_raise_exception_on_predicate_without_parameters
-      old_verbose, $VERBOSE = $VERBOSE, nil
-      assert_raise(NoMethodError) { @record.status? }
-    ensure
-      $VERBOSE = old_verbose
     end
   end
   
   class MachineWithNonColumnStateAttributeDefinedTest < BaseTestCase
     def setup
       @model = new_model do
-        attr_accessor :status
+        def status=(value)
+          self['status'] = value
+        end
+        
+        def status
+          self['status']
+        end
       end
       
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)

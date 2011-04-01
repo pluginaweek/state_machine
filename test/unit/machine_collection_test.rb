@@ -31,6 +31,10 @@ class MachineCollectionStateInitializationTest < Test::Unit::TestCase
     @object.alarm_state = nil
   end
   
+  def test_should_raise_exception_if_invalid_option_specified
+    assert_raise(ArgumentError) {@machines.initialize_states(@object, :invalid => true)}
+  end
+  
   def test_should_only_initialize_static_states_prior_to_block
     @machines.initialize_states(@object) do
       @state_in_block = @object.state
@@ -63,10 +67,46 @@ class MachineCollectionStateInitializationTest < Test::Unit::TestCase
     assert_equal 'active', @object.alarm_state
   end
   
+  def test_should_initialize_existing_static_states_by_default
+    @object.state = 'idling'
+    @machines.initialize_states(@object)
+    assert_equal 'parked', @object.state
+  end
+  
+  def test_should_initialize_existing_static_states_if_forced
+    @object.state = 'idling'
+    @machines.initialize_states(@object, :static => :force)
+    assert_equal 'parked', @object.state
+  end
+  
+  def test_should_not_initialize_existing_static_states_if_not_forced
+    @object.state = 'idling'
+    @machines.initialize_states(@object, :static => true)
+    assert_equal 'idling', @object.state
+  end
+  
   def test_should_skip_dynamic_states_if_disabled
     @machines.initialize_states(@object, :dynamic => false)
     assert_equal 'parked', @object.state
     assert_nil @object.alarm_state
+  end
+  
+  def test_should_not_initialize_existing_dynamic_states_by_default
+    @object.alarm_state = 'inactive'
+    @machines.initialize_states(@object)
+    assert_equal 'inactive', @object.alarm_state
+  end
+  
+  def test_should_initialize_existing_dynamic_states_if_forced
+    @object.alarm_state = 'inactive'
+    @machines.initialize_states(@object, :dynamic => :force)
+    assert_equal 'active', @object.alarm_state
+  end
+  
+  def test_should_not_initialize_existing_dynamic_states_if_not_forced
+    @object.alarm_state = 'inactive'
+    @machines.initialize_states(@object, :dynamic => true)
+    assert_equal 'inactive', @object.alarm_state
   end
 end
 

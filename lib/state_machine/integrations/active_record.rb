@@ -361,33 +361,24 @@ module StateMachine
           action == :save
         end
         
-        # Only allows state initialization on new records that aren't being
-        # created with a set of attributes that includes this machine's
-        # attribute.
-        def initialize_state?(object, options)
-          super if object.new_record?
-        end
-        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
         def define_state_initializer
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
-            # Ensure that the attributes setter gets used to force initialization
-            # of the state machines
-            def initialize(*args)
-              super(args.shift || {}, *args)
+            # Initializes dynamic states
+            def initialize(*)
+              super do |*args|
+                self.class.state_machines.initialize_states(self, :static => false)
+                yield(*args) if block_given?
+              end
             end
             
-            # Hooks in to attribute initialization to set the states *prior*
-            # to the attributes being set
-            def attributes=(new_attributes, *)
-              if !@initialized_state_machines
-                self.class.state_machines.initialize_states(self, :attributes => new_attributes) { super }
-                @initialized_state_machines = true
-              else
-                super
-              end
+            # Initializes static states
+            def attributes_from_column_definition(*)
+              result = super
+              self.class.state_machines.initialize_states(self, :dynamic => false, :to => result)
+              result
             end
           end_eval
         end

@@ -365,10 +365,9 @@ module SequelTest
   class MachineWithNonColumnStateAttributeUndefinedTest < BaseTestCase
     def setup
       @model = new_model do
-        def initialize
-          # Skip attribute initialization
-          @initialized_state_machines = true
-          super
+        # Prevent attempts to access the status field
+        def method_missing(method, *args)
+          super unless %w(status status=).include?(method.to_s)
         end
       end
       

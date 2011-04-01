@@ -69,10 +69,6 @@ module StateMachine
           action == :save ? :create_or_update : super
         end
         
-        def filter_attributes(object, attributes)
-          object.send(:remove_attributes_protected_from_mass_assignment, attributes)
-        end
-        
         def load_observer_extensions
           super
           ::ActiveRecord::Observer.class_eval do

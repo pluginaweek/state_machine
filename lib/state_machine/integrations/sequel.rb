@@ -266,17 +266,6 @@ module StateMachine
           require 'sequel/extensions/inflector'
         end
         
-        # Only allows state initialization on new records that aren't being
-        # created with a set of attributes that includes this machine's
-        # attribute.
-        def initialize_state?(object, options)
-          if object.new?
-            attributes = options[:attributes] || {}
-            ignore = object.send(:setter_methods, nil, nil).map {|setter| setter.chop.to_sym} & attributes.keys.map {|key| key.to_sym}
-            !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
-          end
-        end
-        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
@@ -284,13 +273,19 @@ module StateMachine
           # Hooks in to attribute initialization to set the states *prior* to
           # the attributes being set
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
-            def set(*args)
-              if !@initialized_state_machines
-                self.class.state_machines.initialize_states(self, :attributes => args.first) { super }
-                @initialized_state_machines = true
-              else
-                super
+            # Initializes dynamic states
+            def initialize(*)
+              super do |*args|
+                self.class.state_machines.initialize_states(self, :static => false)
+                changed_columns.clear
+                yield(*args) if block_given?
               end
+            end
+            
+            # Initializes static states
+            def set(*)
+              self.class.state_machines.initialize_states(self, :dynamic => false) if values.empty?
+              super
             end
           end_eval
         end

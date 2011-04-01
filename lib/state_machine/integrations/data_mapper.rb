@@ -306,21 +306,13 @@ module StateMachine
           ::DataMapper::Inflector.pluralize(word.to_s)
         end
         
-        # Only allows state initialization on new records that aren't being
-        # created with a set of attributes that includes this machine's
-        # attribute.
-        def initialize_state?(object, options)
-          ignore = (options[:attributes] || {}).keys
-          !ignore.map {|attribute| attribute.to_sym}.include?(attribute) 
-        end
-        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
         def define_state_initializer
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*args)
-              self.class.state_machines.initialize_states(self, :attributes => args.first) { super }
+              self.class.state_machines.initialize_states(self) { super }
             end
           end_eval
         end

@@ -79,10 +79,6 @@ module ActiveModelTest
       assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::Dirty })
     end
     
-    def test_should_match_if_class_includes_mass_assignment_security_feature
-      assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::MassAssignmentSecurity })
-    end
-    
     def test_should_match_if_class_includes_observing_feature
       assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::Observing })
     end
@@ -267,7 +263,7 @@ module ActiveModelTest
         attr_protected :state
         
         def initialize(attrs = {})
-          initialize_state_machines(:attributes => attrs) do
+          initialize_state_machines do
             sanitize_for_mass_assignment(attrs).each {|attr, value| send("#{attr}=", value)} if attrs
             @changed_attributes = {}
           end

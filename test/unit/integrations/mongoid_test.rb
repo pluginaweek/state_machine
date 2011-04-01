@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 # Load library
 require 'rubygems'
 
-gem 'mongoid', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=2.0.0.rc.7'
+gem 'mongoid', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=2.0.0'
 require 'mongoid'
 
 # Establish database connection
@@ -339,7 +339,13 @@ module MongoidTest
   class MachineWithNonColumnStateAttributeDefinedTest < BaseTestCase
     def setup
       @model = new_model do
-        attr_accessor :status
+        def status
+          self['status']
+        end
+        
+        def status=(value)
+          self['status'] = value
+        end
       end
       
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)

@@ -212,26 +212,13 @@ module StateMachine
           action == :save
         end
         
-        # MongoMapper uses its own implementation of mass-assignment security
-        # instead of ActiveModel's, but still has a similar enough API that it
-        # can get enabled
-        def supports_mass_assignment_security?
-          true
-        end
-        
-        # Filters attributes that cannot be assigned through the initialization
-        # of the object
-        def filter_attributes(object, attributes)
-          object.send(:filter_protected_attrs, attributes)
-        end
-        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
         def define_state_initializer
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*args)
-              self.class.state_machines.initialize_states(self, :attributes => args.first) { super }
+              self.class.state_machines.initialize_states(self) { super }
             end
           end_eval
         end

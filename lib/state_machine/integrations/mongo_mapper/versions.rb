@@ -6,13 +6,17 @@ module StateMachine
           !defined?(::MongoMapper::Plugins)
         end
         
-        def initialize_state?(object, options)
-          attributes = options[:attributes] || {}
-          super unless attributes.stringify_keys.key?('_id')
-        end
-        
         def filter_attributes(object, attributes)
           attributes
+        end
+        
+        def define_state_initializer
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+            def initialize(*args)
+              attrs, * = args
+              attrs && attrs.stringify_keys.key?('_id') ? super : self.class.state_machines.initialize_states(self) { super }
+            end
+          end_eval
         end
       end
       
@@ -72,16 +76,18 @@ module StateMachine
         end
       end
       
-      version '0.5.x - 0.8.3' do
+      version '0.7.x - 0.8.3' do
         def self.active?
-          !defined?(::MongoMapper::Version) || ::MongoMapper::Version <= '0.8.3'
+          # Only 0.8.x and up has a Version string available, so Plugins is used
+          # to detect when 0.7.x is active
+          defined?(::MongoMapper::Plugins) && (!defined?(::MongoMapper::Version) || ::MongoMapper::Version <= '0.8.3')
         end
         
         def define_state_initializer
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*args)
               attrs, from_db = args
-              from_db ? super : self.class.state_machines.initialize_states(self, :attributes => attrs) { super }
+              from_db ? super : self.class.state_machines.initialize_states(self) { super }
             end
           end_eval
         end
@@ -90,7 +96,7 @@ module StateMachine
       # Assumes MongoMapper 0.10+ uses ActiveModel 3.1+
       version '0.9.x' do
         def self.active?
-          !defined?(::MongoMapper::Version) || ::MongoMapper::Version =~ /^0\.9\./
+          defined?(::MongoMapper::Version) && ::MongoMapper::Version =~ /^0\.9\./
         end
         
         def define_action_hook

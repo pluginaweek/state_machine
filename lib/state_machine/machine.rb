@@ -554,9 +554,22 @@ module StateMachine
     
     # Initializes the state on the given object.  Initial values are only set if
     # the machine's attribute hasn't been previously initialized.
+    # 
+    # Configuration options:
+    # * <tt>:force</tt> - Whether to initialize the state regardless of its
+    #   current value
+    # * <tt>:to</tt> - A hash to set the initial value in instead of writing
+    #   directly to the object
     def initialize_state(object, options = {})
-      if (state = initial_state(object)) && initialize_state?(object, options)
-        write(object, :state, state.value)
+      state = initial_state(object)
+      if state && (options[:force] || initialize_state?(object))
+        value = state.value
+        
+        if hash = options[:to]
+          hash[attribute.to_s] = value
+        else
+          write(object, :state, value)
+        end
       end
     end
     
@@ -1541,7 +1554,7 @@ module StateMachine
       
       # Determines if the machine's attribute needs to be initialized.  This
       # will only be true if the machine's attribute is blank.
-      def initialize_state?(object, options = {})
+      def initialize_state?(object)
         value = read(object, :state)
         (value.nil? || value.respond_to?(:empty?) && value.empty?) && !states[value, :value]
       end
@@ -1563,7 +1576,7 @@ module StateMachine
       def define_state_initializer
         define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
           def initialize(*)
-            self.class.state_machines.initialize_states(self, :ignore_values => false) { super }
+            self.class.state_machines.initialize_states(self) { super }
           end
         end_eval
       end

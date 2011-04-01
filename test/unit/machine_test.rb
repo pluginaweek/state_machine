@@ -264,13 +264,7 @@ end
 
 class MachineWithStaticInitialStateTest < Test::Unit::TestCase
   def setup
-    @klass = Class.new do
-      def initialize(attributes = {})
-        attributes.each {|attr, value| send("#{attr}=", value)}
-        super()
-      end
-    end
-    
+    @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
   end
   
@@ -293,19 +287,19 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
     assert @machine.state(:parked).initial
   end
   
-  def test_should_set_initial_state_if_existing_is_nil
-    object = @klass.new(:state => nil)
-    assert_equal 'parked', object.state
+  def test_should_set_initial_state_on_created_object
+    assert_equal 'parked', @klass.new.state
   end
   
-  def test_should_set_initial_state_if_existing_is_empty
-    object = @klass.new(:state => '')
+  def test_should_still_set_initial_state_even_if_not_empty
+    @klass.class_eval do
+      def initialize(attributes = {})
+        self.state = 'idling'
+        super()
+      end
+    end
+    object = @klass.new
     assert_equal 'parked', object.state
-  end
-  
-  def test_should_not_set_initial_state_if_existing_is_not_empty
-    object = @klass.new(:state => 'idling')
-    assert_equal 'idling', object.state
   end
   
   def test_should_set_initial_state_prior_to_initialization
@@ -360,6 +354,17 @@ class MachineWithDynamicInitialStateTest < Test::Unit::TestCase
     assert_equal 'default', @object.state
   end
   
+  def test_should_not_set_initial_state_even_if_not_empty
+    @klass.class_eval do
+      def initialize(attributes = {})
+        self.state = 'parked'
+        super()
+      end
+    end
+    object = @klass.new
+    assert_equal 'parked', object.state
+  end
+  
   def test_should_set_initial_state_after_initialization
     base = Class.new do
       attr_accessor :state_on_init
@@ -383,13 +388,7 @@ end
 class MachineStateInitializationTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
-    @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked)
-    
-    # Prevent the auto-initialization hook from firing
-    @klass.class_eval do
-      def initialize
-      end
-    end
+    @machine = StateMachine::Machine.new(@klass, :state, :initial => :parked, :initialize => false)
     
     @object = @klass.new
     @object.state = nil
@@ -415,10 +414,27 @@ class MachineStateInitializationTest < Test::Unit::TestCase
     assert_equal 'idling', @object.state
   end
   
+  def test_should_set_states_if_not_empty_and_forced
+    @object.state = 'idling'
+    @machine.initialize_state(@object, :force => true)
+    
+    assert_equal 'parked', @object.state
+  end
+  
   def test_should_not_set_state_if_nil_and_nil_is_valid_state
     @machine.state :initial, :value => nil
     @machine.initialize_state(@object)
     
+    assert_nil @object.state
+  end
+  
+  def test_should_write_to_hash_if_specified
+    @machine.initialize_state(@object, :to => hash = {})
+    assert_equal expected = {'state' => 'parked'}, hash
+  end
+  
+  def test_should_not_write_to_object_if_writing_to_hash
+    @machine.initialize_state(@object, :to => {})
     assert_nil @object.state
   end
 end
