@@ -1,5 +1,7 @@
 == master
 
+== 0.10.3 / 2011-04-07
+
 * Fix state initialization failing in ActiveRecord 3.0.2+ when using with_state scopes for the default scope
 
 == 0.10.2 / 2011-03-31
