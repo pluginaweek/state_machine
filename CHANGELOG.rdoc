@@ -1,5 +1,7 @@
 == master
 
+* Fix state initialization failing in ActiveRecord 3.0.2+ when using with_state scopes for the default scope
+
 == 0.10.2 / 2011-03-31
 
 * Use more integrated state initialization hooks for ActiveRecord, Mongoid, and Sequel

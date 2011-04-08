@@ -10,7 +10,7 @@ module StateMachine
           super if defined?(I18n)
         end
         
-        def define_scope(name, scope)
+        def create_scope(name, scope)
           if owner_class.respond_to?(:named_scope)
             name = name.to_sym
             machine_name = self.name

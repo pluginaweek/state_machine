@@ -1819,6 +1819,27 @@ module ActiveRecordTest
     $stderr.puts 'Skipping ActiveRecord Scope tests. `gem install active_record` >= v2.1.0 and try again.'
   end
   
+  if ActiveRecord.const_defined?(:Relation)
+    class MachineWithDefaultScope < BaseTestCase
+      def setup
+        @model = new_model
+        @machine = StateMachine::Machine.new(@model, :initial => :parked)
+        @machine.state :idling
+        
+        @model.class_eval do
+          default_scope with_state(:parked, :idling)
+        end
+      end
+      
+      def test_should_set_initial_state_on_created_object
+        object = @model.new
+        assert_equal 'parked', object.state
+      end
+    end
+  else
+    $stderr.puts 'Skipping ActiveRecord Default Scope tests. `gem install active_record` >= v3.0.0 and try again.'
+  end
+  
   if Object.const_defined?(:I18n)
     class MachineWithInternationalizationTest < BaseTestCase
       def setup
