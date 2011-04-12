@@ -49,6 +49,10 @@ module MongoMapperTest
   end
   
   class IntegrationTest < BaseTestCase
+    def test_should_have_an_integration_name
+      assert_equal :mongo_mapper, StateMachine::Integrations::MongoMapper.integration_name
+    end
+    
     def test_should_match_if_class_includes_mongo_mapper
       assert StateMachine::Integrations::MongoMapper.matches?(new_model)
     end

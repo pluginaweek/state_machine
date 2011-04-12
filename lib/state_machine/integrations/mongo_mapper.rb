@@ -202,11 +202,6 @@ module StateMachine
       end
       
       protected
-        # The name of this integration
-        def integration
-          :mongo_mapper
-        end
-        
         # Only runs validations on the action if using <tt>:save</tt>
         def runs_validations_on_action?
           action == :save

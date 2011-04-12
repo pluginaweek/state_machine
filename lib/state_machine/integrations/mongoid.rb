@@ -270,11 +270,6 @@ module StateMachine
       end
       
       protected
-        # The name of this integration
-        def integration
-          :mongoid
-        end
-        
         # Mongoid uses its own implementation of dirty tracking instead of
         # ActiveModel's and doesn't support the #{attribute}_will_change! APIs
         def supports_dirty_tracking?(object)

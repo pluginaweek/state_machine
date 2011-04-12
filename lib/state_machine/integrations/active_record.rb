@@ -336,11 +336,6 @@ module StateMachine
       end
       
       protected
-        # The name of this integration
-        def integration
-          :active_record
-        end
-        
         # Loads locale files needed for translations
         def load_locale
           load_i18n_version

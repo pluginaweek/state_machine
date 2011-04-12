@@ -40,6 +40,10 @@ module MongoidTest
   end
   
   class IntegrationTest < BaseTestCase
+    def test_should_have_an_integration_name
+      assert_equal :mongoid, StateMachine::Integrations::Mongoid.integration_name
+    end
+    
     def test_should_match_if_class_includes_mongoid
       assert StateMachine::Integrations::Mongoid.matches?(new_model)
     end

@@ -248,7 +248,7 @@ module StateMachine
       # The default options to use for state machines using this integration
       class << self; attr_reader :defaults; end
       @defaults = {:action => :save, :use_transactions => false}
-        
+      
       # Should this integration be used for state machines in the given class?
       # Classes that include DataMapper::Resource will automatically use the
       # DataMapper integration.

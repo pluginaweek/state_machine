@@ -272,8 +272,7 @@ module StateMachine
       # ActiveModel::Validations will automatically use the ActiveModel
       # integration.
       def self.matches?(klass)
-        features = %w(Dirty Observing Validations)
-        defined?(::ActiveModel) && features.any? {|feature| ::ActiveModel.const_defined?(feature) && klass <= ::ActiveModel.const_get(feature)}
+        defined?(::ActiveModel) && %w(Dirty Observing Validations).any? {|feature| ::ActiveModel.const_defined?(feature) && klass <= ::ActiveModel.const_get(feature)}
       end
       
       # Forces the change in state to be recognized regardless of whether the
@@ -308,11 +307,6 @@ module StateMachine
       end
       
       protected
-        # The name of this integration
-        def integration
-          :active_model
-        end
-        
         # Whether observers are supported in the integration.  Only true if
         # ActiveModel::Observer is available.
         def supports_observers?
@@ -392,7 +386,7 @@ module StateMachine
         
         # The path to the locale file containing state_machine translations
         def locale_path
-          "#{File.dirname(__FILE__)}/#{integration}/locale.rb"
+          "#{File.dirname(__FILE__)}/#{@integration.integration_name}/locale.rb"
         end
         
         # Loads extensions to ActiveModel's Observers

@@ -5,6 +5,10 @@ require 'rubygems'
 
 module BaseTest  
   class IntegrationTest < Test::Unit::TestCase
+    def test_should_have_an_integration_name
+      assert_equal :base, StateMachine::Integrations::Base.integration_name
+    end
+    
     def test_should_not_match_any_classes
       assert !StateMachine::Integrations::Base.matches?(Class.new)
     end

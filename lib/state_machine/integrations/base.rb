@@ -2,20 +2,26 @@ module StateMachine
   module Integrations
     # Provides a set of base helpers for managing individual integrations
     module Base
-      # Never matches
-      def self.matches?(klass)
-        false
-      end
-      
-      def self.included(base) #:nodoc:
-        base.class_eval do
-          extend ClassMethods
-        end
-      end
-      
       module ClassMethods
         # The default options to use for state machines using this integration
         attr_reader :defaults
+        
+        # The name of the integration
+        def integration_name
+          @integration_name ||= begin
+            name = self.name.split('::').last
+            name.gsub!(/([A-Z]+)([A-Z][a-z])/,'\1_\2')
+            name.gsub!(/([a-z\d])([A-Z])/,'\1_\2')
+            name.downcase!
+            name.to_sym
+          end
+        end
+        
+        # Whether the integration should be used for the given class.  Default
+        # is false.
+        def matches?(klass)
+          false
+        end
         
         # Tracks the various version overrides for an integration
         def versions
@@ -58,6 +64,12 @@ module StateMachine
              base.extend(version) if version.active?
           end
         end
+      end
+      
+      extend ClassMethods
+      
+      def self.included(base) #:nodoc:
+        base.class_eval { extend ClassMethods }
       end
     end
   end
