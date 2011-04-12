@@ -65,10 +65,7 @@ module StateMachine
     #   StateMachine::Integrations.match(MongoMapperVehicle)  # => StateMachine::Integrations::MongoMapper
     #   StateMachine::Integrations.match(SequelVehicle)       # => StateMachine::Integrations::Sequel
     def self.match(klass)
-      constants = self.constants.map {|c| c.to_s}.select {|c| c != 'ActiveModel'}.sort << 'ActiveModel'
-      if integration = constants.find {|name| const_get(name).matches?(klass)}
-        find(integration)
-      end
+      all.detect {|integration| integration.matches?(klass)}
     end
     
     # Finds an integration with the given name.  If the integration cannot be
@@ -76,15 +73,29 @@ module StateMachine
     # 
     # == Examples
     # 
-    #   StateMachine::Integrations.find(:active_record)   # => StateMachine::Integrations::ActiveRecord
-    #   StateMachine::Integrations.find(:active_model)    # => StateMachine::Integrations::ActiveModel
-    #   StateMachine::Integrations.find(:data_mapper)     # => StateMachine::Integrations::DataMapper
-    #   StateMachine::Integrations.find(:mongoid)         # => StateMachine::Integrations::Mongoid
-    #   StateMachine::Integrations.find(:mongo_mapper)    # => StateMachine::Integrations::MongoMapper
-    #   StateMachine::Integrations.find(:sequel)          # => StateMachine::Integrations::Sequel
-    #   StateMachine::Integrations.find(:invalid)         # => NameError: wrong constant name Invalid
-    def self.find(name)
-      const_get(name.to_s.gsub(/(?:^|_)(.)/) {$1.upcase})
+    #   StateMachine::Integrations.find_by_name(:active_record) # => StateMachine::Integrations::ActiveRecord
+    #   StateMachine::Integrations.find_by_name(:active_model)  # => StateMachine::Integrations::ActiveModel
+    #   StateMachine::Integrations.find_by_name(:data_mapper)   # => StateMachine::Integrations::DataMapper
+    #   StateMachine::Integrations.find_by_name(:mongoid)       # => StateMachine::Integrations::Mongoid
+    #   StateMachine::Integrations.find_by_name(:mongo_mapper)  # => StateMachine::Integrations::MongoMapper
+    #   StateMachine::Integrations.find_by_name(:sequel)        # => StateMachine::Integrations::Sequel
+    #   StateMachine::Integrations.find_by_name(:invalid)       # => NameError: wrong constant name Invalid
+    def self.find_by_name(name)
+      all.detect {|integration| integration.integration_name == name} || raise(NameError, "uninitialized integration #{name}")
+    end
+    
+    # Gets a list of all of the available integrations for use.  This will
+    # always list the ActiveModel integration last.
+    # 
+    # == Example
+    # 
+    #   StateMachine::Integrations.all
+    #   # => [StateMachine::Integrations::ActiveRecord, StateMachine::Integrations::DataMapper
+    #   #     StateMachine::Integrations::Mongoid, StateMachine::Integrations::MongoMapper,
+    #   #     StateMachine::Integrations::Sequel, StateMachine::Integrations::ActiveModel]
+    def self.all
+      constants = self.constants.map {|c| c.to_s}.select {|c| c != 'ActiveModel'}.sort << 'ActiveModel'
+      constants.map {|c| const_get(c)}
     end
   end
 end

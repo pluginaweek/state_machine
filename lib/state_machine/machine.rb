@@ -421,7 +421,7 @@ module StateMachine
       
       # Find an integration that matches this machine's owner class
       if options.include?(:integration)
-        @integration = StateMachine::Integrations.find(options[:integration]) if options[:integration]
+        @integration = StateMachine::Integrations.find_by_name(options[:integration]) if options[:integration]
       else
         @integration = StateMachine::Integrations.match(owner_class)
       end
