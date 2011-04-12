@@ -421,14 +421,14 @@ module StateMachine
       
       # Find an integration that matches this machine's owner class
       if options.include?(:integration)
-        integration = StateMachine::Integrations.find(options[:integration]) if options[:integration]
+        @integration = StateMachine::Integrations.find(options[:integration]) if options[:integration]
       else
-        integration = StateMachine::Integrations.match(owner_class)
+        @integration = StateMachine::Integrations.match(owner_class)
       end
-
-      if integration
-        extend integration
-        options = (integration.defaults || {}).merge(options)
+      
+      if @integration
+        extend @integration
+        options = (@integration.defaults || {}).merge(options)
       end
       
       # Add machine-wide defaults
