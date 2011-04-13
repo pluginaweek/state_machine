@@ -42,6 +42,10 @@ module SequelTest
       assert_equal :sequel, StateMachine::Integrations::Sequel.integration_name
     end
     
+    def test_should_be_available
+      assert StateMachine::Integrations::Sequel.available?
+    end
+    
     def test_should_match_if_class_inherits_from_sequel
       assert StateMachine::Integrations::Sequel.matches?(new_model)
     end

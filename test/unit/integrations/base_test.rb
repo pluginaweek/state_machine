@@ -9,6 +9,10 @@ module BaseTest
       assert_equal :base, StateMachine::Integrations::Base.integration_name
     end
     
+    def test_should_not_be_available
+      assert !StateMachine::Integrations::ActiveModel.available?
+    end
+    
     def test_should_not_match_any_classes
       assert !StateMachine::Integrations::Base.matches?(Class.new)
     end

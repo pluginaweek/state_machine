@@ -65,7 +65,7 @@ module StateMachine
     #   StateMachine::Integrations.match(MongoMapperVehicle)  # => StateMachine::Integrations::MongoMapper
     #   StateMachine::Integrations.match(SequelVehicle)       # => StateMachine::Integrations::Sequel
     def self.match(klass)
-      all.detect {|integration| integration.matches?(klass)}
+      all.detect {|integration| integration.available? && integration.matches?(klass)}
     end
     
     # Finds an integration with the given name.  If the integration cannot be

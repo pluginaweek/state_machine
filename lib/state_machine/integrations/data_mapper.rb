@@ -249,11 +249,17 @@ module StateMachine
       class << self; attr_reader :defaults; end
       @defaults = {:action => :save, :use_transactions => false}
       
+      # Whether this integration is available.  Only true if DataMapper::Resource
+      # is defined.
+      def self.available?
+        defined?(::DataMapper::Resource)
+      end
+      
       # Should this integration be used for state machines in the given class?
       # Classes that include DataMapper::Resource will automatically use the
       # DataMapper integration.
       def self.matches?(klass)
-        defined?(::DataMapper::Resource) && klass <= ::DataMapper::Resource
+        klass <= ::DataMapper::Resource
       end
       
       # Loads additional files specific to DataMapper

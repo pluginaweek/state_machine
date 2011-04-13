@@ -17,6 +17,13 @@ module StateMachine
           end
         end
         
+        # Whether this integration is available for the current library.  This
+        # is usually only true if the ORM that the integration is for is
+        # currently defined.  Default is false.
+        def available?
+          false
+        end
+        
         # Whether the integration should be used for the given class.  Default
         # is false.
         def matches?(klass)

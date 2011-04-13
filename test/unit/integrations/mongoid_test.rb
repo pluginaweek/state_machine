@@ -44,6 +44,10 @@ module MongoidTest
       assert_equal :mongoid, StateMachine::Integrations::Mongoid.integration_name
     end
     
+    def test_should_be_available
+      assert StateMachine::Integrations::Mongoid.available?
+    end
+    
     def test_should_match_if_class_includes_mongoid
       assert StateMachine::Integrations::Mongoid.matches?(new_model)
     end

@@ -499,6 +499,10 @@ class MachineWithCustomIntegrationTest < Test::Unit::TestCase
     integration = Module.new do
       include StateMachine::Integrations::Base
       
+      def self.available?
+        true
+      end
+      
       def self.matches?(klass)
         true
       end
@@ -511,8 +515,30 @@ class MachineWithCustomIntegrationTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(Class.new, :integration => :custom)
     assert (class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
+  
+  def test_should_not_be_extended_by_the_integration_if_implicit_but_not_available
+    StateMachine::Integrations::Custom.class_eval do
+      def self.available?
+        false
+      end
+    end
+    
+    machine = StateMachine::Machine.new(Class.new)
+    assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+  end
 
-  def test_should_be_extended_by_the_integration_if_implicit
+  def test_should_not_be_extended_by_the_integration_if_implicit_but_not_matched
+    StateMachine::Integrations::Custom.class_eval do
+      def self.matches?(klass)
+        false
+      end
+    end
+    
+    machine = StateMachine::Machine.new(Class.new)
+    assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+  end
+
+  def test_should_be_extended_by_the_integration_if_implicit_and_available_and_matches
     machine = StateMachine::Machine.new(Class.new)
     assert (class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end

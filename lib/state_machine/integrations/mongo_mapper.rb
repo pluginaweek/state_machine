@@ -194,11 +194,17 @@ module StateMachine
       # The default options to use for state machines using this integration
       @defaults = {:action => :save}
       
+      # Whether this integration is available.  Only true if MongoMapper::Document
+      # is defined.
+      def self.available?
+        defined?(::MongoMapper::Document)
+      end
+      
       # Should this integration be used for state machines in the given class?
       # Classes that include MongoMapper::Document will automatically use the
       # MongoMapper integration.
       def self.matches?(klass)
-        defined?(::MongoMapper::Document) && klass <= ::MongoMapper::Document
+        klass <= ::MongoMapper::Document
       end
       
       protected

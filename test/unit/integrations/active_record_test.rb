@@ -78,6 +78,10 @@ module ActiveRecordTest
       assert_equal :active_record, StateMachine::Integrations::ActiveRecord.integration_name
     end
     
+    def test_should_be_available
+      assert StateMachine::Integrations::ActiveRecord.available?
+    end
+    
     def test_should_match_if_class_inherits_from_active_record
       assert StateMachine::Integrations::ActiveRecord.matches?(new_model)
     end

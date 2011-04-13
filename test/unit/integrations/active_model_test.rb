@@ -79,6 +79,10 @@ module ActiveModelTest
       assert_equal :active_model, StateMachine::Integrations::ActiveModel.integration_name
     end
     
+    def test_should_be_available
+      assert StateMachine::Integrations::ActiveModel.available?
+    end
+    
     def test_should_match_if_class_includes_dirty_feature
       assert StateMachine::Integrations::ActiveModel.matches?(new_model { include ActiveModel::Dirty })
     end

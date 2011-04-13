@@ -244,11 +244,17 @@ module StateMachine
       # The default options to use for state machines using this integration
       @defaults = {:action => :save}
       
+      # Whether this integration is available.  Only true if Mongoid::Document
+      # is defined.
+      def self.available?
+        defined?(::Mongoid::Document)
+      end
+      
       # Should this integration be used for state machines in the given class?
       # Classes that include Mongoid::Document will automatically use the
       # Mongoid integration.
       def self.matches?(klass)
-        defined?(::Mongoid::Document) && klass <= ::Mongoid::Document
+        klass <= ::Mongoid::Document
       end
       
       def self.extended(base) #:nodoc:

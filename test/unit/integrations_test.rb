@@ -11,6 +11,12 @@ class IntegrationMatcherTest < Test::Unit::TestCase
   
   def test_should_return_integration_class_if_match_found
     integration = Module.new do
+      include StateMachine::Integrations::Base
+      
+      def self.available?
+        true
+      end
+      
       def self.matches?(klass)
         true
       end

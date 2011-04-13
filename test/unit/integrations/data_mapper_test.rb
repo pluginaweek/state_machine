@@ -62,6 +62,10 @@ module DataMapperTest
       assert_equal :data_mapper, StateMachine::Integrations::DataMapper.integration_name
     end
     
+    def test_should_be_available
+      assert StateMachine::Integrations::DataMapper.available?
+    end
+    
     def test_should_match_if_class_includes_data_mapper
       assert StateMachine::Integrations::DataMapper.matches?(new_resource)
     end

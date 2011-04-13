@@ -267,12 +267,18 @@ module StateMachine
       
       @defaults = {}
       
+      # Whether this integration is available.  Only true if ActiveModel is
+      # defined.
+      def self.available?
+        defined?(::ActiveModel)
+      end
+      
       # Should this integration be used for state machines in the given class?
       # Classes that include ActiveModel::Dirty,  ActiveModel::Observing, or
       # ActiveModel::Validations will automatically use the ActiveModel
       # integration.
       def self.matches?(klass)
-        defined?(::ActiveModel) && %w(Dirty Observing Validations).any? {|feature| ::ActiveModel.const_defined?(feature) && klass <= ::ActiveModel.const_get(feature)}
+        %w(Dirty Observing Validations).any? {|feature| ::ActiveModel.const_defined?(feature) && klass <= ::ActiveModel.const_get(feature)}
       end
       
       # Forces the change in state to be recognized regardless of whether the

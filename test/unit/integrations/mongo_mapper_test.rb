@@ -53,6 +53,10 @@ module MongoMapperTest
       assert_equal :mongo_mapper, StateMachine::Integrations::MongoMapper.integration_name
     end
     
+    def test_should_be_available
+      assert StateMachine::Integrations::MongoMapper.available?
+    end
+    
     def test_should_match_if_class_includes_mongo_mapper
       assert StateMachine::Integrations::MongoMapper.matches?(new_model)
     end
