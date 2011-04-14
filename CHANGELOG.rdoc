@@ -1,5 +1,7 @@
 == master
 
+== 0.10.4 / 2011-04-14
+
 * Fix translations not being available under certain environments in Rails applications
 
 == 0.10.3 / 2011-04-07
