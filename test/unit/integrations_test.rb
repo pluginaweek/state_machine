@@ -55,6 +55,7 @@ class IntegrationFinderTest < Test::Unit::TestCase
   end
   
   def test_should_raise_an_exception_if_invalid
-    assert_raise(NameError) { StateMachine::Integrations.find_by_name(:invalid) }
+    exception = assert_raise(StateMachine::IntegrationNotFound) { StateMachine::Integrations.find_by_name(:invalid) }
+    assert_equal ':invalid is an invalid integration', exception.message
   end
 end

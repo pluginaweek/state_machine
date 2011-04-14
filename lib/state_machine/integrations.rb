@@ -4,7 +4,16 @@ Dir["#{File.dirname(__FILE__)}/integrations/*.rb"].sort.each do |path|
   require "state_machine/integrations/#{File.basename(path)}"
 end
 
+require 'state_machine/error'
+
 module StateMachine
+  # An invalid integration was specified
+  class IntegrationNotFound < Error
+    def initialize(name)
+      super(nil, "#{name.inspect} is an invalid integration")
+    end
+  end
+  
   # Integrations allow state machines to take advantage of features within the
   # context of a particular library.  This is currently most useful with
   # database libraries.  For example, the various database integrations allow
@@ -79,9 +88,9 @@ module StateMachine
     #   StateMachine::Integrations.find_by_name(:mongoid)       # => StateMachine::Integrations::Mongoid
     #   StateMachine::Integrations.find_by_name(:mongo_mapper)  # => StateMachine::Integrations::MongoMapper
     #   StateMachine::Integrations.find_by_name(:sequel)        # => StateMachine::Integrations::Sequel
-    #   StateMachine::Integrations.find_by_name(:invalid)       # => NameError: wrong constant name Invalid
+    #   StateMachine::Integrations.find_by_name(:invalid)       # => StateMachine::IntegrationNotFound: :invalid is an invalid integration
     def self.find_by_name(name)
-      all.detect {|integration| integration.integration_name == name} || raise(NameError, "uninitialized integration #{name}")
+      all.detect {|integration| integration.integration_name == name} || raise(IntegrationNotFound.new(name))
     end
     
     # Gets a list of all of the available integrations for use.  This will
