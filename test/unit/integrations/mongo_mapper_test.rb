@@ -68,6 +68,10 @@ module MongoMapperTest
     def test_should_have_defaults
       assert_equal e = {:action => :save}, StateMachine::Integrations::MongoMapper.defaults
     end
+    
+    def test_should_have_a_locale_path
+      assert_not_nil StateMachine::Integrations::MongoMapper.locale_path
+    end
   end
   
   class MachineWithoutDatabaseTest < BaseTestCase

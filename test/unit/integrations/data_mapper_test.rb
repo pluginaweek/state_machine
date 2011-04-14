@@ -77,6 +77,10 @@ module DataMapperTest
     def test_should_have_defaults
       assert_equal e = {:action => :save, :use_transactions => false}, StateMachine::Integrations::DataMapper.defaults
     end
+    
+    def test_should_not_have_a_locale_path
+      assert_nil StateMachine::Integrations::DataMapper.locale_path
+    end
   end
   
   class MachineWithoutDatabaseTest < BaseTestCase

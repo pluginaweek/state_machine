@@ -57,6 +57,10 @@ module SequelTest
     def test_should_have_defaults
       assert_equal e = {:action => :save}, StateMachine::Integrations::Sequel.defaults
     end
+    
+    def test_should_not_have_a_locale_path
+      assert_nil StateMachine::Integrations::Sequel.locale_path
+    end
   end
   
   class MachineWithoutDatabaseTest < BaseTestCase

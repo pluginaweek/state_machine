@@ -387,12 +387,7 @@ module StateMachine
         
         # Loads any locale files needed for translating validation errors
         def load_locale
-          I18n.load_path.unshift(locale_path) unless I18n.load_path.include?(locale_path)
-        end
-        
-        # The path to the locale file containing state_machine translations
-        def locale_path
-          "#{File.dirname(__FILE__)}/#{@integration.integration_name}/locale.rb"
+          I18n.load_path.unshift(@integration.locale_path) unless I18n.load_path.include?(@integration.locale_path)
         end
         
         # Loads extensions to ActiveModel's Observers

@@ -102,6 +102,10 @@ module ActiveModelTest
     def test_should_have_no_defaults
       assert_equal e = {}, StateMachine::Integrations::ActiveModel.defaults
     end
+    
+    def test_should_have_a_locale_path
+      assert_not_nil StateMachine::Integrations::ActiveModel.locale_path
+    end
   end
   
   class MachineByDefaultTest < BaseTestCase

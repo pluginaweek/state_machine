@@ -342,21 +342,6 @@ module StateMachine
       end
       
       protected
-        # Loads locale files needed for translations
-        def load_locale
-          load_i18n_version
-          super
-        end
-        
-        # Loads the version of the i18n library so that that proper
-        # interpolation syntax can be used
-        def load_i18n_version
-          begin
-            require 'i18n/version'
-          rescue Exception => ex
-          end
-        end
-        
         # Only runs validations on the action if using <tt>:save</tt>
         def runs_validations_on_action?
           action == :save

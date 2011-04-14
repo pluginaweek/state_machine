@@ -10,11 +10,15 @@ module BaseTest
     end
     
     def test_should_not_be_available
-      assert !StateMachine::Integrations::ActiveModel.available?
+      assert !StateMachine::Integrations::Base.available?
     end
     
     def test_should_not_match_any_classes
       assert !StateMachine::Integrations::Base.matches?(Class.new)
+    end
+    
+    def test_should_not_have_a_locale_path
+      assert_nil StateMachine::Integrations::Base.locale_path
     end
   end
   

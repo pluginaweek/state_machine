@@ -59,6 +59,10 @@ module MongoidTest
     def test_should_have_defaults
       assert_equal e = {:action => :save}, StateMachine::Integrations::Mongoid.defaults
     end
+    
+    def test_should_have_a_locale_path
+      assert_not_nil StateMachine::Integrations::Mongoid.locale_path
+    end
   end
   
   class MachineByDefaultTest < BaseTestCase

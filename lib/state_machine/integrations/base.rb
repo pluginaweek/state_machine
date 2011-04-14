@@ -64,6 +64,14 @@ module StateMachine
           mod
         end
         
+        # The path to the locale file containing translations for this
+        # integration.  This file will only exist for integrations that actually
+        # support i18n.
+        def locale_path
+          path = "#{File.dirname(__FILE__)}/#{integration_name}/locale.rb"
+          path if File.exists?(path)
+        end
+        
         # Extends the given object with any version overrides that are currently
         # active
         def extended(base)
