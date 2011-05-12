@@ -12,8 +12,7 @@ if defined?(Rails)
         load 'tasks/state_machine.rb'
       end
     end
-    
-    StateMachine::RailsEngine.paths.config.locales = locale_paths
+    StateMachine::RailsEngine.paths["config/locales"] = locale_paths
   elsif defined?(I18n)
     # Rails 2.x
     I18n.load_path.unshift(*locale_paths)
