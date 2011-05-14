@@ -374,13 +374,18 @@ module StateMachine
         # Creates a scope for finding records *with* a particular state or
         # states for the attribute
         def create_with_scope(name)
-          lambda {|model, values| model.filter(:"#{owner_class.table_name}__#{attribute}" => values)}
+          lambda {|model, values| model.filter(attribute_column => values)}
         end
         
         # Creates a scope for finding records *without* a particular state or
         # states for the attribute
         def create_without_scope(name)
-          lambda {|model, values| model.filter(~{:"#{owner_class.table_name}__#{attribute}" => values})}
+          lambda {|model, values| model.exclude(attribute_column => values)}
+        end
+        
+        # Generates the fully-qualifed column name for this machine's attribute
+        def attribute_column
+          :"#{owner_class.table_name}__#{attribute}"
         end
         
         # Runs a new database transaction, rolling back any changes if the
