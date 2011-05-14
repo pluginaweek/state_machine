@@ -1,5 +1,6 @@
 == master
 
+* Add full support for chaining state scopes within Sequel integrations
 * Fix Rails 3.1 deprecation warnings for configuring engine locales [Stefan Penner]
 
 == 1.0.0 / 2011-05-12

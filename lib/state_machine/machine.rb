@@ -1737,12 +1737,18 @@ module StateMachine
               # Converts state names to their corresponding values so that they
               # can be looked up properly
               define_helper(:class, method) do |machine, klass, *states|
-                values = states.flatten.map {|state| machine.states.fetch(state).value}
-                scope.call(klass, values)
+                run_scope(scope, machine, klass, states)
               end
             end
           end
         end
+      end
+      
+      # Generates the results for the given scope based on one or more states to
+      # filter by
+      def run_scope(scope, machine, klass, states)
+        values = states.flatten.map {|state| machine.states.fetch(state).value}
+        scope.call(klass, values)
       end
       
       # Pluralizes the given word using #pluralize (if available) or simply

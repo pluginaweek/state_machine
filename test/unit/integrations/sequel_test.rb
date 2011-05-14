@@ -1426,7 +1426,7 @@ module SequelTest
       parked = @model.create :state => 'parked'
       idling = @model.create :state => 'idling'
       
-      assert_equal [idling], @model.without_state(:parked).filter(:state => 'idling').all
+      assert_equal [idling], @model.without_state(:parked).with_state(:idling).all
     end
   end
   

@@ -374,13 +374,34 @@ module StateMachine
         # Creates a scope for finding records *with* a particular state or
         # states for the attribute
         def create_with_scope(name)
-          lambda {|model, values| model.filter(attribute_column => values)}
+          create_scope(name, lambda {|dataset, values| dataset.filter(attribute_column => values)})
         end
         
         # Creates a scope for finding records *without* a particular state or
         # states for the attribute
         def create_without_scope(name)
-          lambda {|model, values| model.exclude(attribute_column => values)}
+          create_scope(name, lambda {|dataset, values| dataset.exclude(attribute_column => values)})
+        end
+
+        # Creates a new named scope with the given name
+        def create_scope(name, scope)
+          machine = self
+          owner_class.def_dataset_method(name) do |*states|
+            machine.send(:run_scope, scope, self, states)
+          end
+          
+          false
+        end
+        
+        # Generates the results for the given scope based on one or more states to
+        # filter by
+        def run_scope(scope, dataset, states)
+          super(scope, model_from_dataset(dataset).state_machine(name), dataset, states)
+        end
+        
+        # Determines the model associated with the given dataset
+        def model_from_dataset(dataset)
+          dataset.model
         end
         
         # Generates the fully-qualifed column name for this machine's attribute

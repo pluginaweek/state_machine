@@ -26,6 +26,10 @@ module StateMachine
         def action_hook
           action == :save ? :save : super
         end
+        
+        def model_from_dataset(dataset)
+          dataset.model_classes[nil]
+        end
       end
     end
   end
