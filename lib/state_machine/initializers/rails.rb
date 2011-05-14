@@ -13,7 +13,11 @@ if defined?(Rails)
       end
     end
     
-    StateMachine::RailsEngine.paths.config.locales = locale_paths
+    if Rails::VERSION::MAJOR == 3 && Rails::VERSION::MINOR == 0
+      StateMachine::RailsEngine.paths.config.locales = locale_paths
+    else
+      StateMachine::RailsEngine.paths['config/locales'] = locale_paths
+    end
   elsif defined?(I18n)
     # Rails 2.x
     I18n.load_path.unshift(*locale_paths)
