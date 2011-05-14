@@ -406,7 +406,7 @@ module StateMachine
         
         # Generates the fully-qualifed column name for this machine's attribute
         def attribute_column
-          :"#{owner_class.table_name}__#{attribute}"
+          ::Sequel::SQL::QualifiedIdentifier.new(owner_class.table_name, attribute)
         end
         
         # Runs a new database transaction, rolling back any changes if the

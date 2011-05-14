@@ -20,11 +20,11 @@ module SequelTest
       def new_model(create_table = :foo, &block)
         table_name = create_table || :foo
         
-        DB.create_table!(table_name) do
+        DB.create_table!(::Sequel::SQL::Identifier.new(table_name)) do
           primary_key :id
           column :state, :string
         end if create_table
-        model = Class.new(Sequel::Model(table_name)) do
+        model = Class.new(Sequel::Model(DB[::Sequel::SQL::Identifier.new(table_name)])) do
           self.raise_on_save_failure = false
           (class << self; self; end).class_eval do
             define_method(:name) { "SequelTest::#{table_name.to_s.capitalize}" }
@@ -1427,6 +1427,18 @@ module SequelTest
       idling = @model.create :state => 'idling'
       
       assert_equal [idling], @model.without_state(:parked).with_state(:idling).all
+    end
+    
+    def test_should_run_on_tables_with_double_underscores
+      @model = new_model(:foo__bar)
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :parked, :first_gear
+      @machine.state :idling, :value => lambda {'idling'}
+      
+      parked = @model.create :state => 'parked'
+      idling = @model.create :state => 'idling'
+      
+      assert_equal [parked], @model.with_state(:parked).all
     end
   end
   
