@@ -583,6 +583,11 @@ module StateMachine
     # name.  If the method is already defined in the scope, then this will not
     # override it.
     # 
+    # If passing in a block, there are two side effects to be aware of
+    # 1. The method cannot be chained, meaning that the block cannot call +super+
+    # 2. If the method is already defined in an ancestor, then it will not get
+    #    overridden and a warning will be output.
+    # 
     # Example:
     # 
     #   # Instance helper
@@ -611,15 +616,22 @@ module StateMachine
     #     end
     #   end_eval
     def define_helper(scope, method, *args, &block)
+      helper_module = @helper_modules.fetch(scope)
+      
       if block_given?
-        name = self.name
-        @helper_modules.fetch(scope).class_eval do
-          define_method(method) do |*args|
-            block.call((scope == :instance ? self.class : self).state_machine(name), self, *args)
+        if conflicting_ancestor = owner_class_ancestor_has_method?(scope, method)
+          ancestor_name = conflicting_ancestor.name && !conflicting_ancestor.name.empty? ? conflicting_ancestor.name : conflicting_ancestor.to_s
+          warn "#{scope == :class ? 'Class' : 'Instance'} method \"#{method}\" is already defined in #{ancestor_name}, use generic helper instead."
+        else
+          name = self.name
+          helper_module.class_eval do
+            define_method(method) do |*args|
+              block.call((scope == :instance ? self.class : self).state_machine(name), self, *args)
+            end
           end
         end
       else
-        @helper_modules.fetch(scope).class_eval(method, *args)
+        helper_module.class_eval(method, *args)
       end
     end
     
@@ -1585,13 +1597,14 @@ module StateMachine
       def define_state_accessor
         attribute = self.attribute
         
-        @helper_modules[:instance].class_eval { attr_accessor attribute }
+        @helper_modules[:instance].class_eval { attr_reader attribute } unless owner_class_ancestor_has_method?(:instance, attribute)
+        @helper_modules[:instance].class_eval { attr_writer attribute } unless owner_class_ancestor_has_method?(:instance, "#{attribute}=")
       end
       
       # Adds predicate method to the owner class for determining the name of the
       # current state
       def define_state_predicate
-        call_super = owner_class_ancestor_has_method?("#{name}?")
+        call_super = !!owner_class_ancestor_has_method?(:instance, "#{name}?")
         define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
           def #{name}?(*args)
             args.empty? && #{call_super} ? super : self.class.state_machine(#{name.inspect}).states.matches?(self, *args)
@@ -1686,14 +1699,35 @@ module StateMachine
       # action must be defined in an ancestor of the owner classs in order for
       # it to be the action hook.
       def action_hook
-        action && owner_class_ancestor_has_method?(action) ? action : nil
+        action && owner_class_ancestor_has_method?(:instance, action) ? action : nil
       end
       
-      # Determines whether any of the ancestors for this machine's owner class
-      # has the given method defined, even if it's private.
-      def owner_class_ancestor_has_method?(method)
-        owner_class.ancestors.any? do |ancestor|
-          ancestor != owner_class && (ancestor.method_defined?(method) || ancestor.private_method_defined?(method))
+      # Determines whether there's already a helper method defined within the
+      # given scope.  This is true only if one of the owner's ancestors defines
+      # the method and is further along in the ancestor chain than this
+      # machine's helper module.
+      def owner_class_ancestor_has_method?(scope, method)
+        superclasses = owner_class.ancestors[1..-1].select {|ancestor| ancestor.is_a?(Class)}
+        
+        if scope == :class
+          # Use singleton classes
+          current = (class << owner_class; self; end)
+          superclass = superclasses.first
+        else
+          current = owner_class
+          superclass = owner_class.superclass
+        end
+        
+        # Generate the list of modules that *only* occur in the owner class, but
+        # were included *prior* to the helper modules, in addition to the
+        # superclasses
+        ancestors = current.ancestors - superclass.ancestors + superclasses
+        ancestors = ancestors[ancestors.index(@helper_modules[scope]) + 1..-1].reverse
+        
+        # Search for for the first ancestor that defined this method
+        ancestors.detect do |ancestor|
+          ancestor = (class << ancestor; self; end) if scope == :class && ancestor.is_a?(Class)
+          ancestor.method_defined?(method) || ancestor.private_method_defined?(method)
         end
       end
       

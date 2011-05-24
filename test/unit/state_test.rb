@@ -458,7 +458,36 @@ class StateNotFinalTest < Test::Unit::TestCase
   end
 end
 
-class StateWithConflictingHelpersTest < Test::Unit::TestCase
+class StateWithConflictingHelpersBeforeDefinitionTest < Test::Unit::TestCase
+  def setup
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    @superclass = Class.new do
+      def parked?
+        0
+      end
+    end
+    @klass = Class.new(@superclass)
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked
+    @object = @klass.new
+  end
+  
+  def test_should_not_override_state_predicate
+    assert_equal 0, @object.parked?
+  end
+  
+  def test_should_output_warning
+    assert_equal "Instance method \"parked?\" is already defined in #{@superclass.to_s}, use generic helper instead.\n", $stderr.string
+  end
+  
+  def teardown
+    $stderr = @original_stderr
+  end
+end
+
+class StateWithConflictingHelpersAfterDefinitionTest < Test::Unit::TestCase
   def setup
     require 'stringio'
     @original_stderr, $stderr = $stderr, StringIO.new
@@ -477,18 +506,18 @@ class StateWithConflictingHelpersTest < Test::Unit::TestCase
     assert_equal 0, @object.parked?
   end
   
-  def test_should_not_allow_super_chaining
+  def test_should_still_allow_super_chaining
     @klass.class_eval do
       def parked?
-        super ? 1 : 0
+        super
       end
     end
     
-    assert_raise(NoMethodError) { @object.parked? }
+    assert_equal false, @object.parked?
   end
   
-  def test_should_output_warning
-    assert_equal "#parked? is already defined, use #state?(:parked) instead.\n", $stderr.string
+  def test_should_not_output_warning
+    assert_equal '', $stderr.string
   end
   
   def teardown
@@ -496,7 +525,7 @@ class StateWithConflictingHelpersTest < Test::Unit::TestCase
   end
 end
 
-class EventWithConflictingMachineTest < Test::Unit::TestCase
+class StateWithConflictingMachineTest < Test::Unit::TestCase
   def setup
     require 'stringio'
     @original_stderr, $stderr = $stderr, StringIO.new

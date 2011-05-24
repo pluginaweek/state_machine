@@ -260,19 +260,11 @@ module StateMachine
       end
       
       # Adds a predicate method to the owner class so long as a name has
-      # actually been configured for the state and the method isn't already
-      # defined in the owner class.
+      # actually been configured for the state
       def add_predicate
-        owner_class = machine.owner_class
-        predicate = "#{qualified_name}?"
-        if !owner_class.method_defined?(predicate) && !owner_class.private_method_defined?(predicate)
-          # Checks whether the current value matches this state
-          machine.define_helper(:instance, predicate) do |machine, object|
-            machine.states.matches?(object, name)
-          end
-        else
-          # Only output a warning since we can't defined the predicate
-          warn "#{owner_class.name}##{predicate} is already defined, use #{owner_class.name}##{machine.name}?(:#{name}) instead."
+        # Checks whether the current value matches this state
+        machine.define_helper(:instance, "#{qualified_name}?") do |machine, object|
+          machine.states.matches?(object, name)
         end
       end
   end

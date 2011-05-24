@@ -1508,7 +1508,7 @@ class TransitionEqualityTest < Test::Unit::TestCase
   end
   
   def test_should_not_be_equal_with_different_machines
-    machine = StateMachine::Machine.new(@klass, :namespace => :other)
+    machine = StateMachine::Machine.new(@klass, :status, :namespace => :other)
     machine.state :parked, :idling
     machine.event :ignite
     transition = StateMachine::Transition.new(@object, machine, :ignite, :parked, :idling)

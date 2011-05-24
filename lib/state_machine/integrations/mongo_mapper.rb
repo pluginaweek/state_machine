@@ -264,8 +264,8 @@ module StateMachine
         # ActiveModel's use of method_missing / respond_to for attribute methods
         # breaks both ancestor lookups and defined?(super).  Need to special-case
         # the existence of query attribute methods.
-        def owner_class_ancestor_has_method?(method)
-          method == "#{name}?" || super
+        def owner_class_ancestor_has_method?(scope, method)
+          scope == :instance && method == "#{name}?" || super
         end
     end
   end

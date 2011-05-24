@@ -1114,6 +1114,84 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
     assert_equal 'parked', @object.send(:state)
   end
   
+  def test_should_warn_if_defined_in_superclass
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    superclass = Class.new do
+      def park
+      end
+    end
+    klass = Class.new(superclass)
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:instance, :park) {}
+    assert_equal "Instance method \"park\" is already defined in #{superclass.to_s}, use generic helper instead.\n", $stderr.string
+  ensure
+    $stderr = @original_stderr
+  end
+  
+  def test_should_warn_if_defined_in_multiple_superclasses
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    superclass1 = Class.new do
+      def park
+      end
+    end
+    superclass2 = Class.new(superclass1) do
+      def park
+      end
+    end
+    klass = Class.new(superclass2)
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:instance, :park) {}
+    assert_equal "Instance method \"park\" is already defined in #{superclass1.to_s}, use generic helper instead.\n", $stderr.string
+  ensure
+    $stderr = @original_stderr
+  end
+  
+  def test_should_warn_if_defined_in_module_prior_to_helper_module
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    mod = Module.new do
+      def park
+      end
+    end
+    klass = Class.new do
+      include mod
+    end
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:instance, :park) {}
+    assert_equal "Instance method \"park\" is already defined in #{mod.to_s}, use generic helper instead.\n", $stderr.string
+  ensure
+    $stderr = @original_stderr
+  end
+  
+  def test_should_not_warn_if_defined_in_module_after_helper_module
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    klass = Class.new
+    machine = StateMachine::Machine.new(klass)
+    
+    mod = Module.new do
+      def park
+      end
+    end
+    klass.class_eval do
+      include mod
+    end
+    
+    machine.define_helper(:instance, :park) {}
+    assert_equal '', $stderr.string
+  ensure
+    $stderr = @original_stderr
+  end
+  
   def test_should_define_nonexistent_methods
     @machine.define_helper(:instance, :state) {'parked'}
     assert_equal 'parked', @object.state
@@ -1186,6 +1264,84 @@ class MachineWithClassHelpersTest < Test::Unit::TestCase
     assert_equal [], @klass.send(:states)
   end
   
+  def test_should_warn_if_defined_in_superclass
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    superclass = Class.new do
+      def self.park
+      end
+    end
+    klass = Class.new(superclass)
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:class, :park) {}
+    assert_equal "Class method \"park\" is already defined in #{superclass.to_s}, use generic helper instead.\n", $stderr.string
+  ensure
+    $stderr = @original_stderr
+  end
+  
+  def test_should_warn_if_defined_in_multiple_superclasses
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    superclass1 = Class.new do
+      def self.park
+      end
+    end
+    superclass2 = Class.new(superclass1) do
+      def self.park
+      end
+    end
+    klass = Class.new(superclass2)
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:class, :park) {}
+    assert_equal "Class method \"park\" is already defined in #{superclass1.to_s}, use generic helper instead.\n", $stderr.string
+  ensure
+    $stderr = @original_stderr
+  end
+  
+  def test_should_warn_if_defined_in_module_prior_to_helper_module
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    mod = Module.new do
+      def park
+      end
+    end
+    klass = Class.new do
+      extend mod
+    end
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:class, :park) {}
+    assert_equal "Class method \"park\" is already defined in #{mod.to_s}, use generic helper instead.\n", $stderr.string
+  ensure
+    $stderr = @original_stderr
+  end
+  
+  def test_should_not_warn_if_defined_in_module_after_helper_module
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    klass = Class.new
+    machine = StateMachine::Machine.new(klass)
+    
+    mod = Module.new do
+      def park
+      end
+    end
+    klass.class_eval do
+      extend mod
+    end
+    
+    machine.define_helper(:class, :park) {}
+    assert_equal '', $stderr.string
+  ensure
+    $stderr = @original_stderr
+  end
+  
   def test_should_define_nonexistent_methods
     @machine.define_helper(:class, :states) {[]}
     assert_equal [], @klass.states
@@ -1217,8 +1373,176 @@ class MachineWithClassHelpersTest < Test::Unit::TestCase
   end
 end
 
-class MachineWithConflictingHelpersTest < Test::Unit::TestCase
+class MachineWithConflictingHelpersBeforeDefinitionTest < Test::Unit::TestCase
   def setup
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    @superclass = Class.new do
+      def self.with_state
+        :with_state
+      end
+      
+      def self.with_states
+        :with_states
+      end
+      
+      def self.without_state
+        :without_state
+      end
+      
+      def self.without_states
+        :without_states
+      end
+      
+      def self.human_state_name
+        :human_state_name
+      end
+      
+      def self.human_state_event_name
+        :human_state_event_name
+      end
+      
+      attr_accessor :status
+      
+      def state
+        'parked'
+      end
+      
+      def state=(value)
+        self.status = value
+      end
+      
+      def state?
+        true
+      end
+      
+      def state_name
+        :parked
+      end
+      
+      def human_state_name
+        'parked'
+      end
+      
+      def state_events
+        [:ignite]
+      end
+      
+      def state_transitions
+        [{:parked => :idling}]
+      end
+      
+      def state_paths
+        [[{:parked => :idling}]]
+      end
+    end
+    @klass = Class.new(@superclass)
+    
+    StateMachine::Integrations.const_set('Custom', Module.new do
+      include StateMachine::Integrations::Base
+      
+      def create_with_scope(name)
+        lambda {|klass, values| []}
+      end
+      
+      def create_without_scope(name)
+        lambda {|klass, values| []}
+      end
+    end)
+    
+    @machine = StateMachine::Machine.new(@klass, :integration => :custom)
+    @machine.state :parked, :idling
+    @machine.event :ignite
+    @object = @klass.new
+  end
+  
+  def test_should_not_redefine_singular_with_scope
+    assert_equal :with_state, @klass.with_state
+  end
+  
+  def test_should_not_redefine_plural_with_scope
+    assert_equal :with_states, @klass.with_states
+  end
+  
+  def test_should_not_redefine_singular_without_scope
+    assert_equal :without_state, @klass.without_state
+  end
+  
+  def test_should_not_redefine_plural_without_scope
+    assert_equal :without_states, @klass.without_states
+  end
+  
+  def test_should_not_redefine_human_attribute_name_reader
+    assert_equal :human_state_name, @klass.human_state_name
+  end
+  
+  def test_should_not_redefine_human_event_name_reader
+    assert_equal :human_state_event_name, @klass.human_state_event_name
+  end
+  
+  def test_should_not_redefine_attribute_writer
+    assert_equal 'parked', @object.state
+  end
+  
+  def test_should_not_redefine_attribute_writer
+    @object.state = 'parked'
+    assert_equal 'parked', @object.status
+  end
+  
+  def test_should_not_define_attribute_predicate
+    assert @object.state?
+  end
+  
+  def test_should_not_redefine_attribute_name_reader
+    assert_equal :parked, @object.state_name
+  end
+  
+  def test_should_not_redefine_attribute_human_name_reader
+    assert_equal 'parked', @object.human_state_name
+  end
+  
+  def test_should_not_redefine_attribute_events_reader
+    assert_equal [:ignite], @object.state_events
+  end
+  
+  def test_should_not_redefine_attribute_transitions_reader
+    assert_equal [{:parked => :idling}], @object.state_transitions
+  end
+  
+  def test_should_not_redefine_attribute_paths_reader
+    assert_equal [[{:parked => :idling}]], @object.state_paths
+  end
+  
+  def test_should_output_warning
+    expected = [
+      'Instance method "state_events"',
+      'Instance method "state_transitions"',
+      'Instance method "state_paths"',
+      'Class method "human_state_name"',
+      'Class method "human_state_event_name"',
+      'Instance method "state_name"',
+      'Instance method "human_state_name"',
+      'Class method "with_state"',
+      'Class method "without_state"',
+      'Class method "with_states"',
+      'Class method "without_states"'
+    ].map {|method| "#{method} is already defined in #{@superclass.to_s}, use generic helper instead.\n"}.join
+    
+    assert_equal expected, $stderr.string
+  end
+  
+  def teardown
+    $stderr = @original_stderr
+    StateMachine::Integrations.send(:remove_const, 'Custom')
+  end
+end
+
+class MachineWithConflictingHelpersAfterDefinitionTest < Test::Unit::TestCase
+  def setup
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
     @klass = Class.new do
       def self.with_state
         :with_state
@@ -1357,84 +1681,89 @@ class MachineWithConflictingHelpersTest < Test::Unit::TestCase
   def test_should_allow_super_chaining
     @klass.class_eval do
       def self.with_state(*states)
-        super == []
+        super
       end
       
       def self.with_states(*states)
-        super == []
+        super
       end
       
       def self.without_state(*states)
-        super == []
+        super
       end
       
       def self.without_states(*states)
-        super == []
+        super
       end
       
       def self.human_state_name(state)
-        super == 'parked'
+        super
       end
       
       def self.human_state_event_name(event)
-        super == 'ignite'
+        super
       end
       
       attr_accessor :status
       
       def state
-        super || 'parked'
+        super
       end
       
       def state=(value)
         super
-        self.status = value
       end
       
       def state?(state)
-        super ? 1 : 0
+        super
       end
       
       def state_name
-        super == :parked ? 1 : 0
+        super
       end
       
       def human_state_name
-        super == 'parked' ? 1 : 0
+        super
       end
       
       def state_events
-        super == []
+        super
       end
       
       def state_transitions
-        super == []
+        super
       end
       
       def state_paths
-        super == []
+        super
       end
     end
     
-    assert_equal true, @klass.with_state
-    assert_equal true, @klass.with_states
-    assert_equal true, @klass.without_state
-    assert_equal true, @klass.without_states
-    assert_equal true, @klass.human_state_name(:parked)
-    assert_equal true, @klass.human_state_event_name(:ignite)
+    assert_equal [], @klass.with_state
+    assert_equal [], @klass.with_states
+    assert_equal [], @klass.without_state
+    assert_equal [], @klass.without_states
+    assert_equal 'parked', @klass.human_state_name(:parked)
+    assert_equal 'ignite', @klass.human_state_event_name(:ignite)
     
-    assert_equal 'parked', @object.state
+    assert_equal nil, @object.state
     @object.state = 'idling'
-    assert_equal 'idling', @object.status
-    assert_equal 0, @object.state?(:parked)
-    assert_equal 0, @object.state_name
-    assert_equal 0, @object.human_state_name
-    assert_equal true, @object.state_events
-    assert_equal true, @object.state_transitions
-    assert_equal true, @object.state_paths
+    assert_equal 'idling', @object.state
+    assert_equal nil, @object.status
+    assert_equal false, @object.state?(:parked)
+    assert_equal :idling, @object.state_name
+    assert_equal 'idling', @object.human_state_name
+    assert_equal [], @object.state_events
+    assert_equal [], @object.state_transitions
+    assert_equal [], @object.state_paths
+  end
+  
+  def test_should_not_output_warning
+    assert_equal '', $stderr.string
   end
   
   def teardown
+    $stderr = @original_stderr
     StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end
