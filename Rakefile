@@ -6,7 +6,7 @@ require 'rake/gempackagetask'
 
 spec = Gem::Specification.new do |s|
   s.name              = 'state_machine'
-  s.version           = '1.0.0'
+  s.version           = '1.0.1'
   s.platform          = Gem::Platform::RUBY
   s.summary           = 'Adds support for creating state machines for attributes on any Ruby class'
   s.description       = s.summary

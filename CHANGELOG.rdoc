@@ -1,5 +1,7 @@
 == master
 
+== 1.0.1 / 2011-05-30
+
 * Add the ability to ignore method conflicts for helpers
 * Generate warnings for any helper, not just state helpers, that has a conflicting method defined in the class
 * Fix scopes in Sequel not working if the table name contains double underscores or is not a string/symbol
