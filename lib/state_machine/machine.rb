@@ -376,6 +376,11 @@ module StateMachine
       :invalid_transition => 'cannot transition via "%s"'
     }
     
+    # Whether to ignore any conflicts that are detected for helper methods that
+    # get generated for a machine's owner class.  Default is false.
+    class << self; attr_accessor :ignore_method_conflicts; end
+    @ignore_method_conflicts = false
+    
     # The class that the machine is defined in
     attr_accessor :owner_class
     
@@ -619,7 +624,7 @@ module StateMachine
       helper_module = @helper_modules.fetch(scope)
       
       if block_given?
-        if conflicting_ancestor = owner_class_ancestor_has_method?(scope, method)
+        if !self.class.ignore_method_conflicts && conflicting_ancestor = owner_class_ancestor_has_method?(scope, method)
           ancestor_name = conflicting_ancestor.name && !conflicting_ancestor.name.empty? ? conflicting_ancestor.name : conflicting_ancestor.to_s
           warn "#{scope == :class ? 'Class' : 'Instance'} method \"#{method}\" is already defined in #{ancestor_name}, use generic helper instead."
         else

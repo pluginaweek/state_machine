@@ -1192,6 +1192,26 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
     $stderr = @original_stderr
   end
   
+  def test_should_define_if_ignoring_method_conflicts_and_defined_in_superclass
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    StateMachine::Machine.ignore_method_conflicts = true
+    
+    superclass = Class.new do
+      def park
+      end
+    end
+    klass = Class.new(superclass)
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:instance, :park) {true}
+    assert_equal '', $stderr.string
+    assert_equal true, klass.new.park
+  ensure
+    StateMachine::Machine.ignore_method_conflicts = false
+    $stderr = @original_stderr
+  end
+  
   def test_should_define_nonexistent_methods
     @machine.define_helper(:instance, :state) {'parked'}
     assert_equal 'parked', @object.state
@@ -1339,6 +1359,26 @@ class MachineWithClassHelpersTest < Test::Unit::TestCase
     machine.define_helper(:class, :park) {}
     assert_equal '', $stderr.string
   ensure
+    $stderr = @original_stderr
+  end
+  
+  def test_should_define_if_ignoring_method_conflicts_and_defined_in_superclass
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    StateMachine::Machine.ignore_method_conflicts = true
+    
+    superclass = Class.new do
+      def self.park
+      end
+    end
+    klass = Class.new(superclass)
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:class, :park) {true}
+    assert_equal '', $stderr.string
+    assert_equal true, klass.park
+  ensure
+    StateMachine::Machine.ignore_method_conflicts = false
     $stderr = @original_stderr
   end
   
