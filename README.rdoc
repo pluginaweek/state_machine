@@ -256,6 +256,13 @@ like so:
                                                             #       #<StateMachine::Transition attribute=:state event=:shift_up from="idling" ...>
                                                             #    ]]
 
+
+  # Accessing all vehicles that are in first gear
+  Vehicle.with_state(:first_gear) # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=false>
+
+  # Accessing all vehicles that are in either first or second gear
+  Vehicle.with_state([:first_gear, :second_gear]) # => [ #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=false>, #<Vehicle:0xb7cf4ead @state="second_gear", @seatbelt_on=false> ]
+
 == Integrations
 
 In addition to being able to define state machines on all Ruby classes, a set of
