@@ -21,6 +21,10 @@ Source
 
 * git://github.com/pluginaweek/state_machine.git
 
+Mailing List
+
+* http://groups.google.com/group/pluginaweek-core
+
 == Description
 
 State machines make it dead-simple to manage the behavior of a class.  Too often,
@@ -675,6 +679,39 @@ Jean Bovet's {Visual Automata Simulator}[http://www.cs.usfca.edu/~jbovet/vas.htm
 is a great tool for "simulating, visualizing and transforming finite state
 automata and Turing Machines".  It can help in the creation of states and events
 for your models.  It is cross-platform, written in Java.
+
+== Getting started with Ruby On Rails
+
+Integrating state_machine into your Rails 3.0+ application is straightforward. 
+ 
+=== 1. Get the gem
+
+In your Gemfile, add the lines:
+
+  gem 'state_machine'
+  gem 'ruby-graphviz', :require => 'graphviz'  # only if you want graphing, see above
+
+As usual, run +bundle install+ to load the gems.
+
+=== 2. Create a model
+
+Create a model with at least a +state+ field, along with other any
+fields your application requires:
+
+  $ rails generate model Vehicle state:string seatbelt_on:boolean time_used:datetime
+  $ rake db:migrate
+
+=== 3. Configure the state machine
+
+Add the state machine to your model.  Following the example above,
++app/models/vehicle.rb+ might become:
+
+  class Vehicle < ActiveRecord::Base
+    state_machine :initial => parked do
+      before_transition :parked => any - :parked, :do => :put_on_seatbelt
+      ...
+    end
+  end
 
 == Testing
 
