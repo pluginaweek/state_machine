@@ -691,7 +691,7 @@ In your Gemfile, add the lines:
   gem 'state_machine'
   gem 'ruby-graphviz', :require => 'graphviz'  # only if you want graphing, see above
 
-As usual, run +bundle install+ to load the gems.
+As usual, run +bundle+ +install+ to load the gems.
 
 === 2. Create a model
 
