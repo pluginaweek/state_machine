@@ -10,6 +10,7 @@ require 'state_machine/state_collection'
 require 'state_machine/event_collection'
 require 'state_machine/path_collection'
 require 'state_machine/matcher_helpers'
+require 'state_machine/alternate_machine'
 
 module StateMachine
   # Represents a state machine for a particular attribute.  State machines
@@ -327,7 +328,13 @@ module StateMachine
           end
           
           # Evaluate DSL
-          machine.instance_eval(&block) if block_given?
+          if block_given?
+            if options[:syntax] == :alternate
+              machine.instance_eval(&machine.alternate_syntax_eval(&block))
+            else
+              machine.instance_eval(&block)
+            end
+          end
         else
           # No existing machine: create a new one
           machine = new(owner_class, name, options, &block)
@@ -422,7 +429,7 @@ module StateMachine
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :attribute, :initial, :initialize, :action, :plural, :namespace, :integration, :messages, :use_transactions)
+      assert_valid_keys(options, :attribute, :initial, :initialize, :action, :plural, :namespace, :integration, :messages, :use_transactions, :syntax)
       
       # Find an integration that matches this machine's owner class
       if options.include?(:integration)
@@ -450,6 +457,7 @@ module StateMachine
       @action = options[:action]
       @use_transactions = options[:use_transactions]
       @initialize_state = options[:initialize]
+      @syntax = options[:syntax]
       self.owner_class = owner_class
       self.initial_state = options[:initial] unless owner_class.state_machines.any? {|name, machine| machine.attribute == attribute && machine != self}
       
@@ -459,7 +467,13 @@ module StateMachine
       after_initialize
       
       # Evaluate DSL
-      instance_eval(&block) if block_given?
+      if block_given?
+        if @syntax == :alternate
+          instance_eval(&alternate_syntax_eval(&block))
+        else
+          instance_eval(&block)
+        end
+      end
     end
     
     # Creates a copy of this machine in addition to copies of each associated
@@ -473,6 +487,11 @@ module StateMachine
       @states = @states.dup
       @states.machine = self
       @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup, :failure => @callbacks[:failure].dup}
+    end
+    
+    def alternate_syntax_eval(&block)
+      alternate = AlternateMachine.new(&block)
+      alternate.to_state_machine
     end
     
     # Sets the class which is the owner of this state machine.  Any methods
