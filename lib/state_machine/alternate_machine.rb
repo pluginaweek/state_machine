@@ -33,6 +33,9 @@ module StateMachine
   class AlternateMachine
     include MatcherHelpers
 
+    class InvalidEventError < StandardError
+    end
+
     def initialize(&block)
       @queued_sends = []
       instance_eval(&block) if block_given?
@@ -41,10 +44,13 @@ module StateMachine
     def state(*args, &block)
       @from_state = args.first
       instance_eval(&block) if block_given?
+    ensure
+      @from_state = nil
     end
 
     def event(event_name, options = {})
       to_state = options.delete(:to)
+      raise InvalidEventError.new("event must be called within a state definition") unless @from_state
       @queued_sends << [event_name, @from_state, to_state, options]
     end
 

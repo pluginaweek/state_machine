@@ -78,6 +78,19 @@ class AlternateAutoShopAvailableTest < Test::Unit::TestCase
     assert @auto_shop.close
     assert @auto_shop.closed?
   end
+
+  def test_should_not_allow_event_outside_state
+    assert_raises(StateMachine::AlternateMachine::InvalidEventError) do
+      AlternateAutoShop.class_eval do
+        state_machine :initial => :available, :syntax => :alternate do
+          state any do
+          end
+
+          event :not_work, :to => :never
+        end
+      end
+    end
+  end
 end
 
 class AlternateAutoShopBusyTest < Test::Unit::TestCase
