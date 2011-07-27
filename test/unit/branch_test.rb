@@ -885,6 +885,38 @@ begin
       assert_equal 'nil', @edges.first.instance_variable_get('@xNodeTwo')
     end
   end
+  
+  class BranchDrawingWithIfConditionTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      
+      graph = GraphViz.new('G')
+      graph.add_node('parked')
+      
+      @branch = StateMachine::Branch.new(:from => :idling, :to => nil, :if => :have_keys?)
+      @edges = @branch.draw(graph, :park, [nil, :idling])
+    end
+    
+    def test_should_use_event_name_and_if_condition_as_label
+      assert_equal 'park (have_keys?)', @edges.first['label'].to_s.gsub('"', '')
+    end
+  end
+  
+  class BranchDrawingWithUnlessConditionTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      
+      graph = GraphViz.new('G')
+      graph.add_node('parked')
+      
+      @branch = StateMachine::Branch.new(:from => :idling, :to => nil, :unless => :missing_keys?)
+      @edges = @branch.draw(graph, :park, [nil, :idling])
+    end
+    
+    def test_should_use_event_name_and_unless_condition_as_label
+      assert_equal 'park (not missing_keys?)', @edges.first['label'].to_s.gsub('"', '')
+    end
+  end
 rescue LoadError
   $stderr.puts 'Skipping GraphViz StateMachine::Branch tests. `gem install ruby-graphviz` >= v0.9.0 and try again.'
 end
