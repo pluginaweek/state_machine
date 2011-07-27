@@ -79,6 +79,19 @@ class AlternateAutoShopAvailableTest < Test::Unit::TestCase
     assert @auto_shop.closed?
   end
 
+  def test_should_append_to_machine_in_default_syntax
+    AlternateAutoShop.class_eval do
+      state_machine :initial => :available do
+        event :restart do
+          transition any => :restarted
+        end
+      end
+    end
+
+    assert @auto_shop.restart
+    assert @auto_shop.restarted?
+  end
+
   def test_should_not_allow_event_outside_state
     assert_raises(StateMachine::AlternateMachine::InvalidEventError) do
       AlternateAutoShop.class_eval do

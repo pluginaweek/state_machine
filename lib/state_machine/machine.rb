@@ -328,7 +328,7 @@ module StateMachine
           end
           
           # Evaluate DSL
-          machine.evaluate_with_syntax(&block) if block_given?
+          machine.evaluate_with_syntax(options[:syntax], &block) if block_given?
         else
           # No existing machine: create a new one
           machine = new(owner_class, name, options, &block)
@@ -461,7 +461,7 @@ module StateMachine
       after_initialize
       
       # Evaluate DSL
-      evaluate_with_syntax(&block) if block_given?
+      evaluate_with_syntax(@syntax, &block) if block_given?
     end
     
     # Creates a copy of this machine in addition to copies of each associated
@@ -477,8 +477,8 @@ module StateMachine
       @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup, :failure => @callbacks[:failure].dup}
     end
     
-    def evaluate_with_syntax(&block)
-      if @syntax == :alternate
+    def evaluate_with_syntax(syntax, &block)
+      if syntax == :alternate
         instance_eval(&alternate_syntax_eval(&block))
       else
         instance_eval(&block)
