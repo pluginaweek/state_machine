@@ -1,5 +1,7 @@
 == master
 
+* Improve documentation for overriding states and integration transactions
+
 == 1.0.1 / 2011-05-30
 
 * Add the ability to ignore method conflicts for helpers
