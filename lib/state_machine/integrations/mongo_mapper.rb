@@ -107,6 +107,40 @@ module StateMachine
     #     end
     #   end
     # 
+    # == Validations
+    # 
+    # As mentioned in StateMachine::Machine#state, you can define behaviors,
+    # like validations, that only execute for certain states. One *important*
+    # caveat here is that, due to a constraint in MongoMapper's validation
+    # framework, custom validators will not work as expected when defined to run
+    # in multiple states.  For example:
+    # 
+    #   class Vehicle
+    #     include MongoMapper::Document
+    #     
+    #     state_machine do
+    #       ...
+    #       state :first_gear, :second_gear do
+    #         validate :speed_is_legal
+    #       end
+    #     end
+    #   end
+    # 
+    # In this case, the <tt>:speed_is_legal</tt> validation will only get run
+    # for the <tt>:second_gear</tt> state.  To avoid this, you can define your
+    # custom validation like so:
+    # 
+    #   class Vehicle
+    #     include MongoMapper::Document
+    #     
+    #     state_machine do
+    #       ...
+    #       state :first_gear, :second_gear do
+    #         validate {|vehicle| vehicle.speed_is_legal}
+    #       end
+    #     end
+    #   end
+    # 
     # == Validation errors
     # 
     # If an event fails to successfully fire because there are no matching
