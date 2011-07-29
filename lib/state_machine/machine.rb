@@ -1026,9 +1026,91 @@ module StateMachine
     #     end
     #   end 
     # 
+    # == Overriding the event method
+    # 
+    # By default, this will define an instance method (with the same name as the
+    # event) that will fire the next possible transition for that.  Although the
+    # +before_transition+, +after_transition+, and +around_transition+ hooks
+    # allow you to define behavior that gets executed as a result of the event's
+    # transition, you can also override the event method in order to have a
+    # little more fine-grained control.
+    # 
+    # For example:
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       event :park do
+    #         ...
+    #       end
+    #     end
+    #     
+    #     def park(*)
+    #       take_deep_breath  # Executes before the transition (and before_transition hooks) even if no transition is possible
+    #       if result = super # Runs the transition and all before/after/around hooks
+    #         applaud         # Executes after the transition (and after_transition hooks)
+    #       end
+    #       result
+    #     end
+    #   end
+    # 
+    # There are a few important things to note here.  First, the method
+    # signature is defined with an unlimited argument list in order to allow
+    # callers to continue passing arguments that are expected by state_machine.
+    # For example, it will still allow calls to +park+ with a single parameter
+    # for skipping the configured action.
+    # 
+    # Second, the overridden event method must call +super+ in order to run the
+    # logic for running the next possible transition.  In order to remain
+    # consistent with other events, the result of +super+ is returned.
+    # 
+    # Third, any behavior defined in this method will *not* get executed if
+    # you're taking advantage of attribute-based event transitions.  For example:
+    # 
+    #   vehicle = Vehicle.new
+    #   vehicle.state_event = 'park'
+    #   vehicle.save
+    # 
+    # In this case, the +park+ event will run the before/after/around transition
+    # hooks and transition the state, but the behavior defined in the overriden
+    # +park+ method will *not* be executed.
+    # 
     # == Defining additional arguments
     # 
-    # Additional arguments on event actions can be defined like so:
+    # Additional arguments can be passed into events and accessed by transition
+    # hooks like so:
+    # 
+    #   class Vehicle
+    #     state_machine do
+    #       after_transition :on => :park do |vehicle, transition|
+    #         kind = *transition.args # :parallel
+    #         ...
+    #       end
+    #       after_transition :on => :park, :do => :take_deep_breath
+    #       
+    #       event :park do
+    #         ...
+    #       end
+    #       
+    #       def take_deep_breath(transition)
+    #         kind = *transition.args # :parallel
+    #         ...
+    #       end
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new
+    #   vehicle.park(:parallel)
+    # 
+    # *Remember* that if the last argument is a boolean, it will be used as the
+    # +run_action+ parameter to the event action.  Using the +park+ action
+    # example from above, you can might call it like so:
+    # 
+    #   vehicle.park                    # => Uses default args and runs machine action
+    #   vehicle.park(:parallel)         # => Specifies the +kind+ argument and runs the machine action
+    #   vehicle.park(:parallel, false)  # => Specifies the +kind+ argument and *skips* the machine action
+    # 
+    # If you decide to override the +park+ event method *and* define additional
+    # arguments, you can do so as shown below:
     # 
     #   class Vehicle
     #     state_machine do
@@ -1041,28 +1123,11 @@ module StateMachine
     #       take_deep_breath if kind == :parallel
     #       super
     #     end
-    #     
-    #     def take_deep_breath
-    #       sleep 3
-    #     end
     #   end
     # 
-    # Note that +super+ is called instead of <tt>super(*args)</tt>.  This allows
+    # Note that +super+ is called instead of <tt>super(*args)</tt>.  This allow
     # the entire arguments list to be accessed by transition callbacks through
-    # StateMachine::Transition#args like so:
-    # 
-    #   after_transition :on => :park do |vehicle, transition|
-    #     kind = *transition.args
-    #     ...
-    #   end
-    # 
-    # *Remember* that if the last argument is a boolean, it will be used as the
-    # +run_action+ parameter to the event action.  Using the +park+ action
-    # example from above, you can might call it like so:
-    # 
-    #   vehicle.park                    # => Uses default args and runs machine action
-    #   vehicle.park(:parallel)         # => Specifies the +kind+ argument and runs the machine action
-    #   vehicle.park(:parallel, false)  # => Specifies the +kind+ argument and *skips* the machine action
+    # StateMachine::Transition#args.
     # 
     # == Example
     # 
