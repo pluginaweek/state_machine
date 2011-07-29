@@ -137,7 +137,10 @@ module StateMachine
     # 
     # To turn on transactions:
     # 
-    #   class Vehicle < ActiveRecord::Base
+    #   class Vehicle
+    #     include DataMapper::Resource
+    #     ...
+    #     
     #     state_machine :initial => :parked, :use_transactions => true do
     #       ...
     #     end
@@ -145,7 +148,18 @@ module StateMachine
     # 
     # If using the +save+ action for the machine, this option will be ignored as
     # the transaction behavior will depend on the +save+ implementation within
-    # DataMapper.
+    # DataMapper.  To avoid this, use a different action like so:
+    # 
+    #   class Vehicle
+    #     include DataMapper::Resource
+    #     ...
+    #     
+    #     state_machine :initial => :parked, :use_transactions => false, :action => :save_state do
+    #       ...
+    #     end
+    #     
+    #     alias_method :save_state, :save
+    #   end
     # 
     # == Validation errors
     # 

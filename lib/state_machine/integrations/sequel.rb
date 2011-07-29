@@ -135,7 +135,16 @@ module StateMachine
     #   end
     # 
     # If using the +save+ action for the machine, this option will be ignored as
-    # the transaction will be created by Sequel within +save+.
+    # the transaction will be created by Sequel within +save+.  To avoid
+    # this, use a different action like so:
+    # 
+    #   class Vehicle < Sequel::Model
+    #     state_machine :initial => :parked, :use_transactions => false, :action => :save_state do
+    #       ...
+    #     end
+    #     
+    #     alias_method :save_state, :save
+    #   end
     # 
     # == Validation errors
     # 
