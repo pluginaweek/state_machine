@@ -308,6 +308,7 @@ module StateMachine
       protected
         # Initializes class-level extensions and defaults for this machine
         def after_initialize
+          super
           load_observer_extensions
         end
         

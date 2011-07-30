@@ -414,6 +414,7 @@ module StateMachine
         
         # Initializes class-level extensions and defaults for this machine
         def after_initialize
+          super
           load_locale
           load_observer_extensions
           add_default_callbacks
