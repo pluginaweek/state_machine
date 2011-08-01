@@ -2588,6 +2588,51 @@ class MachineWithExistingMachinesWithSameAttributesOnOwnerClassTest < Test::Unit
     @object.park
     assert_equal 'parked', @object.state
   end
+  
+  def test_should_copy_new_states_to_sibling_machines
+    @first_gear = @machine.state :first_gear
+    assert_equal @first_gear, @second_machine.state(:first_gear)
+    
+    @second_gear = @second_machine.state :second_gear
+    assert_equal @second_gear, @machine.state(:second_gear)
+  end
+  
+  def test_should_copy_all_existing_states_to_new_machines
+    third_machine = StateMachine::Machine.new(@klass, :protected_state, :attribute => :state)
+    
+    assert_equal @machine.state(:parked), third_machine.state(:parked)
+    assert_equal @machine.state(:idling), third_machine.state(:idling)
+  end
+end
+
+class MachineWithExistingMachinesWithSameAttributesOnOwnerSubclassTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+    @second_machine = StateMachine::Machine.new(@klass, :public_state, :initial => :idling, :attribute => :state)
+    
+    @subclass = Class.new(@klass)
+    @object = @subclass.new
+  end
+  
+  def test_should_not_copy_sibling_machines_to_subclass_after_initialization
+    @subclass.state_machine(:state) {}
+    assert_equal @klass.state_machine(:public_state), @subclass.state_machine(:public_state)
+  end
+  
+  def test_should_copy_sibling_machines_to_subclass_after_new_state
+    subclass_machine = @subclass.state_machine(:state) {}
+    subclass_machine.state :first_gear
+    assert_not_equal @klass.state_machine(:public_state), @subclass.state_machine(:public_state)
+  end
+  
+  def test_should_copy_new_states_to_sibling_machines
+    subclass_machine = @subclass.state_machine(:state) {}
+    @first_gear = subclass_machine.state :first_gear
+    
+    second_subclass_machine = @subclass.state_machine(:public_state)
+    assert_equal @first_gear, second_subclass_machine.state(:first_gear)
+  end
 end
 
 class MachineWithNamespaceTest < Test::Unit::TestCase

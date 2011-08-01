@@ -451,7 +451,10 @@ module StateMachine
       @use_transactions = options[:use_transactions]
       @initialize_state = options[:initialize]
       self.owner_class = owner_class
-      self.initial_state = options[:initial] unless owner_class.state_machines.any? {|name, machine| machine.attribute == attribute && machine != self}
+      self.initial_state = options[:initial] unless sibling_machines.any?
+      
+      # Merge with sibling machine configurations
+      add_sibling_machine_configs
       
       # Define class integration
       define_helpers
@@ -1634,6 +1637,21 @@ module StateMachine
       def after_initialize
       end
       
+      # Looks up other machines that have been defined in the owner class and
+      # are targeting the same attribute as this machine.  When accessing
+      # sibling machines, they will be automatically copied for the current
+      # class if they haven't been already.  This ensures that any configuration
+      # changes made to the sibling machines only affect this class and not any
+      # base class that may have originally defined the machine.
+      def sibling_machines
+        owner_class.state_machines.inject([]) do |machines, (name, machine)|
+          if machine.attribute == attribute && machine != self
+            machines << (owner_class.state_machine(name) {})
+          end
+          machines
+        end
+      end
+      
       # Determines if the machine's attribute needs to be initialized.  This
       # will only be true if the machine's attribute is blank.
       def initialize_state?(object)
@@ -1885,6 +1903,15 @@ module StateMachine
         yield
       end
       
+      # Updates this machine based on the configuration of other machines in the
+      # owner class that share the same target attribute.
+      def add_sibling_machine_configs
+        # Add existing states
+        sibling_machines.each do |machine|
+          machine.states.each {|state| states << state unless states[state.name]}
+        end
+      end
+      
       # Adds a new transition callback of the given type.
       def add_callback(type, options, &block)
         callbacks[type == :around ? :before : type] << callback = Callback.new(type, options, &block)
@@ -1898,6 +1925,9 @@ module StateMachine
         new_states.map do |new_state|
           unless state = states[new_state]
             states << state = State.new(self, new_state)
+            
+            # Copy states over to sibling machines
+            sibling_machines.each {|machine| machine.states << state}
           end
           
           state
