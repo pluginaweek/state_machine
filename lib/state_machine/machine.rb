@@ -452,12 +452,13 @@ module StateMachine
       @use_transactions = options[:use_transactions]
       @initialize_state = options[:initialize]
       @syntax = options[:syntax]
+      @plural = options[:plural]
       self.owner_class = owner_class
       self.initial_state = options[:initial] unless owner_class.state_machines.any? {|name, machine| machine.attribute == attribute && machine != self}
       
       # Define class integration
       define_helpers
-      define_scopes(options[:plural])
+      define_scopes(@plural)
       after_initialize
       
       # Evaluate DSL
@@ -475,6 +476,16 @@ module StateMachine
       @states = @states.dup
       @states.machine = self
       @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup, :failure => @callbacks[:failure].dup}
+    end
+    
+    def duplicate_to(clazz)
+      new_copy = self.clone
+      new_copy.owner_class = clazz
+      new_copy.define_helpers
+      new_copy.define_scopes(@plural)
+      new_copy.events.each { |event| event.send(:add_actions) }
+      new_copy.states.each { |state| state.send(:add_predicate) }
+      new_copy
     end
     
     def evaluate_with_syntax(syntax, &block)
