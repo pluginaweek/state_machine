@@ -2,6 +2,7 @@ require 'state_machine/extensions'
 require 'state_machine/assertions'
 require 'state_machine/integrations'
 
+require 'state_machine/helper_module'
 require 'state_machine/state'
 require 'state_machine/event'
 require 'state_machine/callback'
@@ -485,7 +486,7 @@ module StateMachine
       @owner_class = klass
       
       # Create modules for extending the class with state/event-specific methods
-      @helper_modules = helper_modules = {:instance => Module.new, :class => Module.new}
+      @helper_modules = helper_modules = {:instance => HelperModule.new(self, :instance), :class => HelperModule.new(self, :class)}
       owner_class.class_eval do
         extend helper_modules[:class]
         include helper_modules[:instance]
@@ -1810,7 +1811,7 @@ module StateMachine
         # were included *prior* to the helper modules, in addition to the
         # superclasses
         ancestors = current.ancestors - superclass.ancestors + superclasses
-        ancestors = ancestors[ancestors.index(@helper_modules[scope]) + 1..-1].reverse
+        ancestors = ancestors[ancestors.index(@helper_modules[scope])..-1].reverse
         
         # Search for for the first ancestor that defined this method
         ancestors.detect do |ancestor|

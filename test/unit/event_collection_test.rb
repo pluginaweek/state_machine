@@ -127,12 +127,12 @@ class EventCollectionWithMultipleEventsTest < Test::Unit::TestCase
     @events = StateMachine::EventCollection.new(@machine)
     
     @machine.state :first_gear
-    @machine.event :park, :shift_down
+    @park, @shift_down = @machine.event :park, :shift_down
     
-    @events << @park = StateMachine::Event.new(@machine, :park)
+    @events << @park
     @park.transition :first_gear => :parked
     
-    @events << @shift_down = StateMachine::Event.new(@machine, :shift_down)
+    @events << @shift_down
     @shift_down.transition :first_gear => :parked
     
     @machine.events.concat(@events)

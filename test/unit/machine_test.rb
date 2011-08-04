@@ -1068,7 +1068,7 @@ class MachineWithHelpersTest < Test::Unit::TestCase
   end
   
   def test_should_throw_exception_with_invalid_scope
-    assert_raise(RUBY_VERSION < '1.9' ? IndexError : KeyError) { @machine.define_helper(:invalid, :state) {} }
+    assert_raise(RUBY_VERSION < '1.9' ? IndexError : KeyError) { @machine.define_helper(:invalid, :park) {} }
   end
 end
 
@@ -1081,37 +1081,37 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
   
   def test_should_not_redefine_existing_public_methods
     @klass.class_eval do
-      def state
-        'parked'
+      def park
+        true
       end
     end
     
-    @machine.define_helper(:instance, :state) {}
-    assert_equal 'parked', @object.state
+    @machine.define_helper(:instance, :park) {}
+    assert_equal true, @object.park
   end
   
   def test_should_not_redefine_existing_protected_methods
     @klass.class_eval do
       protected
-        def state
-          'parked'
+        def park
+          true
         end
     end
     
-    @machine.define_helper(:instance, :state) {}
-    assert_equal 'parked', @object.send(:state)
+    @machine.define_helper(:instance, :park) {}
+    assert_equal true, @object.send(:park)
   end
   
   def test_should_not_redefine_existing_private_methods
     @klass.class_eval do
       private
-        def state
-          'parked'
+        def park
+          true
         end
     end
     
-    @machine.define_helper(:instance, :state) {}
-    assert_equal 'parked', @object.send(:state)
+    @machine.define_helper(:instance, :park) {}
+    assert_equal true, @object.send(:park)
   end
   
   def test_should_warn_if_defined_in_superclass
@@ -1213,33 +1213,45 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
   end
   
   def test_should_define_nonexistent_methods
-    @machine.define_helper(:instance, :state) {'parked'}
-    assert_equal 'parked', @object.state
+    @machine.define_helper(:instance, :park) {false}
+    assert_equal false, @object.park
+  end
+  
+  def test_should_warn_if_defined_multiple_times
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    @machine.define_helper(:instance, :park) {}
+    @machine.define_helper(:instance, :park) {}
+    
+    assert_equal "Instance method \"park\" is already defined in #{@klass} :state instance helpers, use generic helper instead.\n", $stderr.string
+  ensure
+    $stderr = @original_stderr
   end
   
   def test_should_pass_context_as_arguments
     helper_args = nil
-    @machine.define_helper(:instance, :state) {|*args| helper_args = args}
-    @object.state
+    @machine.define_helper(:instance, :park) {|*args| helper_args = args}
+    @object.park
     assert_equal 2, helper_args.length
     assert_equal [@machine, @object], helper_args
   end
   
   def test_should_pass_method_arguments_through
     helper_args = nil
-    @machine.define_helper(:instance, :state) {|*args| helper_args = args}
-    @object.state(1, 2, 3)
+    @machine.define_helper(:instance, :park) {|*args| helper_args = args}
+    @object.park(1, 2, 3)
     assert_equal 5, helper_args.length
     assert_equal [@machine, @object, 1, 2, 3], helper_args
   end
   
   def test_should_allow_string_evaluation
     @machine.define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
-      def state
-        'parked'
+      def park
+        false
       end
     end_eval
-    assert_equal 'parked', @object.state
+    assert_equal false, @object.park
   end
 end
 
@@ -1385,6 +1397,18 @@ class MachineWithClassHelpersTest < Test::Unit::TestCase
   def test_should_define_nonexistent_methods
     @machine.define_helper(:class, :states) {[]}
     assert_equal [], @klass.states
+  end
+  
+  def test_should_warn_if_defined_multiple_times
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    @machine.define_helper(:class, :states) {}
+    @machine.define_helper(:class, :states) {}
+    
+    assert_equal "Class method \"states\" is already defined in #{@klass} :state class helpers, use generic helper instead.\n", $stderr.string
+  ensure
+    $stderr = @original_stderr
   end
   
   def test_should_pass_context_as_arguments
