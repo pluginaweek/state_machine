@@ -276,6 +276,72 @@ module StateMachine
   # 
   # The same technique can be used for +state+, +state_name+, and all other
   # instance *and* class methods on the Vehicle class.
+  #
+  # == Method conflicts
+  # 
+  # By default state_machine does not redefine methods that exist on
+  # superclasses (*including* Object) or any modules (*including* Kernel) that
+  # were included before it was defined.  This is in order to ensure that
+  # existing behavior on the class is not broken by the inclusion of
+  # state_machine.
+  # 
+  # If a conflicting method is detected, state_machine will generate a warning.
+  # For example, consider the following class:
+  # 
+  #   class Vehicle
+  #     state_machine do
+  #       event :open do
+  #         ...
+  #       end
+  #     end
+  #   end
+  # 
+  # In the above class, an event named "open" is defined for its state machine.
+  # However, "open" is already defined as an instance method in Ruby's Kernel
+  # module that gets included in every Object.  As a result, state_machine will
+  # generate the following warning:
+  # 
+  #   Instance method "open" is already defined in Object, use generic helper instead.
+  # 
+  # Even though you may not be using Kernel's implementation of the "open"
+  # instance method, state_machine isn't aware of this and, as a result, stays
+  # safe and just skips redefining the method.
+  # 
+  # As with almost all helpers methods defined by state_machine in your class,
+  # there are generic methods available for working around this method conflict.
+  # In the example above, you can invoke the "open" event like so:
+  # 
+  #   vehicle = Vehicle.new       # => #<Vehicle:0xb72686b4 @state=nil>
+  #   vehicle.fire_events(:open)  # => true
+  #   
+  #   # This will not work
+  #   vehicle.open                # => NoMethodError: private method `open' called for #<Vehicle:0xb72686b4 @state=nil>
+  # 
+  # If you want to take on the risk of overriding existing methods and just
+  # ignore method conflicts altogether, you can do so by setting the following
+  # configuration:
+  # 
+  #   StateMachine::Machine.ignore_method_conflicts = true
+  # 
+  # This will allow you to define events like "open" as described above and
+  # still generate the "open" instance helper method.  For example:
+  # 
+  #   StateMachine::Machine.ignore_method_conflicts = true
+  #   
+  #   class Vehicle
+  #     state_machine do
+  #       event :open do
+  #         ...
+  #     end
+  #   end
+  #   
+  #   vehicle = Vehicle.new   # => #<Vehicle:0xb72686b4 @state=nil>
+  #   vehicle.open            # => true
+  # 
+  # By default, state_machine helps prevent you from making mistakes and
+  # accidentally overriding methods that you didn't intend to.  Once you
+  # understand this and what the consequences are, setting the
+  # +ignore_method_conflicts+ option is a perfectly reasonable workaround.
   # 
   # == Integrations
   # 
