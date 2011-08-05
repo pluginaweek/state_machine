@@ -1696,7 +1696,7 @@ module StateMachine
         call_super = !!owner_class_ancestor_has_method?(:instance, "#{name}?")
         define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
           def #{name}?(*args)
-            args.empty? && #{call_super} ? super : self.class.state_machine(#{name.inspect}).states.matches?(self, *args)
+            args.empty? && (#{call_super} || defined?(super)) ? super : self.class.state_machine(#{name.inspect}).states.matches?(self, *args)
           end
         end_eval
       end

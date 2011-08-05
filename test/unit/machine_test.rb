@@ -1832,6 +1832,40 @@ class MachineWithConflictingHelpersAfterDefinitionTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithSuperclassConflictingHelpersAfterDefinitionTest < Test::Unit::TestCase
+  def setup
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    
+    @superclass = Class.new
+    @klass = Class.new(@superclass)
+    
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.state :parked, :idling
+    @machine.event :ignite
+    
+    @superclass.class_eval do
+      def state?
+        true
+      end
+    end
+    
+    @object = @klass.new
+  end
+  
+  def test_should_call_superclass_attribute_predicate_without_arguments
+    assert @object.state?
+  end
+  
+  def test_should_define_attribute_predicate_with_arguments
+    assert !@object.state?(:parked)
+  end
+  
+  def teardown
+    $stderr = @original_stderr
+  end
+end
+
 class MachineWithoutInitializeTest < Test::Unit::TestCase
   def setup
     @klass = Class.new

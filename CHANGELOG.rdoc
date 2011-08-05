@@ -1,5 +1,6 @@
 == master
 
+* Fix machine state predicate not calling superclass implementation if defined after machine definition
 * Generate warnings when defining a helper method more than once
 * Fix multiple machines not being able to target the same attribute if all possible states aren't defined in each
 * Fix ActiveModel / DataMapper integrations not overriding StateMachine::Machine#after_initialize properly
