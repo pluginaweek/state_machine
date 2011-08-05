@@ -19,12 +19,17 @@ module SequelTest
       # Creates a new Sequel model (and the associated table)
       def new_model(create_table = :foo, &block)
         table_name = create_table || :foo
+        table_identifier = ::Sequel::SQL::Identifier.new(table_name)
+        class << table_identifier
+          alias_method :original_to_s, :to_s
+          def to_s(*args); args.empty? ? inspect : original_to_s(*args); end
+        end
         
-        DB.create_table!(::Sequel::SQL::Identifier.new(table_name)) do
+        DB.create_table!(table_identifier) do
           primary_key :id
           column :state, :string
         end if create_table
-        model = Class.new(Sequel::Model(DB[::Sequel::SQL::Identifier.new(table_name)])) do
+        model = Class.new(Sequel::Model(DB[table_identifier])) do
           self.raise_on_save_failure = false
           (class << self; self; end).class_eval do
             define_method(:name) { "SequelTest::#{table_name.to_s.capitalize}" }
