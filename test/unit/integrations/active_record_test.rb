@@ -359,6 +359,26 @@ module ActiveRecordTest
     end
   end
   
+  class MachineWithConflictingStateNameTest < BaseTestCase
+    def setup
+      require 'stringio'
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
+      @model = new_model
+      
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :state
+    end
+    
+    def test_should_output_warning
+      assert_equal "Instance method \"state?\" is already defined in ActiveRecordTest::Foo, use generic helper instead.\n", $stderr.string
+    end
+    
+    def teardown
+      $stderr = @original_stderr
+    end
+  end
+  
   class MachineWithColumnStateAttributeTest < BaseTestCase
     def setup
       @model = new_model

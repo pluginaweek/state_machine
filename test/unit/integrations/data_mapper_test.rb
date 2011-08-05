@@ -327,6 +327,26 @@ module DataMapperTest
     end
   end
   
+  class MachineWithConflictingStateNameTest < BaseTestCase
+    def setup
+      require 'stringio'
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
+      @resource = new_resource
+      
+      @machine = StateMachine::Machine.new(@resource)
+      @machine.state :state
+    end
+    
+    def test_should_output_warning
+      assert_equal "Instance method \"state?\" is already defined in DataMapperTest::Foo :state instance helpers, use generic helper instead.\n", $stderr.string
+    end
+    
+    def teardown
+      $stderr = @original_stderr
+    end
+  end
+  
   class MachineWithColumnStateAttributeTest < BaseTestCase
     def setup
       @resource = new_resource
