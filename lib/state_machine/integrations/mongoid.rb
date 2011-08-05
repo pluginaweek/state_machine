@@ -296,26 +296,7 @@ module StateMachine
         super
       end
       
-      # Forces the change in state to be recognized regardless of whether the
-      # state value actually changed
-      def write(object, attribute, value, *args)
-        result = super
-        
-        if (attribute == :state || attribute == :event && value) && !object.send("#{self.attribute}_changed?")
-          current = read(object, :state)
-          object.changes[self.attribute.to_s] = [attribute == :event ? current : value, current]
-        end
-        
-        result
-      end
-      
       protected
-        # Mongoid uses its own implementation of dirty tracking instead of
-        # ActiveModel's and doesn't support the #{attribute}_will_change! APIs
-        def supports_dirty_tracking?(object)
-          false
-        end
-        
         # Only runs validations on the action if using <tt>:save</tt>
         def runs_validations_on_action?
           action == :save

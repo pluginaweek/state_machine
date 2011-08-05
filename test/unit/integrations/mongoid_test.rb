@@ -584,7 +584,7 @@ module MongoidTest
     end
     
     def test_should_track_attribute_changes
-      assert_equal %w(parked parked), @record.changes['state']
+      assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
     end
   end
   
@@ -638,7 +638,7 @@ module MongoidTest
     end
     
     def test_should_track_attribute_changes
-      assert_equal %w(parked parked), @record.changes['status']
+      assert_equal %w(parked parked), @record.send(:attribute_change, 'status')
     end
   end
   
@@ -657,12 +657,12 @@ module MongoidTest
     end
     
     def test_should_track_attribute_change
-      assert_equal %w(parked parked), @record.changes['state']
+      assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
     end
     
     def test_should_not_reset_changes_on_multiple_changes
       @record.state_event = 'ignite'
-      assert_equal %w(parked parked), @record.changes['state']
+      assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
     end
     
     def test_should_not_include_state_in_changed_attributes_if_nil
