@@ -333,13 +333,20 @@ module DataMapperTest
       @original_stderr, $stderr = $stderr, StringIO.new
       
       @resource = new_resource
-      
-      @machine = StateMachine::Machine.new(@resource)
-      @machine.state :state
     end
     
-    def test_should_output_warning
+    def test_should_output_warning_with_same_machine_name
+      @machine = StateMachine::Machine.new(@resource)
+      @machine.state :state
+      
       assert_equal "Instance method \"state?\" is already defined in DataMapperTest::Foo :state instance helpers, use generic helper instead.\n", $stderr.string
+    end
+    
+    def test_should_not_output_warning_with_same_machine_name
+      @machine = StateMachine::Machine.new(@resource, :public_state, :attribute => :state)
+      @machine.state :state
+      
+      assert_equal '', $stderr.string
     end
     
     def teardown

@@ -456,7 +456,7 @@ module StateMachine
         # breaks both ancestor lookups and defined?(super).  Need to special-case
         # the existence of query attribute methods.
         def owner_class_ancestor_has_method?(scope, method)
-          scope == :instance && method == "#{name}?" ? owner_class : super
+          scope == :instance && method == "#{attribute}?" ? owner_class : super
         end
     end
   end
