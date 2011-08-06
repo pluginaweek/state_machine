@@ -642,7 +642,63 @@ in the class.  The generated files will use an output filename of the format
 For examples of actual images generated using this task, see those under the
 examples folder.
 
-==== Ruby on Rails Integration
+=== Interactive graphs
+
+Jean Bovet's {Visual Automata Simulator}[http://www.cs.usfca.edu/~jbovet/vas.html]
+is a great tool for "simulating, visualizing and transforming finite state
+automata and Turing Machines".  It can help in the creation of states and events
+for your models.  It is cross-platform, written in Java.
+
+== Web Frameworks
+
+=== Ruby on Rails
+
+Integrating state_machine into your Ruby on Rails application is straightforward
+and provides a few additional features specific to the framework.  To get
+started, following the steps below.
+
+==== 1. Install the gem
+
+If using Rails 2.x:
+
+  # In config/environment.rb
+  ...
+  Rails::Initializer.run do |config|
+    ...
+    config.gem 'state_machine', :version => '~> 1.0'
+    ...
+  end
+
+If using Rails 3.x or up:
+
+  # In Gemfile
+  ...
+  gem 'state_machine'
+  gem 'ruby-graphviz', :require => 'graphviz' # Optional: only required for graphing
+
+As usual, run <tt>bundle install</tt> to load the gems.
+
+==== 2. Create a model
+
+Create a model with a field to store the state, along with other any other
+fields your application requires:
+
+  $ rails generate model Vehicle state:string
+  $ rake db:migrate
+
+==== 3. Configure the state machine
+
+Add the state machine to your model.  Following the examples above,
++app/models/vehicle.rb+ might become:
+
+  class Vehicle < ActiveRecord::Base
+    state_machine :initial => :parked do
+      before_transition :parked => any - :parked, :do => :put_on_seatbelt
+      ...
+    end
+  end
+
+==== Rake tasks
 
 There is a special integration Rake task for generating state machines for
 classes used in a Ruby on Rails application.  This task will load the application
@@ -657,12 +713,9 @@ to the end of your application's Rakefile in order for the above task to work:
 
   require 'tasks/state_machine'
 
-If you are using Rails 3.0+, you must also add the following to your
-application's Gemfile:
+=== Merb
 
-  gem 'ruby-graphviz', :require => 'graphviz'
-
-==== Merb Integration
+==== Rake tasks
 
 Like Ruby on Rails, there is a special integration Rake task for generating
 state machines for classes used in a Merb application.  This task will load the
@@ -672,13 +725,6 @@ files to load.
 For example,
 
   rake state_machine:draw CLASS=Vehicle
-
-=== Interactive graphs
-
-Jean Bovet's {Visual Automata Simulator}[http://www.cs.usfca.edu/~jbovet/vas.html]
-is a great tool for "simulating, visualizing and transforming finite state
-automata and Turing Machines".  It can help in the creation of states and events
-for your models.  It is cross-platform, written in Java.
 
 == Testing
 
