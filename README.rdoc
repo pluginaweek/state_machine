@@ -21,6 +21,10 @@ Source
 
 * git://github.com/pluginaweek/state_machine.git
 
+Mailing List
+
+* http://groups.google.com/group/pluginaweek-talk
+
 == Description
 
 State machines make it dead-simple to manage the behavior of a class.  Too often,
