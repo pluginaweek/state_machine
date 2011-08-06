@@ -11,7 +11,7 @@ API
 
 Bugs
 
-* http://pluginaweek.lighthouseapp.com/projects/13288-state_machine
+* http://github.com/pluginaweek/state_machine/issues
 
 Development
 
