@@ -4,10 +4,10 @@ rvm:
   - 1.9.1
   - 1.9.2
 env:
-  - INTEGRATION=default
-  - INTEGRATION=active_model
-  - INTEGRATION=active_record
-  - INTEGRATION=data_mapper
-  - INTEGRATION=mongoid
-  - INTEGRATION=mongo_mapper
-  - INTEGRATION=sequel
+  - INTEGRATION=default TRAVIS=true
+  - INTEGRATION=active_model TRAVIS=true
+  - INTEGRATION=active_record TRAVIS=true
+  - INTEGRATION=data_mapper TRAVIS=true
+  - INTEGRATION=mongoid TRAVIS=true
+  - INTEGRATION=mongo_mapper TRAVIS=true
+  - INTEGRATION=sequel TRAVIS=true

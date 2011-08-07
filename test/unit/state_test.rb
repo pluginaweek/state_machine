@@ -813,8 +813,6 @@ end
 
 begin
   # Load library
-  require 'rubygems'
-  gem 'ruby-graphviz', '>=0.9.0'
   require 'graphviz'
   
   class StateDrawingTest < Test::Unit::TestCase
@@ -940,4 +938,4 @@ begin
   end
 rescue LoadError
   $stderr.puts 'Skipping GraphViz StateMachine::State tests. `gem install ruby-graphviz` >= v0.9.0 and try again.'
-end
+end unless ENV['TRAVIS']
