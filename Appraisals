@@ -115,8 +115,11 @@ if RUBY_VERSION > "1.8.6"
     gem "mongo_mapper", "0.8.6"
   end
 
-  appraise "mongo_mapper-0.9.0" do
-    gem "mongo_mapper", "0.9.0"
+  # MongoMapper 0.9.0+ breaks on Ruby 1.9.1
+  if RUBY_VERSION != "1.9.1"
+    appraise "mongo_mapper-0.9.0" do
+      gem "mongo_mapper", "0.9.0"
+    end
   end
 end
   
