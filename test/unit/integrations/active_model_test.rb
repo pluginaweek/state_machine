@@ -1,9 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
-# Load library
-require 'rubygems'
-
-gem 'activemodel', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=3.0.0.beta'
 require 'active_model'
 require 'active_model/observing'
 require 'active_support/all'

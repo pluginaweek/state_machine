@@ -1,5 +1,6 @@
 == master
 
+* Use appraisal for testing integrations
 * Improve documentation on the handling of method conflicts
 * Update Mongoid integration for 2.1.0+ support
 * Fix ActiveRecord machine state predicates incorrectly calling superclass implementation when using targeted attributes

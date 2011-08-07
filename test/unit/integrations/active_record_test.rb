@@ -1,10 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
-# Load library
-require 'rubygems'
-
-gem 'i18n', '<0.5' if ENV['VERSION'] && ENV['VERSION'] >= '2.3.5' && ENV['VERSION'] < '3.0.0'
-gem 'activerecord', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=2.0.0'
 require 'active_record'
 
 FIXTURES_ROOT = File.dirname(__FILE__) + '/../../fixtures/'
@@ -756,7 +751,7 @@ module ActiveRecordTest
       end
     end
   else
-    $stderr.puts 'Skipping ActiveRecord Dirty tests. `gem install active_record` >= v2.1.0 and try again.'
+    $stderr.puts 'Skipping ActiveRecord Dirty tests.'
   end
   
   class MachineWithoutTransactionsTest < BaseTestCase
@@ -1874,7 +1869,7 @@ module ActiveRecordTest
       end
     end
   else
-    $stderr.puts 'Skipping ActiveRecord Scope tests. `gem install active_record` >= v2.1.0 and try again.'
+    $stderr.puts 'Skipping ActiveRecord Scope tests.'
   end
   
   if ActiveRecord.const_defined?(:Relation)
@@ -1895,7 +1890,7 @@ module ActiveRecordTest
       end
     end
   else
-    $stderr.puts 'Skipping ActiveRecord Default Scope tests. `gem install active_record` >= v3.0.0 and try again.'
+    $stderr.puts 'Skipping ActiveRecord Default Scope tests.'
   end
   
   if Object.const_defined?(:I18n)
@@ -2062,6 +2057,6 @@ module ActiveRecordTest
         end
     end
   else
-    $stderr.puts 'Skipping ActiveRecord I18n tests. `gem install active_record` >= v2.2.0 and try again.'
+    $stderr.puts 'Skipping ActiveRecord I18n tests.'
   end
 end

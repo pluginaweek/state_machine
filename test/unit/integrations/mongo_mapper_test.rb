@@ -1,19 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
-# Load library
-require 'rubygems'
-
-if ENV['VERSION']
-  if Gem::Version.new(ENV['VERSION']) >= Gem::Version.new('0.9.0')
-    gem 'activesupport', '~>3.0'
-    require 'active_support'
-  elsif Gem::Version.new(ENV['VERSION']) <= Gem::Version.new('0.7.0') || !Gem.available?('>=0.7.0')
-    gem 'activesupport', '~>2.3'
-    require 'active_support'
-  end
-end
-
-gem 'mongo_mapper', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=0.5.5'
 require 'mongo_mapper'
 
 # Establish database connection
@@ -1652,6 +1638,6 @@ module MongoMapperTest
       end
     end
   else
-    $stderr.puts 'Skipping MongoMapper I18n tests. `gem install mongo_mapper` >= v0.9.0 and try again.'
+    $stderr.puts 'Skipping MongoMapper I18n tests.'
   end
 end

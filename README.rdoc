@@ -734,16 +734,23 @@ For example,
 
 To run the core test suite (does *not* test any of the integrations):
 
-  rake test
+  bundle install
+  bundle exec rake test
 
-Test specific versions of integrations like so:
+To run integration tests:
 
-  rake test INTEGRATION=active_model VERSION=3.0.0
-  rake test INTEGRATION=active_record VERSION=2.0.0
-  rake test INTEGRATION=data_mapper VERSION=0.9.4
-  rake test INTEGRATION=mongoid VERSION=2.0.0
-  rake test INTEGRATION=mongo_mapper VERSION=0.5.5
-  rake test INTEGRATION=sequel VERSION=2.8.0
+  bundle install
+  rake appraisal:install
+  rake appraisal:test
+
+You can also test a specific version:
+
+  rake appraisal:active_model-3.0.0 test
+  rake appraisal:active_record-2.0.0 test
+  rake appraisal:data_mapper-0.9.4 test
+  rake appraisal:mongoid-2.0.0 test
+  rake appraisal:mongo_mapper-0.5.5 test
+  rake appraisal:sequel-2.8.0 test
 
 == Caveats
 

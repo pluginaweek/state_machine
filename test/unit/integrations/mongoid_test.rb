@@ -1,9 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
-# Load library
-require 'rubygems'
-
-gem 'mongoid', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=2.0.0'
 require 'mongoid'
 
 # Establish database connection

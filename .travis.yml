@@ -1,7 +1,14 @@
+script: "bundle exec rake appraisal:integration test"
 rvm:
-  - ruby-head
-  - 1.9.3
-  - 1.9.2
-  - 1.8.7
   - 1.8.6
-  - ree
+  - 1.8.7
+  - 1.9.1
+  - 1.9.2
+env:
+  - INTEGRATION=default
+  - INTEGRATION=active_model
+  - INTEGRATION=active_record
+  - INTEGRATION=data_mapper
+  - INTEGRATION=mongoid
+  - INTEGRATION=mongo_mapper
+  - INTEGRATION=sequel

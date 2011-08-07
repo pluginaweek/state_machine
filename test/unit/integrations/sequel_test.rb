@@ -1,9 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
-# Load library
-require 'rubygems'
-
-gem 'sequel', ENV['VERSION'] ? "=#{ENV['VERSION']}" : '>=2.8.0'
 require 'sequel'
 require 'logger'
 
