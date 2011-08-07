@@ -2,7 +2,7 @@ appraise "default" do
 end
 
 # ActiveRecord integrations
-if RUBY_VERSION < "1.9.2"
+if RUBY_VERSION < "1.9.1"
   appraise "active_record-2.0.0" do
     gem "sqlite3-ruby"
     gem "activerecord", "2.0.0"
@@ -58,7 +58,7 @@ if RUBY_VERSION > "1.8.6"
 end
 
 # MongoMapper integrations
-if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "1.9.2"
+if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "1.9.1"
   appraise "mongo_mapper-0.5.5" do
     gem "activesupport", "2.3.11"
     gem "mongo_mapper", "0.5.5"
