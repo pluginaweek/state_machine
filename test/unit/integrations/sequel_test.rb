@@ -16,9 +16,12 @@ module SequelTest
       def new_model(create_table = :foo, &block)
         table_name = create_table || :foo
         table_identifier = ::Sequel::SQL::Identifier.new(table_name)
-        class << table_identifier
-          alias_method :original_to_s, :to_s
-          def to_s(*args); args.empty? ? inspect : original_to_s(*args); end
+        
+        if !defined?(Sequel::VERSION) || Gem::Version.new(::Sequel::VERSION) <= Gem::Version.new('3.26.0')
+          class << table_identifier
+            alias_method :original_to_s, :to_s
+            def to_s(*args); args.empty? ? inspect : original_to_s(*args); end
+          end
         end
         
         DB.create_table!(table_identifier) do
