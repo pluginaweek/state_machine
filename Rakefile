@@ -4,7 +4,6 @@ require 'appraisal'
 
 require 'rake'
 require 'rake/testtask'
-require 'rdoc/task'
 
 desc 'Default: run all tests.'
 task :default => :test
@@ -32,14 +31,6 @@ begin
     end
   end
 rescue LoadError
-end
-
-desc "Generate documentation for state_machine."
-Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_dir = 'rdoc'
-  rdoc.title    = 'state_machine'
-  rdoc.options << '--line-numbers' << '--inline-source' << '--main=README.rdoc'
-  rdoc.rdoc_files.include('README.rdoc', 'CHANGELOG.rdoc', 'LICENSE', 'lib/**/*.rb')
 end
 
 namespace :appraisal do
