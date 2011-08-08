@@ -11,3 +11,5 @@ env:
   - INTEGRATION=mongoid TRAVIS=true
   - INTEGRATION=mongo_mapper TRAVIS=true
   - INTEGRATION=sequel TRAVIS=true
+notifications:
+  disabled: true
