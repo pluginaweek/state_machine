@@ -4,6 +4,7 @@ require 'appraisal'
 
 require 'rake'
 require 'rake/testtask'
+require 'rcov/rcovtask'
 
 desc 'Default: run all tests.'
 task :default => :test
@@ -19,18 +20,14 @@ Rake::TestTask.new(:test) do |t|
   t.verbose = true
 end
 
-begin
-  require 'rcov/rcovtask'
-  namespace :test do
-    desc "Test state_machine with Rcov."
-    Rcov::RcovTask.new(:rcov) do |t|
-      t.libs << 'lib'
-      t.test_files = Dir['test/**/*_test.rb']
-      t.rcov_opts << '--exclude="^(?!lib/)"'
-      t.verbose = true
-    end
+namespace :test do
+  desc "Test state_machine with Rcov."
+  Rcov::RcovTask.new(:rcov) do |t|
+    t.libs << 'lib'
+    t.test_files = Dir['test/**/*_test.rb']
+    t.rcov_opts << '--exclude="^(?!lib/)"'
+    t.verbose = true
   end
-rescue LoadError
 end
 
 namespace :appraisal do
