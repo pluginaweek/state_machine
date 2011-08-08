@@ -17,6 +17,6 @@ Gem::Specification.new do |s|
   
   s.add_development_dependency("rake")
   s.add_development_dependency("rcov")
-  s.add_development_dependency("appraisal")
+  s.add_development_dependency("appraisal") unless ENV["TRAVIS"]
   s.add_development_dependency("ruby-graphviz", "~> 1.0")
 end
