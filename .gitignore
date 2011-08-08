@@ -1,4 +1,5 @@
 *.gem
+.bundle
 coverage
 doc
 pkg

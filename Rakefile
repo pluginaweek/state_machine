@@ -1,10 +1,12 @@
 require 'rubygems'
-require 'bundler/setup'
-require 'appraisal'
+require 'bundler'
+Bundler.setup
 
 require 'rake'
 require 'rake/testtask'
 require 'rcov/rcovtask'
+
+require 'appraisal'
 
 desc 'Default: run all tests.'
 task :default => :test
