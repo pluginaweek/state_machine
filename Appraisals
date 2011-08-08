@@ -165,9 +165,14 @@ appraise "sequel-3.14.0" do
   gem "sequel", "3.14.0"
 end
 
-appraise "sequel-3.26.0" do
+appraise "sequel-3.23.0" do
   gem "sqlite3-ruby"
-  gem "sequel", "3.26.0"
+  gem "sequel", "3.23.0"
+end
+
+appraise "sequel-3.24.0" do
+  gem "sqlite3-ruby"
+  gem "sequel", "3.24.0"
 end
 
 # DataMapper

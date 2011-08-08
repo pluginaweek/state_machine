@@ -3,6 +3,6 @@
 source "http://www.rubygems.org"
 
 gem "sqlite3-ruby"
-gem "sequel", "3.26.0"
+gem "sequel", "3.23.0"
 
 gemspec :path=>"../"

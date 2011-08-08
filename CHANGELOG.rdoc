@@ -1,5 +1,6 @@
 == master
 
+* Use supported framework hooks for integrating Sequel 3.24.0+
 * Use appraisal for testing integrations
 * Improve documentation on the handling of method conflicts
 * Update Mongoid integration for 2.1.0+ support
