@@ -1,6 +1,4 @@
 script: "bundle exec rake appraisal:integration test"
-before_script: 
-  - "gem install appraisal --ignore-dependencies"
 rvm:
   - 1.8.6
   - 1.8.7
