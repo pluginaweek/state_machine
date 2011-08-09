@@ -4,33 +4,33 @@ end
 # ActiveRecord integrations
 if RUBY_VERSION < "1.9.1"
   appraise "active_record-2.0.0" do
-    gem "sqlite3-ruby"
+    gem "sqlite3-ruby", "1.3.1"
     gem "activerecord", "2.0.0"
   end
   
   appraise "active_record-2.0.5" do
-    gem "sqlite3-ruby"
+    gem "sqlite3-ruby", "1.3.1"
     gem "activerecord", "2.0.5"
   end
   
   appraise "active_record-2.1.0" do
-    gem "sqlite3-ruby"
+    gem "sqlite3-ruby", "1.3.1"
     gem "activerecord", "2.1.0"
   end
   
   appraise "active_record-2.1.2" do
-    gem "sqlite3-ruby"
+    gem "sqlite3-ruby", "1.3.1"
     gem "activerecord", "2.1.2"
   end
   
   appraise "active_record-2.2.3" do
-    gem "sqlite3-ruby"
+    gem "sqlite3-ruby", "1.3.1"
     gem "activerecord", "2.2.3"
   end
 end
 
 appraise "active_record-2.3.12" do
-  gem "sqlite3-ruby"
+  gem "sqlite3-ruby", "1.3.1"
   gem "activerecord", "2.3.12"
 end
 
@@ -136,42 +136,42 @@ end
 
 # Sequel integrations
 appraise "sequel-2.8.0" do
-  gem "sqlite3-ruby"
+  gem "sqlite3-ruby", "1.3.1"
   gem "sequel", "2.8.0"
 end
 
 appraise "sequel-2.11.0" do
-  gem "sqlite3-ruby"
+  gem "sqlite3-ruby", "1.3.1"
   gem "sequel", "2.11.0"
 end
 
 appraise "sequel-2.12.0" do
-  gem "sqlite3-ruby"
+  gem "sqlite3-ruby", "1.3.1"
   gem "sequel", "2.12.0"
 end
 
 appraise "sequel-3.0.0" do
-  gem "sqlite3-ruby"
+  gem "sqlite3-ruby", "1.3.1"
   gem "sequel", "3.0.0"
 end
 
 appraise "sequel-3.13.0" do
-  gem "sqlite3-ruby"
+  gem "sqlite3-ruby", "1.3.1"
   gem "sequel", "3.13.0"
 end
 
 appraise "sequel-3.14.0" do
-  gem "sqlite3-ruby"
+  gem "sqlite3-ruby", "1.3.1"
   gem "sequel", "3.14.0"
 end
 
 appraise "sequel-3.23.0" do
-  gem "sqlite3-ruby"
+  gem "sqlite3-ruby", "1.3.1"
   gem "sequel", "3.23.0"
 end
 
 appraise "sequel-3.24.0" do
-  gem "sqlite3-ruby"
+  gem "sqlite3-ruby", "1.3.1"
   gem "sequel", "3.24.0"
 end
 
