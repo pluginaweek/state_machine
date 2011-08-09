@@ -1,4 +1,4 @@
-== state_machine https://secure.travis-ci.org/pluginaweek/state_machine.png
+== state_machine http://travis-ci.org/pluginaweek/state_machine.png
 
 +state_machine+ adds support for creating state machines for attributes on any
 Ruby class.
