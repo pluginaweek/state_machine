@@ -1,5 +1,7 @@
 == master
 
+== 1.0.2 / 2011-08-09
+
 * Allow transitions to be defined within a state, event, or machine context
 * Use supported framework hooks for integrating Sequel 3.24.0+
 * Use appraisal for testing integrations
