@@ -263,7 +263,7 @@ like so:
   vehicle.state_paths(:from => :parked, :to => :first_gear) # => [[
                                                             #       #<StateMachine::Transition attribute=:state event=:ignite from="parked" ...>,
                                                             #       #<StateMachine::Transition attribute=:state event=:shift_up from="idling" ...>
-                                                              #    ]]
+                                                            #    ]]
   # Skipping state_machine and writing to attributes directly
   vehicle.state = "parked"
   vehicle.state                   # => "parked"
