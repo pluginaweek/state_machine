@@ -84,96 +84,19 @@ module StateMachine
     # Creates a new transition that determines what to change the current state
     # to when this event fires.
     # 
-    # == Defining transitions
+    # Since this transition is being defined within an event context, you do
+    # *not* need to specify the <tt>:on</tt> option for the transition.  For
+    # example:
     # 
-    # The options for a new transition uses the Hash syntax to map beginning
-    # states to ending states.  For example,
+    #  state_machine do
+    #    event :ignite do
+    #      transition :parked => :idling, :idling => same, :if => :seatbelt_on? # Transitions to :idling if seatbelt is on
+    #      transition all => :parked, :unless => :seatbelt_on?                  # Transitions to :parked if seatbelt is off
+    #    end
+    #  end
     # 
-    #   transition :parked => :idling, :idling => :first_gear
-    # 
-    # In this case, when the event is fired, this transition will cause the
-    # state to be +idling+ if it's current state is +parked+ or +first_gear+
-    # if it's current state is +idling+.
-    # 
-    # To help define these implicit transitions, a set of helpers are available
-    # for slightly more complex matching:
-    # * <tt>all</tt> - Matches every state in the machine
-    # * <tt>all - [:parked, :idling, ...]</tt> - Matches every state except those specified
-    # * <tt>any</tt> - An alias for +all+ (matches every state in the machine)
-    # * <tt>same</tt> - Matches the same state being transitioned from
-    # 
-    # See StateMachine::MatcherHelpers for more information.
-    # 
-    # Examples:
-    # 
-    #   transition all => nil                               # Transitions to nil regardless of the current state
-    #   transition all => :idling                           # Transitions to :idling regardless of the current state
-    #   transition all - [:idling, :first_gear] => :idling  # Transitions every state but :idling and :first_gear to :idling
-    #   transition nil => :idling                           # Transitions to :idling from the nil state
-    #   transition :parked => :idling                       # Transitions to :idling if :parked
-    #   transition [:parked, :stalled] => :idling           # Transitions to :idling if :parked or :stalled
-    #   
-    #   transition :parked => same                          # Loops :parked back to :parked
-    #   transition [:parked, :stalled] => same              # Loops either :parked or :stalled back to the same state
-    #   transition all - :parked => same                    # Loops every state but :parked back to the same state
-    #   
-    #   # Transitions to :idling if :parked, :first_gear if :idling, or :second_gear if :first_gear
-    #   transition :parked => :idling, :idling => :first_gear, :first_gear => :second_gear
-    # 
-    # == Verbose transitions
-    # 
-    # Transitions can also be defined use an explicit set of deprecated
-    # configuration options:
-    # * <tt>:from</tt> - A state or array of states that can be transitioned from.
-    #   If not specified, then the transition can occur for *any* state.
-    # * <tt>:to</tt> - The state that's being transitioned to.  If not specified,
-    #   then the transition will simply loop back (i.e. the state will not change).
-    # * <tt>:except_from</tt> - A state or array of states that *cannot* be
-    #   transitioned from.
-    # 
-    # Examples:
-    # 
-    #   transition :to => nil
-    #   transition :to => :idling
-    #   transition :except_from => [:idling, :first_gear], :to => :idling
-    #   transition :from => nil, :to => :idling
-    #   transition :from => [:parked, :stalled], :to => :idling
-    #   
-    #   transition :from => :parked
-    #   transition :from => [:parked, :stalled]
-    #   transition :except_from => :parked
-    # 
-    # Notice that the above examples are the verbose equivalent of the examples
-    # described initially.
-    # 
-    # == Conditions
-    # 
-    # In addition to the state requirements for each transition, a condition
-    # can also be defined to help determine whether that transition is
-    # available.  These options will work on both the normal and verbose syntax.
-    # 
-    # Configuration options:
-    # * <tt>:if</tt> - A method, proc or string to call to determine if the
-    #   transition should occur (e.g. :if => :moving?, or :if => lambda {|vehicle| vehicle.speed > 60}).
-    #   The condition should return or evaluate to true or false.
-    # * <tt>:unless</tt> - A method, proc or string to call to determine if the
-    #   transition should not occur (e.g. :unless => :stopped?, or :unless => lambda {|vehicle| vehicle.speed <= 60}).
-    #   The condition should return or evaluate to true or false.
-    # 
-    # Examples:
-    # 
-    #   transition :parked => :idling, :if => :moving?
-    #   transition :parked => :idling, :unless => :stopped?
-    #   transition :idling => :first_gear, :first_gear => :second_gear, :if => :seatbelt_on?
-    #   
-    #   transition :from => :parked, :to => :idling, :if => :moving?
-    #   transition :from => :parked, :to => :idling, :unless => :stopped?
-    # 
-    # == Order of operations
-    # 
-    # Transitions are evaluated in the order in which they're defined.  As a
-    # result, if more than one transition applies to a given object, then the
-    # first transition that matches will be performed.
+    # See StateMachine::Machine#transition for a description of the possible
+    # configurations for defining transitions.
     def transition(options)
       raise ArgumentError, 'Must specify as least one transition requirement' if options.empty?
       

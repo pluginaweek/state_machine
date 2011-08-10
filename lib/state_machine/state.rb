@@ -1,5 +1,5 @@
 require 'state_machine/assertions'
-require 'state_machine/condition_proxy'
+require 'state_machine/state_context'
 
 module StateMachine
   # A state defines a value that an attribute can be in after being transitioned
@@ -184,7 +184,7 @@ module StateMachine
       name = self.name
       
       # Evaluate the method definitions
-      context = ConditionProxy.new(owner_class, lambda {|object| object.class.state_machine(machine_name).states.matches?(object, name)})
+      context = StateContext.new(self)
       context.class_eval(&block)
       context.instance_methods.each do |method|
         methods[method.to_sym] = context.instance_method(method)

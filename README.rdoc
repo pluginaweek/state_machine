@@ -57,6 +57,7 @@ Some brief, high-level features include:
 * Inheritance
 * Internationalization
 * GraphViz visualization creator
+* Flexible machine syntax
 
 Examples of the usage patterns for some of the above features are shown below.
 You can find much more detailed documentation in the actual API.
@@ -589,11 +590,21 @@ errors and callbacks.  For example,
 For more information about the various behaviors added for Sequel state
 machines, see StateMachine::Integrations::Sequel.
 
-== Compatibility
+== Syntax flexibility
 
 Although state_machine introduces a simplified syntax, it still remains
-backwards compatible with previous versions and other state-related libraries.
-For example, transitions and callbacks can continue to be defined like so:
+backwards compatible with previous versions and other state-related libraries by
+providing some flexibility around how transitions are defined.  See below for an
+overview of these syntaxes.
+
+=== Verbose syntax
+
+In general, it's recommended that state machines use the implicit syntax for
+transitions.  However, you can be a little more explicit and verbose about
+transitions by using the <tt>:from</tt>, <tt>:except_from</tt>, <tt>:to</tt>,
+and <tt>:except_to</tt> options.
+
+For example, transitions and callbacks can be defined like so:
 
   class Vehicle
     state_machine :initial => :parked do
@@ -608,9 +619,56 @@ For example, transitions and callbacks can continue to be defined like so:
     end
   end
 
-Although this verbose syntax will most likely always be supported, it is
-recommended that any state machines eventually migrate to the syntax introduced
-in version 0.6.0.
+=== Transition context
+
+Some flexibility is provided around the context in which transitions can be
+defined.  In almost all examples throughout the documentation, transitions are
+defined within the context of an event.  If you prefer to have state machines
+defined in the context of a *state* either out of preference or in order to
+easily migrate from a different library, you can do so as shown below:
+
+  class Vehicle
+    state_machine :initial => :parked do
+      ...
+      
+      state :parked do
+        transition :to => :idling, :on => [:ignite, :shift_up], :if => :seatbelt_on?
+      end
+      
+      state :first_gear do
+        transition :to => :second_gear, :on => :shift_up
+      end
+      
+      state :idling, :first_gear do
+        transition :to => :parked, :on => :park
+      end
+    end
+  end
+
+In the above example, there's no need to specify the +from+ state for each
+transition since it's inferred from the context.
+
+You can also define transitions completely outside the context of a particular
+state / event.  This may be useful in cases where you're building a state
+machine from a data store instead of part of the class definition.  See the
+example below:
+
+  class Vehicle
+    state_machine :initial => :parked do
+      ...
+      
+      transition :parked => :idling, :on => [:ignite, :shift_up]
+      transition :first_gear => :second_gear, :second_gear => :third_gear, :on => :shift_up
+      transition [:idling, :first_gear] => :parked, :on => :park
+      transition [:idling, :first_gear] => :parked, :on => :park
+      transition all - [:parked, :stalled] => :stalled, :unless => :auto_shop_busy?
+    end
+  end
+
+Notice that in these alternative syntaxes:
+* You can continue to configure <tt>:if</tt> and <tt>:unless</tt> conditions
+* You can continue to define +from+ states (when in the machine context) using
+the +all+, +any+, and +same+ helper methods
 
 == Tools
 

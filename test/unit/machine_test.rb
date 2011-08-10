@@ -2346,6 +2346,86 @@ class MachineWithMultipleEventsTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithTransitionsTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+  end
+  
+  def test_should_require_on_event
+    exception = assert_raise(ArgumentError) { @machine.transition(:parked => :idling) }
+    assert_equal 'Must specify :on event', exception.message
+  end
+  
+  def test_should_not_allow_except_to_option
+    exception = assert_raise(ArgumentError) {@machine.transition(:except_to => :parked, :on => :ignite)}
+    assert_equal 'Invalid key(s): except_to', exception.message
+  end
+  
+  def test_should_not_allow_except_on_option
+    exception = assert_raise(ArgumentError) {@machine.transition(:except_on => :ignite, :on => :ignite)}
+    assert_equal 'Invalid key(s): except_on', exception.message
+  end
+  
+  def test_should_allow_transitioning_without_a_to_state
+    assert_nothing_raised {@machine.transition(:from => :parked, :on => :ignite)}
+  end
+  
+  def test_should_allow_transitioning_without_a_from_state
+    assert_nothing_raised {@machine.transition(:to => :idling, :on => :ignite)}
+  end
+  
+  def test_should_allow_except_from_option
+    assert_nothing_raised {@machine.transition(:except_from => :idling, :on => :ignite)}
+  end
+  
+  def test_should_allow_implicit_options
+    branch = @machine.transition(:first_gear => :second_gear, :on => :shift_up)
+    assert_instance_of StateMachine::Branch, branch
+    
+    state_requirements = branch.state_requirements
+    assert_equal 1, state_requirements.length
+    
+    assert_instance_of StateMachine::WhitelistMatcher, state_requirements[0][:from]
+    assert_equal [:first_gear], state_requirements[0][:from].values
+    assert_instance_of StateMachine::WhitelistMatcher, state_requirements[0][:to]
+    assert_equal [:second_gear], state_requirements[0][:to].values
+    assert_instance_of StateMachine::WhitelistMatcher, branch.event_requirement
+    assert_equal [:shift_up], branch.event_requirement.values
+  end
+  
+  def test_should_allow_multiple_implicit_options
+    branch = @machine.transition(:first_gear => :second_gear, :second_gear => :third_gear, :on => :shift_up)
+    
+    state_requirements = branch.state_requirements
+    assert_equal 2, state_requirements.length
+  end
+  
+  def test_should_allow_verbose_options
+    branch = @machine.transition(:from => :parked, :to => :idling, :on => :ignite)
+    assert_instance_of StateMachine::Branch, branch
+  end
+  
+  def test_should_include_all_transition_states_in_machine_states
+    @machine.transition(:parked => :idling, :on => :ignite)
+    
+    assert_equal [:parked, :idling], @machine.states.map {|state| state.name}
+  end
+  
+  def test_should_include_all_transition_events_in_machine_events
+    @machine.transition(:parked => :idling, :on => :ignite)
+    
+    assert_equal [:ignite], @machine.events.map {|event| event.name}
+  end
+  
+  def test_should_allow_multiple_events
+    branches = @machine.transition(:parked => :ignite, :on => [:ignite, :shift_up])
+    
+    assert_equal 2, branches.length
+    assert_equal [:ignite, :shift_up], @machine.events.map {|event| event.name}
+  end
+end
+
 class MachineWithTransitionCallbacksTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do
