@@ -306,6 +306,51 @@ module StateMachine
     # Each predicate method will return true if it matches the object's
     # current state.  Otherwise, it will return false.
     # 
+    # == Attribute access
+    # 
+    # The actual value for a state is stored in the attribute configured for the
+    # state machine.  In most cases, this is the same as the name of the state
+    # machine.  For example:
+    # 
+    #   class Vehicle
+    #     attr_accessor :state
+    #     
+    #     state_machine :state, :initial => :parked do
+    #       ...
+    #       state :parked, :value => 0
+    #       start :idling, :value => 1
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new # => #<Vehicle:0xb712da60 @state=0>
+    #   vehicle.state         # => 0
+    #   vehicle.parked?       # => true
+    #   vehicle.state = 1
+    #   vehicle.idling?       # => true
+    # 
+    # The most important thing to note from the example above is what it means
+    # to read from and write to the state machine's attribute.  In particular,
+    # state_machine treats the attribute (+state+ in this case) like a basic
+    # attr_accessor that's been defined on the class.  There are no special
+    # behaviors added, such as allowing the attribute to be written to based on
+    # the name of a state in the machine.  This is the case for a few reasons:
+    # * Setting the attribute directly is an edge case that is meant to only be
+    #   used when you want to skip state_machine altogether.  This means that
+    #   state_machine shouldn't have any effect on the attribute accessor
+    #   methods.  If you want to change the state, you should be using one of
+    #   the events defined in the state machine.
+    # * Many ORMs provide custom behavior for the attribute reader / writer - it
+    #   may even be defined by your own framework / method implementation just
+    #   the example above showed.  In order to avoid having to worry about the
+    #   different ways an attribute can get written, state_machine just makes
+    #   sure that the configured value for a state is always used when writing
+    #   to the attribute.
+    # 
+    # If you were interested in accessing the name of a state (instead of its
+    # actual value through the attribute), you could do the following:
+    # 
+    #   vehicle.state_name    # => :idling
+    # 
     # == Events and Transitions
     # 
     # Events defined on the machine are the interface to transitioning states
