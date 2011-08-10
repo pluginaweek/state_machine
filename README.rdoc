@@ -678,6 +678,79 @@ Notice that in these alternative syntaxes:
 * You can continue to define +from+ states (when in the machine context) using
 the +all+, +any+, and +same+ helper methods
 
+== Static / Dynamic definitions
+
+In most cases, the definition of a state machine is *static*.  That is to say,
+the states, events and possible transitions are known ahead of time even though
+they may depend on data that's only known at runtime.  For example, certain
+transitions may only be available depending on an attribute on that object it's
+being run on.  All of the documentation in this library define static machines
+like so:
+
+  class Vehicle
+    state_machine :state, :initial => :parked do
+      event :park do
+        transition [:idling, :first_gear] => :parked
+      end
+      
+      ...
+    end
+  end
+
+However, there may be cases where the definition of a state machine is *dynamic*.
+This means that you don't know the possible states or events for a machine until
+runtime.  For example, you may allow users in your application to manage the
+state machine of a project or task in your system.  This means that the list of
+transitions (and their associated states / events) could be stored externally,
+such as in a database.  In a case like this, you can define dynamically-generated
+state machines like so:
+
+  class Vehicle
+    # Replace this with an external source (like a db)
+    def transitions
+      [
+        {:parked => :idling, :on => :ignite},
+        {:idling => :first_gear, :first_gear => :second_gear, :on => :shift_up},
+        ...
+      ]
+    end
+    
+    # Create a state machine for this vehicle instance dynamically based on the
+    # transitions defined from the source above
+    def machine
+      @machine ||= VehicleMachine.new(transitions)
+    end
+  end
+  
+  class VehicleMachine
+    def self.new(transitions)
+      machine = Class.new do
+        # Provide easy access to the state machine definition
+        def definition
+          self.class.state_machine
+        end
+      end
+      
+      # Define the machine
+      machine.state_machine(:initial => :parked) do
+        transitions.each {|attrs| transition(attrs)}
+      end
+      machine.new
+    end
+  end
+  
+  vehicle = Vehicle.new                   # => #<Vehicle:0xb7236b50>
+  vehicle.machine                         # => #<#<Class:0xb723541c>:0xb722fa30 @state="parked">
+  vehicle.machine.state                   # => "parked"
+  vehicle.machine.ignite                  # => true
+  vehicle.machine.state                   # => "idling
+  vehicle.machine.state_transitions       # => [#<StateMachine::Transition ...>]
+  vehicle.machine.definition.states.keys  # => :first_gear, :second_gear, :parked, :idling
+
+As you can see, state_machine provides enough flexibility for you to be able
+to create new machine definitions on the fly based on an external source of
+transitions.
+
 == Tools
 
 === Generating graphs
