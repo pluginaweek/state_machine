@@ -633,10 +633,18 @@ easily migrate from a different library, you can do so as shown below:
       
       state :parked do
         transition :to => :idling, :on => [:ignite, :shift_up], :if => :seatbelt_on?
+        
+        def speed
+          0
+        end
       end
       
       state :first_gear do
         transition :to => :second_gear, :on => :shift_up
+        
+        def speed
+          10
+        end
       end
       
       state :idling, :first_gear do
