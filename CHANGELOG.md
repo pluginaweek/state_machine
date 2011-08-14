@@ -1,6 +1,6 @@
-== master
+# master
 
-== 1.0.2 / 2011-08-09
+## 1.0.2 / 2011-08-09
 
 * Allow transitions to be defined within a state, event, or machine context
 * Use supported framework hooks for integrating Sequel 3.24.0+
@@ -15,7 +15,7 @@
 * Fix ActiveModel / DataMapper integrations not overriding StateMachine::Machine#after_initialize properly
 * Improve documentation for overriding states and integration transactions
 
-== 1.0.1 / 2011-05-30
+## 1.0.1 / 2011-05-30
 
 * Add the ability to ignore method conflicts for helpers
 * Generate warnings for any helper, not just state helpers, that has a conflicting method defined in the class
@@ -23,19 +23,19 @@
 * Add full support for chaining state scopes within Sequel integrations
 * Fix Rails 3.1 deprecation warnings for configuring engine locales [Stefan Penner]
 
-== 1.0.0 / 2011-05-12
+## 1.0.0 / 2011-05-12
 
 * Celebrate
 
-== 0.10.4 / 2011-04-14
+## 0.10.4 / 2011-04-14
 
 * Fix translations not being available under certain environments in Rails applications
 
-== 0.10.3 / 2011-04-07
+## 0.10.3 / 2011-04-07
 
 * Fix state initialization failing in ActiveRecord 3.0.2+ when using with_state scopes for the default scope
 
-== 0.10.2 / 2011-03-31
+## 0.10.2 / 2011-03-31
 
 * Use more integrated state initialization hooks for ActiveRecord, Mongoid, and Sequel
 * Remove mass-assignment filtering usage in all ORM integrations
@@ -44,11 +44,11 @@
 * Only initialize states if state is blank and blank is not a valid state
 * Fix instance / class helpers failing when used with certain libraries (such as Thin)
 
-== 0.10.1 / 2011-03-22
+## 0.10.1 / 2011-03-22
 
 * Fix classes with multiple state machines failing to initialize in ActiveRecord / Mongoid / Sequel integrations
 
-== 0.10.0 / 2011-03-19
+## 0.10.0 / 2011-03-19
 
 * Support callback terminators in MongoMapper 0.9.0+
 * Fix pluralization integration on DataMapper 1.0.0 and 1.1.0
@@ -68,7 +68,7 @@
 * Replace :include_failures after_transition option with new after_failure callback
 * Provide access to transition context when raising InvalidEvent / InvalidTransition exceptions
 
-== 0.9.4 / 2010-08-01
+## 0.9.4 / 2010-08-01
 
 * Fix validation / save hooks in Sequel 3.14.0+
 * Fix integration with dirty attribute tracking on DataMapper 1.0.1+
@@ -76,7 +76,7 @@
 * Fix validation error warnings in ActiveModel / ActiveRecord 3.0.0 beta5+
 * Fix mass-assignment sanitization breaking in ActiveRecord 3.0.0 beta5+ [Akira Matsuda]
 
-== 0.9.3 / 2010-06-26
+## 0.9.3 / 2010-06-26
 
 * Allow access to human state / event names in transitions and for the current state
 * Use human state / event names in error messages
@@ -86,23 +86,23 @@
 * Fix i18n deprecation warnings in ActiveModel / ActiveRecord 3.0.0.beta4
 * Fix default error message translations overriding existing locales in ActiveModel / ActiveRecord
 
-== 0.9.2 / 2010-05-24
+## 0.9.2 / 2010-05-24
 
 * Fix MongoMapper integration failing in Ruby 1.9.2
 * Fix Rakefile not loading in Ruby 1.9.2 [Andrea Longhi]
 * Fix nil / false :integration configuration not being respected
 
-== 0.9.1 / 2010-05-02
+## 0.9.1 / 2010-05-02
 
 * Fix ActiveRecord 2.0.0 - 2.2.3 integrations failing if version info isn't already loaded
 * Fix integration with dirty attribute tracking on DataMapper 0.10.3
 * Fix observers failing in ActiveRecord 3.0.0.beta4+ integrations
 * Fix deprecation warning in Rails 3 railtie [Chris Yuan]
 
-== 0.9.0 / 2010-04-12
+## 0.9.0 / 2010-04-12
 
 * Use attribute-based event transitions whenever possible to ensure consistency
-* Fix action helpers being defined when the action is *only* defined in the machine's owner class
+* Fix action helpers being defined when the action is **only** defined in the machine's owner class
 * Disable attribute-based event transitions in DataMapper 0.9.4 - 0.9.6 when dm-validations is being used
 * Add support for DataMapper 0.10.3+
 * Add around_transition callbacks
@@ -116,7 +116,7 @@
 * Remove app-specific rails / merb rake tasks in favor of always running state_machine:draw
 * Add Rails 3 railtie for automatically loading rake tasks when installed as a gem
 
-== 0.8.1 / 2010-03-14
+## 0.8.1 / 2010-03-14
 
 * Release gems via rake-gemcutter instead of rubyforge
 * Move rake tasks to lib/tasks
@@ -135,7 +135,7 @@
 * Fix default states not getting set in ORM integrations if the column has a default
 * Fix event transitions being kept around while running actions/callbacks, sometimes preventing object marshalling
 
-== 0.8.0 / 2009-08-15
+## 0.8.0 / 2009-08-15
 
 * Add support for DataMapper 0.10.0
 * Always interpet nil return values from actions as failed attempts
@@ -152,7 +152,7 @@
 * Use friendly validation errors for nil states
 * Fix states not being validated properly when using custom names in ActiveRecord / DataMapper integrations
 
-== 0.7.6 / 2009-06-17
+## 0.7.6 / 2009-06-17
 
 * Allow multiple state machines on the same class to target the same attribute
 * Add support for :attribute to customize the attribute target, assuming the name is the first argument of #state_machine
@@ -162,7 +162,7 @@
 * Use Ruby 1.9's built-in Object#instance_exec for bound callbacks when it's available
 * Improve performance of cached dynamic state lookups by 25%
 
-== 0.7.5 / 2009-05-25
+## 0.7.5 / 2009-05-25
 
 * Add built-in caching for dynamic state values when the value only needs to be generated once
 * Fix flawed example for using record ids as state values
@@ -170,12 +170,12 @@
 * Make it easier to use event attributes for actions defined in the same class as the state machine
 * Fix #save/save! running transitions in ActiveRecord integrations even when a machine's action is not :save
 
-== 0.7.4 / 2009-05-23
+## 0.7.4 / 2009-05-23
 
 * Fix #save! not firing event attributes properly in ActiveRecord integrations
 * Fix log files being included in gems
 
-== 0.7.3 / 2009-04-25
+## 0.7.3 / 2009-04-25
 
 * Require DataMapper version be >= 0.9.4
 * Explicitly load Sequel's built-in inflector (>= 2.12.0) for scope names
@@ -183,18 +183,18 @@
 * Fix #valid? being defined for DataMapper resources when dm-validations isn't loaded
 * Add auto-validation of values allowed for the state attribute in ORM integrations
 
-== 0.7.2 / 2009-04-08
+## 0.7.2 / 2009-04-08
 
 * Add support for running multiple methods in a callback without using blocks
 * Add more flexibility around how callbacks are defined
 * Add security documentation around mass-assignment in ORM integrations
 * Fix event attribute transitions being publicly accessible
 
-== 0.7.1 / 2009-04-05
+## 0.7.1 / 2009-04-05
 
 * Fix machines failing to generate graphs when run from Merb tasks
 
-== 0.7.0 / 2009-04-04
+## 0.7.0 / 2009-04-04
 
 * Add #{attribute}_event for automatically firing events when the object's action is called
 * Make it easier to override state-driven behaviors
@@ -224,22 +224,22 @@
 * Use generated non-bang event when running bang version so that overriding one affects the other
 * Provide access to arguments passed into an event from transition callbacks via Transition#args
 
-== 0.6.3 / 2009-03-10
+## 0.6.3 / 2009-03-10
 
 * Add support for customizing the graph's orientation
 * Use the standard visualizations for initial (open arrow) and final (double circle) states
 * Highlight final states in GraphViz drawings
 
-== 0.6.2 / 2009-03-08
+## 0.6.2 / 2009-03-08
 
 * Make it easier to override generated instance / class methods
 
-== 0.6.1 / 2009-03-07
+## 0.6.1 / 2009-03-07
 
 * Add i18n support for ActiveRecord validation errors
 * Add a validation error when failing to transition for ActiveRecord / DataMapper / Sequel integrations
 
-== 0.6.0 / 2009-03-03
+## 0.6.0 / 2009-03-03
 
 * Allow multiple conditions for callbacks / class behaviors
 * Add support for state-driven class behavior with :if/:unless options
@@ -248,20 +248,20 @@
 * Simplify hooking callbacks into loopbacks
 * Add simplified transition/callback requirement syntax
 
-== 0.5.2 / 2009-02-17
+## 0.5.2 / 2009-02-17
 
 * Improve pretty-print of events
 * Simplify state/event matching design, improving guard performance by 30%
 * Add better error notification when conflicting guard options are defined
 * Fix scope name pluralization not being applied correctly
 
-== 0.5.1 / 2009-02-11
+## 0.5.1 / 2009-02-11
 
 * Allow states to be drawn as ellipses to accommodate long names
 * Fix rake tasks not being registered in Rails/Merb applications
 * Never automatically define machine attribute accessors when using an integration
 
-== 0.5.0 / 2009-01-11
+## 0.5.0 / 2009-01-11
 
 * Add to_name and from_name to transition objects
 * Add nicely formatted #inspect for transitions
@@ -278,12 +278,12 @@
 * Add support for customizing the actual stored value for a state
 * Add compatibility with Ruby 1.9+
 
-== 0.4.3 / 2008-12-28
+## 0.4.3 / 2008-12-28
 
 * Allow dm-observer integration to be optional
 * Fix non-lambda callbacks not working for DataMapper/Sequel
 
-== 0.4.2 / 2008-12-28
+## 0.4.2 / 2008-12-28
 
 * Fix graphs not being drawn the same way consistently
 * Add support for sharing transitions across multiple events
@@ -291,7 +291,7 @@
 * Simplify initialize hooks, requiring super to be called instead
 * Add :namespace option for generated state predicates / event methods
 
-== 0.4.1 / 2008-12-16
+## 0.4.1 / 2008-12-16
 
 * Fix nil states not being handled properly in guards, known states, or visualizations
 * Fix the same node being used for different dynamic states in GraphViz output
@@ -300,7 +300,7 @@
 * Allow blocks to be directly passed into machine class
 * Fix attribute predicates not working on attributes that represent columns in ActiveRecord
 
-== 0.4.0 / 2008-12-14
+## 0.4.0 / 2008-12-14
 
 * Remove the PluginAWeek namespace
 * Add generic attribute predicate (e.g. "#{attribute}?(state_name)") and state predicates (e.g. "#{state}?")
@@ -320,18 +320,18 @@
 * Include states referenced in transition callbacks in the list of a machine's known states
 * Only generate the known states for a machine on demand, rather than calculating beforehand
 * Add the ability to skip state change actions during a transition (e.g. vehicle.ignite(false))
-* Add the ability for the state change action (e.g. +save+ for ActiveRecord) to be configurable
-* Allow state machines to be defined on *any* Ruby class, not just ActiveRecord (removes all external dependencies)
+* Add the ability for the state change action (e.g. `save` for ActiveRecord) to be configurable
+* Allow state machines to be defined on **any** Ruby class, not just ActiveRecord (removes all external dependencies)
 * Refactor transitions, guards, and callbacks for better organization/design
 * Use a class containing the transition context in callbacks, rather than an ordered list of each individual attribute
 * Add without_#{attribute} named scopes (opposite of the existing with_#{attribute} named scopes) [Sean O'Brien]
 
-== 0.3.1 / 2008-10-26
+## 0.3.1 / 2008-10-26
 
 * Fix the initial state not getting set when the state attribute is mass-assigned but protected
 * Change how the base module is included to prevent namespacing conflicts
 
-== 0.3.0 / 2008-09-07
+## 0.3.0 / 2008-09-07
 
 * No longer allow additional arguments to be passed into event actions
 * Add support for can_#{event}? for checking whether an event can be fired based on the current state of the record
@@ -346,28 +346,28 @@
 * Ensure initial state callbacks are invoked in the proper order when an event is fired on a new record
 * Add before_loopback and after_loopback hooks [Jürgen Strobel]
 
-== 0.2.1 / 2008-07-05
+## 0.2.1 / 2008-07-05
 
 * Add more descriptive exceptions
 * Assume the default state attribute is "state" if one is not provided
 * Add :except_from option for transitions if you want to blacklist states
 * Add PluginAWeek::StateMachine::Machine#states
 * Add PluginAWeek::StateMachine::Event#transitions
-* Allow creating transitions with no from state (effectively allowing the transition for *any* from state)
+* Allow creating transitions with no from state (effectively allowing the transition for **any** from state)
 * Reduce the number of objects created for each transition
 
-== 0.2.0 / 2008-06-29
+## 0.2.0 / 2008-06-29
 
 * Add a non-bang version of events (e.g. park) that will return a boolean value for success
 * Raise an exception if the bang version of events are used (e.g. park!) and no transition is successful
 * Change callbacks to act a little more like ActiveRecord
 * Avoid using string evaluation for dynamic methods
 
-== 0.1.1 / 2008-06-22
+## 0.1.1 / 2008-06-22
 
 * Remove log files from gems
 
-== 0.1.0 / 2008-05-05
+## 0.1.0 / 2008-05-05
 
 * Completely rewritten from scratch
 * Renamed to state_machine
@@ -378,7 +378,7 @@
 * Added functional tests
 * Updated documentation
 
-== 0.0.1 / 2007-09-26
+## 0.0.1 / 2007-09-26
 
 * Add dependency on custom_callbacks
 * Move test fixtures out of the test application root directory

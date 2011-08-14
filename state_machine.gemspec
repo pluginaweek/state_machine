@@ -12,8 +12,8 @@ Gem::Specification.new do |s|
   s.require_paths     = ["lib"]
   s.files             = `git ls-files`.split("\n")
   s.test_files        = `git ls-files -- test/*`.split("\n")
-  s.rdoc_options      = %w(--line-numbers --inline-source --title state_machine --main README.rdoc)
-  s.extra_rdoc_files  = %w(README.rdoc CHANGELOG.rdoc LICENSE)
+  s.rdoc_options      = %w(--line-numbers --inline-source --title state_machine --main README.md)
+  s.extra_rdoc_files  = %w(README.md CHANGELOG.md LICENSE)
   
   s.add_development_dependency("rake")
   s.add_development_dependency("rcov")
