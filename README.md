@@ -960,9 +960,30 @@ rake appraisal:sequel-2.8.0 test
 
 The following caveats should be noted when using state_machine:
 
-* DataMapper: Attribute-based event transitions are disabled when dm-validations 0.9.4 - 0.9.6 is in use
 * Overridden event methods won't get invoked when using attribute-based event transitions
-* around_transition callbacks in ORM integrations won't work on JRuby since it doesn't support continuations
+* **DataMapper**: Attribute-based event transitions are disabled when using dm-validations 0.9.4 - 0.9.6
+* **JRuby**: around_transition callbacks in ORM integrations won't work on JRuby since it doesn't support continuations
+* **Factory Girl**: Dynamic initial states don't work because of the way factory_girl
+  builds objects.  You can work around this in a few ways:
+  1. Use a default state that is common across all objects and rely on events to
+  determine the actual initial state for your object.
+  2. Assuming you're not using state-driven behavior on initialization, you can
+  re-initialize states after the fact:
+
+```ruby
+# Re-initialize in FactoryGirl
+FactoryGirl.define do
+  factory :vehicle do
+    after_build {|user| user.send(:initialize_state_machines, :dynamic => :force)}
+  end
+end
+
+# Alternatively re-initialize in your model
+class Vehicle < ActiveRecord::Base
+  ...
+  before_validation :on => :create {|user| user.send(:initialize_state_machines, :dynamic => :force)}
+end
+```
 
 ## Dependencies
 
