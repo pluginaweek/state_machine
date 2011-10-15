@@ -82,7 +82,7 @@ Class definition:
 
 ```ruby
 class Vehicle
-  attr_accessor :seatbelt_on, :time_used
+  attr_accessor :seatbelt_on, :time_used, :auto_shop_available
   
   state_machine :state, :initial => :parked do
     before_transition :parked => any - :parked, :do => :put_on_seatbelt
@@ -122,13 +122,13 @@ class Vehicle
     end
     
     event :crash do
-      transition all - [:parked, :stalled] => :stalled, :unless => :auto_shop_busy?
+      transition all - [:parked, :stalled] => :stalled, :if => :failed_inspection?
     end
     
     event :repair do
       # The first transition that matches the state and passes its conditions
       # will be used
-      transition :stalled => :parked, :if => :auto_shop_busy?
+      transition :stalled => :parked, :unless => lambda {|vehicle| !vehicle.auto_shop_available}
       transition :stalled => same
     end
     
@@ -141,12 +141,6 @@ class Vehicle
     state :idling, :first_gear do
       def speed
         10
-      end
-    end
-    
-    state :second_gear do
-      def speed
-        20
       end
     end
   end
@@ -167,6 +161,7 @@ class Vehicle
   def initialize
     @seatbelt_on = false
     @time_used = 0
+    @auto_shop_available = true
     super() # NOTE: This *must* be called, otherwise states won't get initialized
   end
   
@@ -174,8 +169,8 @@ class Vehicle
     @seatbelt_on = true
   end
   
-  def auto_shop_busy?
-    false
+  def failed_inspection?
+    true
   end
   
   def tow
@@ -222,7 +217,8 @@ vehicle.speed                   # => 10
 vehicle                         # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
 
 vehicle.shift_up                # => true
-vehicle.speed                   # => 20
+# Call state-driven behavior that's undefined for the state raises a NoMethodError
+vehicle.speed                   # => NoMethodError: super: no superclass method `speed' for #<Vehicle:0xb7cf4eac>
 vehicle                         # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>
 
 # The bang (!) operator can raise exceptions if the event fails
