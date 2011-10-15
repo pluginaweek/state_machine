@@ -82,7 +82,7 @@ Class definition:
 
 ```ruby
 class Vehicle
-  attr_accessor :seatbelt_on, :time_used, :auto_shop_available
+  attr_accessor :seatbelt_on, :time_used, :auto_shop_busy
   
   state_machine :state, :initial => :parked do
     before_transition :parked => any - :parked, :do => :put_on_seatbelt
@@ -122,13 +122,13 @@ class Vehicle
     end
     
     event :crash do
-      transition all - [:parked, :stalled] => :stalled, :if => :failed_inspection?
+      transition all - [:parked, :stalled] => :stalled, :if => lambda {|vehicle| !vehicle.passed_inspection?}
     end
     
     event :repair do
       # The first transition that matches the state and passes its conditions
       # will be used
-      transition :stalled => :parked, :unless => lambda {|vehicle| !vehicle.auto_shop_available}
+      transition :stalled => :parked, :unless => :auto_shop_busy
       transition :stalled => same
     end
     
@@ -161,7 +161,7 @@ class Vehicle
   def initialize
     @seatbelt_on = false
     @time_used = 0
-    @auto_shop_available = true
+    @auto_shop_busy = true
     super() # NOTE: This *must* be called, otherwise states won't get initialized
   end
   
@@ -169,8 +169,8 @@ class Vehicle
     @seatbelt_on = true
   end
   
-  def failed_inspection?
-    true
+  def passed_inspection?
+    false
   end
   
   def tow
