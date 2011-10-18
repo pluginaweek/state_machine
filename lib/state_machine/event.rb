@@ -113,6 +113,10 @@ module StateMachine
     # on the current state of the given object.
     # 
     # If the event can't be fired, then this will return false, otherwise true.
+    # 
+    # *Note* that this will not take the object context into account.  Although
+    # a transition may be possible based on the state machine definition,
+    # object-specific behaviors (like validations) may prevent it from firing.
     def can_fire?(object, requirements = {})
       !transition_for(object, requirements).nil?
     end

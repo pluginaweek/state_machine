@@ -1038,14 +1038,18 @@ module StateMachine
     #   transition fails, then a StateMachine::InvalidTransition error will be
     #   raised.  If the last argument is a boolean, it will control whether the
     #   machine's action gets run.
-    # * <tt>can_park?(requirements = {})</tt> - Checks whether the "park" event can be fired given
-    #   the current state of the object.  This will *not* run validations in
-    #   ORM integrations.  To check whether an event can fire *and* passes
-    #   validations, use event attributes (e.g. state_event) as described in the
-    #   "Events" documentation of each ORM integration.
-    # * <tt>park_transition(requirements = {})</tt> -  Gets the next transition that would be
-    #   performed if the "park" event were to be fired now on the object or nil
-    #   if no transitions can be performed.
+    # * <tt>can_park?(requirements = {})</tt> - Checks whether the "park" event
+    #   can be fired given the current state of the object.  This will *not* run
+    #   validations or callbacks in ORM integrations.  It will only determine if
+    #   the state machine defines a valid transition for the event.  To check
+    #   whether an event can fire *and* passes validations, use event attributes
+    #   (e.g. state_event) as described in the "Events" documentation of each
+    #   ORM integration.
+    # * <tt>park_transition(requirements = {})</tt> -  Gets the next transition
+    #   that would be performed if the "park" event were to be fired now on the
+    #   object or nil if no transitions can be performed.  Like <tt>can_park?</tt>
+    #   this will also *not* run validations or callbacks.  It will only
+    #   determine if the state machine defines a valid transition for the event.
     # 
     # With a namespace of "car", the above names map to the following methods:
     # * <tt>can_park_car?</tt>
