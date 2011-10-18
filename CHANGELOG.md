@@ -1,5 +1,8 @@
 # master
 
+* Clarify documentation on writing to state machine attributes, using factory_girl and can_#{event} / #{event}_transition helpers
+* Add documentation for dynmically generating state machines
+
 ## 1.0.2 / 2011-08-09
 
 * Allow transitions to be defined within a state, event, or machine context
