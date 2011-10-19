@@ -317,7 +317,9 @@ module StateMachine
     #       errors:
     #         messages:
     #           invalid: "is invalid"
+    #           # %{value} = attribute value, %{state} = Human state name
     #           invalid_event: "cannot transition when %{state}"
+    #           # %{value} = attribute value, %{event} = Human event name, %{state} = Human current state name
     #           invalid_transition: "cannot transition via %{event}"
     # 
     # Notice that the interpolation syntax is %{key} in Rails 3+.  In Rails 2.x,

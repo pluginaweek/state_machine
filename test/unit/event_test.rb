@@ -568,6 +568,25 @@ class EventWithMatchingDisabledTransitionsTest < Test::Unit::TestCase
     assert_equal ['cannot transition via "start"'], @object.errors
   end
   
+  def test_should_invalid_with_human_state_name_if_specified
+    klass = Class.new do
+      attr_accessor :errors
+    end
+    
+    machine = StateMachine::Machine.new(klass, :integration => :custom, :messages => {:invalid_transition => 'cannot transition via "%s" from "%s"'})
+    parked, idling = machine.state :parked, :idling
+    parked.human_name = 'stopped'
+    
+    machine.events << event = StateMachine::Event.new(machine, :ignite)
+    event.transition(:parked => :idling, :if => lambda {false})
+    
+    object = @klass.new
+    object.state = 'parked'
+    
+    event.fire(object)
+    assert_equal ['cannot transition via "ignite" from "stopped"'], object.errors
+  end
+  
   def test_should_reset_existing_error
     @object.errors = ['invalid']
     

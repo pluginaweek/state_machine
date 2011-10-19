@@ -230,7 +230,9 @@ module StateMachine
     #       errors:
     #         messages:
     #           invalid: "is invalid"
+    #           # %{value} = attribute value, %{state} = Human state name
     #           invalid_event: "cannot transition when %{state}"
+    #           # %{value} = attribute value, %{event} = Human event name, %{state} = Human current state name
     #           invalid_transition: "cannot transition via %{event}"
     # 
     # You can override these for a specific model like so:
