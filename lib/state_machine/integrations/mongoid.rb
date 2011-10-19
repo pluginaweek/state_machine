@@ -269,6 +269,54 @@ module StateMachine
     #       Audit.log(record, transition)
     #     end
     #   end
+    # 
+    # == Internationalization
+    # 
+    # Any error message that is generated from performing invalid transitions
+    # can be localized.  The following default translations are used:
+    # 
+    #   en:
+    #     mongoid:
+    #       errors:
+    #         messages:
+    #           invalid: "is invalid"
+    #           invalid_event: "cannot transition when %{state}"
+    #           invalid_transition: "cannot transition via %{event}"
+    # 
+    # You can override these for a specific model like so:
+    # 
+    #   en:
+    #     mongoid:
+    #       errors:
+    #         models:
+    #           user:
+    #             invalid: "is not valid"
+    # 
+    # In addition to the above, you can also provide translations for the
+    # various states / events in each state machine.  Using the Vehicle example,
+    # state translations will be looked for using the following keys, where
+    # +model_name+ = "vehicle", +machine_name+ = "state" and +state_name+ = "parked":
+    # * <tt>mongoid.state_machines.#{model_name}.#{machine_name}.states.#{state_name}</tt>
+    # * <tt>mongoid.state_machines.#{model_name}.states.#{state_name}</tt>
+    # * <tt>mongoid.state_machines.#{machine_name}.states.#{state_name}</tt>
+    # * <tt>mongoid.state_machines.states.#{state_name}</tt>
+    # 
+    # Event translations will be looked for using the following keys, where
+    # +model_name+ = "vehicle", +machine_name+ = "state" and +event_name+ = "ignite":
+    # * <tt>mongoid.state_machines.#{model_name}.#{machine_name}.events.#{event_name}</tt>
+    # * <tt>mongoid.state_machines.#{model_name}.events.#{event_name}</tt>
+    # * <tt>mongoid.state_machines.#{machine_name}.events.#{event_name}</tt>
+    # * <tt>mongoid.state_machines.events.#{event_name}</tt>
+    # 
+    # An example translation configuration might look like so:
+    # 
+    #   es:
+    #     mongoid:
+    #       state_machines:
+    #         states:
+    #           parked: 'estacionado'
+    #         events:
+    #           park: 'estacionarse'
     module Mongoid
       include Base
       include ActiveModel

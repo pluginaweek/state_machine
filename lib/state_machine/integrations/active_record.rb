@@ -334,15 +334,19 @@ module StateMachine
     # 
     # In addition to the above, you can also provide translations for the
     # various states / events in each state machine.  Using the Vehicle example,
-    # state translations will be looked for using the following keys:
-    # * <tt>activerecord.state_machines.vehicle.state.states.parked</tt>
-    # * <tt>activerecord.state_machines.state.states.parked
-    # * <tt>activerecord.state_machines.states.parked</tt>
+    # state translations will be looked for using the following keys, where
+    # +model_name+ = "vehicle", +machine_name+ = "state" and +state_name+ = "parked":
+    # * <tt>activerecord.state_machines.#{model_name}.#{machine_name}.states.#{state_name}</tt>
+    # * <tt>activerecord.state_machines.#{model_name}.states.#{state_name}</tt>
+    # * <tt>activerecord.state_machines.#{machine_name}.states.#{state_name}</tt>
+    # * <tt>activerecord.state_machines.states.#{state_name}</tt>
     # 
-    # Event translations will be looked for using the following keys:
-    # * <tt>activerecord.state_machines.vehicle.state.events.ignite</tt>
-    # * <tt>activerecord.state_machines.state.events.ignite
-    # * <tt>activerecord.state_machines.events.ignite</tt>
+    # Event translations will be looked for using the following keys, where
+    # +model_name+ = "vehicle", +machine_name+ = "state" and +event_name+ = "ignite":
+    # * <tt>activerecord.state_machines.#{model_name}.#{machine_name}.events.#{event_name}</tt>
+    # * <tt>activerecord.state_machines.#{model_name}.events.#{event_name}</tt>
+    # * <tt>activerecord.state_machines.#{machine_name}.events.#{event_name}</tt>
+    # * <tt>activerecord.state_machines.events.#{event_name}</tt>
     # 
     # An example translation configuration might look like so:
     # 

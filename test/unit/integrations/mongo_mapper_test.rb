@@ -1541,6 +1541,17 @@ module MongoMapperTest
         assert_equal 'shutdown', machine.state(:parked).human_name
       end
       
+      def test_should_allow_customized_state_key_scoped_to_class
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:state_machines => {:'mongo_mapper_test/foo' => {:states => {:parked => 'shutdown'}}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.state :parked
+        
+        assert_equal 'shutdown', machine.state(:parked).human_name
+      end
+      
       def test_should_allow_customized_state_key_scoped_to_machine
         I18n.backend.store_translations(:en, {
           :mongo_mapper => {:state_machines => {:state => {:states => {:parked => 'shutdown'}}}}
@@ -1566,6 +1577,17 @@ module MongoMapperTest
       def test_should_allow_customized_event_key_scoped_to_class_and_machine
         I18n.backend.store_translations(:en, {
           :mongo_mapper => {:state_machines => {:'mongo_mapper_test/foo' => {:state => {:events => {:park => 'stop'}}}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        machine.event :park
+        
+        assert_equal 'stop', machine.event(:park).human_name
+      end
+      
+      def test_should_allow_customized_event_key_scoped_to_class
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:state_machines => {:'mongo_mapper_test/foo' => {:events => {:park => 'stop'}}}}
         })
         
         machine = StateMachine::Machine.new(@model)

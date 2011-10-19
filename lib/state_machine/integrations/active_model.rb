@@ -227,6 +227,54 @@ module StateMachine
     #     end
     #   end
     # 
+    # == Internationalization
+    # 
+    # Any error message that is generated from performing invalid transitions
+    # can be localized.  The following default translations are used:
+    # 
+    #   en:
+    #     activemodel:
+    #       errors:
+    #         messages:
+    #           invalid: "is invalid"
+    #           invalid_event: "cannot transition when %{state}"
+    #           invalid_transition: "cannot transition via %{event}"
+    # 
+    # You can override these for a specific model like so:
+    # 
+    #   en:
+    #     activemodel:
+    #       errors:
+    #         models:
+    #           user:
+    #             invalid: "is not valid"
+    # 
+    # In addition to the above, you can also provide translations for the
+    # various states / events in each state machine.  Using the Vehicle example,
+    # state translations will be looked for using the following keys, where
+    # +model_name+ = "vehicle", +machine_name+ = "state" and +state_name+ = "parked":
+    # * <tt>activemodel.state_machines.#{model_name}.#{machine_name}.states.#{state_name}</tt>
+    # * <tt>activemodel.state_machines.#{model_name}.states.#{state_name}</tt>
+    # * <tt>activemodel.state_machines.#{machine_name}.states.#{state_name}</tt>
+    # * <tt>activemodel.state_machines.states.#{state_name}</tt>
+    # 
+    # Event translations will be looked for using the following keys, where
+    # +model_name+ = "vehicle", +machine_name+ = "state" and +event_name+ = "ignite":
+    # * <tt>activemodel.state_machines.#{model_name}.#{machine_name}.events.#{event_name}</tt>
+    # * <tt>activemodel.state_machines.#{model_name}.events.#{event_name}</tt>
+    # * <tt>activemodel.state_machines.#{machine_name}.events.#{event_name}</tt>
+    # * <tt>activemodel.state_machines.events.#{event_name}</tt>
+    # 
+    # An example translation configuration might look like so:
+    # 
+    #   es:
+    #     activemodel:
+    #       state_machines:
+    #         states:
+    #           parked: 'estacionado'
+    #         events:
+    #           park: 'estacionarse'
+    # 
     # == Dirty Attribute Tracking
     # 
     # In order to hook in validation support for your model, the
@@ -255,9 +303,9 @@ module StateMachine
     # == Creating new integrations
     # 
     # If you want to integrate state_machine with an ORM that implements parts
-    # or all of the ActiveModel API, the following features must be specified:
-    # * i18n scope (locale)
-    # * Machine defaults
+    # or all of the ActiveModel API, only the machine defaults need to be
+    # specified.  Otherwise, the implementation is similar to any other
+    # integration.
     # 
     # For example,
     # 
@@ -270,18 +318,9 @@ module StateMachine
     #       defined?(::MyORM::Base) && klass <= ::MyORM::Base
     #     end
     #     
-    #     def self.extended(base)
-    #       locale = "#{File.dirname(__FILE__)}/my_orm/locale.rb"
-    #       I18n.load_path << locale unless I18n.load_path.include?(locale)
-    #     end
-    #     
     #     protected
     #       def runs_validations_on_action?
     #         action == :persist
-    #       end
-    #       
-    #       def i18n_scope
-    #         :myorm
     #       end
     #   end
     # 
@@ -391,6 +430,7 @@ module StateMachine
         # Translates the given key / value combo.  Translation keys are looked
         # up in the following order:
         # * <tt>#{i18n_scope}.state_machines.#{model_name}.#{machine_name}.#{plural_key}.#{value}</tt>
+        # * <tt>#{i18n_scope}.state_machines.#{model_name}.#{plural_key}.#{value}</tt>
         # * <tt>#{i18n_scope}.state_machines.#{machine_name}.#{plural_key}.#{value}</tt>
         # * <tt>#{i18n_scope}.state_machines.#{plural_key}.#{value}</tt>
         # 
@@ -402,6 +442,7 @@ module StateMachine
           
           # Generate all possible translation keys
           translations = ancestors.map {|ancestor| :"#{ancestor.model_name.underscore}.#{name}.#{group}.#{value}"}
+          translations.concat(ancestors.map {|ancestor| :"#{ancestor.model_name.underscore}.#{group}.#{value}"})
           translations.concat([:"#{name}.#{group}.#{value}", :"#{group}.#{value}", value.humanize.downcase])
           I18n.translate(translations.shift, :default => translations, :scope => [i18n_scope(klass), :state_machines])
         end
