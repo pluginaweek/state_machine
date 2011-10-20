@@ -398,9 +398,9 @@ module StateMachine
         # Marks the object's state as dirty so that the record will be saved
         # even if no actual modifications have been made to the data
         def mark_dirty(object, value)
-          object.persisted_state = ::DataMapper::Resource::State::Dirty.new(object) if object.persisted_state.is_a?(::DataMapper::Resource::State::Clean)
+          object.persistence_state = ::DataMapper::Resource::PersistenceState::Dirty.new(object) if object.persistence_state.is_a?(::DataMapper::Resource::PersistenceState::Clean)
           property = owner_class.properties[self.attribute]
-          object.persisted_state.original_attributes[property] = value unless object.persisted_state.original_attributes.include?(property)
+          object.persistence_state.original_attributes[property] = value unless object.persistence_state.original_attributes.include?(property)
         end
     end
   end
