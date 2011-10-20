@@ -17,16 +17,20 @@ module DataMapperTest
     def default_test
     end
     
+    def teardown
+      @resources.uniq.each {|resource| DataMapperTest.send(:remove_const, resource)} if @resources
+    end
+    
     protected
       # Creates a new DataMapper resource (and the associated table)
       def new_resource(create_table = :foo, &block)
         table_name = create_table || :foo
+        name = table_name.to_s.capitalize
         
-        resource = Class.new do
-          (class << self; self; end).class_eval do
-            define_method(:name) { "DataMapperTest::#{table_name.to_s.capitalize}" }
-          end
-        end
+        resource = Class.new
+        DataMapperTest.send(:remove_const, name) if DataMapperTest.const_defined?(name)
+        DataMapperTest.const_set(name, resource)
+        (@resources ||= []) << name
         
         resource.class_eval do
           include DataMapper::Resource
@@ -35,10 +39,9 @@ module DataMapperTest
           
           property :id, resource.class_eval('Serial')
           property :state, String
-          
-          auto_migrate! if create_table
         end
         resource.class_eval(&block) if block_given?
+        resource.auto_migrate! if create_table
         resource
       end
       
@@ -295,7 +298,6 @@ module DataMapperTest
     def setup
       @resource = new_resource do
         property :status, String, :default => 'idling'
-        auto_migrate!
       end
       @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
       @record = @resource.new
@@ -347,6 +349,7 @@ module DataMapperTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -485,11 +488,14 @@ module DataMapperTest
     
     if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.9.8')
       def test_should_raise_exception_if_protected
-        @resource.class_eval do
+        resource = new_resource do
           protected :state=
         end
         
-        assert_raise(ArgumentError) { @resource.new(:state => 'idling') }
+        machine = StateMachine::Machine.new(resource, :initial => :parked)
+        machine.state :idling
+        
+        assert_raise(ArgumentError) { resource.new(:state => 'idling') }
       end
     end
   end
@@ -498,7 +504,6 @@ module DataMapperTest
     def setup
       @resource = new_resource do
         property :status, String
-        auto_migrate!
       end
       @state_machine = StateMachine::Machine.new(@resource, :initial => :parked)
       @status_machine = StateMachine::Machine.new(@resource, :status, :initial => :idling)
@@ -515,7 +520,6 @@ module DataMapperTest
     def setup
       @resource = new_resource do
         property :updated_at, DateTime
-        auto_migrate!
         
         # Simulate dm-timestamps
         before :update do
@@ -612,7 +616,6 @@ module DataMapperTest
     def setup
       @resource = new_resource do
         property :status, String, :default => 'idling'
-        auto_migrate!
       end
       @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
       @machine.event :ignite
@@ -652,7 +655,6 @@ module DataMapperTest
     def setup
       @resource = new_resource do
         property :status, String, :default => 'idling'
-        auto_migrate!
       end
       @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
       @machine.event :park
@@ -1849,6 +1851,9 @@ module DataMapperTest
       @machine = StateMachine::Machine.new(@resource, :state)
       
       @subclass = Class.new(@resource)
+      DataMapperTest.const_set('Bar', @subclass)
+      @resources << 'Bar'
+      @subclass.auto_migrate!
       @subclass_machine = @subclass.state_machine(:state) {}
       @subclass_machine.state :parked, :idling, :first_gear
     end
@@ -1887,15 +1892,12 @@ module DataMapperTest
   class MachineWithScopesAndJoinsTest < BaseTestCase
     def setup
       @company = new_resource(:company)
-      DataMapperTest.const_set('Company', @company)
       
       @vehicle = new_resource(:vehicle) do
         property :company_id, Integer
-        auto_migrate!
         
         belongs_to :company
       end
-      DataMapperTest.const_set('Vehicle', @vehicle)
       
       @company_machine = StateMachine::Machine.new(@company, :initial => :active)
       @vehicle_machine = StateMachine::Machine.new(@vehicle, :initial => :parked)
@@ -1911,13 +1913,6 @@ module DataMapperTest
     
     def test_should_find_records_in_without_scope
       assert_equal [@mustang], @vehicle.without_states(:idling).all(Vehicle.company.state => 'active')
-    end
-    
-    def teardown
-      DataMapperTest.class_eval do
-        remove_const('Vehicle')
-        remove_const('Company')
-      end
     end
   end
 end

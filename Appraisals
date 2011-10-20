@@ -271,3 +271,12 @@ appraise "data_mapper-1.1.0" do
   gem "dm-transactions", "1.1.0"
   gem "dm-sqlite-adapter", "1.1.0"
 end
+
+appraise "data_mapper-1.2.0" do
+  gem "dm-core", "1.2.0"
+  gem "dm-migrations", "1.2.0"
+  gem "dm-validations", "1.2.0"
+  gem "dm-observer", "1.2.0"
+  gem "dm-transactions", "1.2.0"
+  gem "dm-sqlite-adapter", "1.2.0"
+end
