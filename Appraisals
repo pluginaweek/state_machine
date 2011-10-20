@@ -57,6 +57,11 @@ if RUBY_VERSION > "1.8.6"
     gem "sqlite3-ruby"
     gem "activerecord", "3.0.5"
   end
+
+  appraise "active_record-3.1.1" do
+    gem "sqlite3-ruby"
+    gem "activerecord", "3.1.1"
+  end
 end
 
 # ActiveModel integrations
