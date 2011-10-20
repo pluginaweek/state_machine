@@ -1,7 +1,7 @@
 PATH
   remote: /home/aaron/Projects/Personal/pluginaweek/state_machine
   specs:
-    state_machine (1.0.1)
+    state_machine (1.0.2)
 
 GEM
   remote: http://www.rubygems.org/
@@ -26,7 +26,6 @@ GEM
       will_paginate (~> 3.0.pre)
     rake (0.9.2)
     rcov (0.9.10)
-    ruby-graphviz (1.0.0)
     tzinfo (0.3.29)
     will_paginate (3.0.0)
 
@@ -38,5 +37,4 @@ DEPENDENCIES
   mongoid (= 2.0.0)
   rake
   rcov
-  ruby-graphviz (~> 1.0)
   state_machine!

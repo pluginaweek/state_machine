@@ -1781,7 +1781,7 @@ module StateMachine
         graphvizVersion = Constants::RGV_VERSION.split('.')
         file = File.join(options[:path], "#{options[:name]}.#{options[:format]}")
         
-        if graphvizVersion[1] == '9' && graphvizVersion[2] == '0'
+        if graphvizVersion[0] == '0' && graphvizVersion[1] == '9' && graphvizVersion[2] == '0'
           outputOptions = {:output => options[:format], :file => file}
         else
           outputOptions = {options[:format] => file}
@@ -1789,8 +1789,8 @@ module StateMachine
         
         graph.output(outputOptions)
         graph
-      rescue LoadError
-        $stderr.puts 'Cannot draw the machine. `gem install ruby-graphviz` >= v0.9.0 and try again.'
+      rescue LoadError => ex
+        $stderr.puts "Cannot draw the machine (#{ex.message}). `gem install ruby-graphviz` >= v0.9.0 and try again."
         false
       end
     end

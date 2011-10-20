@@ -1,7 +1,7 @@
 PATH
   remote: /home/aaron/Projects/Personal/pluginaweek/state_machine
   specs:
-    state_machine (1.0.1)
+    state_machine (1.0.2)
 
 GEM
   remote: http://www.rubygems.org/
@@ -38,7 +38,6 @@ GEM
     rspec-expectations (2.6.0)
       diff-lcs (~> 1.1.2)
     rspec-mocks (2.6.0)
-    ruby-graphviz (1.0.0)
 
 PLATFORMS
   ruby
@@ -53,5 +52,4 @@ DEPENDENCIES
   do_sqlite3 (= 0.9.7)
   rake
   rcov
-  ruby-graphviz (~> 1.0)
   state_machine!
