@@ -1,5 +1,6 @@
 # master
 
+* Remove ActiveModel Observer method chains in order to better ensure compatibility
 * Update DataMapper integration for 1.2.0+ support [Markus Schirp]
 * Provide access to the human state name in invalid_transition translations
 * Add support for i18n keys in the form of #{i18n_scope}.state_machines.#{model_name}.states/events.#{value}

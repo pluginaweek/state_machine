@@ -19,21 +19,9 @@ module StateMachine
       #     end
       #   end
       module Observer
-        def self.included(base) #:nodoc:
-          base.class_eval do
-            alias_method :update_without_multiple_args, :update
-            alias_method :update, :update_with_multiple_args
-          end
-        end
-        
-        # Allows additional arguments other than the object to be passed to the
-        # observed methods
-        def update_with_multiple_args(observed_method, object, *args) #:nodoc:
-          if args.any?
-            send(observed_method, object, *args) if respond_to?(observed_method)
-          else
-            update_without_multiple_args(observed_method, object)
-          end
+        def update_with_transition(args)
+          observed_method, object, transition = args
+          send(observed_method, object, transition) if respond_to?(observed_method)
         end
       end
     end

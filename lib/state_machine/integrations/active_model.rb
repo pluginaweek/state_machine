@@ -564,14 +564,14 @@ module StateMachine
             ["_from_#{from}", nil].each do |from_segment|
               ["_to_#{to}", nil].each do |to_segment|
                 object.class.changed if object.class.respond_to?(:changed)
-                object.class.notify_observers([event_segment, from_segment, to_segment].join, object, transition)
+                object.class.notify_observers('update_with_transition', [[event_segment, from_segment, to_segment].join, object, transition])
               end
             end
           end
           
           # Generic updates
           object.class.changed if object.class.respond_to?(:changed)
-          object.class.notify_observers("#{type}_transition", object, transition)
+          object.class.notify_observers('update_with_transition', ["#{type}_transition", object, transition])
           
           true
         end
