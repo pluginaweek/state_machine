@@ -1592,6 +1592,54 @@ module ActiveRecordTest
       @transition.perform
       assert_equal [:before_ignite, [:before_save, @object]], instance.notifications
     end
+    
+    def test_should_support_nil_from_states
+      callbacks = [
+        :before_ignite_from_nil_to_idling,
+        :before_ignite_from_nil,
+        :before_transition_state_from_nil_to_idling,
+        :before_transition_state_from_nil
+      ]
+      
+      notified = false
+      observer = new_observer(@model) do
+        callbacks.each do |callback|
+          define_method(callback) do |*args|
+            notifications << callback
+          end
+        end
+      end
+      
+      instance = observer.instance
+      
+      transition = StateMachine::Transition.new(@record, @machine, :ignite, nil, :idling)
+      transition.perform
+      assert_equal callbacks, instance.notifications
+    end
+    
+    def test_should_support_nil_to_states
+      callbacks = [
+        :before_ignite_from_parked_to_nil,
+        :before_ignite_to_nil,
+        :before_transition_state_from_parked_to_nil,
+        :before_transition_state_to_nil
+      ]
+      
+      notified = false
+      observer = new_observer(@model) do
+        callbacks.each do |callback|
+          define_method(callback) do |*args|
+            notifications << callback
+          end
+        end
+      end
+      
+      instance = observer.instance
+      
+      transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, nil)
+      transition.perform
+      assert_equal callbacks, instance.notifications
+    end
   end
   
   class MachineWithNamespacedObserversTest < BaseTestCase
@@ -1986,6 +2034,16 @@ module ActiveRecordTest
         machine.state :parked
         
         assert_equal 'shutdown', machine.state(:parked).human_name
+      end
+      
+      def test_should_support_nil_state_key
+        I18n.backend.store_translations(:en, {
+          :activerecord => {:state_machines => {:states => {:nil => 'empty'}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        
+        assert_equal 'empty', machine.state(nil).human_name
       end
       
       def test_should_allow_customized_event_key_scoped_to_class_and_machine

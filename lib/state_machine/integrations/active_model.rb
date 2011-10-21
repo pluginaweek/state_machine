@@ -556,8 +556,8 @@ module StateMachine
         def notify(type, object, transition)
           name = self.name
           event = transition.qualified_event
-          from = transition.from_name
-          to = transition.to_name
+          from = transition.from_name || 'nil'
+          to = transition.to_name || 'nil'
           
           # Machine-specific updates
           ["#{type}_#{event}", "#{type}_transition_#{name}"].each do |event_segment|

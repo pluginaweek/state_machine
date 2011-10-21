@@ -1574,6 +1574,16 @@ module MongoMapperTest
         assert_equal 'shutdown', machine.state(:parked).human_name
       end
       
+      def test_should_support_nil_state_key
+        I18n.backend.store_translations(:en, {
+          :mongo_mapper => {:state_machines => {:states => {:nil => 'empty'}}}
+        })
+        
+        machine = StateMachine::Machine.new(@model)
+        
+        assert_equal 'empty', machine.state(nil).human_name
+      end
+      
       def test_should_allow_customized_event_key_scoped_to_class_and_machine
         I18n.backend.store_translations(:en, {
           :mongo_mapper => {:state_machines => {:'mongo_mapper_test/foo' => {:state => {:events => {:park => 'stop'}}}}}

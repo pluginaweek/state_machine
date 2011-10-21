@@ -179,9 +179,7 @@ module StateMachine
     # This can be called multiple times.  Each time a new context is created,
     # a new module will be included in the owner class.
     def context(&block)
-      owner_class = machine.owner_class
       machine_name = machine.name
-      name = self.name
       
       # Evaluate the method definitions
       context = StateContext.new(self)
@@ -199,7 +197,7 @@ module StateMachine
       
       # Include the context so that it can be bound to the owner class (the
       # context is considered an ancestor, so it's allowed to be bound)
-      owner_class.class_eval { include context }
+      machine.owner_class.class_eval { include context }
       
       context
     end

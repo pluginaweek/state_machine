@@ -1,5 +1,6 @@
 # master
 
+* Fix observer callbacks being run incorrectly when using nil states in ActiveModel-based integrations
 * Remove ActiveModel Observer method chains in order to better ensure compatibility
 * Update DataMapper integration for 1.2.0+ support [Markus Schirp]
 * Provide access to the human state name in invalid_transition translations
