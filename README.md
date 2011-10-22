@@ -771,7 +771,7 @@ end
 
 # Generic class for building machines
 class Machine
-  def self.new(object, *args &block)
+  def self.new(object, *args, &block)
     machine = Class.new do
       def definition
         self.class.state_machine
