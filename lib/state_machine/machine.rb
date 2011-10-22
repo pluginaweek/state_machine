@@ -139,11 +139,60 @@ module StateMachine
   #   vehicle.save            # => true (no exception raised)
   # 
   # If you need callbacks to get triggered when an object is created, this
-  # should be done by either:
-  # * Use a <tt>before :save</tt> or equivalent hook, or
-  # * Set an initial state of nil and use the correct event to create the
+  # should be done by one of the following techniques:
+  # * Use a <tt>before :create</tt> or equivalent hook:
+  # 
+  #     class Vehicle
+  #       before :create, :track_initial_transition
+  #       
+  #       state_machine do
+  #         ...
+  #       end
+  #     end
+  # 
+  # * Set an initial state and use the correct event to create the
   #   object with the proper state, resulting in callbacks being triggered and
-  #   the object getting persisted
+  #   the object getting persisted (note that the <tt>:pending</tt> state is
+  #   actually stored as nil):
+  # 
+  #     class Vehicle
+  #        state_machine :initial => :pending
+  #         after_transition :pending => :parked, :do => :track_initial_transition
+  #         
+  #         event :park do
+  #           transition :pending => :parked
+  #         end
+  #         
+  #         state :pending, :value => nil
+  #       end
+  #     end
+  #     
+  #     vehicle = Vehicle.new
+  #     vehicle.park
+  # 
+  # * Use a default event attribute that will automatically trigger when the
+  #   configured action gets run (note that the <tt>:pending</tt> state is
+  #   actually stored as nil):
+  # 
+  #     class Vehicle < ActiveRecord::Base
+  #       state_machine :initial => :pending
+  #         after_transition :pending => :parked, :do => :track_initial_transition
+  #         
+  #         event :park do
+  #           transition :pending => :parked
+  #         end
+  #         
+  #         state :pending, :value => nil
+  #       end
+  #       
+  #       def initialize(*)
+  #         super
+  #         self.state_event = 'park'
+  #       end
+  #     end
+  #     
+  #     vehicle = Vehicle.new
+  #     vehicle.save
   # 
   # === Canceling callbacks
   # 
