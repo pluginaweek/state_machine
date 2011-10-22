@@ -738,35 +738,46 @@ state machines like so:
 
 ```ruby
 class Vehicle
+  attr_accessor :state
+  
   # Replace this with an external source (like a db)
   def transitions
     [
       {:parked => :idling, :on => :ignite},
-      {:idling => :first_gear, :first_gear => :second_gear, :on => :shift_up},
-      ...
+      {:idling => :first_gear, :first_gear => :second_gear, :on => :shift_up}
+      # ...
     ]
   end
   
   # Create a state machine for this vehicle instance dynamically based on the
   # transitions defined from the source above
   def machine
-    @machine ||= VehicleMachine.new(transitions)
+    vehicle = self
+    @machine ||= Machine.new(vehicle, :initial => :parked) do
+      vehicle.transitions.each {|attrs| transition(attrs)}
+      
+      # Persist the state on the vehicle itself
+      after_transition do
+        vehicle.state = vehicle.machine.state
+        vehicle.save
+      end
+    end
+  end
+  
+  def save
+    # Save the state change...
   end
 end
 
-class VehicleMachine
-  def self.new(transitions)
+# Generic class for building machines
+class Machine
+  def self.new(object, *args &block)
     machine = Class.new do
-      # Provide easy access to the state machine definition
       def definition
         self.class.state_machine
       end
     end
-    
-    # Define the machine
-    machine.state_machine(:initial => :parked) do
-      transitions.each {|attrs| transition(attrs)}
-    end
+    machine.state_machine(*args, &block)
     machine.new
   end
 end
@@ -776,6 +787,7 @@ vehicle.machine                         # => #<#<Class:0xb723541c>:0xb722fa30 @s
 vehicle.machine.state                   # => "parked"
 vehicle.machine.ignite                  # => true
 vehicle.machine.state                   # => "idling
+vehicle.state                           # => "idling"
 vehicle.machine.state_transitions       # => [#<StateMachine::Transition ...>]
 vehicle.machine.definition.states.keys  # => :first_gear, :second_gear, :parked, :idling
 ```
