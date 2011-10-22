@@ -1,9 +1,19 @@
 namespace :state_machine do
-  desc 'Draws a set of state machines using GraphViz. Target files to load with FILE=x,y,z; Machine class with CLASS=x,y,z; Font name with FONT=x; Image format with FORMAT=x; Orientation with ORIENTATION=x'
+  desc 'Draws state machines using GraphViz (options: CLASS=User,Vehicle; FILE=user.rb,vehicle.rb [not required in Rails / Merb]; FONT=Arial; FORMAT=png; ORIENTATION=portrait'
   task :draw do
+    # Build drawing options
+    options = {}
+    options[:file] = ENV['FILE'] if ENV['FILE']
+    options[:path] = ENV['TARGET'] if ENV['TARGET']
+    options[:format] = ENV['FORMAT'] if ENV['FORMAT']
+    options[:font] = ENV['FONT'] if ENV['FONT']
+    options[:orientation] = ENV['ORIENTATION'] if ENV['ORIENTATION']
+    
     if defined?(Rails)
+      puts "Files are automatically loaded in Rails; ignoring FILE option" if options.delete(:file)
       Rake::Task['environment'].invoke
     elsif defined?(Merb)
+      puts "Files are automatically loaded in Merb; ignoring FILE option" if options.delete(:file)
       Rake::Task['merb_env'].invoke
       
       # Fix ruby-graphviz being incompatible with Merb's process title
@@ -13,14 +23,6 @@ namespace :state_machine do
       $:.unshift(File.dirname(__FILE__) + '/..')
       require 'state_machine'
     end
-    
-    # Build drawing options
-    options = {}
-    options[:file] = ENV['FILE'] if ENV['FILE']
-    options[:path] = ENV['TARGET'] if ENV['TARGET']
-    options[:format] = ENV['FORMAT'] if ENV['FORMAT']
-    options[:font] = ENV['FONT'] if ENV['FONT']
-    options[:orientation] = ENV['ORIENTATION'] if ENV['ORIENTATION']
     
     StateMachine::Machine.draw(ENV['CLASS'], options)
   end
