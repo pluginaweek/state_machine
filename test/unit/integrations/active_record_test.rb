@@ -1810,6 +1810,13 @@ module ActiveRecordTest
         assert_equal [parked, idling], @model.with_states(:parked, :idling).find(:all)
       end
       
+      def test_should_allow_lookup_by_string_name
+        parked = @model.create :state => 'parked'
+        idling = @model.create :state => 'idling'
+        
+        assert_equal [parked, idling], @model.with_states('parked', 'idling').find(:all)
+      end
+      
       def test_should_create_singular_without_scope
         assert @model.respond_to?(:without_state)
       end

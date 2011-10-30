@@ -122,7 +122,12 @@ module StateMachine
     # 
     # If the key cannot be found, then nil will be returned.
     def [](key, index_name = @default_index)
-      index(index_name)[key]
+      index = self.index(index_name)
+      if index.include?(key)
+        index[key]
+      elsif @indices.include?(:"#{index_name}_to_s")
+        self[key.to_s, :"#{index_name}_to_s"]
+      end
     end
     
     # Gets the node indexed by the given key.  By default, this will look up the
@@ -141,7 +146,7 @@ module StateMachine
       self[key, index_name] || raise(IndexError, "#{key.inspect} is an invalid #{index_name}")
     end
     
-    private
+    protected
       # Gets the given index.  If the index does not exist, then an ArgumentError
       # is raised.
       def index(name)

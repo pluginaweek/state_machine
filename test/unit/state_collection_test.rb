@@ -41,6 +41,10 @@ class StateCollectionTest < Test::Unit::TestCase
     assert_equal @parked, @states[:parked]
   end
   
+  def test_should_index_by_string_name
+    assert_equal @parked, @states['parked']
+  end
+  
   def test_should_index_by_qualified_name
     assert_equal @parked, @states[:parked, :qualified_name]
   end

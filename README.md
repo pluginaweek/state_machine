@@ -255,6 +255,10 @@ Vehicle.human_alarm_state_name(:active)             # => "active"
 Vehicle.human_state_event_name(:shift_down)         # => "shift down"
 Vehicle.human_alarm_state_event_name(:enable)       # => "enable"
 
+# States / events can also be references by the string version of their name
+Vehicle.human_state_name('first_gear')              # => "first gear"
+Vehicle.human_state_event_name('shift_down')        # => "shift down"
+
 # Available transition paths can be analyzed for an object
 vehicle.state_paths                                       # => [[#<StateMachine::Transition ...], [#<StateMachine::Transition ...], ...]
 vehicle.state_paths.to_states                             # => [:parked, :idling, :first_gear, :stalled, :second_gear, :third_gear]

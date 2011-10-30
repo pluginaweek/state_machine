@@ -4,7 +4,7 @@ module StateMachine
   # Represents a collection of states in a state machine
   class StateCollection < NodeCollection
     def initialize(machine) #:nodoc:
-      super(machine, :index => [:name, :qualified_name, :value])
+      super(machine, :index => [:name, :name_to_s, :qualified_name, :value])
     end
     
     # Determines whether the given object is in a specific state.  If the

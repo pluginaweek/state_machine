@@ -214,6 +214,11 @@ module StateMachine
     # 
     #   Vehicle.with_state(:parked).all(:order => [:id.desc])
     # 
+    # Note that states can also be referenced by the string version of their
+    # name:
+    # 
+    #   Vehicle.with_state('parked')
+    # 
     # == Callbacks / Observers
     # 
     # All before/after transition callbacks defined for DataMapper resources

@@ -67,6 +67,11 @@ module StateMachine
       end
     end
     
+    # Converts the name of this event to a string
+    def name_to_s
+      name.to_s
+    end
+    
     # Creates a copy of this event in addition to the list of associated
     # branches to prevent conflicts across events within a class hierarchy.
     def initialize_copy(orig) #:nodoc:

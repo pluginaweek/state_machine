@@ -215,3 +215,30 @@ class NodeCollectionAfterUpdateTest < Test::Unit::TestCase
     assert_nil @collection[1, :value]
   end
 end
+
+class NodeCollectionWithStringIndexTest < Test::Unit::TestCase
+  def setup
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :name_to_s, :value])
+    
+    @klass = Struct.new(:name, :name_to_s, :value)
+    @parked = @klass.new(:parked, 'parked', 1)
+    @collection << @parked
+  end
+  
+  def test_should_index_by_name
+    assert_equal @parked, @collection[:parked]
+  end
+  
+  def test_should_index_by_string_name
+    assert_equal @parked, @collection['parked', :name_to_s]
+  end
+  
+  def test_should_fallback_to_string_index
+    assert_equal @parked, @collection['parked']
+  end
+  
+  def test_should_not_fallback_to_string_index_if_not_available
+    assert_nil @collection['1', :value]
+  end
+end

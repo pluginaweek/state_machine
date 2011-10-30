@@ -40,6 +40,10 @@ class EventCollectionTest < Test::Unit::TestCase
     assert_equal @open, @events[:enable]
   end
   
+  def test_should_index_by_string_name
+    assert_equal @open, @events['enable']
+  end
+  
   def test_should_index_by_qualified_name
     assert_equal @open, @events[:enable_alarm, :qualified_name]
   end

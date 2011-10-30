@@ -2,7 +2,7 @@ module StateMachine
   # Represents a collection of events in a state machine
   class EventCollection < NodeCollection
     def initialize(machine) #:nodoc:
-      super(machine, :index => [:name, :qualified_name])
+      super(machine, :index => [:name, :name_to_s, :qualified_name])
     end
     
     # Gets the list of events that can be fired on the given object.

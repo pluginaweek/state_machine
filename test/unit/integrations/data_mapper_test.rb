@@ -1814,6 +1814,13 @@ module DataMapperTest
       assert_equal [parked, idling], @resource.with_states(:parked, :idling)
     end
     
+    def test_should_allow_lookup_by_string_name
+      parked = @resource.create :state => 'parked'
+      idling = @resource.create :state => 'idling'
+      
+      assert_equal [parked, idling], @resource.with_states('parked', 'idling')
+    end
+    
     def test_should_create_singular_without_scope
       assert @resource.respond_to?(:without_state)
     end
