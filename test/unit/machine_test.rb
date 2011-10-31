@@ -2184,6 +2184,45 @@ class MachineWithExistingStateTest < Test::Unit::TestCase
   end
 end
 
+class MachineWithStateMatchersTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+  end
+  
+  def test_should_empty_array_for_all_matcher
+    assert_equal [], @machine.state(StateMachine::AllMatcher.instance)
+  end
+  
+  def test_should_return_referenced_states_for_blacklist_matcher
+    assert_instance_of StateMachine::State, @machine.state(StateMachine::BlacklistMatcher.new([:parked]))
+  end
+  
+  def test_should_not_allow_configurations
+    exception = assert_raise(ArgumentError) { @machine.state(StateMachine::BlacklistMatcher.new([:parked]), :human_name => 'Parked') }
+    assert_equal 'Cannot configure states when using matchers (using {:human_name=>"Parked"})', exception.message
+  end
+  
+  def test_should_track_referenced_states
+    @machine.state(StateMachine::BlacklistMatcher.new([:parked]))
+    assert_equal [nil, :parked], @machine.states.map {|state| state.name}
+  end
+  
+  def test_should_eval_context_for_matching_states
+    contexts_run = []
+    @machine.event(StateMachine::BlacklistMatcher.new([:parked])) { contexts_run << self.name }
+    
+    @machine.event :parked
+    assert_equal [], contexts_run
+    
+    @machine.event :idling
+    assert_equal [:idling], contexts_run
+    
+    @machine.event :first_gear, :second_gear
+    assert_equal [:idling, :first_gear, :second_gear], contexts_run
+  end
+end
+
 class MachineWithOtherStates < Test::Unit::TestCase
   def setup
     @klass = Class.new
@@ -2278,6 +2317,45 @@ class MachineWithEventsWithCustomHumanNamesTest < Test::Unit::TestCase
   
   def test_should_allow_human_state_name_lookup
     assert_equal 'start', @klass.human_state_event_name(:ignite)
+  end
+end
+
+class MachineWithEventMatchersTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+  end
+  
+  def test_should_empty_array_for_all_matcher
+    assert_equal [], @machine.event(StateMachine::AllMatcher.instance)
+  end
+  
+  def test_should_return_referenced_events_for_blacklist_matcher
+    assert_instance_of StateMachine::Event, @machine.event(StateMachine::BlacklistMatcher.new([:park]))
+  end
+  
+  def test_should_not_allow_configurations
+    exception = assert_raise(ArgumentError) { @machine.event(StateMachine::BlacklistMatcher.new([:park]), :human_name => 'Park') }
+    assert_equal 'Cannot configure events when using matchers (using {:human_name=>"Park"})', exception.message
+  end
+  
+  def test_should_track_referenced_events
+    event = @machine.event(StateMachine::BlacklistMatcher.new([:park]))
+    assert_equal [:park], @machine.events.map {|event| event.name}
+  end
+  
+  def test_should_eval_context_for_matching_events
+    contexts_run = []
+    @machine.event(StateMachine::BlacklistMatcher.new([:park])) { contexts_run << self.name }
+    
+    @machine.event :park
+    assert_equal [], contexts_run
+    
+    @machine.event :ignite
+    assert_equal [:ignite], contexts_run
+    
+    @machine.event :shift_up, :shift_down
+    assert_equal [:ignite, :shift_up, :shift_down], contexts_run
   end
 end
 

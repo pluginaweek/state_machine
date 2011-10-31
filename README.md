@@ -143,6 +143,18 @@ class Vehicle
         10
       end
     end
+    
+    state all - [:parked, :stalled, :idling] do
+      def moving?
+        true
+      end
+    end
+    
+    state :parked, :stalled, :idling do
+      def moving?
+        false
+      end
+    end
   end
   
   state_machine :alarm_state, :initial => :active, :namespace => 'alarm' do
@@ -205,6 +217,7 @@ vehicle.ignite_transition       # => #<StateMachine::Transition attribute=:state
 vehicle.state_events            # => [:ignite]
 vehicle.state_transitions       # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
 vehicle.speed                   # => 0
+vehicle.moving?                 # => false
 
 vehicle.ignite                  # => true
 vehicle.parked?                 # => false
@@ -214,6 +227,7 @@ vehicle                         # => #<Vehicle:0xb7cf4eac @state="idling", @seat
 
 vehicle.shift_up                # => true
 vehicle.speed                   # => 10
+vehicle.moving?                 # => true
 vehicle                         # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
 
 vehicle.shift_up                # => true

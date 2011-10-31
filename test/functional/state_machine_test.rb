@@ -74,6 +74,10 @@ class Vehicle < ModelBase
       vehicle.time_elapsed = Time.now - time
     end
     
+    event all do
+      transition :locked => :parked
+    end
+    
     event :park do
       transition [:idling, :first_gear] => :parked
     end
@@ -191,7 +195,7 @@ end
 class TrafficLight
   state_machine :initial => :stop do
     event :cycle do
-      transition :stop => :proceed, :proceed=> :caution, :caution => :stop
+      transition :stop => :proceed, :proceed => :caution, :caution => :stop
     end
     
     state :stop do
@@ -208,9 +212,19 @@ class TrafficLight
       end
     end
     
+    state all - :proceed do
+      def capture_violations?
+        true
+      end
+    end
+    
     state :proceed do
       def color(transform)
         'green'
+      end
+
+      def capture_violations?
+        false
       end
     end
     
@@ -713,6 +727,33 @@ class VehicleRepairedTest < Test::Unit::TestCase
   end
 end
 
+class VehicleLockedTest < Test::Unit::TestCase
+  def setup
+    @vehicle = Vehicle.new
+    @vehicle.state = 'locked'
+  end
+  
+  def test_should_be_parked_after_park
+    @vehicle.park
+    assert @vehicle.parked?
+  end
+  
+  def test_should_be_parked_after_ignite
+    @vehicle.ignite
+    assert @vehicle.parked?
+  end
+  
+  def test_should_be_parked_after_shift_up
+    @vehicle.shift_up
+    assert @vehicle.parked?
+  end
+  
+  def test_should_be_parked_after_shift_down
+    @vehicle.shift_down
+    assert @vehicle.parked?
+  end
+end
+
 class VehicleWithParallelEventsTest < Test::Unit::TestCase
   def setup
     @vehicle = Vehicle.new
@@ -968,6 +1009,10 @@ class TrafficLightStopTest < Test::Unit::TestCase
     color = @light.color {|value| value.upcase!}
     assert_equal 'RED', color
   end
+  
+  def test_should_use_stop_capture_violations
+    assert_equal true, @light.capture_violations?
+  end
 end
 
 class TrafficLightProceedTest < Test::Unit::TestCase
@@ -979,6 +1024,10 @@ class TrafficLightProceedTest < Test::Unit::TestCase
   def test_should_use_proceed_color
     assert_equal 'green', @light.color
   end
+  
+  def test_should_use_proceed_capture_violations
+    assert_equal false, @light.capture_violations?
+  end
 end
 
 class TrafficLightCautionTest < Test::Unit::TestCase
@@ -989,5 +1038,9 @@ class TrafficLightCautionTest < Test::Unit::TestCase
   
   def test_should_use_caution_color
     assert_equal 'yellow', @light.color
+  end
+  
+  def test_should_use_caution_capture_violations
+    assert_equal true, @light.capture_violations?
   end
 end

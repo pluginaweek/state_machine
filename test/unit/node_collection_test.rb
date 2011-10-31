@@ -1,5 +1,15 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
+class Node < Struct.new(:name, :value, :machine)
+  def name_to_s
+    name.to_s
+  end
+  
+  def context
+    yield
+  end
+end
+
 class NodeCollectionByDefaultTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)
@@ -15,7 +25,7 @@ class NodeCollectionByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_index_by_name
-    @collection << object = Struct.new(:name).new(:parked)
+    @collection << object = Node.new(:parked)
     assert_equal object, @collection[:parked]
   end
 end
@@ -46,10 +56,15 @@ class NodeCollectionAfterBeingCopiedTest < Test::Unit::TestCase
   def setup
     machine = StateMachine::Machine.new(Class.new)
     @collection = StateMachine::NodeCollection.new(machine)
-    @collection << @parked = Struct.new(:name).new(:parked)
+    @collection << @parked = Node.new(:parked)
+    
+    @contexts_run = contexts_run = []
+    @collection.context([:parked]) {contexts_run << :parked}
+    @contexts_run.clear
     
     @copied_collection = @collection.dup
-    @copied_collection << @idling = Struct.new(:name).new(:idling)
+    @copied_collection << @idling = Node.new(:idling)
+    @copied_collection.context([:first_gear]) {contexts_run << :first_gear}
   end
   
   def test_should_not_modify_the_original_list
@@ -64,6 +79,20 @@ class NodeCollectionAfterBeingCopiedTest < Test::Unit::TestCase
   
   def test_should_copy_each_node
     assert_not_same @parked, @copied_collection[:parked]
+  end
+  
+  def test_should_not_run_contexts
+    assert_equal [], @contexts_run
+  end
+  
+  def test_should_not_modify_contexts
+    @collection << Node.new(:first_gear)
+    assert_equal [], @contexts_run
+  end
+  
+  def test_should_copy_contexts
+    @copied_collection << Node.new(:parked)
+    assert !@contexts_run.empty?
   end
 end
 
@@ -101,7 +130,7 @@ class NodeCollectionWithIndicesTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(Class.new)
     @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :value])
     
-    @object = Struct.new(:name, :value).new(:parked, 1)
+    @object = Node.new(:parked, 1)
     @collection << @object
   end
   
@@ -141,9 +170,8 @@ class NodeCollectionWithNodesTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(Class.new)
     @collection = StateMachine::NodeCollection.new(@machine)
     
-    @klass = Struct.new(:name, :machine)
-    @parked = @klass.new(:parked, @machine)
-    @idling = @klass.new(:idling, @machine)
+    @parked = Node.new(:parked, nil, @machine)
+    @idling = Node.new(:idling, nil, @machine)
     
     @collection << @parked
     @collection << @idling
@@ -157,8 +185,8 @@ class NodeCollectionWithNodesTest < Test::Unit::TestCase
   end
   
   def test_should_be_able_to_concatenate_multiple_nodes
-    @first_gear = @klass.new(:first_gear, @machine)
-    @second_gear = @klass.new(:second_gear, @machine)
+    @first_gear = Node.new(:first_gear, nil, @machine)
+    @second_gear = Node.new(:second_gear, nil, @machine)
     @collection.concat([@first_gear, @second_gear])
     
     order = []
@@ -186,9 +214,8 @@ class NodeCollectionAfterUpdateTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(Class.new)
     @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :value])
     
-    @klass = Struct.new(:name, :value)
-    @parked = @klass.new(:parked, 1)
-    @idling = @klass.new(:idling, 2)
+    @parked = Node.new(:parked, 1)
+    @idling = Node.new(:idling, 2)
     
     @collection << @parked << @idling
     
@@ -221,8 +248,7 @@ class NodeCollectionWithStringIndexTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(Class.new)
     @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :name_to_s, :value])
     
-    @klass = Struct.new(:name, :name_to_s, :value)
-    @parked = @klass.new(:parked, 'parked', 1)
+    @parked = Node.new(:parked, 1)
     @collection << @parked
   end
   
@@ -240,5 +266,69 @@ class NodeCollectionWithStringIndexTest < Test::Unit::TestCase
   
   def test_should_not_fallback_to_string_index_if_not_available
     assert_nil @collection['1', :value]
+  end
+end
+
+class NodeCollectionWithPredefinedContextsTest < Test::Unit::TestCase
+  def setup
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine)
+    
+    @contexts_run = contexts_run = []
+    @collection.context([:parked]) { contexts_run << :parked }
+    @collection.context([:parked]) { contexts_run << :second_parked }
+  end
+  
+  def test_should_run_contexts_in_the_order_defined
+    @collection << Node.new(:parked)
+    assert_equal [:parked, :second_parked], @contexts_run
+  end
+  
+  def test_should_not_run_contexts_if_not_matched
+    @collection << Node.new(:idling)
+    assert_equal [], @contexts_run
+  end
+end
+
+class NodeCollectionWithPostdefinedContextsTest < Test::Unit::TestCase
+  def setup
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine)
+    @collection << Node.new(:parked)
+  end
+  
+  def test_should_run_context_if_matched
+    contexts_run = []
+    @collection.context([:parked]) { contexts_run << :parked }
+    assert_equal [:parked], contexts_run
+  end
+  
+  def test_should_not_run_contexts_if_not_matched
+    contexts_run = []
+    @collection.context([:idling]) { contexts_run << :idling }
+    assert_equal [], contexts_run
+  end
+end
+
+class NodeCollectionWithMatcherContextsTest < Test::Unit::TestCase
+  def setup
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine)
+    @collection << Node.new(:parked)
+  end
+  
+  def test_should_always_run_all_matcher_context
+    contexts_run = []
+    @collection.context([StateMachine::AllMatcher.instance]) { contexts_run << :all }
+    assert_equal [:all], contexts_run
+  end
+  
+  def test_should_only_run_blacklist_matcher_if_not_matched
+    contexts_run = []
+    @collection.context([StateMachine::BlacklistMatcher.new([:parked])]) { contexts_run << :blacklist }
+    assert_equal [], contexts_run
+    
+    @collection << Node.new(:idling)
+    assert_equal [:blacklist], contexts_run
   end
 end

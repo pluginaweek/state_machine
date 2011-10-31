@@ -341,6 +341,20 @@ class EventWithNamespaceTest < Test::Unit::TestCase
   end
 end
 
+class EventContextTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @machine.events << @event = StateMachine::Event.new(@machine, :ignite, :human_name => 'start')
+  end
+  
+  def test_should_evaluate_within_the_event
+    scope = nil
+    @event.context { scope = self }
+    assert_equal @event, scope
+  end
+end
+
 class EventTransitionsTest < Test::Unit::TestCase
   def setup
     @machine = StateMachine::Machine.new(Class.new)

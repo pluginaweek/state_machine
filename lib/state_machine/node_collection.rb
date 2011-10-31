@@ -24,6 +24,7 @@ module StateMachine
       @nodes = []
       @indices = Array(options[:index]).inject({}) {|indices, attribute| indices[attribute] = {}; indices}
       @default_index = Array(options[:index]).first
+      @contexts = []
     end
     
     # Creates a copy of this collection such that modifications don't affect
@@ -32,9 +33,15 @@ module StateMachine
       super
       
       nodes = @nodes
+      contexts = @contexts
       @nodes = []
+      @contexts = []
       @indices = @indices.inject({}) {|indices, (name, index)| indices[name] = {}; indices}
+      
+      # Add nodes *prior* to copying over the contexts so that they don't get
+      # evaluated multiple times
       concat(nodes.map {|n| n.dup})
+      @contexts = contexts.dup
     end
     
     # Changes the current machine associated with the collection.  In turn, this
@@ -54,11 +61,26 @@ module StateMachine
       index(index_name).keys
     end
     
+    # Tracks a context that should be evaluated for any nodes that get added
+    # which match the given set of nodes.  Matchers can be used so that the
+    # context can get added once and evaluated after multiple adds.
+    def context(nodes, &block)
+      nodes = nodes.first.is_a?(Matcher) ? nodes.first : WhitelistMatcher.new(nodes)
+      @contexts << context = {:nodes => nodes, :block => block}
+      
+      # Evaluate the new context for existing nodes
+      each {|node| eval_context(context, node)}
+      
+      context
+    end
+    
     # Adds a new node to the collection.  By doing so, this will also add it to
-    # the configured indices.
+    # the configured indices.  This will also evaluate any existings contexts
+    # that match the new node.
     def <<(node)
       @nodes << node
       @indices.each {|attribute, index| index[value(node, attribute)] = node}
+      @contexts.each {|context| eval_context(context, node)}
       self
     end
     
@@ -157,6 +179,12 @@ module StateMachine
       # Gets the value for the given attribute on the node
       def value(node, attribute)
         node.send(attribute)
+      end
+      
+      # Evaluates the given context for a particular node.  This will only
+      # evaluate the context if the node matches.
+      def eval_context(context, node)
+        node.context(&context[:block]) if context[:nodes].matches?(node.name)
       end
   end
 end

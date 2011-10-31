@@ -972,6 +972,28 @@ module StateMachine
     #   vehicle.state = 'backing_up'
     #   vehicle.speed               # => NoMethodError: undefined method 'speed' for #<Vehicle:0xb7d296ac> in state "backing_up"
     # 
+    # === Using matchers
+    # 
+    # The +all+ / +any+ matchers can be used to easily define behaviors for a
+    # group of states.  Note, however, that you cannot use these matchers to
+    # set configurations for states.  Behaviors using these matchers can be
+    # defined at any point in the state machine and will always get applied to
+    # the proper states.
+    # 
+    # For example:
+    # 
+    #   state_machine :initial => :parked do
+    #     ...
+    #     
+    #     state all - [:parked, :idling, :stalled] do
+    #       validates_presence_of :speed
+    #       
+    #       def speed
+    #         gear * 10
+    #       end
+    #     end
+    #   end
+    # 
     # == State-aware class methods
     # 
     # In addition to defining scopes for instance methods that are state-aware,
@@ -1008,17 +1030,29 @@ module StateMachine
       options = names.last.is_a?(Hash) ? names.pop : {}
       assert_valid_keys(options, :value, :cache, :if, :human_name)
       
-      states = add_states(names)
-      states.each do |state|
-        if options.include?(:value)
-          state.value = options[:value]
-          self.states.update(state)
-        end
+      # Store the context so that it can be used for / matched against any state
+      # that gets added
+      @states.context(names, &block) if block_given?
+      
+      if names.first.is_a?(Matcher)
+        # Add any states referenced in the matcher.  When matchers are used,
+        # states are not allowed to be configured.
+        raise ArgumentError, "Cannot configure states when using matchers (using #{options.inspect})" if options.any?
+        states = add_states(names.first.values)
+      else
+        states = add_states(names)
         
-        state.human_name = options[:human_name] if options.include?(:human_name)
-        state.cache = options[:cache] if options.include?(:cache)
-        state.matcher = options[:if] if options.include?(:if)
-        state.context(&block) if block_given?
+        # Update the configuration for the state(s)
+        states.each do |state|
+          if options.include?(:value)
+            state.value = options[:value]
+            self.states.update(state)
+          end
+          
+          state.human_name = options[:human_name] if options.include?(:human_name)
+          state.cache = options[:cache] if options.include?(:cache)
+          state.matcher = options[:if] if options.include?(:if)
+        end
       end
       
       states.length == 1 ? states.first : states
@@ -1252,6 +1286,24 @@ module StateMachine
     # the entire arguments list to be accessed by transition callbacks through
     # StateMachine::Transition#args.
     # 
+    # === Using matchers
+    # 
+    # The +all+ / +any+ matchers can be used to easily execute blocks for a
+    # group of events.  Note, however, that you cannot use these matchers to
+    # set configurations for events.  Blocks using these matchers can be
+    # defined at any point in the state machine and will always get applied to
+    # the proper events.
+    # 
+    # For example:
+    # 
+    #   state_machine :initial => :parked do
+    #     ...
+    #     
+    #     event all - [:crash] do
+    #       transition :stalled => :parked
+    #     end
+    #   end
+    # 
     # == Example
     # 
     #   class Vehicle
@@ -1275,16 +1327,25 @@ module StateMachine
       options = names.last.is_a?(Hash) ? names.pop : {}
       assert_valid_keys(options, :human_name)
       
-      events = add_events(names)
-      events.each do |event|
-        event.human_name = options[:human_name] if options.include?(:human_name)
+      # Store the context so that it can be used for / matched against any event
+      # that gets added
+      @events.context(names, &block) if block_given?
+      
+      if names.first.is_a?(Matcher)
+        # Add any events referenced in the matcher.  When matchers are used,
+        # events are not allowed to be configured.
+        raise ArgumentError, "Cannot configure events when using matchers (using #{options.inspect})" if options.any?
+        events = add_events(names.first.values)
+      else
+        events = add_events(names)
         
-        if block_given?
-          event.instance_eval(&block)
+        # Update the configuration for the event(s)
+        events.each do |event|
+          event.human_name = options[:human_name] if options.include?(:human_name)
+          
+          # Add any states that may have been referenced within the event
           add_states(event.known_states)
         end
-        
-        event
       end
       
       events.length == 1 ? events.first : events

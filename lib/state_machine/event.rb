@@ -86,6 +86,12 @@ module StateMachine
       @human_name.is_a?(Proc) ? @human_name.call(self, klass) : @human_name
     end
     
+    # Evaluates the given block within the context of this event.  This simply
+    # provides a DSL-like syntax for defining transitions.
+    def context(&block)
+      instance_eval(&block)
+    end
+    
     # Creates a new transition that determines what to change the current state
     # to when this event fires.
     # 
