@@ -1,5 +1,6 @@
 # master
 
+* Automatically load the plugins required in Sequel integrations
 * Allow all / any matcher helpers to be used when defining states / events
 * Allow states / events to be referenced by the string equivalent of their name
 * Fix observer callbacks being run incorrectly when using nil states in ActiveModel-based integrations

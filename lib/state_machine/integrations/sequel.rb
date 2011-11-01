@@ -309,6 +309,18 @@ module StateMachine
       end
       
       protected
+        # Initializes class-level extensions for this machine
+        def define_helpers
+          load_plugins
+          super
+        end
+        
+        # Loads all of the Sequel plugins necessary to run
+        def load_plugins
+          owner_class.plugin(:validation_class_methods)
+          owner_class.plugin(:hook_class_methods)
+        end
+        
         # Loads the built-in inflector
         def load_inflector
           require 'sequel/extensions/inflector'

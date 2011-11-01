@@ -34,8 +34,6 @@ module SequelTest
             define_method(:name) { "SequelTest::#{table_name.to_s.capitalize}" }
           end
         end
-        model.plugin(:validation_class_methods) if model.respond_to?(:plugin)
-        model.plugin(:hook_class_methods) if model.respond_to?(:plugin)
         model.class_eval(&block) if block_given?
         model
       end
@@ -856,6 +854,7 @@ module SequelTest
   class MachineWithFailedActionTest < BaseTestCase
     def setup
       @model = new_model do
+        plugin(:validation_class_methods) if respond_to?(:plugin)
         validates_each :state do |object, attribute, value|
           object.errors[attribute] << 'is invalid' unless %w(first_gear).include?(value)
         end

@@ -73,6 +73,9 @@ module StateMachine
           !defined?(::Sequel::MAJOR) || ::Sequel::MAJOR == 2 && ::Sequel::MINOR <= 11
         end
         
+        def load_plugins
+        end
+        
         def load_inflector
         end
         
