@@ -259,6 +259,41 @@ module StateMachine
     # In addition to support for DataMapper-like hooks, there is additional
     # support for DataMapper observers.  See StateMachine::Integrations::DataMapper::Observer
     # for more information.
+    # 
+    # === Failure callbacks
+    # 
+    # +after_failure+ callbacks allow you to execute behaviors when a transition
+    # is allowed, but fails to save.  This could be useful for something like
+    # auditing transition attempts.  Since callbacks run within transactions in
+    # DataMapper, a save failure will cause any records that get created in
+    # your callback to roll back.  *Note* that this is only a problem if the
+    # machine is configured to use transactions.  If it is, you can work around
+    # this issue like so:
+    # 
+    #   DataMapper.setup(:default, 'mysql://localhost/app')
+    #   DataMapper.setup(:logs, 'mysql://localhost/app')
+    #   
+    #   class TransitionLog
+    #     include DataMapper::Resource
+    #   end
+    #   
+    #   class Vehicle < ActiveRecord::Base
+    #     include DataMapper::Resource
+    #     
+    #     state_machine :use_transactions => true do
+    #       after_failure do |transition|
+    #         DataMapper.repository(:logs) do
+    #           TransitionLog.create(:vehicle => vehicle, :transition => transition)
+    #         end
+    #       end
+    #       
+    #       ...
+    #     end
+    #   end
+    # 
+    # The failure callback creates +TransitionLog+ records using a second
+    # connection to the database, allowing them to be saved without being
+    # affected by rollbacks in the +Vehicle+ resource's transaction.
     module DataMapper
       include Base
       

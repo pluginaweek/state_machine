@@ -256,6 +256,32 @@ module StateMachine
     # Note, also, that the transition can be accessed by simply defining
     # additional arguments in the callback block.
     # 
+    # === Failure callbacks
+    # 
+    # +after_failure+ callbacks allow you to execute behaviors when a transition
+    # is allowed, but fails to save.  This could be useful for something like
+    # auditing transition attempts.  Since callbacks run within transactions in
+    # ActiveRecord, a save failure will cause any records that get created in
+    # your callback to roll back.  You can work around this issue like so:
+    # 
+    #   class TransitionLog < ActiveRecord::Base
+    #     establish_connection Rails.env.to_sym
+    #   end
+    #   
+    #   class Vehicle < ActiveRecord::Base
+    #     state_machine do
+    #       after_failure do |vehicle, transition|
+    #         TransitionLog.create(:vehicle => vehicle, :transition => transition)
+    #       end
+    #       
+    #       ...
+    #     end
+    #   end
+    # 
+    # The +TransitionLog+ model establishes a second connection to the database
+    # that allows new records to be saved without being affected by rollbacks
+    # in the +Vehicle+ model's transaction.
+    # 
     # == Observers
     # 
     # In addition to support for ActiveRecord-like hooks, there is additional

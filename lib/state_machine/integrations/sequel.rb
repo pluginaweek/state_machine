@@ -229,6 +229,34 @@ module StateMachine
     # 
     # Note, also, that the transition can be accessed by simply defining
     # additional arguments in the callback block.
+    # 
+    # === Failure callbacks
+    # 
+    # +after_failure+ callbacks allow you to execute behaviors when a transition
+    # is allowed, but fails to save.  This could be useful for something like
+    # auditing transition attempts.  Since callbacks run within transactions in
+    # Sequel, a save failure will cause any records that get created in
+    # your callback to roll back.  You can work around this issue like so:
+    # 
+    #   DB = Sequel.connect('mysql://localhost/app')
+    #   DB_LOGS = Sequel.connect('mysql://localhost/app')
+    #   
+    #   class TransitionLog < Sequel::Model(DB_LOGS[:transition_logs])
+    #   end
+    #   
+    #   class Vehicle < Sequel::Model(DB[:vehicles])
+    #     state_machine do
+    #       after_failure do |transition|
+    #         TransitionLog.create(:vehicle => vehicle, :transition => transition)
+    #       end
+    #       
+    #       ...
+    #     end
+    #   end
+    # 
+    # The +TransitionLog+ model uses a second connection to the database that
+    # allows new records to be saved without being affected by rollbacks in the
+    # +Vehicle+ model's transaction.
     module Sequel
       include Base
       
