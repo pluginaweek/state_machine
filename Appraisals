@@ -73,6 +73,10 @@ if RUBY_VERSION > "1.8.6"
   appraise "active_model-3.0.5" do
     gem "activemodel", "3.0.5"
   end
+
+  appraise "active_model-3.1.1" do
+    gem "activemodel", "3.1.1"
+  end
 end
 
 # MongoMapper integrations
