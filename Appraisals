@@ -154,6 +154,14 @@ if RUBY_VERSION > "1.8.6"
   appraise "mongoid-2.1.4" do
     gem "mongoid", "2.1.4"
   end
+  
+  appraise "mongoid-2.2.0" do
+    gem "mongoid", "2.2.4"
+  end
+  
+  appraise "mongoid-2.3.3" do
+    gem "mongoid", "2.3.3"
+  end
 end
 
 # Sequel integrations
