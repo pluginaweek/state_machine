@@ -1,5 +1,6 @@
 # master
 
+* Fix state initialization in Mongoid 2.3.x integrations [Durran Jordan]
 * Fix after_transition callbacks sometimes not running in Mongoid 2.2.x integrations
 * Automatically load the plugins required in Sequel integrations
 * Allow all / any matcher helpers to be used when defining states / events

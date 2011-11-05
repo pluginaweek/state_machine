@@ -474,7 +474,7 @@ module MongoidTest
     
     def test_should_allow_different_initial_state_when_dynamic
       @machine.initial_state = lambda {:parked}
-      record = @model.new(:state => 'idling')
+      record = silence_warnings { @model.new(:state => 'idling') }
       assert_equal 'idling', record.state
     end
     
@@ -491,7 +491,7 @@ module MongoidTest
   class MachineMultipleTest < BaseTestCase
     def setup
       @model = new_model do
-        key :status, String, :default => 'idling'
+        field :status, :type => String, :default => 'idling'
       end
       @state_machine = StateMachine::Machine.new(@model, :initial => :parked)
       @status_machine = StateMachine::Machine.new(@model, :status, :initial => :idling)
@@ -587,7 +587,7 @@ module MongoidTest
   class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
     def setup
       @model = new_model do
-        key :status, String, :default => 'idling'
+        field :status, :type => String, :default => 'idling'
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @machine.event :ignite
@@ -618,7 +618,7 @@ module MongoidTest
   class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
     def setup
       @model = new_model do
-        key :status, String, :default => 'idling'
+        field :status, :type => String, :default => 'idling'
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @machine.event :park

@@ -6,6 +6,25 @@ module StateMachine
           ::Mongoid::VERSION >= '2.0.0' && ::Mongoid::VERSION < '2.3.0'
         end
         
+        def define_state_initializer
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+            # Initializes dynamic states
+            def initialize(*)
+              super do |*args|
+                self.class.state_machines.initialize_states(self, :static => false)
+                yield(*args) if block_given?
+              end
+            end
+            
+            # Initializes static states
+            def apply_default_attributes(*)
+              result = super
+              self.class.state_machines.initialize_states(self, :dynamic => false, :to => result) if new_record?
+              result
+            end
+          end_eval
+        end
+        
         def define_action_hook
           # +around+ callbacks don't have direct access to results until AS 3.1
           owner_class.set_callback(:save, :after, 'value', :prepend => true) if action_hook == :save
