@@ -3,7 +3,7 @@ module StateMachine
     module Mongoid
       version '2.0.x - 2.2.x' do
         def self.active?
-          ::Mongoid::VERSION >= '2.0.0' && ::Mongoid::VERSION < '2.3.0'
+          ::Mongoid::VERSION =~ /^2\.[0-2]\./
         end
         
         def define_state_initializer
@@ -34,7 +34,7 @@ module StateMachine
       
       version '2.0.x' do
         def self.active?
-          ::Mongoid::VERSION >= '2.0.0' && ::Mongoid::VERSION < '2.1.0'
+          ::Mongoid::VERSION =~ /^2\.0\./
         end
         
         # Forces the change in state to be recognized regardless of whether the
