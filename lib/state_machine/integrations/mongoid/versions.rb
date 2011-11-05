@@ -1,10 +1,9 @@
 module StateMachine
   module Integrations #:nodoc:
     module Mongoid
-      # Assumes Mongoid 2.2+ uses ActiveModel 3.1+
-      version '2.0.x - 2.1.x' do
+      version '2.0.x - 2.2.x' do
         def self.active?
-          ::Mongoid::VERSION >= '2.0.0' && ::Mongoid::VERSION < '2.2.0'
+          ::Mongoid::VERSION >= '2.0.0' && ::Mongoid::VERSION < '2.3.0'
         end
         
         def define_action_hook

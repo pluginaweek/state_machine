@@ -744,6 +744,22 @@ module MongoidTest
       assert_equal self, context
     end
     
+    def test_should_run_after_callbacks_if_model_callback_added_prior_to_state_machine_definition
+      model = new_model do
+        after_save { nil }
+      end
+      machine = StateMachine::Machine.new(model, :initial => :parked)
+      machine.other_states :idling
+      machine.event :ignite
+      after_called = false
+      machine.after_transition {after_called = true}
+      
+      record = model.new(:state => 'parked')
+      transition = StateMachine::Transition.new(record, machine, :ignite, :parked, :idling)
+      transition.perform
+      assert_equal true, after_called
+    end
+    
     def test_should_run_around_callbacks
       before_called = false
       after_called = false
