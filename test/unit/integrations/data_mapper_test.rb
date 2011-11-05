@@ -337,7 +337,7 @@ module DataMapperTest
       @machine = StateMachine::Machine.new(@resource)
       @machine.state :state
       
-      assert_equal "Instance method \"state?\" is already defined in DataMapperTest::Foo :state instance helpers, use generic helper instead.\n", $stderr.string
+      assert_match /^Instance method "state\?" is already defined in DataMapperTest::Foo :state instance helpers, use generic helper instead.*\n$/, $stderr.string
     end
     
     def test_should_not_output_warning_with_same_machine_name

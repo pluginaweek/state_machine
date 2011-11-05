@@ -281,14 +281,14 @@ module MongoidTest
       @machine = StateMachine::Machine.new(@model)
       @machine.state :state
       
-      assert_match /^Instance method "state\?" is already defined in .*, use generic helper instead\.\n$/, $stderr.string
+      assert_match /^Instance method "state\?" is already defined in .*, use generic helper instead.*\n$/, $stderr.string
     end
     
     def test_should_output_warning_with_same_machine_attribute
       @machine = StateMachine::Machine.new(@model, :public_state, :attribute => :state)
       @machine.state :state
       
-      assert_match /^Instance method "state\?" is already defined in .*, use generic helper instead\.\n$/, $stderr.string
+      assert_match /^Instance method "state\?" is already defined in .*, use generic helper instead.*\n$/, $stderr.string
     end
     
     def teardown

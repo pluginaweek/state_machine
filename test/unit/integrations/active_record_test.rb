@@ -366,14 +366,14 @@ module ActiveRecordTest
       @machine = StateMachine::Machine.new(@model)
       @machine.state :state
       
-      assert_equal "Instance method \"state?\" is already defined in ActiveRecordTest::Foo, use generic helper instead.\n", $stderr.string
+      assert_match /^Instance method "state\?" is already defined in ActiveRecordTest::Foo, use generic helper instead.*\n$/, $stderr.string
     end
     
     def test_should_output_warning_with_same_machine_attribute
       @machine = StateMachine::Machine.new(@model, :public_state, :attribute => :state)
       @machine.state :state
       
-      assert_equal "Instance method \"state?\" is already defined in ActiveRecordTest::Foo, use generic helper instead.\n", $stderr.string
+      assert_match /^Instance method "state\?" is already defined in ActiveRecordTest::Foo, use generic helper instead.*\n$/, $stderr.string
     end
     
     def teardown

@@ -350,7 +350,7 @@ module StateMachine
   # module that gets included in every Object.  As a result, state_machine will
   # generate the following warning:
   # 
-  #   Instance method "open" is already defined in Object, use generic helper instead.
+  #   Instance method "open" is already defined in Object, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.
   # 
   # Even though you may not be using Kernel's implementation of the "open"
   # instance method, state_machine isn't aware of this and, as a result, stays
@@ -745,7 +745,7 @@ module StateMachine
       if block_given?
         if !self.class.ignore_method_conflicts && conflicting_ancestor = owner_class_ancestor_has_method?(scope, method)
           ancestor_name = conflicting_ancestor.name && !conflicting_ancestor.name.empty? ? conflicting_ancestor.name : conflicting_ancestor.to_s
-          warn "#{scope == :class ? 'Class' : 'Instance'} method \"#{method}\" is already defined in #{ancestor_name}, use generic helper instead."
+          warn "#{scope == :class ? 'Class' : 'Instance'} method \"#{method}\" is already defined in #{ancestor_name}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true."
         else
           name = self.name
           helper_module.class_eval do
