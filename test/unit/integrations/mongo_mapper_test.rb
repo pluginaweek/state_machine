@@ -830,23 +830,7 @@ module MongoMapperTest
       @result = @transition.perform
     end
     
-    if defined?(MongoMapper::Version) && MongoMapper::Version >= '0.9.0'
-      def test_should_not_be_successful
-        assert !@result
-      end
-      
-      def test_should_not_change_current_state
-        assert_equal 'parked', @record.state
-      end
-      
-      def test_should_not_run_action
-        assert @record.new_record?
-      end
-      
-      def test_should_not_run_further_callbacks
-        assert_equal [:before_1], @callbacks
-      end
-    else
+    if !defined?(MongoMapper::Version) || MongoMapper::Version =~ /^0\.[5-8]\./
       def test_should_be_successful
         assert @result
       end
@@ -861,6 +845,22 @@ module MongoMapperTest
       
       def test_should_run_further_callbacks
         assert_equal [:before_1, :before_2, :around_before, :around_after, :after], @callbacks
+      end
+    else
+      def test_should_not_be_successful
+        assert !@result
+      end
+      
+      def test_should_not_change_current_state
+        assert_equal 'parked', @record.state
+      end
+      
+      def test_should_not_run_action
+        assert @record.new_record?
+      end
+      
+      def test_should_not_run_further_callbacks
+        assert_equal [:before_1], @callbacks
       end
     end
   end
@@ -932,13 +932,13 @@ module MongoMapperTest
       assert !@record.new_record?
     end
     
-    if defined?(MongoMapper::Version) && MongoMapper::Version >= '0.9.0'
-      def test_should_not_run_further_after_callbacks
-        assert_equal [:around_before, :around_after, :after_1], @callbacks
-      end
-    else
+    if !defined?(MongoMapper::Version) || MongoMapper::Version =~ /^0\.[5-8]\./
       def test_should_still_run_further_after_callbacks
         assert_equal [:around_before, :around_after, :after_1, :after_2], @callbacks
+      end
+    else
+      def test_should_not_run_further_after_callbacks
+        assert_equal [:around_before, :around_after, :after_1], @callbacks
       end
     end
   end
@@ -1451,7 +1451,7 @@ module MongoMapperTest
       assert_equal [parked, idling], @model.without_states(:first_gear).to_a
     end
     
-    if defined?(MongoMapper::Version) && MongoMapper::Version >= '0.8.0'
+    if defined?(MongoMapper::Version) && !(MongoMapper::Version =~ /^0\.[5-7]\./)
       def test_should_allow_chaining_scopes
         parked = @model.create :state => 'parked'
         idling = @model.create :state => 'idling'

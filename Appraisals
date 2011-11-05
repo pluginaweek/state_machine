@@ -142,6 +142,10 @@ if RUBY_VERSION > "1.8.6"
     appraise "mongo_mapper-0.9.0" do
       gem "mongo_mapper", "0.9.0"
     end
+    
+    appraise "mongo_mapper-0.10.0" do
+      gem "mongo_mapper", "0.10.0"
+    end
   end
 end
   

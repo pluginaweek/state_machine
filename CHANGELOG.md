@@ -1,5 +1,6 @@
 # master
 
+* Fix MongoMapper 0.10.0+ integrations not matching versions properly
 * Update warnings for method conflicts to include instructions on how to ignore conflicts
 * Fix state initialization in Mongoid 2.3.x integrations [Durran Jordan]
 * Fix after_transition callbacks sometimes not running in Mongoid 2.2.x integrations

@@ -22,7 +22,7 @@ module StateMachine
       
       version '0.5.x - 0.7.x' do
         def self.active?
-          !defined?(::MongoMapper::Version) || ::MongoMapper::Version < '0.8.0'
+          !defined?(::MongoMapper::Version) || ::MongoMapper::Version =~ /^0\.[5-7]\./
         end
         
         def define_scope(name, scope)
@@ -32,7 +32,7 @@ module StateMachine
       
       version '0.5.x - 0.8.x' do
         def self.active?
-          !defined?(::MongoMapper::Version) || ::MongoMapper::Version < '0.9.0'
+          !defined?(::MongoMapper::Version) || ::MongoMapper::Version =~ /^0\.[5-8]\./
         end
         
         def invalidate(object, attribute, message, values = [])
@@ -80,7 +80,7 @@ module StateMachine
         def self.active?
           # Only 0.8.x and up has a Version string available, so Plugins is used
           # to detect when 0.7.x is active
-          defined?(::MongoMapper::Plugins) && (!defined?(::MongoMapper::Version) || ::MongoMapper::Version <= '0.8.3')
+          defined?(::MongoMapper::Plugins) && (!defined?(::MongoMapper::Version) || ::MongoMapper::Version =~ /^0\.(7|8\.[0-3])\./)
         end
         
         def define_state_initializer
