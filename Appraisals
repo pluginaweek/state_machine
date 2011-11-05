@@ -205,6 +205,11 @@ appraise "sequel-3.24.0" do
   gem "sequel", "3.24.0"
 end
 
+appraise "sequel-3.29.0" do
+  gem "sqlite3-ruby", "1.3.1"
+  gem "sequel", "3.29.0"
+end
+
 # DataMapper
 if RUBY_VERSION < "1.9.1"
   appraise "data_mapper-0.9.4" do
