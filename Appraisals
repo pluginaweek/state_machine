@@ -155,7 +155,7 @@ if RUBY_VERSION > "1.8.6"
     gem "mongoid", "2.1.4"
   end
   
-  appraise "mongoid-2.2.0" do
+  appraise "mongoid-2.2.4" do
     gem "mongoid", "2.2.4"
   end
   
