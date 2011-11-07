@@ -1,5 +1,7 @@
 # master
 
+* Fix Mongoid 2.3.x integrations not initializing dynamic states in the same manner as other integrations with initialize callbacks
+
 ## 1.0.3 / 2011-11-03
 
 * Fix MongoMapper 0.10.0+ integrations not matching versions properly

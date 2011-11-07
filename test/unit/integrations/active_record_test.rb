@@ -189,6 +189,15 @@ module ActiveRecordTest
       assert_equal [record], block_args
     end
     
+    def test_should_set_attributes_prior_to_initialize_block
+      state = nil
+      record = @model.new do |record|
+        state = record.state
+      end
+      
+      assert_equal 'parked', state
+    end
+    
     def test_should_set_attributes_prior_to_after_initialize_hook
       state = nil
       @model.class_eval {define_method(:after_initialize) {}} if ::ActiveRecord::VERSION::MAJOR <= 2
@@ -262,6 +271,15 @@ module ActiveRecordTest
       end
       
       assert_equal [record], block_args
+    end
+    
+    def test_should_set_attributes_prior_to_initialize_block
+      state = nil
+      record = @model.new do |record|
+        state = record.state
+      end
+      
+      assert_equal 'parked', state
     end
     
     def test_should_set_attributes_prior_to_after_initialize_hook

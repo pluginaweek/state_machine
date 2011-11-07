@@ -124,6 +124,24 @@ module MongoidTest
       assert_equal [record], block_args
     end
     
+    def test_should_set_attributes_prior_to_initialize_block
+      state = nil
+      record = @model.new do |record|
+        state = record.state
+      end
+      
+      assert_equal 'parked', state
+    end
+    
+    def test_should_set_attributes_prior_to_after_initialize_hook
+      state = nil
+      @model.after_initialize do |record|
+        state = record.state
+      end
+      @model.new
+      assert_equal 'parked', state
+    end
+    
     def test_should_set_initial_state_before_setting_attributes
       @model.class_eval do
         attr_accessor :state_during_setter
@@ -187,6 +205,24 @@ module MongoidTest
       end
       
       assert_equal [record], block_args
+    end
+    
+    def test_should_set_attributes_prior_to_initialize_block
+      state = nil
+      record = @model.new do |record|
+        state = record.state
+      end
+      
+      assert_equal 'parked', state
+    end
+    
+    def test_should_set_attributes_prior_to_after_initialize_hook
+      state = nil
+      @model.after_initialize do |record|
+        state = record.state
+      end
+      @model.new
+      assert_equal 'parked', state
     end
     
     def test_should_set_initial_state_after_setting_attributes

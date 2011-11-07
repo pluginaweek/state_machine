@@ -158,6 +158,15 @@ module SequelTest
       assert_equal [record], block_args
     end
     
+    def test_should_set_attributes_prior_to_initialize_block
+      state = nil
+      record = @model.new do |record|
+        state = record.state
+      end
+      
+      assert_equal 'parked', state
+    end
+    
     def test_should_set_attributes_prior_to_after_initialize_hook
       state = nil
       @model.class_eval do
@@ -237,6 +246,15 @@ module SequelTest
     def test_should_not_have_any_changed_columns
       record = @model.new
       assert record.changed_columns.empty?
+    end
+    
+    def test_should_set_attributes_prior_to_initialize_block
+      state = nil
+      record = @model.new do |record|
+        state = record.state
+      end
+      
+      assert_equal 'parked', state
     end
     
     def test_should_set_attributes_prior_to_after_initialize_hook

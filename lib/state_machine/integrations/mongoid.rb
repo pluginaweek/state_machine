@@ -363,8 +363,13 @@ module StateMachine
         def define_state_initializer
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*)
-              @attributes = {}
-              self.class.state_machines.initialize_states(self) { super }
+              @attributes ||= {}
+              self.class.state_machines.initialize_states(self, :dynamic => false)
+              
+              super do |*args|
+                self.class.state_machines.initialize_states(self, :static => false)
+                yield(*args) if block_given?
+              end
             end
           end_eval
         end
