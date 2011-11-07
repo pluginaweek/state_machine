@@ -1,7 +1,7 @@
 PATH
   remote: /home/aaron/Projects/Personal/pluginaweek/state_machine
   specs:
-    state_machine (1.0.2)
+    state_machine (1.0.3)
 
 GEM
   remote: http://www.rubygems.org/
