@@ -57,25 +57,24 @@ module StateMachine
         when Proc, Method
           args.unshift(object)
           arity = method.arity
-          limit = [0, 1].include?(arity) ? arity : args.length
           
-          # Procs don't support blocks in < Ruby 1.8.6, so it's tacked on as an
-          # argument for consistency across versions of Ruby (even though 1.9
-          # supports yielding within blocks)
+          # Procs don't support blocks in < Ruby 1.9, so it's tacked on as an
+          # argument for consistency across versions of Ruby
           if block_given? && Proc === method && arity != 0
             if [1, 2].include?(arity)
               # Force the block to be either the only argument or the 2nd one
               # after the object (may mean additional arguments get discarded)
-              limit = arity
-              args.insert(limit - 1, block)
+              args = args[0, arity - 1] + [block]
             else
               # Tack the block to the end of the args
-              limit += 1 unless limit < 0
-              args.push(block)
+              args << block
             end
+          else
+            # These method types are only called with 0, 1, or n arguments
+            args = args[0, arity] if [0, 1].include?(arity)
           end
           
-          method.call(*args[0, limit], &block)
+          method.call(*args, &block)
         when String
           eval(method, object.instance_eval {binding}, &block)
         else
