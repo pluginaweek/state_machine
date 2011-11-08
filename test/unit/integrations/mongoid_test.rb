@@ -1,6 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
 require 'mongoid'
+require 'mongoid/version'
 
 # Establish database connection
 Mongoid.configure do |config|
@@ -611,12 +612,22 @@ module MongoidTest
       @transition.perform(false)
     end
     
-    def test_should_include_state_in_changed_attributes
-      assert_equal %w(state), @record.changed
-    end
-    
-    def test_should_track_attribute_changes
-      assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
+    if ::Mongoid::VERSION =~ /^2\.0\./
+      def test_should_include_state_in_changed_attributes
+        assert_equal %w(state), @record.changed
+      end
+      
+      def test_should_not_track_attribute_changes
+        assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
+      end
+    else
+      def test_should_not_include_state_in_changed_attributes
+        assert_equal [], @record.changed
+      end
+      
+      def test_should_not_track_attribute_changes
+        assert_equal nil, @record.send(:attribute_change, 'state')
+      end
     end
   end
   
@@ -665,12 +676,22 @@ module MongoidTest
       @transition.perform(false)
     end
     
-    def test_should_include_state_in_changed_attributes
-      assert_equal %w(status), @record.changed
-    end
-    
-    def test_should_track_attribute_changes
-      assert_equal %w(parked parked), @record.send(:attribute_change, 'status')
+    if ::Mongoid::VERSION =~ /^2\.0\./
+      def test_should_include_state_in_changed_attributes
+        assert_equal %w(status), @record.changed
+      end
+      
+      def test_should_track_attribute_changes
+        assert_equal %w(parked parked), @record.send(:attribute_change, 'status')
+      end
+    else
+      def test_should_include_state_in_changed_attributes
+        assert_equal [], @record.changed
+      end
+      
+      def test_should_track_attribute_changes
+        assert_equal nil, @record.send(:attribute_change, 'status')
+      end
     end
   end
   
@@ -684,24 +705,34 @@ module MongoidTest
       @record.state_event = 'ignite'
     end
     
-    def test_should_include_state_in_changed_attributes
-      assert_equal %w(state), @record.changed
-    end
-    
-    def test_should_track_attribute_change
-      assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
-    end
-    
-    def test_should_not_reset_changes_on_multiple_changes
-      @record.state_event = 'ignite'
-      assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
-    end
-    
-    def test_should_not_include_state_in_changed_attributes_if_nil
-      @record = @model.create
-      @record.state_event = nil
+    if ::Mongoid::VERSION =~ /^2\.0\./
+      def test_should_include_state_in_changed_attributes
+        assert_equal %w(state), @record.changed
+      end
       
-      assert_equal [], @record.changed
+      def test_should_track_attribute_change
+        assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
+      end
+      
+      def test_should_not_reset_changes_on_multiple_changes
+        @record.state_event = 'ignite'
+        assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
+      end
+      
+      def test_should_not_include_state_in_changed_attributes_if_nil
+        @record = @model.create
+        @record.state_event = nil
+        
+        assert_equal [], @record.changed
+      end
+    else
+      def test_should_not_include_state_in_changed_attributes
+        assert_equal [], @record.changed
+      end
+      
+      def test_should_not_track_attribute_change
+        assert_equal nil, @record.send(:attribute_change, 'state')
+      end
     end
   end
   

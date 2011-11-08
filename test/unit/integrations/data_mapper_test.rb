@@ -538,8 +538,8 @@ module DataMapperTest
       @transition.perform
     end
     
-    def test_should_update_record
-      assert_not_equal @timestamp, @record.updated_at
+    def test_should_not_update_record
+      assert_equal @timestamp, @record.updated_at
     end
   end
   
@@ -579,10 +579,10 @@ module DataMapperTest
       end
     end
     
-      def test_should_have_changes_when_loaded_from_database
-        record = @resource.get(@record.id)
-        assert record.dirty_attributes.empty?
-      end
+    def test_should_not_have_changes_when_loaded_from_database
+      record = @resource.get(@record.id)
+      assert record.dirty_attributes.empty?
+    end
   end
   
   class MachineWithDirtyAttributesDuringLoopbackTest < BaseTestCase
@@ -597,18 +597,8 @@ module DataMapperTest
       @transition.perform(false)
     end
     
-    def test_should_include_state_in_changed_attributes
-      assert_equal e = {@resource.properties[:state] => 'parked'}, @record.dirty_attributes
-    end
-    
-    def test_should_track_attribute_change
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
-        assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
-      elsif Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
-        assert_equal e = {@resource.properties[:state] => 'parked-ignored'}, @record.original_attributes
-      else
-        assert_equal e = {:state => 'parked-ignored'},  @record.original_values
-      end
+    def test_should_not_include_state_in_changed_attributes
+      assert_equal e = {}, @record.dirty_attributes
     end
   end
   
@@ -665,18 +655,8 @@ module DataMapperTest
       @transition.perform(false)
     end
     
-    def test_should_include_state_in_changed_attributes
-      assert_equal e = {@resource.properties[:status] => 'parked'}, @record.dirty_attributes
-    end
-    
-    def test_should_track_attribute_changes
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
-        assert_equal e = {@resource.properties[:status] => 'parked'}, @record.original_attributes
-      elsif Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
-        assert_equal e = {@resource.properties[:status] => 'parked-ignored'}, @record.original_attributes
-      else
-        assert_equal e = {:status => 'parked-ignored'},  @record.original_values
-      end
+    def test_should_not_include_state_in_changed_attributes
+      assert_equal e = {}, @record.dirty_attributes
     end
   end
   
@@ -690,37 +670,16 @@ module DataMapperTest
       @record.state_event = 'ignite'
     end
     
-    def test_should_include_state_in_changed_attributes
-      assert_equal e = {@resource.properties[:state] => 'parked'}, @record.dirty_attributes
-    end
-    
-    def test_should_track_attribute_change
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
-        assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
-      elsif Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
-        assert_equal e = {@resource.properties[:state] => 'parked-ignored'}, @record.original_attributes
-      else
-        assert_equal e = {:state => 'parked-ignored'},  @record.original_values
-      end
-    end
-    
-    def test_should_not_reset_changes_on_multiple_changes
-      @record.state_event = 'ignite'
-      
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
-        assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
-      elsif Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
-        assert_equal e = {@resource.properties[:state] => 'parked-ignored'}, @record.original_attributes
-      else
-        assert_equal e = {:state => 'parked-ignored'},  @record.original_values
-      end
-    end
-    
-    def test_should_not_include_state_in_changed_attributes_if_nil
-      @record = @resource.create
-      @record.state_event = nil
-      
+    def test_should_not_include_state_in_changed_attributes
       assert_equal e = {}, @record.dirty_attributes
+    end
+    
+    def test_should_not_track_attribute_change
+      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+        assert_equal e = {}, @record.original_attributes
+      else
+        assert_equal e = {},  @record.original_values
+      end
     end
   end
   

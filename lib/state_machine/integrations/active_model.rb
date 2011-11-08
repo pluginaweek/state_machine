@@ -7,7 +7,6 @@ module StateMachine
     # If using ActiveModel directly within your class, then any one of the
     # following features need to be included in order for the integration to be
     # detected:
-    # * ActiveModel::Dirty
     # * ActiveModel::Observing
     # * ActiveModel::Validations
     # 
@@ -15,7 +14,6 @@ module StateMachine
     # ActiveModel class:
     # 
     #   class Vehicle
-    #     include ActiveModel::Dirty
     #     include ActiveModel::Observing
     #     include ActiveModel::Validations
     #     
@@ -279,28 +277,46 @@ module StateMachine
     # 
     # == Dirty Attribute Tracking
     # 
-    # In order to hook in validation support for your model, the
-    # ActiveModel::Validations feature must be included.  If this is included
-    # then state attributes will always be properly marked as changed whether
-    # they were a callback or not.
+    # When using the ActiveModel::Dirty extension, your model will keep track of
+    # any changes that are made to attributes.  Depending on your ORM, an object
+    # will only be saved when there are attributes that have changed on the
+    # object.  When integrating with state_machine, typically the +state+ field
+    # will be marked as dirty after a transition occurs.  In some situations,
+    # however, this isn't the case.
     # 
-    # For example,
+    # If you define loopback transitions in your state machine, the value for
+    # the machine's attribute (e.g. state) will not change.  Unless you explicitly
+    # indicate so, this means that your object won't persist anything on a
+    # loopback.  For example:
     # 
     #   class Vehicle
+    #     include ActiveModel::Validations
     #     include ActiveModel::Dirty
     #     attr_accessor :state
     #     
     #     state_machine :initial => :parked do
     #       event :park do
-    #         transition :parked => :parked
+    #         transition :parked => :parked, ...
     #       end
     #     end
     #   end
-    #   
-    #   vehicle = Vehicle.new
-    #   vehicle.changed         # => []
-    #   vehicle.park            # => true
-    #   vehicle.changed         # => ["state"]
+    # 
+    # If, instead, you'd like your object to always persist regardless of
+    # whether the value actually changed, you can do so by using the
+    # <tt>#{attribute}_will_change!</tt> helpers or defining a +before_transition+
+    # callback that actually changes an attribute on the model.  For example:
+    # 
+    #   class Vehicle
+    #     ...
+    #     state_machine :initial => :parked do
+    #       before_transition all => same do |vehicle|
+    #         vehicle.state_will_change!
+    #         
+    #         # Alternative solution, updating timestamp
+    #         # vehicle.updated_at = Time.curent
+    #       end
+    #     end
+    #   end
     # 
     # == Creating new integrations
     # 
@@ -349,23 +365,10 @@ module StateMachine
       end
       
       # Should this integration be used for state machines in the given class?
-      # Classes that include ActiveModel::Dirty,  ActiveModel::Observing, or
-      # ActiveModel::Validations will automatically use the ActiveModel
-      # integration.
+      # Classes that include ActiveModel::Observing or ActiveModel::Validations
+      # will automatically use the ActiveModel integration.
       def self.matches?(klass)
-        %w(Dirty Observing Validations).any? {|feature| ::ActiveModel.const_defined?(feature) && klass <= ::ActiveModel.const_get(feature)}
-      end
-      
-      # Forces the change in state to be recognized regardless of whether the
-      # state value actually changed
-      def write(object, attribute, value, *args)
-        result = super
-        
-        if (attribute == :state || attribute == :event && value) && supports_dirty_tracking?(object) && !object.send("#{self.attribute}_changed?")
-          object.send("#{self.attribute}_will_change!")
-        end
-        
-        result
+        %w(Observing Validations).any? {|feature| ::ActiveModel.const_defined?(feature) && klass <= ::ActiveModel.const_get(feature)}
       end
       
       # Adds a validation error to the given object 
@@ -405,12 +408,6 @@ module StateMachine
         # event transitions when the action is run.
         def runs_validations_on_action?
           false
-        end
-        
-        # Whether change (dirty) tracking is supported in the integration.
-        # Only true if the ActiveModel feature is enabled on the owner class.
-        def supports_dirty_tracking?(object)
-          defined?(::ActiveModel::Dirty) && owner_class <= ::ActiveModel::Dirty && object.respond_to?("#{self.attribute}_changed?")
         end
         
         # Gets the terminator to use for callbacks

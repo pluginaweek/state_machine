@@ -1,5 +1,6 @@
 # master
 
+* Change loopbacks to only cause objects to be persisted when the ORM decides it's necessary, instead of always forcing persistence
 * Fix Mongoid 2.3.x integrations not initializing dynamic states in the same manner as other integrations with initialize callbacks
 
 ## 1.0.3 / 2011-11-03

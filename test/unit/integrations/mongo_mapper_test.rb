@@ -585,12 +585,12 @@ module MongoMapperTest
       @transition.perform(false)
     end
     
-    def test_should_include_state_in_changed_attributes
-      assert_equal %w(state), @record.changed
+    def test_should_not_include_state_in_changed_attributes
+      assert_equal [], @record.changed
     end
     
-    def test_should_track_attribute_changes
-      assert_equal %w(parked parked), @record.changes['state']
+    def test_should_not_track_attribute_changes
+      assert_equal nil, @record.changes['state']
     end
   end
   
@@ -639,12 +639,12 @@ module MongoMapperTest
       @transition.perform(false)
     end
     
-    def test_should_include_state_in_changed_attributes
-      assert_equal %w(status), @record.changed
+    def test_should_not_include_state_in_changed_attributes
+      assert_equal [], @record.changed
     end
     
-    def test_should_track_attribute_changes
-      assert_equal %w(parked parked), @record.changes['status']
+    def test_should_not_track_attribute_changes
+      assert_equal nil, @record.changes['status']
     end
   end
   
@@ -658,24 +658,12 @@ module MongoMapperTest
       @record.state_event = 'ignite'
     end
     
-    def test_should_include_state_in_changed_attributes
-      assert_equal %w(state), @record.changed
-    end
-    
-    def test_should_track_attribute_change
-      assert_equal %w(parked parked), @record.changes['state']
-    end
-    
-    def test_should_not_reset_changes_on_multiple_changes
-      @record.state_event = 'ignite'
-      assert_equal %w(parked parked), @record.changes['state']
-    end
-    
-    def test_should_not_include_state_in_changed_attributes_if_nil
-      @record = @model.create
-      @record.state_event = nil
-      
+    def test_should_not_include_state_in_changed_attributes
       assert_equal [], @record.changed
+    end
+    
+    def test_should_not_track_attribute_change
+      assert_equal nil, @record.changes['state']
     end
   end
   

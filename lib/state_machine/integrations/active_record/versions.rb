@@ -97,26 +97,6 @@ module StateMachine
         end
       end
       
-      version '2.0.x' do
-        def self.active?
-          ::ActiveRecord::VERSION::MAJOR == 2 && ::ActiveRecord::VERSION::MINOR == 0
-        end
-        
-        def supports_dirty_tracking?(object)
-          false
-        end
-      end
-      
-      version '2.1.x - 2.3.x' do
-        def self.active?
-          ::ActiveRecord::VERSION::MAJOR == 2 && ::ActiveRecord::VERSION::MINOR > 0
-        end
-        
-        def supports_dirty_tracking?(object)
-          object.respond_to?("#{attribute}_changed?")
-        end
-      end
-      
       version '2.3.2 - 2.3.x' do
         def self.active?
           ::ActiveRecord::VERSION::MAJOR == 2 && ::ActiveRecord::VERSION::MINOR == 3 && ::ActiveRecord::VERSION::TINY >= 2

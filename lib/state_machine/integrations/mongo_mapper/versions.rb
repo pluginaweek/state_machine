@@ -64,10 +64,6 @@ module StateMachine
           true
         end
         
-        def supports_dirty_tracking?(object)
-          true
-        end
-        
         def callback_terminator
         end
         

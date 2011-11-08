@@ -322,19 +322,6 @@ module StateMachine
         super
       end
       
-      # Forces the change in state to be recognized regardless of whether the
-      # state value actually changed
-      def write(object, attribute, value, *args)
-        result = super
-        
-        if attribute == :state || attribute == :event && value
-          value = read(object, :state) if attribute == :event
-          mark_dirty(object, value)
-        end
-        
-        result
-      end
-      
       # Adds a validation error to the given object
       def invalidate(object, attribute, message, values = [])
         object.errors.add(self.attribute(attribute), generate_message(message, values)) if supports_validations?
@@ -433,14 +420,6 @@ module StateMachine
         def add_callback(type, options, &block)
           options[:bind_to_object] = true
           super
-        end
-        
-        # Marks the object's state as dirty so that the record will be saved
-        # even if no actual modifications have been made to the data
-        def mark_dirty(object, value)
-          object.persistence_state = ::DataMapper::Resource::PersistenceState::Dirty.new(object) if object.persistence_state.is_a?(::DataMapper::Resource::PersistenceState::Clean)
-          property = owner_class.properties[self.attribute]
-          object.persistence_state.original_attributes[property] = value unless object.persistence_state.original_attributes.include?(property)
         end
     end
   end
