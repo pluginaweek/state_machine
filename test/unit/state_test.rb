@@ -779,12 +779,32 @@ class StateWithInvalidMethodCallTest < Test::Unit::TestCase
   end
 end
 
-class StateWithValidMethodCallTest < Test::Unit::TestCase
+class StateWithValidMethodCallForDifferentStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass)
     @ancestors = @klass.ancestors
     @machine.states << @state = StateMachine::State.new(@machine, :idling)
+    @state.context do
+      def speed
+        0
+      end
+    end
+    
+    @object = @klass.new
+  end
+  
+  def test_should_call_method_missing_arg
+    assert_equal 1, @state.call(@object, :speed, lambda {1})
+  end
+end
+
+class StateWithValidMethodCallForCurrentStaeTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass, :initial => :idling)
+    @ancestors = @klass.ancestors
+    @state = @machine.state(:idling)
     @state.context do
       def speed(arg = nil)
         block_given? ? [arg, yield] : arg
