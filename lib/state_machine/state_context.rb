@@ -79,20 +79,21 @@ module StateMachine
     # *not* need to specify the <tt>:from</tt> option for the transition.  For
     # example:
     # 
-    #  state_machine do
-    #    state :parked do
-    #      transition :to => same, :on => :park, :unless => :seatbelt_on? # Transitions to :parked if seatbelt is off
-    #      transition :to => :idling, :on => [:ignite, :shift_up]         # Transitions to :idling
-    #    end
-    #  end
+    #   state_machine do
+    #     state :parked do
+    #       transition :to => :idling, :on => [:ignite, :shift_up]                          # Transitions to :idling
+    #       transition :from => [:idling, :parked], :on => :park, :unless => :seatbelt_on?  # Transitions to :parked if seatbelt is off
+    #     end
+    #   end
     # 
     # See StateMachine::Machine#transition for a description of the possible
     # configurations for defining transitions.
     def transition(options)
-      assert_valid_keys(options, :to, :on, :if, :unless)
-      raise ArgumentError, 'Must specify :to state and :on event' unless options[:to] && options[:on]
+      assert_valid_keys(options, :from, :to, :on, :if, :unless)
+      raise ArgumentError, 'Must specify :on event' unless options[:on]
+      raise ArgumentError, 'Must specify either :to or :from state' unless !options[:to] ^ !options[:from]
       
-      machine.transition(options.merge(:from => state.name))
+      machine.transition(options.merge(options[:to] ? {:from => state.name} : {:to => state.name}))
     end
     
     # Hooks in condition-merging to methods that don't exist in this module

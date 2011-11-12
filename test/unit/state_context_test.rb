@@ -41,11 +41,6 @@ class StateContextTransitionTest < Test::Unit::TestCase
     assert_equal 'Invalid key(s): except_to', exception.message
   end
   
-  def test_should_not_allow_from
-    exception = assert_raise(ArgumentError) { @state_context.transition(:from => :idling) }
-    assert_equal 'Invalid key(s): from', exception.message
-  end
-  
   def test_should_not_allow_except_from
     exception = assert_raise(ArgumentError) { @state_context.transition(:except_from => :idling) }
     assert_equal 'Invalid key(s): except_from', exception.message
@@ -63,15 +58,40 @@ class StateContextTransitionTest < Test::Unit::TestCase
   
   def test_should_require_on_event
     exception = assert_raise(ArgumentError) { @state_context.transition(:to => :idling) }
-    assert_equal 'Must specify :to state and :on event', exception.message
+    assert_equal 'Must specify :on event', exception.message
   end
   
-  def test_should_require_to_state
+  def test_should_not_allow_missing_from_and_to
     exception = assert_raise(ArgumentError) { @state_context.transition(:on => :ignite) }
-    assert_equal 'Must specify :to state and :on event', exception.message
+    assert_equal 'Must specify either :to or :from state', exception.message
   end
   
-  def test_should_automatically_set_from_option
+  def test_should_not_allow_from_and_to
+    exception = assert_raise(ArgumentError) { @state_context.transition(:on => :ignite, :from => :parked, :to => :idling) }
+    assert_equal 'Must specify either :to or :from state', exception.message
+  end
+  
+  def test_should_allow_to_state_if_missing_from_state
+    assert_nothing_raised { @state_context.transition(:on => :park, :from => :parked) }
+  end
+  
+  def test_should_allow_from_state_if_missing_to_state
+    assert_nothing_raised { @state_context.transition(:on => :ignite, :to => :idling) }
+  end
+  
+  def test_should_automatically_set_to_option_with_from_state
+    branch = @state_context.transition(:from => :idling, :on => :park)
+    assert_instance_of StateMachine::Branch, branch
+    
+    state_requirements = branch.state_requirements
+    assert_equal 1, state_requirements.length
+    
+    from_requirement = state_requirements[0][:to]
+    assert_instance_of StateMachine::WhitelistMatcher, from_requirement
+    assert_equal [:parked], from_requirement.values
+  end
+  
+  def test_should_automatically_set_from_option_with_to_state
     branch = @state_context.transition(:to => :idling, :on => :ignite)
     assert_instance_of StateMachine::Branch, branch
     
