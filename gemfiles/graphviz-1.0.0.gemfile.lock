@@ -11,9 +11,11 @@ GEM
       rake
     rake (0.9.2.2)
     rcov (0.9.11)
+    rcov (0.9.11-java)
     ruby-graphviz (1.0.0)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES

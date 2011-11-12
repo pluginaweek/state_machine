@@ -18,8 +18,10 @@ GEM
     i18n (0.4.2)
     rake (0.9.2.2)
     rcov (0.9.11)
+    rcov (0.9.11-java)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES

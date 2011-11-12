@@ -16,6 +16,7 @@ GEM
       bundler
       rake
     bson (1.4.0)
+    bson (1.4.0-java)
     builder (3.0.0)
     i18n (0.6.0)
     mongo (1.4.0)
@@ -27,9 +28,11 @@ GEM
     multi_json (1.0.3)
     rake (0.9.2.2)
     rcov (0.9.11)
+    rcov (0.9.11-java)
     tzinfo (0.3.31)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES

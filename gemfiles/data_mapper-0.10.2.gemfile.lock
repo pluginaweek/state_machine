@@ -21,13 +21,22 @@ GEM
       dm-core (~> 0.10.2)
     dm-validations (0.10.2)
       dm-core (~> 0.10.2)
+    do_jdbc (0.10.2-java)
+      data_objects (= 0.10.2)
     do_sqlite3 (0.10.2)
       data_objects (= 0.10.2)
+    do_sqlite3 (0.10.2-java)
+      data_objects (= 0.10.2)
+      do_jdbc (= 0.10.2)
+      jdbc-sqlite3 (>= 3.5.8)
     extlib (0.9.15)
+    jdbc-sqlite3 (3.7.2)
     rake (0.9.2.2)
     rcov (0.9.11)
+    rcov (0.9.11-java)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES

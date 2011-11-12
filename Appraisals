@@ -218,22 +218,24 @@ end
 
 # DataMapper
 if RUBY_VERSION < "1.9.1"
-  appraise "data_mapper-0.9.4" do
-    gem "dm-core", "0.9.4"
-    gem "dm-migrations", "0.9.4"
-    gem "dm-validations", "0.9.4"
-    gem "dm-observer", "0.9.4"
-    gem "data_objects", "0.9.4"
-    gem "do_sqlite3", "0.9.4"
-  end
-
-  appraise "data_mapper-0.9.7" do
-    gem "dm-core", "0.9.7"
-    gem "dm-migrations", "0.9.7"
-    gem "dm-validations", "0.9.7"
-    gem "dm-observer", "0.9.7"
-    gem "data_objects", "0.9.7"
-    gem "do_sqlite3", "0.9.7"
+  if RUBY_PLATFORM != 'java'
+    appraise "data_mapper-0.9.4" do
+      gem "dm-core", "0.9.4"
+      gem "dm-migrations", "0.9.4"
+      gem "dm-validations", "0.9.4"
+      gem "dm-observer", "0.9.4"
+      gem "data_objects", "0.9.4"
+      gem "do_sqlite3", "0.9.4"
+    end
+  
+    appraise "data_mapper-0.9.7" do
+      gem "dm-core", "0.9.7"
+      gem "dm-migrations", "0.9.7"
+      gem "dm-validations", "0.9.7"
+      gem "dm-observer", "0.9.7"
+      gem "data_objects", "0.9.7"
+      gem "do_sqlite3", "0.9.7"
+    end
   end
 
   appraise "data_mapper-0.9.11" do
