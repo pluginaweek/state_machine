@@ -17,5 +17,5 @@ Gem::Specification.new do |s|
   
   s.add_development_dependency("rake")
   s.add_development_dependency("rcov")
-  s.add_development_dependency("appraisal", "~> 0.3.8")
+  s.add_development_dependency("appraisal", "~> 0.4.0")
 end

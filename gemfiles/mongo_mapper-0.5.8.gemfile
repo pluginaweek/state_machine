@@ -2,7 +2,7 @@
 
 source "http://www.rubygems.org"
 
-gem "mongo_mapper", "0.5.8"
 gem "activesupport", "2.3.11"
+gem "mongo_mapper", "0.5.8"
 
 gemspec :path=>"../"

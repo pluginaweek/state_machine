@@ -7,10 +7,10 @@ GEM
   remote: http://www.rubygems.org/
   specs:
     addressable (2.2.6)
-    appraisal (0.3.8)
+    appraisal (0.4.0)
       bundler
       rake
-    data_objects (0.10.6)
+    data_objects (0.10.7)
       addressable (~> 2.1)
     dm-core (1.0.1)
       addressable (~> 2.2)
@@ -29,17 +29,17 @@ GEM
       dm-core (~> 1.0.1)
     dm-validations (1.0.1)
       dm-core (~> 1.0.1)
-    do_sqlite3 (0.10.6)
-      data_objects (= 0.10.6)
+    do_sqlite3 (0.10.7)
+      data_objects (= 0.10.7)
     extlib (0.9.15)
-    rake (0.9.2)
-    rcov (0.9.10)
+    rake (0.9.2.2)
+    rcov (0.9.11)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  appraisal (~> 0.3.8)
+  appraisal (~> 0.4.0)
   dm-core (= 1.0.1)
   dm-migrations (= 1.0.1)
   dm-observer (= 1.0.1)

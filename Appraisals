@@ -2,8 +2,10 @@ appraise "default" do
 end
 
 # GraphViz
-appraise "graphviz-0.9.0" do
-  gem "ruby-graphviz", "0.9.0"
+if RUBY_VERSION < "1.9.1"
+  appraise "graphviz-0.9.0" do
+    gem "ruby-graphviz", "0.9.0"
+  end
 end
 
 appraise "graphviz-0.9.21" do
@@ -298,11 +300,13 @@ appraise "data_mapper-1.1.0" do
   gem "dm-sqlite-adapter", "1.1.0"
 end
 
-appraise "data_mapper-1.2.0" do
-  gem "dm-core", "1.2.0"
-  gem "dm-migrations", "1.2.0"
-  gem "dm-validations", "1.2.0"
-  gem "dm-observer", "1.2.0"
-  gem "dm-transactions", "1.2.0"
-  gem "dm-sqlite-adapter", "1.2.0"
+if RUBY_VERSION > "1.8.6"
+  appraise "data_mapper-1.2.0" do
+    gem "dm-core", "1.2.0"
+    gem "dm-migrations", "1.2.0"
+    gem "dm-validations", "1.2.0"
+    gem "dm-observer", "1.2.0"
+    gem "dm-transactions", "1.2.0"
+    gem "dm-sqlite-adapter", "1.2.0"
+  end
 end

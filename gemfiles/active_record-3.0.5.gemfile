@@ -2,7 +2,7 @@
 
 source "http://www.rubygems.org"
 
-gem "activerecord", "3.0.5"
 gem "sqlite3-ruby"
+gem "activerecord", "3.0.5"
 
 gemspec :path=>"../"

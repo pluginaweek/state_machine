@@ -7,7 +7,7 @@ GEM
   remote: http://www.rubygems.org/
   specs:
     activesupport (2.3.11)
-    appraisal (0.3.8)
+    appraisal (0.4.0)
       bundler
       rake
     jnunemaker-validatable (1.8.0)
@@ -16,15 +16,15 @@ GEM
       activesupport (>= 2.3)
       jnunemaker-validatable (= 1.8.0)
       mongo (= 0.16)
-    rake (0.9.2)
-    rcov (0.9.10)
+    rake (0.9.2.2)
+    rcov (0.9.11)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   activesupport (= 2.3.11)
-  appraisal (~> 0.3.8)
+  appraisal (~> 0.4.0)
   mongo_mapper (= 0.5.8)
   rake
   rcov

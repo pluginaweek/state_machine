@@ -11,20 +11,20 @@ GEM
       builder (~> 2.1.2)
       i18n (~> 0.4)
     activesupport (3.0.5)
-    appraisal (0.3.8)
+    appraisal (0.4.0)
       bundler
       rake
     builder (2.1.2)
     i18n (0.6.0)
-    rake (0.9.2)
-    rcov (0.9.10)
+    rake (0.9.2.2)
+    rcov (0.9.11)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   activemodel (= 3.0.5)
-  appraisal (~> 0.3.8)
+  appraisal (~> 0.4.0)
   rake
   rcov
   state_machine!

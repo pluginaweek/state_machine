@@ -2,11 +2,11 @@
 
 source "http://www.rubygems.org"
 
-gem "data_objects", "0.9.4"
-gem "dm-validations", "0.9.4"
-gem "dm-observer", "0.9.4"
 gem "dm-core", "0.9.4"
 gem "dm-migrations", "0.9.4"
+gem "dm-validations", "0.9.4"
+gem "dm-observer", "0.9.4"
+gem "data_objects", "0.9.4"
 gem "do_sqlite3", "0.9.4"
 
 gemspec :path=>"../"
