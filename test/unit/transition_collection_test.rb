@@ -1116,7 +1116,6 @@ class TransitionCollectionWithSkippedAfterCallbacksTest < Test::Unit::TestCase
     @machine.state :idling
     @machine.event :ignite
     @machine.after_transition {@ran_after = true}
-    @machine.around_transition {|block| @ran_around_before = true; block.call; @ran_around_after = true}
     
     @object = @klass.new
     
@@ -1134,25 +1133,70 @@ class TransitionCollectionWithSkippedAfterCallbacksTest < Test::Unit::TestCase
     assert !@ran_after
   end
   
-  def test_should_not_run_around_callbacks_after_yield
-    assert !@ran_around_after
-  end
-  
   def test_should_run_after_callbacks_on_subsequent_perform
     StateMachine::TransitionCollection.new([@transition]).perform
     assert @ran_after
   end
-  
-  def test_should_run_around_callbacks_after_yield_on_subsequent_perform
-    StateMachine::TransitionCollection.new([@transition]).perform
-    assert @ran_around_after
-  end
-  
-  def test_should_not_rerun_around_callbacks_before_yield_on_subsequent_perform
-    @ran_around_before = false
-    StateMachine::TransitionCollection.new([@transition]).perform
+end
+
+if RUBY_PLATFORM != 'java'
+  class TransitionCollectionWithSkippedAfterCallbacksAndAroundCallbacksTest < Test::Unit::TestCase
+    def setup
+      @klass = Class.new
+      
+      @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+      @machine.state :idling
+      @machine.event :ignite
+      @machine.around_transition {|block| @ran_around_before = true; block.call; @ran_around_after = true}
+      
+      @object = @klass.new
+      
+      @transitions = StateMachine::TransitionCollection.new([
+        @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+      ], :after => false)
+      @result = @transitions.perform
+    end
     
-    assert !@ran_around_before
+    def test_should_succeed
+      assert_equal true, @result
+    end
+    
+    def test_should_not_run_around_callbacks_after_yield
+      assert !@ran_around_after
+    end
+    
+    def test_should_run_around_callbacks_after_yield_on_subsequent_perform
+      StateMachine::TransitionCollection.new([@transition]).perform
+      assert @ran_around_after
+    end
+    
+    def test_should_not_rerun_around_callbacks_before_yield_on_subsequent_perform
+      @ran_around_before = false
+      StateMachine::TransitionCollection.new([@transition]).perform
+      
+      assert !@ran_around_before
+    end
+  end
+else
+  class TransitionCollectionWithSkippedAfterCallbacksAndAroundCallbacksTest < Test::Unit::TestCase
+    def setup
+      @klass = Class.new
+      
+      @machine = StateMachine::Machine.new(@klass, :initial => :parked)
+      @machine.state :idling
+      @machine.event :ignite
+      @machine.around_transition {|block| @ran_around_before = true; block.call; @ran_around_after = true}
+      
+      @object = @klass.new
+      
+      @transitions = StateMachine::TransitionCollection.new([
+        @transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+      ], :after => false)
+    end
+    
+    def test_should_raise_exception
+      assert_raise(ArgumentError) { @transitions.perform }
+    end
   end
 end
 
@@ -2073,19 +2117,21 @@ class AttributeTransitionCollectionMarshallingTest < Test::Unit::TestCase
     end
   end
   
-  def test_should_marshal_during_around_callbacks_before_yield
-    @machine.around_transition {|object, transition, block| Marshal.dump(object); block.call}
-    assert_nothing_raised do
-      transitions(:after => false).perform { true }
-      transitions.perform { true }
+  if RUBY_PLATFORM != 'java'
+    def test_should_marshal_during_around_callbacks_before_yield
+      @machine.around_transition {|object, transition, block| Marshal.dump(object); block.call}
+      assert_nothing_raised do
+        transitions(:after => false).perform { true }
+        transitions.perform { true }
+      end
     end
-  end
-  
-  def test_should_marshal_during_around_callbacks_after_yield
-    @machine.around_transition {|object, transition, block| block.call; Marshal.dump(object)}
-    assert_nothing_raised do
-      transitions(:after => false).perform { true }
-      transitions.perform { true }
+    
+    def test_should_marshal_during_around_callbacks_after_yield
+      @machine.around_transition {|object, transition, block| block.call; Marshal.dump(object)}
+      assert_nothing_raised do
+        transitions(:after => false).perform { true }
+        transitions.perform { true }
+      end
     end
   end
   

@@ -1,5 +1,6 @@
 # master
 
+* Don't allow around_transitions to attempt to be called in multiple execution contexts when run in jruby
 * Allow :from option to be used in transitions defined within state contexts
 * Fix arguments / block not being preserved when chaining methods defined in state contexts
 * Fix super not being allowed when a method is defined for multiple state contexts

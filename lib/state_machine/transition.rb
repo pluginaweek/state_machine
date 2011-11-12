@@ -351,6 +351,8 @@ module StateMachine
       # around callbacks when the remainder of the callback will be executed at
       # a later point in time.
       def pause
+        raise ArgumentError, 'around_transition callbacks cannot be called in multiple execution contexts in java implementations of Ruby. Use before/after_transitions instead.' if RUBY_PLATFORM == 'java'
+        
         unless @resume_block
           require 'continuation' unless defined?(callcc)
           callcc do |block|
