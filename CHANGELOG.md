@@ -1,5 +1,6 @@
 # master
 
+* Fix arguments / block not being preserved when chaining methods defined in state contexts
 * Fix super not being allowed when a method is defined for multiple state contexts
 * Change loopbacks to only cause objects to be persisted when the ORM decides it's necessary, instead of always forcing persistence
 * Fix Mongoid 2.3.x integrations not initializing dynamic states in the same manner as other integrations with initialize callbacks

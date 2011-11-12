@@ -195,7 +195,7 @@ module StateMachine
         # Calls the method defined by the current state of the machine
         context.class_eval <<-end_eval, __FILE__, __LINE__ + 1
           def #{method}(*args, &block)
-            self.class.state_machine(#{machine_name.inspect}).states.fetch(#{name.inspect}).call(self, #{method.inspect}, lambda {super}, *args, &block)
+            self.class.state_machine(#{machine_name.inspect}).states.fetch(#{name.inspect}).call(self, #{method.inspect}, lambda {super(*args, &block)}, *args, &block)
           end
         end_eval
       end
