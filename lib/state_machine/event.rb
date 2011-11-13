@@ -55,8 +55,7 @@ module StateMachine
       @name = name
       @qualified_name = machine.namespace ? :"#{name}_#{machine.namespace}" : name
       @human_name = options[:human_name] || @name.to_s.tr('_', ' ')
-      @branches = []
-      @known_states = []
+      reset
       
       # Output a warning if another event has a conflicting qualified name
       if conflict = machine.owner_class.state_machines.detect {|name, other_machine| other_machine != @machine && other_machine.events[qualified_name, :qualified_name]}
@@ -184,6 +183,15 @@ module StateMachine
       machine.invalidate(object, :state, :invalid_transition, [[:event, human_name(object.class)], [:state, state.human_name(object.class)]])
       
       Transition.new(object, machine, name, state.name, state.name).run_callbacks(:before => false)
+    end
+    
+    # Resets back to the initial state of the event, with no branches / known
+    # states associated.  This allows you to redefine an event in situations
+    # where you either are re-using an existing state machine implementation
+    # or are subclassing machines.
+    def reset
+      @branches = []
+      @known_states = []
     end
     
     # Draws a representation of this event on the given graph.  This will

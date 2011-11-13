@@ -474,6 +474,11 @@ class EventWithTransitionsTest < Test::Unit::TestCase
     assert_equal [:parked, :idling, :first_gear, :stalled], @event.known_states
   end
   
+  def test_should_clear_known_states_on_reset
+    @event.reset
+    assert_equal [], @event.known_states
+  end
+  
   def test_should_use_pretty_inspect
     assert_match "#<StateMachine::Event name=:ignite transitions=[:parked => :idling, :first_gear => :idling]>", @event.inspect
   end
@@ -688,6 +693,11 @@ class EventWithMatchingEnabledTransitionsTest < Test::Unit::TestCase
   def test_should_not_invalidate_the_state
     @event.fire(@object)
     assert_equal [], @object.errors
+  end
+  
+  def test_should_not_be_able_to_fire_on_reset
+    @event.reset
+    assert !@event.can_fire?(@object)
   end
   
   def teardown
