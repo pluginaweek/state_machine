@@ -1,5 +1,6 @@
 # master
 
+* Improve InvalidTransition exception messages to include the failure reason(s) in ORM integrations
 * Don't allow around_transitions to attempt to be called in multiple execution contexts when run in jruby
 * Allow :from option to be used in transitions defined within state contexts
 * Fix arguments / block not being preserved when chaining methods defined in state contexts

@@ -156,6 +156,14 @@ module StateMachine
     # *not* because a matching transition was not available, no error messages
     # will be added to the state attribute.
     # 
+    # In addition, if you're using the <tt>ignite!</tt> version of the event,
+    # then the failure reason (such as the current validation errors) will be
+    # included in the exception that gets raised when the event fails.  For
+    # example, assuming there's a validation on a field called +name+ on the class:
+    # 
+    #   vehicle = Vehicle.new
+    #   vehicle.ignite!       # => StateMachine::InvalidTransition: Cannot transition state via :ignite from :parked (Reason(s): Name cannot be blank)
+    # 
     # == Scopes
     # 
     # To assist in filtering models with specific states, a series of basic

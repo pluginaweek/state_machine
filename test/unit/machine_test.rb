@@ -492,6 +492,10 @@ class MachineWithoutIntegrationTest < Test::Unit::TestCase
   def test_reset_should_do_nothing
     assert_nil @machine.reset(@object)
   end
+  
+  def test_errors_for_should_be_empty
+    assert_equal '', @machine.errors_for(@object)
+  end
 end
 
 class MachineWithCustomIntegrationTest < Test::Unit::TestCase

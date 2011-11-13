@@ -1814,6 +1814,13 @@ module StateMachine
     def invalidate(object, attribute, message, values = [])
     end
     
+    # Gets a description of the errors for the given object.  This is used to
+    # provide more detailed information when an InvalidTransition exception is
+    # raised.
+    def errors_for(object)
+      ''
+    end
+    
     # Resets any errors previously added when invalidating the given object.
     # 
     # By default, this is a no-op.

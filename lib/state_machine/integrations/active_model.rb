@@ -97,6 +97,14 @@ module StateMachine
     #   vehicle.ignite                # => false
     #   vehicle.errors.full_messages  # => ["State cannot transition via \"ignite\""]
     # 
+    # In addition, if you're using the <tt>ignite!</tt> version of the event,
+    # then the failure reason (such as the current validation errors) will be
+    # included in the exception that gets raised when the event fails.  For
+    # example, assuming there's a validation on a field called +name+ on the class:
+    # 
+    #   vehicle = Vehicle.new
+    #   vehicle.ignite!       # => StateMachine::InvalidTransition: Cannot transition state via :ignite from :parked (Reason(s): Name cannot be blank)
+    # 
     # === Security implications
     # 
     # Beware that public event attributes mean that events can be fired
@@ -383,6 +391,12 @@ module StateMachine
           default_options = default_error_message_options(object, attribute, message)
           object.errors.add(attribute, message, options.merge(default_options))
         end
+      end
+      
+      # Describes the current validation errors on the given object.  If none
+      # are specific, then the default error is interpeted as a "halt".
+      def errors_for(object)
+        object.errors.empty? ? 'Transition halted' : object.errors.full_messages * ', '
       end
       
       # Resets any errors previously added when invalidating the given object

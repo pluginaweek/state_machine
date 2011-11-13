@@ -1032,6 +1032,24 @@ module DataMapperTest
       end
     end
     
+    class MachineErrorsTest < BaseTestCase
+      def setup
+        @resource = new_resource
+        @machine = StateMachine::Machine.new(@resource)
+        @record = @resource.new
+      end
+      
+      def test_should_be_able_to_describe_current_errors
+        @record.errors.add(:id, 'cannot be blank')
+        @record.errors.add(:state, 'is invalid')
+        assert_equal ['id cannot be blank', 'state is invalid'], @machine.errors_for(@record).split(', ').sort
+      end
+      
+      def test_should_describe_as_halted_with_no_errors
+        assert_equal 'Transition halted', @machine.errors_for(@record)
+      end
+    end
+    
     class MachineWithStateDrivenValidationsTest < BaseTestCase
       def setup
         @resource = resource = new_resource do
