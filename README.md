@@ -230,7 +230,9 @@ vehicle.speed                   # => 10
 vehicle.moving?                 # => true
 vehicle                         # => #<Vehicle:0xb7cf4eac @state="first_gear", @seatbelt_on=true>
 
-vehicle.shift_up                # => true
+# A generic event helper is available to fire without going through the event's instance method
+vehicle.fire_state_event(:shift_up) # => true
+
 # Call state-driven behavior that's undefined for the state raises a NoMethodError
 vehicle.speed                   # => NoMethodError: super: no superclass method `speed' for #<Vehicle:0xb7cf4eac>
 vehicle                         # => #<Vehicle:0xb7cf4eac @state="second_gear", @seatbelt_on=true>

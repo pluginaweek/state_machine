@@ -125,6 +125,10 @@ class MachineByDefaultTest < Test::Unit::TestCase
     assert @object.respond_to?(:state_paths)
   end
   
+  def test_should_define_an_event_runner_for_the_attribute
+    assert @object.respond_to?(:fire_state_event)
+  end
+  
   def test_should_not_define_an_event_attribute_reader
     assert !@object.respond_to?(:state_event)
   end
@@ -220,6 +224,10 @@ class MachineWithCustomNameTest < Test::Unit::TestCase
   
   def test_should_define_a_transition_reader_for_the_attribute
     assert @object.respond_to?(:status_transitions)
+  end
+  
+  def test_should_define_an_event_runner_for_the_attribute
+    assert @object.respond_to?(:fire_status_event)
   end
   
   def test_should_define_a_human_attribute_name_reader_for_the_attribute
@@ -1504,6 +1512,10 @@ class MachineWithConflictingHelpersBeforeDefinitionTest < Test::Unit::TestCase
       def state_paths
         [[{:parked => :idling}]]
       end
+      
+      def fire_state_event
+        true
+      end
     end
     @klass = Class.new(@superclass)
     
@@ -1582,10 +1594,15 @@ class MachineWithConflictingHelpersBeforeDefinitionTest < Test::Unit::TestCase
     assert_equal [[{:parked => :idling}]], @object.state_paths
   end
   
+  def test_should_not_redefine_event_runner
+    assert_equal true, @object.fire_state_event
+  end
+  
   def test_should_output_warning
     expected = [
       'Instance method "state_events"',
       'Instance method "state_transitions"',
+      'Instance method "fire_state_event"',
       'Instance method "state_paths"',
       'Class method "human_state_name"',
       'Class method "human_state_event_name"',
@@ -1669,6 +1686,10 @@ class MachineWithConflictingHelpersAfterDefinitionTest < Test::Unit::TestCase
       def state_paths
         [[{:parked => :idling}]]
       end
+      
+      def fire_state_event
+        true
+      end
     end
     
     StateMachine::Integrations.const_set('Custom', Module.new do
@@ -1746,6 +1767,10 @@ class MachineWithConflictingHelpersAfterDefinitionTest < Test::Unit::TestCase
     assert_equal [[{:parked => :idling}]], @object.state_paths
   end
   
+  def test_should_not_redefine_event_runner
+    assert_equal true, @object.fire_state_event
+  end
+  
   def test_should_allow_super_chaining
     @klass.class_eval do
       def self.with_state(*states)
@@ -1805,6 +1830,10 @@ class MachineWithConflictingHelpersAfterDefinitionTest < Test::Unit::TestCase
       def state_paths
         super
       end
+      
+      def fire_state_event(event)
+        super
+      end
     end
     
     assert_equal [], @klass.with_state
@@ -1824,6 +1853,7 @@ class MachineWithConflictingHelpersAfterDefinitionTest < Test::Unit::TestCase
     assert_equal [], @object.state_events
     assert_equal [], @object.state_transitions
     assert_equal [], @object.state_paths
+    assert_equal false, @object.fire_state_event(:ignite)
   end
   
   def test_should_not_output_warning
@@ -2956,6 +2986,10 @@ class MachineWithCustomAttributeTest < Test::Unit::TestCase
   
   def test_should_define_a_path_reader_for_the_attribute
     assert @object.respond_to?(:state_paths)
+  end
+  
+  def test_should_define_an_event_runner_for_the_attribute
+    assert @object.respond_to?(:fire_state_event)
   end
   
   def test_should_define_a_human_attribute_name_reader

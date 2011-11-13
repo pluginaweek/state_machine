@@ -141,6 +141,9 @@ module StateMachine
     #   transitions that can be made on the current object's state
     # * <tt>state_paths(requirements = {})</tt> - Gets the list of sequences of
     #   transitions that can be run from the current object's state
+    # * <tt>fire_state_event(name, *args)</tt> - Fires an arbitrary event with
+    #   the given argument list. This is essentially the same as calling the
+    #   actual event method itself.
     # 
     # The <tt>state_events</tt>, <tt>state_transitions</tt>, and <tt>state_paths</tt>
     # helpers all take an optional set of requirements for determining what's
@@ -188,7 +191,7 @@ module StateMachine
     #   vehicle.state_events(:to => :parked)      # => []
     #   
     #   vehicle.state_transitions                 # => [#<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
-    #   vehicle.ignite
+    #   vehicle.ignite                            # => true
     #   vehicle.state_transitions                 # => [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>]
     #   
     #   vehicle.state_transitions(:on => :ignite) # => []
@@ -202,6 +205,9 @@ module StateMachine
     #                                             #     [#<StateMachine::Transition attribute=:state event=:park from="idling" from_name=:idling to="parked" to_name=:parked>,
     #                                             #      #<StateMachine::Transition attribute=:state event=:ignite from="parked" from_name=:parked to="idling" to_name=:idling>]
     #                                             #   ]
+    #   
+    #   # Fire arbitrary events
+    #   vehicle.fire_state_event(:park)           # => true
     # 
     # == Attribute initialization
     # 

@@ -2000,6 +2000,11 @@ module StateMachine
           machine.events.transitions_for(object, *args)
         end
         
+        # Fire an arbitrary event for this machine
+        define_helper(:instance, "fire_#{attribute(:event)}") do |machine, object, event, *args|
+          machine.events.fetch(event).fire(object, *args)
+        end
+        
         # Add helpers for tracking the event / transition to invoke when the
         # action is called
         if action

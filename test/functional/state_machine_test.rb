@@ -40,7 +40,7 @@ class ModelBase
 end
 
 class Vehicle < ModelBase
-  attr_accessor :auto_shop, :seatbelt_on, :insurance_premium, :force_idle, :callbacks, :saved, :time_elapsed
+  attr_accessor :auto_shop, :seatbelt_on, :insurance_premium, :force_idle, :callbacks, :saved, :time_elapsed, :last_transition_args
   
   def initialize(attributes = {})
     attributes = {
@@ -58,6 +58,7 @@ class Vehicle < ModelBase
   
   # Defines the state machine for the state of the vehicled
   state_machine :initial => lambda {|vehicle| vehicle.force_idle ? :idling : :parked}, :action => :save do
+    before_transition {|vehicle, transition| vehicle.last_transition_args = transition.args}
     before_transition :parked => any, :do => :put_on_seatbelt
     before_transition any => :stalled, :do => :increase_insurance_premium
     after_transition any => :parked, :do => lambda {|vehicle| vehicle.seatbelt_on = false}
@@ -338,6 +339,25 @@ class VehicleUnsavedTest < Test::Unit::TestCase
       StateMachine::Transition.new(@vehicle, Vehicle.state_machine, :ignite, :parked, :idling),
       StateMachine::Transition.new(@vehicle, Vehicle.state_machine, :shift_up, :idling, :first_gear)
     ]], @vehicle.state_paths(:to => :first_gear)
+  end
+  
+  def test_should_allow_generic_event_to_fire
+    assert @vehicle.fire_state_event(:ignite)
+    assert_equal 'idling', @vehicle.state
+  end
+  
+  def test_should_pass_arguments_through_to_generic_event_runner
+    @vehicle.fire_state_event(:ignite, 1, 2, 3)
+    assert_equal [1, 2, 3], @vehicle.last_transition_args
+  end
+  
+  def test_should_allow_skipping_action_through_generic_event_runner
+    @vehicle.fire_state_event(:ignite, false)
+    assert_equal false, @vehicle.saved
+  end
+  
+  def test_should_raise_error_with_invalid_event_through_generic_event_runer
+    assert_raise(IndexError) { @vehicle.fire_state_event(:invalid) }
   end
   
   def test_should_allow_ignite
