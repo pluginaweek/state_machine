@@ -5,26 +5,26 @@ rvm:
   - 1.9.3
   - jruby
 env:
-  - INTEGRATION=default TRAVIS=true
-  - INTEGRATION=active_model TRAVIS=true
-  - INTEGRATION=active_record TRAVIS=true
-  - INTEGRATION=data_mapper TRAVIS=true
-  - INTEGRATION=mongoid TRAVIS=true
-  - INTEGRATION=mongo_mapper TRAVIS=true
-  - INTEGRATION=sequel TRAVIS=true
+  - INTEGRATION=default
+  - INTEGRATION=active_model
+  - INTEGRATION=active_record
+  - INTEGRATION=data_mapper
+  - INTEGRATION=mongoid
+  - INTEGRATION=mongo_mapper
+  - INTEGRATION=sequel
 notifications:
   disabled: true
 matrix:
-  exclusions:
+  exclude:
     - rvm: jruby
-      env: INTEGRATION=active_model TRAVIS=true
+      env: INTEGRATION=active_model
     - rvm: jruby
-      env: INTEGRATION=active_record TRAVIS=true
+      env: INTEGRATION=active_record
     - rvm: jruby
-      env: INTEGRATION=data_mapper TRAVIS=true
+      env: INTEGRATION=data_mapper
     - rvm: jruby
-      env: INTEGRATION=mongoid TRAVIS=true
+      env: INTEGRATION=mongoid
     - rvm: jruby
-      env: INTEGRATION=mongo_mapper TRAVIS=true
+      env: INTEGRATION=mongo_mapper
     - rvm: jruby
-      env: INTEGRATION=sequel TRAVIS=true
+      env: INTEGRATION=sequel
