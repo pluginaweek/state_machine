@@ -1,5 +1,7 @@
 # master
 
+## 1.1.0 / 2011-11-13
+
 * Allow the transitions / known states for an event to be reset
 * Add fire_#{name}_event instance method for firing an arbitrary event on a state machine
 * Improve InvalidTransition exception messages to include the failure reason(s) in ORM integrations
