@@ -78,6 +78,8 @@ Below is an example of many of the features offered by this plugin, including:
 * Parallel events
 * Path analysis
 
+Note that state names are given as symbols. You may use strings, but you must be consistent: `:parked` is not the same state as `'parked'`.
+
 Class definition:
 
 ```ruby
