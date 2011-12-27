@@ -632,14 +632,16 @@ end
 For more information about the various behaviors added for Sequel state
 machines, see `StateMachine::Integrations::Sequel`.
 
-## Syntax flexibility
+## Extended Topics
+
+### Syntax flexibility
 
 Although state_machine introduces a simplified syntax, it still remains
 backwards compatible with previous versions and other state-related libraries by
 providing some flexibility around how transitions are defined.  See below for an
 overview of these syntaxes.
 
-### Verbose syntax
+#### Verbose syntax
 
 In general, it's recommended that state machines use the implicit syntax for
 transitions.  However, you can be a little more explicit and verbose about
@@ -663,7 +665,7 @@ class Vehicle
 end
 ```
 
-### Transition context
+#### Transition context
 
 Some flexibility is provided around the context in which transitions can be
 defined.  In almost all examples throughout the documentation, transitions are
@@ -727,7 +729,7 @@ Notice that in these alternative syntaxes:
 * You can continue to define `from` states (when in the machine context) using
 the `all`, `any`, and `same` helper methods
 
-## Static / Dynamic definitions
+### Static / Dynamic definitions
 
 In most cases, the definition of a state machine is **static**.  That is to say,
 the states, events and possible transitions are known ahead of time even though
@@ -815,6 +817,39 @@ vehicle.machine.definition.states.keys  # => :first_gear, :second_gear, :parked,
 As you can see, state_machine provides enough flexibility for you to be able
 to create new machine definitions on the fly based on an external source of
 transitions.
+
+### Core Extensions
+
+By default, state_machine extends the Ruby core with a +state_machine+ method on
++Class+.  All other parts of the library are confined within the +StateMachine+
+namespace.  While this isn't wholly necessary, it also doesn't have any performance
+impact and makes it truly feel like an extension to the language.  This is very
+similar to the way that you'll find +yaml+, +json+, or other libraries adding a
+simple method to all objects just by loading the library.
+
+However, if you'd like to avoid having state_machine add this extension to the
+Ruby core, you can do so like so:
+
+```ruby
+require 'state_machine/core'
+
+class Vehicle
+  extend StateMachine::MacroMethods
+  
+  state_machine do
+    # ...
+  end
+end
+```
+
+If you're using a gem loader like Bundler, you can explicitly indicate which
+file to load:
+
+```ruby
+# In Gemfile
+...
+gem 'state_machine', :require => 'state_machine/core'
+```
 
 ## Tools
 
