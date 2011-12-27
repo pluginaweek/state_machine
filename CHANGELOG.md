@@ -1,5 +1,8 @@
 # master
 
+* Allow all states / events to be looked up by their string / symbol equivalent
+* Allow state_machine to be loaded without extensions to the Ruby core
+
 ## 1.1.0 / 2011-11-13
 
 * Allow the transitions / known states for an event to be reset
