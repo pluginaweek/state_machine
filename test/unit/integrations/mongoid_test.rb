@@ -62,6 +62,34 @@ module MongoidTest
     end
   end
   
+  class MachineWithoutFieldTest < BaseTestCase
+    def setup
+      @model = new_model
+      StateMachine::Machine.new(@model, :status)
+    end
+    
+    def test_should_define_field_with_string_type
+      field = @model.fields['status']
+      assert_not_nil field
+      assert_equal String, field.type
+    end
+  end
+  
+  class MachineWithFieldTest < BaseTestCase
+    def setup
+      @model = new_model do
+        field :status, :type => Integer
+      end
+      StateMachine::Machine.new(@model, :status)
+    end
+    
+    def test_should_not_redefine_field
+      field = @model.fields['status']
+      assert_not_nil field
+      assert_equal Integer, field.type
+    end
+  end
+  
   class MachineByDefaultTest < BaseTestCase
     def setup
       @model = new_model

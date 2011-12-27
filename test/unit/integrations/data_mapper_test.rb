@@ -107,6 +107,44 @@ module DataMapperTest
     end
   end
   
+  class MachineWithoutPropertyTest < BaseTestCase
+    def setup
+      @resource = new_resource
+      StateMachine::Machine.new(@resource, :status)
+    end
+    
+    def test_should_define_field_with_string_type
+      property = @resource.properties.detect {|property| property.name == :status}
+      assert_not_nil property
+      
+      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('1.0.0')
+        assert_instance_of DataMapper::Property::String, property
+      else
+        assert_equal String, property.type
+      end
+    end
+  end
+  
+  class MachineWithPropertyTest < BaseTestCase
+    def setup
+      @resource = new_resource do
+        property :status, Integer
+      end
+      StateMachine::Machine.new(@resource, :status)
+    end
+    
+    def test_should_not_redefine_field
+      property = @resource.properties.detect {|property| property.name == :status}
+      assert_not_nil property
+      
+      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('1.0.0')
+        assert_instance_of DataMapper::Property::Integer, property
+      else
+        assert_equal Integer, property.type
+      end
+    end
+  end
+  
   class MachineByDefaultTest < BaseTestCase
     def setup
       @resource = new_resource

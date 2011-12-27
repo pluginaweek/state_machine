@@ -323,7 +323,7 @@ module StateMachine
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
-          owner_class.key(attribute, String) unless owner_class.keys.include?(attribute)
+          owner_class.key(attribute, String) unless owner_class.keys.include?(attribute.to_s)
           super
         end
         

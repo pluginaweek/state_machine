@@ -75,6 +75,34 @@ module MongoMapperTest
     end
   end
   
+  class MachineWithoutKeyTest < BaseTestCase
+    def setup
+      @model = new_model
+      StateMachine::Machine.new(@model, :status)
+    end
+    
+    def test_should_define_field_with_string_type
+      key = @model.keys['status']
+      assert_not_nil key
+      assert_equal String, key.type
+    end
+  end
+  
+  class MachineWithKeyTest < BaseTestCase
+    def setup
+      @model = new_model do
+        key :status, Integer
+      end
+      StateMachine::Machine.new(@model, :status)
+    end
+    
+    def test_should_not_redefine_field
+      key = @model.keys['status']
+      assert_not_nil key
+      assert_equal Integer, key.type
+    end
+  end
+  
   class MachineByDefaultTest < BaseTestCase
     def setup
       @model = new_model

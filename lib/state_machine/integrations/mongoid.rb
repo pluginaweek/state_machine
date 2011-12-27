@@ -384,7 +384,7 @@ module StateMachine
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
-          owner_class.field(attribute, :type => String) unless owner_class.fields.include?(attribute)
+          owner_class.field(attribute, :type => String) unless owner_class.fields.include?(attribute.to_s)
           super
         end
         
