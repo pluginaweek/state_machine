@@ -1,10 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class Node < Struct.new(:name, :value, :machine)
-  def name_to_s
-    name.to_s
-  end
-  
   def context
     yield
   end
@@ -246,7 +242,7 @@ end
 class NodeCollectionWithStringIndexTest < Test::Unit::TestCase
   def setup
     machine = StateMachine::Machine.new(Class.new)
-    @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :name_to_s, :value])
+    @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :value])
     
     @parked = Node.new(:parked, 1)
     @collection << @parked
@@ -257,15 +253,47 @@ class NodeCollectionWithStringIndexTest < Test::Unit::TestCase
   end
   
   def test_should_index_by_string_name
-    assert_equal @parked, @collection['parked', :name_to_s]
+    assert_equal @parked, @collection['parked']
+  end
+end
+
+class NodeCollectionWithSymbolIndexTest < Test::Unit::TestCase
+  def setup
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :value])
+    
+    @parked = Node.new('parked', 1)
+    @collection << @parked
   end
   
-  def test_should_fallback_to_string_index
+  def test_should_index_by_name
     assert_equal @parked, @collection['parked']
   end
   
-  def test_should_not_fallback_to_string_index_if_not_available
-    assert_nil @collection['1', :value]
+  def test_should_index_by_symbol_name
+    assert_equal @parked, @collection[:parked]
+  end
+end
+
+class NodeCollectionWithNumericIndexTest < Test::Unit::TestCase
+  def setup
+    machine = StateMachine::Machine.new(Class.new)
+    @collection = StateMachine::NodeCollection.new(machine, :index => [:name, :value])
+    
+    @parked = Node.new(10, 1)
+    @collection << @parked
+  end
+  
+  def test_should_index_by_name
+    assert_equal @parked, @collection[10]
+  end
+  
+  def test_should_index_by_string_name
+    assert_equal @parked, @collection['10']
+  end
+  
+  def test_should_index_by_symbol_name
+    assert_equal @parked, @collection[:'10']
   end
 end
 

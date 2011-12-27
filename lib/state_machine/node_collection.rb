@@ -2,6 +2,8 @@ require 'state_machine/assertions'
 
 module StateMachine
   # Represents a collection of nodes in a state machine, be it events or states.
+  # Nodes will not differentiate between the String and Symbol versions of the
+  # values being indexed.
   class NodeCollection
     include Enumerable
     include Assertions
@@ -22,7 +24,13 @@ module StateMachine
       
       @machine = machine
       @nodes = []
-      @indices = Array(options[:index]).inject({}) {|indices, attribute| indices[attribute] = {}; indices}
+      @index_names = Array(options[:index])
+      @indices = @index_names.inject({}) do |indices, name|
+        indices[name] = {}
+        indices[:"#{name}_to_s"] = {}
+        indices[:"#{name}_to_sym"] = {}
+        indices
+      end
       @default_index = Array(options[:index]).first
       @contexts = []
     end
@@ -79,7 +87,7 @@ module StateMachine
     # that match the new node.
     def <<(node)
       @nodes << node
-      @indices.each {|attribute, index| index[value(node, attribute)] = node}
+      @index_names.each {|name| add_to_index(name, value(node, name), node)}
       @contexts.each {|context| eval_context(context, node)}
       self
     end
@@ -93,16 +101,7 @@ module StateMachine
     # has changed since it was added to the collection, the old indexed keys
     # will be replaced with the updated ones.
     def update(node)
-      @indices.each do |attribute, index|
-        old_key = RUBY_VERSION < '1.9' ? index.index(node) : index.key(node)
-        new_key = value(node, attribute)
-        
-        # Only replace the key if it's changed
-        if old_key != new_key
-          index.delete(old_key)
-          index[new_key] = node
-        end
-      end
+      @index_names.each {|name| update_index(name, node)}
     end
     
     # Calls the block once for each element in self, passing that element as a
@@ -144,12 +143,10 @@ module StateMachine
     # 
     # If the key cannot be found, then nil will be returned.
     def [](key, index_name = @default_index)
-      index = self.index(index_name)
-      if index.include?(key)
-        index[key]
-      elsif @indices.include?(:"#{index_name}_to_s")
-        self[key.to_s, :"#{index_name}_to_s"]
-      end
+      self.index(index_name)[key] ||
+      self.index(:"#{index_name}_to_s")[key.to_s] ||
+      to_sym?(key) && self.index(:"#{index_name}_to_sym")[:"#{key}"] ||
+      nil
     end
     
     # Gets the node indexed by the given key.  By default, this will look up the
@@ -179,6 +176,41 @@ module StateMachine
       # Gets the value for the given attribute on the node
       def value(node, attribute)
         node.send(attribute)
+      end
+      
+      # Adds the given key / node combination to an index, including the string
+      # and symbol versions of the index
+      def add_to_index(name, key, node)
+        index(name)[key] = node
+        index(:"#{name}_to_s")[key.to_s] = node
+        index(:"#{name}_to_sym")[:"#{key}"] = node if to_sym?(key)
+      end
+      
+      # Removes the given key from an index, including the string and symbol
+      # versions of the index
+      def remove_from_index(name, key)
+        index(name).delete(key)
+        index(:"#{name}_to_s").delete(key.to_s)
+        index(:"#{name}_to_sym").delete(:"#{key}") if to_sym?(key)
+      end
+      
+      # Updates the node for the given index, including the string and symbol
+      # versions of the index
+      def update_index(name, node)
+        index = self.index(name)
+        old_key = RUBY_VERSION < '1.9' ? index.index(node) : index.key(node)
+        new_key = value(node, name)
+        
+        # Only replace the key if it's changed
+        if old_key != new_key
+          remove_from_index(name, old_key)
+          add_to_index(name, new_key, node)
+        end
+      end
+      
+      # Determines whether the given value can be converted to a symbol
+      def to_sym?(value)
+        "#{value}" != ''
       end
       
       # Evaluates the given context for a particular node.  This will only

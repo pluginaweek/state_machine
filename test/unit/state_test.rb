@@ -15,7 +15,7 @@ class StateByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_have_a_qualified_name
-    assert_equal :parked, @state.name
+    assert_equal :parked, @state.qualified_name
   end
   
   def test_should_have_a_human_name

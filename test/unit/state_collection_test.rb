@@ -49,6 +49,10 @@ class StateCollectionTest < Test::Unit::TestCase
     assert_equal @parked, @states[:parked, :qualified_name]
   end
   
+  def test_should_index_by_string_qualified_name
+    assert_equal @parked, @states['parked', :qualified_name]
+  end
+  
   def test_should_index_by_value
     assert_equal @parked, @states['parked', :value]
   end
@@ -85,6 +89,40 @@ class StateCollectionTest < Test::Unit::TestCase
     @object.state = 'invalid'
     exception = assert_raise(ArgumentError) { @states.match!(@object) }
     assert_equal '"invalid" is not a known state value', exception.message
+  end
+end
+
+class StateCollectionStringTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
+    @states = StateMachine::StateCollection.new(@machine)
+    
+    @states << @nil = StateMachine::State.new(@machine, nil)
+    @states << @parked = StateMachine::State.new(@machine, 'parked')
+    @machine.states.concat(@states)
+    
+    @object = @klass.new
+  end
+  
+  def test_should_index_by_name
+    assert_equal @parked, @states['parked', :name]
+  end
+  
+  def test_should_index_by_name_by_default
+    assert_equal @parked, @states['parked']
+  end
+  
+  def test_should_index_by_symbol_name
+    assert_equal @parked, @states[:parked]
+  end
+  
+  def test_should_index_by_qualified_name
+    assert_equal @parked, @states['parked', :qualified_name]
+  end
+  
+  def test_should_index_by_symbol_qualified_name
+    assert_equal @parked, @states[:parked, :qualified_name]
   end
 end
 

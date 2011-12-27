@@ -96,11 +96,6 @@ module StateMachine
       @methods = methods.dup
     end
     
-    # Converts the name of this state to a string
-    def name_to_s
-      name.to_s
-    end
-    
     # Determines whether there are any states that can be transitioned to from
     # this state.  If there are none, then this state is considered *final*.
     # Any objects in a final state will remain so forever given the current
