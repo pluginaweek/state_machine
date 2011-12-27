@@ -2216,7 +2216,7 @@ module StateMachine
         new_states.map do |new_state|
           # Check for other states that use a different class type for their name.
           # This typically prevents string / symbol misuse.
-          if conflict = states.detect {|state| state.name && state.name.class != new_state.class}
+          if new_state && conflict = states.detect {|state| state.name && state.name.class != new_state.class}
             raise ArgumentError, "#{new_state.inspect} state defined as #{new_state.class}, #{conflict.name.inspect} defined as #{conflict.name.class}; all states must be consistent"
           end
           

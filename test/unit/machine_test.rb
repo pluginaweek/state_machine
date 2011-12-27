@@ -2084,8 +2084,12 @@ class MachineWithStatesTest < Test::Unit::TestCase
   end
   
   def test_should_raise_exception_if_conflicting_type_used_for_name
-    exception = assert_raise(ArgumentError) {  @machine.state 'first_gear' }
+    exception = assert_raise(ArgumentError) { @machine.state 'first_gear' }
     assert_equal '"first_gear" state defined as String, :parked defined as Symbol; all states must be consistent', exception.message
+  end
+  
+  def test_should_not_raise_exception_if_conflicting_type_is_nil_for_name
+    assert_nothing_raised { @machine.state nil }
   end
 end
 
