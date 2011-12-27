@@ -634,6 +634,63 @@ machines, see `StateMachine::Integrations::Sequel`.
 
 ## Extended Topics
 
+### Symbols vs. Strings
+
+In all of the examples used throughout the documentation, you'll notice that
+states and events are almost always referenced as symbols.  This isn't a
+requirement, but rather a suggested best practice.
+
+You can very well define your state machine with Strings like so:
+
+```ruby
+class Vehicle
+  state_machine :initial => 'parked' do
+    event 'ignite' do
+      transition 'parked' => 'idling'
+    end
+    
+    # ...
+  end
+end
+```
+
+You could even use numbers as your state / event names.  The **important** thing
+to keep in mind is that the type being used for referencing states / events in
+your machine definition must be **consistent**.  If you're using Symbols, then
+all states / events must use Symbols.  Otherwise you'll encounter the following
+error:
+
+```ruby
+class Vehicle
+  state_machine do
+    event :ignite do
+      transition :parked => 'idling'
+    end
+  end
+end
+
+# => ArgumentError: "idling" state defined as String, :parked defined as Symbol; all states must be consistent
+```
+
+There **is** an exception to this rule.  The consistency is only required within
+the definition itself.  However, when the machine's helper methods are called
+with input from external sources, such as a web form, state_machine will map
+that input to a String / Symbol.  For example:
+
+```ruby
+class Vehicle
+  state_machine :initial => :parked do
+    event :ignite do
+      transition :parked => :idling
+    end
+  end
+end
+
+v = Vehicle.new     # => #<Vehicle:0xb71da5f8 @state="parked">
+v.state?('parked')  # => true
+v.state?(:parked)   # => true
+```
+
 ### Syntax flexibility
 
 Although state_machine introduces a simplified syntax, it still remains

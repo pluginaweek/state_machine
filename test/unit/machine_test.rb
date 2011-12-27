@@ -2082,6 +2082,11 @@ class MachineWithStatesTest < Test::Unit::TestCase
     exception = assert_raise(ArgumentError) {@machine.state(:first_gear, :invalid => true)}
     assert_equal 'Invalid key(s): invalid', exception.message
   end
+  
+  def test_should_raise_exception_if_conflicting_type_used_for_name
+    exception = assert_raise(ArgumentError) {  @machine.state 'first_gear' }
+    assert_equal '"first_gear" state defined as String, :parked defined as Symbol; all states must be consistent', exception.message
+  end
 end
 
 class MachineWithStatesWithCustomValuesTest < Test::Unit::TestCase
@@ -2319,6 +2324,12 @@ class MachineWithEventsTest < Test::Unit::TestCase
   def test_should_raise_exception_on_invalid_human_state_event_name_lookup
     exception = assert_raise(IndexError) {@klass.human_state_event_name(:invalid)}
     assert_equal ':invalid is an invalid name', exception.message
+  end
+  
+  def test_should_raise_exception_if_conflicting_type_used_for_name
+    @machine.event :park
+    exception = assert_raise(ArgumentError) {  @machine.event 'ignite' }
+    assert_equal '"ignite" event defined as String, :park defined as Symbol; all events must be consistent', exception.message
   end
 end
 

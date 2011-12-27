@@ -1,5 +1,6 @@
 # master
 
+* Raise error when states / events are referenced in a definition with different types (e.g. both Strings and Symbols)
 * Allow all states / events to be looked up by their string / symbol equivalent
 * Allow state_machine to be loaded without extensions to the Ruby core
 

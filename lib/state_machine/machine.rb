@@ -2214,6 +2214,12 @@ module StateMachine
       # this machine
       def add_states(new_states)
         new_states.map do |new_state|
+          # Check for other states that use a different class type for their name.
+          # This typically prevents string / symbol misuse.
+          if conflict = states.detect {|state| state.name && state.name.class != new_state.class}
+            raise ArgumentError, "#{new_state.inspect} state defined as #{new_state.class}, #{conflict.name.inspect} defined as #{conflict.name.class}; all states must be consistent"
+          end
+          
           unless state = states[new_state]
             states << state = State.new(self, new_state)
             
@@ -2229,6 +2235,12 @@ module StateMachine
       # this machine
       def add_events(new_events)
         new_events.map do |new_event|
+          # Check for other states that use a different class type for their name.
+          # This typically prevents string / symbol misuse.
+          if conflict = events.detect {|event| event.name.class != new_event.class}
+            raise ArgumentError, "#{new_event.inspect} event defined as #{new_event.class}, #{conflict.name.inspect} defined as #{conflict.name.class}; all events must be consistent"
+          end
+          
           unless event = events[new_event]
             events << event = Event.new(self, new_event)
           end
