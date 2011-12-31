@@ -632,7 +632,7 @@ end
 For more information about the various behaviors added for Sequel state
 machines, see `StateMachine::Integrations::Sequel`.
 
-## Extended Topics
+## Additional Topics
 
 ### Symbols vs. Strings
 
@@ -758,7 +758,7 @@ class Vehicle
 end
 ```
 
-In the above example, there's no need to specify the +from+ state for each
+In the above example, there's no need to specify the `from` state for each
 transition since it's inferred from the context.
 
 You can also define transitions completely outside the context of a particular
@@ -877,11 +877,11 @@ transitions.
 
 ### Core Extensions
 
-By default, state_machine extends the Ruby core with a +state_machine+ method on
-+Class+.  All other parts of the library are confined within the +StateMachine+
+By default, state_machine extends the Ruby core with a `state_machine` method on
+`Class`.  All other parts of the library are confined within the `StateMachine`
 namespace.  While this isn't wholly necessary, it also doesn't have any performance
 impact and makes it truly feel like an extension to the language.  This is very
-similar to the way that you'll find +yaml+, +json+, or other libraries adding a
+similar to the way that you'll find `yaml`, `json`, or other libraries adding a
 simple method to all objects just by loading the library.
 
 However, if you'd like to avoid having state_machine add this extension to the
