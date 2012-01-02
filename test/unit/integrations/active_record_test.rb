@@ -34,7 +34,7 @@ module ActiveRecordTest
         
         model = Class.new(ActiveRecord::Base) do
           connection.create_table(table_name, :force => true) {|t| t.string(:state)} if create_table
-          set_table_name(table_name.to_s)
+          self.table_name = table_name.to_s
           
           (class << self; self; end).class_eval do
             define_method(:name) { "ActiveRecordTest::#{table_name.to_s.capitalize}" }
