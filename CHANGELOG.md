@@ -1,5 +1,7 @@
 # master
 
+* Fix states not being initialized properly on ActiveRecord 3.2+
+
 ## 1.1.1 / 2011-12-31
 
 * Fix fields being defined for Mongoid / MongoMapper state attributes even if they're already defined in the model

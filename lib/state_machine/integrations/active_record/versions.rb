@@ -1,6 +1,22 @@
 module StateMachine
   module Integrations #:nodoc:
     module ActiveRecord
+      version '2.x - 3.0.x' do
+        def self.active?
+          ::ActiveRecord::VERSION::MAJOR == 2 || ::ActiveRecord::VERSION::MAJOR == 3 && ::ActiveRecord::VERSION::MINOR == 0
+        end
+        
+        def define_static_state_initializer
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+            def attributes_from_column_definition(*)
+              result = super
+              self.class.state_machines.initialize_states(self, :dynamic => false, :to => result)
+              result
+            end
+          end_eval
+        end
+      end
+      
       version '2.x' do
         def self.active?
           ::ActiveRecord::VERSION::MAJOR == 2
