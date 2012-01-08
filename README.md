@@ -1,4 +1,4 @@
-# state_machine [![Build Status](https://secure.travis-ci.org/pluginaweek/state_machine.png "Build Status")](http://travis-ci.org/pluginaweek/state_machine)
+# state_machine [![Build Status](https://secure.travis-ci.org/pluginaweek/state_machine.png "Build Status")](http://travis-ci.org/pluginaweek/state_machine) [![Dependency Status](https://gemnasium.com/pluginaweek/state_machine.png "Dependency Status")](https://gemnasium.com/pluginaweek/state_machine)
 
 *state_machine* adds support for creating state machines for attributes on any
 Ruby class.
