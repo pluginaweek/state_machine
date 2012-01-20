@@ -1,5 +1,7 @@
 # master
 
+## 1.1.2 / 2012-01-20
+
 * Fix states not being initialized properly on ActiveRecord 3.2+
 
 ## 1.1.1 / 2011-12-31
