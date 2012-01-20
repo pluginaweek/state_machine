@@ -67,7 +67,7 @@ if RUBY_VERSION > "1.8.6"
   
   appraise "active_record-3.2.0" do
     gem "sqlite3-ruby"
-    gem "activerecord", :git => "git://github.com/rails/rails.git", :branch => "3-2-stable"
+    gem "activerecord", "3.2.0"
   end
 end
 
@@ -83,6 +83,10 @@ if RUBY_VERSION > "1.8.6"
 
   appraise "active_model-3.1.1" do
     gem "activemodel", "3.1.1"
+  end
+  
+  appraise "active_model-3.2.0" do
+    gem "activemodel", "3.2.0"
   end
 end
 
