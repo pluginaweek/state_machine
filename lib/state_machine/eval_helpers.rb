@@ -53,7 +53,19 @@ module StateMachine
     def evaluate_method(object, method, *args, &block)
       case method
         when Symbol
-          object.method(method).arity == 0 ? object.send(method, &block) : object.send(method, *args, &block)
+          begin
+            object.method(method).arity == 0 ? object.send(method, &block) : object.send(method, *args, &block)
+          rescue NameError => ex
+            
+            # Check if the object responds to the method via method_missing 
+            # Expecting this to be denoted by courtesy overriding of respond_to_missing?
+            if object.respond_to_missing?(method, true)
+              object.send(method, *args, &block)
+            
+            else # If not, re raise that NameError
+              object.method(method)
+            end
+          end
         when Proc, Method
           args.unshift(object)
           arity = method.arity
