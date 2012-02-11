@@ -943,6 +943,12 @@ To generate multiple state machine graphs:
 rake state_machine:draw FILE=vehicle.rb,car.rb CLASS=Vehicle,Car
 ```
 
+To use human state / event names:
+
+```bash
+rake state_machine:draw FILE=vehicle.rb CLASS=Vehicle HUMAN_NAMES=true
+```
+
 **Note** that this will generate a different file for every state machine defined
 in the class.  The generated files will use an output filename of the format
 `#{class_name}_#{machine_name}.#{format}`.

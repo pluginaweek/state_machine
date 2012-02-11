@@ -1863,16 +1863,18 @@ module StateMachine
     #   Default is "Arial".
     # * <tt>:orientation</tt> - The direction of the graph ("portrait" or
     #   "landscape").  Default is "portrait".
-    # * <tt>:output</tt> - Whether to generate the output of the graph
+    # * <tt>:human_names</tt> - Whether to use human state / event names for
+    #   node labels on the graph instead of the internal name.  Default is false.
     def draw(options = {})
       options = {
         :name => "#{owner_class.name}_#{name}",
         :path => '.',
         :format => 'png',
         :font => 'Arial',
-        :orientation => 'portrait'
+        :orientation => 'portrait',
+        :human_names => false
       }.merge(options)
-      assert_valid_keys(options, :name, :path, :format, :font, :orientation)
+      assert_valid_keys(options, :name, :path, :format, :font, :orientation, :human_names)
       
       begin
         # Load the graphviz library
@@ -1884,13 +1886,13 @@ module StateMachine
         
         # Add nodes
         states.by_priority.each do |state|
-          node = state.draw(graph)
+          node = state.draw(graph, :human_name => options[:human_names])
           node.fontname = options[:font]
         end
         
         # Add edges
         events.each do |event|
-          edges = event.draw(graph)
+          edges = event.draw(graph, :human_name => options[:human_names])
           edges.each {|edge| edge.fontname = options[:font]}
         end
         

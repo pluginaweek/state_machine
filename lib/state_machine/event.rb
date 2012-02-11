@@ -194,9 +194,13 @@ module StateMachine
     # configured.
     # 
     # A collection of the generated edges will be returned.
-    def draw(graph)
+    # 
+    # Configuration options:
+    # * <tt>:human_name</tt> - Whether to use the event's human name for the
+    #   node's label that gets drawn on the graph
+    def draw(graph, options = {})
       valid_states = machine.states.by_priority.map {|state| state.name}
-      branches.collect {|branch| branch.draw(graph, name, valid_states)}.flatten
+      branches.collect {|branch| branch.draw(graph, options[:human_name] ? human_name : name, valid_states)}.flatten
     end
     
     # Generates a nicely formatted description of this event's contents.

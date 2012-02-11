@@ -125,8 +125,13 @@ module StateMachine
     #   State.new(machine, :parked, :value => nil).description                # => "parked (nil)"
     #   State.new(machine, :parked, :value => 1).description                  # => "parked (1)"
     #   State.new(machine, :parked, :value => lambda {Time.now}).description  # => "parked (*)
-    def description
-      description = name ? name.to_s : name.inspect
+    # 
+    # Configuration options:
+    # * <tt>:human_name</tt> - Whether to use this state's human name in the
+    #   description or just the internal name
+    def description(options = {})
+      label = options[:human_name] ? human_name : name
+      description = label ? label.to_s : label.inspect
       description << " (#{@value.is_a?(Proc) ? '*' : @value.inspect})" unless name.to_s == @value.to_s
       description
     end
@@ -227,9 +232,13 @@ module StateMachine
     #   state, then "doublecircle", otherwise "ellipse".
     # 
     # The actual node generated on the graph will be returned.
-    def draw(graph)
+    # 
+    # Configuration options:
+    # * <tt>:human_name</tt> - Whether to use the state's human name for the
+    #   node's label that gets drawn on the graph
+    def draw(graph, options = {})
       node = graph.add_node(name ? name.to_s : 'nil',
-        :label => description,
+        :label => description(options),
         :width => '1',
         :height => '1',
         :shape => final? ? 'doublecircle' : 'ellipse'

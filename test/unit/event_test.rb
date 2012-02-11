@@ -1021,6 +1021,27 @@ begin
       assert_equal 'park', @edges.first['label'].to_s.gsub('"', '')
     end
   end
+  
+  class EventDrawingWithHumanNameTest < Test::Unit::TestCase
+    def setup
+      states = [:parked, :idling]
+      
+      @machine = StateMachine::Machine.new(Class.new, :initial => :parked)
+      @machine.other_states(*states)
+      
+      graph = GraphViz.new('G')
+      states.each {|state| graph.add_node(state.to_s)}
+      
+      @machine.events << @event = StateMachine::Event.new(@machine , :park, :human_name => 'Park')
+      @event.transition :parked => :idling
+      
+      @edges = @event.draw(graph, :human_name => true)
+    end
+    
+    def test_should_use_event_human_name_for_edge_label
+      assert_equal 'Park', @edges.first['label'].to_s.gsub('"', '')
+    end
+  end
 rescue LoadError
   $stderr.puts 'Skipping GraphViz StateMachine::Event tests. `gem install ruby-graphviz` >= v0.9.0 and try again.'
 end unless ENV['TRAVIS']

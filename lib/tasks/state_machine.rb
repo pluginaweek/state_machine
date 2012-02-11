@@ -1,5 +1,5 @@
 namespace :state_machine do
-  desc 'Draws state machines using GraphViz (options: CLASS=User,Vehicle; FILE=user.rb,vehicle.rb [not required in Rails / Merb]; FONT=Arial; FORMAT=png; ORIENTATION=portrait'
+  desc 'Draws state machines using GraphViz (options: CLASS=User,Vehicle; FILE=user.rb,vehicle.rb [not required in Rails / Merb]; FONT=Arial; FORMAT=png; ORIENTATION=portrait; HUMAN_NAMES=true'
   task :draw do
     # Build drawing options
     options = {}
@@ -8,6 +8,7 @@ namespace :state_machine do
     options[:format] = ENV['FORMAT'] if ENV['FORMAT']
     options[:font] = ENV['FONT'] if ENV['FONT']
     options[:orientation] = ENV['ORIENTATION'] if ENV['ORIENTATION']
+    options[:human_names] = ENV['HUMAN_NAMES'] == 'true' if ENV['HUMAN_NAMES']
     
     if defined?(Rails)
       puts "Files are automatically loaded in Rails; ignoring FILE option" if options.delete(:file)

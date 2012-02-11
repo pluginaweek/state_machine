@@ -1,5 +1,7 @@
 # master
 
+* Allow states / events to be drawn with their human name instead of their internal name
+
 ## 1.1.2 / 2012-01-20
 
 * Fix states not being initialized properly on ActiveRecord 3.2+

@@ -115,6 +115,10 @@ class StateWithoutNameTest < Test::Unit::TestCase
   def test_should_have_a_description
     assert_equal 'nil', @state.description
   end
+  
+  def test_should_have_a_description_using_human_name
+    assert_equal 'nil', @state.description(:human_name => true)
+  end
 end
 
 class StateWithNameTest < Test::Unit::TestCase
@@ -149,6 +153,11 @@ class StateWithNameTest < Test::Unit::TestCase
     assert_equal 'parked', @state.description
   end
   
+  def test_should_allow_using_human_name_in_description
+    @state.human_name = 'Parked'
+    assert_equal 'Parked', @state.description(:human_name => true)
+  end
+  
   def test_should_define_predicate
     assert @klass.new.respond_to?(:parked?)
   end
@@ -177,6 +186,11 @@ class StateWithNilValueTest < Test::Unit::TestCase
     assert_equal 'parked (nil)', @state.description
   end
   
+  def test_should_have_a_description_with_human_name
+    @state.human_name = 'Parked'
+    assert_equal 'Parked (nil)', @state.description(:human_name => true)
+  end
+  
   def test_should_define_predicate
     object = @klass.new
     assert object.respond_to?(:parked?)
@@ -196,6 +210,11 @@ class StateWithSymbolicValueTest < Test::Unit::TestCase
     
   def test_should_not_include_value_in_description
     assert_equal 'parked', @state.description
+  end
+  
+  def test_should_allow_human_name_in_description
+    @state.human_name = 'Parked'
+    assert_equal 'Parked', @state.description(:human_name => true)
   end
   
   def test_should_match_symbolic_value
@@ -222,6 +241,11 @@ class StateWithIntegerValueTest < Test::Unit::TestCase
   
   def test_should_include_value_in_description
     assert_equal 'parked (1)', @state.description
+  end
+  
+  def test_should_allow_human_name_in_description
+    @state.human_name = 'Parked'
+    assert_equal 'Parked (1)', @state.description(:human_name => true)
   end
   
   def test_should_match_integer_value
@@ -954,6 +978,23 @@ begin
     
     def test_should_use_doublecircle_as_shape
       assert_equal 'doublecircle', @node['shape'].to_s.gsub('"', '')
+    end
+  end
+  
+  class StateDrawingWithHumanNameTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      @machine.states << @state = StateMachine::State.new(@machine, :parked, :human_name => 'Parked')
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
+      
+      graph = GraphViz.new('G')
+      @node = @state.draw(graph, :human_name => true)
+    end
+    
+    def test_should_use_description_with_human_name_as_label
+      assert_equal 'Parked', @node['label'].to_s.gsub('"', '')
     end
   end
 rescue LoadError

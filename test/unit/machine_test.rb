@@ -3230,6 +3230,21 @@ begin
       assert_equal 'TB', graph['rankdir'].to_s.gsub('"', '')
     end
     
+    if Constants::RGV_VERSION != '0.9.0'
+      def test_should_allow_human_names_to_be_displayed
+        @machine.event :ignite, :human_name => 'Ignite'
+        @machine.state :parked, :human_name => 'Parked'
+        @machine.state :idling, :human_name => 'Idling'
+        graph = @machine.draw(:human_names => true)
+        
+        parked_node = graph.get_node('parked')
+        assert_equal 'Parked', parked_node['label'].to_s.gsub('"', '')
+        
+        idling_node = graph.get_node('idling')
+        assert_equal 'Idling', idling_node['label'].to_s.gsub('"', '')
+      end
+    end
+    
     def teardown
       FileUtils.rm Dir["{.,#{File.dirname(__FILE__)}}/*.{png,jpg}"]
     end
