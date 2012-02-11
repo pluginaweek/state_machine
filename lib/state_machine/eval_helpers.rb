@@ -52,40 +52,39 @@ module StateMachine
     #   evaluate_method(person, lambda {|person, age| "#{person.name} is #{age}"}, 21, 'male')  # => ArgumentError: wrong number of arguments (3 for 2)
     def evaluate_method(object, method, *args, &block)
       case method
-      when Symbol
-        if method_defined?(method) or private_method_defined?(method) or protected_method_defined?(method)
-          
-          object.method(method).arity == 0 ? object.send(method, &block) : object.send(method, *args, &block)
-        else
-          object.send(method, *args, &block)
-        end
-        
-      when Proc, Method
-        args.unshift(object)
-        arity = method.arity
-        
-        # Procs don't support blocks in < Ruby 1.9, so it's tacked on as an
-        # argument for consistency across versions of Ruby
-        if block_given? && Proc === method && arity != 0
-          if [1, 2].include?(arity)
-            # Force the block to be either the only argument or the 2nd one
-            # after the object (may mean additional arguments get discarded)
-            args = args[0, arity - 1] + [block]
+        when Symbol
+          if (method_defined?(method) || private_method_defined?(method)) && object.method(method).arity == 0
+            object.send(method, &block)
           else
-            # Tack the block to the end of the args
-            args << block
+            object.send(method, *args, &block)
           end
-        else
-          # These method types are only called with 0, 1, or n arguments
-          args = args[0, arity] if [0, 1].include?(arity)
-        end
         
-        method.call(*args, &block)
-      when String
-        eval(method, object.instance_eval {binding}, &block)
-      else
-        raise ArgumentError, 'Methods must be a symbol denoting the method to call, a block to be invoked, or a string to be evaluated'
-      end
+        when Proc, Method
+          args.unshift(object)
+          arity = method.arity
+        
+          # Procs don't support blocks in < Ruby 1.9, so it's tacked on as an
+          # argument for consistency across versions of Ruby
+          if block_given? && Proc === method && arity != 0
+            if [1, 2].include?(arity)
+              # Force the block to be either the only argument or the 2nd one
+              # after the object (may mean additional arguments get discarded)
+              args = args[0, arity - 1] + [block]
+            else
+              # Tack the block to the end of the args
+              args << block
+            end
+          else
+            # These method types are only called with 0, 1, or n arguments
+            args = args[0, arity] if [0, 1].include?(arity)
+          end
+        
+          method.call(*args, &block)
+        when String
+          eval(method, object.instance_eval {binding}, &block)
+        else
+          raise ArgumentError, 'Methods must be a symbol denoting the method to call, a block to be invoked, or a string to be evaluated'
+        end
     end
   end
 end
