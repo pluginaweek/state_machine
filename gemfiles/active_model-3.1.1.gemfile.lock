@@ -1,5 +1,5 @@
 PATH
-  remote: /home/aaron/Projects/Vendor/state_machine
+  remote: /home/aaron/Projects/Personal/pluginaweek/state_machine
   specs:
     state_machine (1.1.2)
 
