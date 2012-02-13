@@ -2551,6 +2551,13 @@ class MachineWithTransitionsTest < Test::Unit::TestCase
     assert_equal 2, branches.length
     assert_equal [:ignite, :shift_up], @machine.events.map {|event| event.name}
   end
+  
+  def test_should_not_modify_options
+    options = {:parked => :idling, :on => :ignite}
+    @machine.transition(options)
+    
+    assert_equal options, {:parked => :idling, :on => :ignite}
+  end
 end
 
 class MachineWithTransitionCallbacksTest < Test::Unit::TestCase

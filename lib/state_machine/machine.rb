@@ -1445,6 +1445,7 @@ module StateMachine
       raise ArgumentError, 'Must specify :on event' unless options[:on]
       
       branches = []
+      options = options.dup
       event(*Array(options.delete(:on))) { branches << transition(options) }
       
       branches.length == 1 ? branches.first : branches
