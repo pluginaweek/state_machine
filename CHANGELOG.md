@@ -1,5 +1,6 @@
 # master
 
+* Add YARD integration for autogenerating documentation / embedding visualizations of state machines
 * Allow states / events to be drawn with their human name instead of their internal name
 
 ## 1.1.2 / 2012-01-20

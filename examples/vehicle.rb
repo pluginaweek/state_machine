@@ -1,3 +1,5 @@
+require 'state_machine'
+
 class Vehicle
   state_machine :initial => :parked do
     event :park do

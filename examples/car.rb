@@ -1,3 +1,5 @@
+require 'state_machine'
+
 class Car < Vehicle
   state_machine do
     event :reverse do

@@ -1,0 +1,14 @@
+<h2>State Machines</h2>
+
+This class contains <%= state_machines.count %> state machine(s).
+
+<% state_machines.each do |name, state_machine| %>
+  <h3><%= h(name) %></h3>
+  <% if description = state_machine[:description] %>
+  <p><%= h(description) %></p>
+  <% end %>
+  
+  <% if state_machine[:image] %>
+  <img alt="State machine diagram for <%= h(name) %>" src="<%= url_for(state_machine[:image]) %>" />
+  <% end %>
+<% end %>

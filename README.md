@@ -58,6 +58,7 @@ Some brief, high-level features include:
 * Inheritance
 * Internationalization
 * GraphViz visualization creator
+* YARD integration
 * Flexible machine syntax
 
 Examples of the usage patterns for some of the above features are shown below.
@@ -962,6 +963,30 @@ Jean Bovet's [Visual Automata Simulator](http://www.cs.usfca.edu/~jbovet/vas.htm
 is a great tool for "simulating, visualizing and transforming finite state
 automata and Turing Machines".  It can help in the creation of states and events
 for your models.  It is cross-platform, written in Java.
+
+### Generating documentation
+
+If you use YARD to generate documentation for your projects, state_machine can
+be enabled to generate API docs for auto-generated methods from each state machine
+definition as well as providing embedded visualizations.
+
+See the generated API documentation under the examples folder to see what the
+output looks like.
+
+To enable the YARD integration, you'll need to add state_machine to the list of
+YARD's plugins by editing the global YARD config:
+
+~/.yard/config:
+
+```yaml
+load_plugins: true
+autoload_plugins:
+  - state_machine
+```
+
+Once enabled, simply generate your documentation like you normally do.
+
+*Note* that this currently only works for Ruby 1.9+.
 
 ## Web Frameworks
 
