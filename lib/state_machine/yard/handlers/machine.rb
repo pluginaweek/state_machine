@@ -4,7 +4,7 @@ module StateMachine
   module YARD
     module Handlers
       # Handles and processes #state_machine
-      class Macro < Base
+      class Machine < Base
         handles method_call(:state_machine)
         namespace_only
         
