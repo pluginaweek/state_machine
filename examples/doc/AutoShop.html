@@ -98,7 +98,7 @@ This class contains 1 state machine(s).
 
 
   <h3>state</h3>
-  
+  <p></p>
   
   
   <img alt="State machine diagram for state" src="AutoShop_state.png" />
@@ -161,30 +161,6 @@ Gets the humanized name for the given event.
   
     <span class="summary_desc"><div class='inline'><p>
 Gets the humanized name for the given state.
-</p>
-</div></span>
-  
-</li>
-
-      
-        <li class="public ">
-  <span class="summary_signature">
-    
-      <a href="#state_machines-class_method" title="state_machines (class method)">+ (Hash) <strong>state_machines</strong> </a>
-    
-
-    
-  </span>
-  
-  
-  
-  
-  
-  
-
-  
-    <span class="summary_desc"><div class='inline'><p>
-Gets the current list of state machines defined for this class.
 </p>
 </div></span>
   
@@ -265,7 +241,7 @@ Checks whether :busy is the current state.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Checks whether the event can be fired.
+Checks whether :fix_vehicle can be fired.
 </p>
 </div></span>
   
@@ -289,55 +265,7 @@ Checks whether the event can be fired.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Checks whether the event can be fired.
-</p>
-</div></span>
-  
-</li>
-
-      
-        <li class="public ">
-  <span class="summary_signature">
-    
-      <a href="#fire_events-instance_method" title="#fire_events (instance method)">- (Boolean) <strong>fire_events</strong>(*events) </a>
-    
-
-    
-  </span>
-  
-  
-  
-  
-  
-  
-
-  
-    <span class="summary_desc"><div class='inline'><p>
-Runs one or more events in parallel.
-</p>
-</div></span>
-  
-</li>
-
-      
-        <li class="public ">
-  <span class="summary_signature">
-    
-      <a href="#fire_events%21-instance_method" title="#fire_events! (instance method)">- (Boolean) <strong>fire_events!</strong>(*events) </a>
-    
-
-    
-  </span>
-  
-  
-  
-  
-  
-  
-
-  
-    <span class="summary_desc"><div class='inline'><p>
-Run one or more events in parallel, raising an exception if any fail.
+Checks whether :tow_vehicle can be fired.
 </p>
 </div></span>
   
@@ -361,7 +289,7 @@ Run one or more events in parallel, raising an exception if any fail.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Fires an arbitrary event with the given argument list.
+Fires an arbitrary state event with the given argument list.
 </p>
 </div></span>
   
@@ -385,8 +313,7 @@ Fires an arbitrary event with the given argument list.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Fires the event, transitioning from the current state to the next valid
-state.
+Fires the :fix_vehicle event.
 </p>
 </div></span>
   
@@ -410,7 +337,7 @@ state.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Fires the event, raising an exception if it fails.
+Fires the :fix_vehicle event, raising an exception if it fails.
 </p>
 </div></span>
   
@@ -434,7 +361,7 @@ Fires the event, raising an exception if it fails.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Gets the next transition that would be performed if the event were to be
+Gets the next transition that would be performed if :fix_vehicle were to be
 fired.
 </p>
 </div></span>
@@ -541,7 +468,7 @@ Checks the given state name against the current state.
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#state_events-instance_method" title="#state_events (instance method)">- (Array) <strong>state_events</strong>(requirements = {}) </a>
+      <a href="#state_events-instance_method" title="#state_events (instance method)">- (Array&lt;Symbol&gt;) <strong>state_events</strong>(requirements = {}) </a>
     
 
     
@@ -555,8 +482,8 @@ Checks the given state name against the current state.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Gets the list of events that can be fired on the current object&#8217;s
-state (uses the <b>unqualified</b> event names).
+Gets the list of events that can be fired on the current state (uses the
+<b>unqualified</b> event names).
 </p>
 </div></span>
   
@@ -580,7 +507,7 @@ state (uses the <b>unqualified</b> event names).
 
   
     <span class="summary_desc"><div class='inline'><p>
-Gets the name of the state for the current value.
+Gets the internal name of the state for the current value.
 </p>
 </div></span>
   
@@ -604,8 +531,8 @@ Gets the name of the state for the current value.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Gets the list of sequences of transitions that can be run from the current
-object&#8217;s state.
+Gets the list of sequences of transitions that can be run for the current
+state.
 </p>
 </div></span>
   
@@ -615,7 +542,7 @@ object&#8217;s state.
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#state_transitions-instance_method" title="#state_transitions (instance method)">- (Array) <strong>state_transitions</strong>(requirements = {}) </a>
+      <a href="#state_transitions-instance_method" title="#state_transitions (instance method)">- (Array&lt;StateMachine::Transition&gt;) <strong>state_transitions</strong>(requirements = {}) </a>
     
 
     
@@ -629,8 +556,7 @@ object&#8217;s state.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Gets the list of transitions that can be made on the current object&#8217;s
-state.
+Gets the list of transitions that can be made for the current state.
 </p>
 </div></span>
   
@@ -654,8 +580,7 @@ state.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Fires the event, transitioning from the current state to the next valid
-state.
+Fires the :tow_vehicle event.
 </p>
 </div></span>
   
@@ -679,7 +604,7 @@ state.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Fires the event, raising an exception if it fails.
+Fires the :tow_vehicle event, raising an exception if it fails.
 </p>
 </div></span>
   
@@ -703,7 +628,7 @@ Fires the event, raising an exception if it fails.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Gets the next transition that would be performed if the event were to be
+Gets the next transition that would be performed if :tow_vehicle were to be
 fired.
 </p>
 </div></span>
@@ -904,77 +829,6 @@ The human state name
 </table>
 </div>
     
-      <div class="method_details ">
-  <p class="signature " id="state_machines-class_method">
-  
-    + (<tt>Hash</tt>) <strong>state_machines</strong> 
-  
-
-  
-</p><div class="docstring">
-  <div class="discussion">
-    <p>
-Gets the current list of state machines defined for this class.
-</p>
-
-
-  </div>
-</div>
-<div class="tags">
-  
-<h3>Returns:</h3>
-<ul class="return">
-  
-    <li>
-      
-      
-        <span class='type'>(<tt>Hash</tt>)</span>
-      
-      
-      
-        &mdash;
-        <div class='inline'><p>
-The hash of state machines mapping <tt>:attribute</tt> => <tt>machine</tt>
-</p>
-</div>
-      
-    </li>
-  
-</ul>
-
-</div><table class="source_code">
-  <tr>
-    <td>
-      <pre class="lines">
-
-
-4
-5
-6
-7
-8
-9
-10
-11
-12</pre>
-    </td>
-    <td>
-      <pre class="code"><span class="info file"># File 'auto_shop.rb', line 4</span>
-
-<span class='id identifier rubyid_state_machine'>state_machine</span> <span class='symbol'>:initial</span> <span class='op'>=&gt;</span> <span class='symbol'>:available</span> <span class='kw'>do</span>
-  <span class='id identifier rubyid_event'>event</span> <span class='symbol'>:tow_vehicle</span> <span class='kw'>do</span>
-    <span class='id identifier rubyid_transition'>transition</span> <span class='symbol'>:available</span> <span class='op'>=&gt;</span> <span class='symbol'>:busy</span>
-  <span class='kw'>end</span>
-  
-  <span class='id identifier rubyid_event'>event</span> <span class='symbol'>:fix_vehicle</span> <span class='kw'>do</span>
-    <span class='id identifier rubyid_transition'>transition</span> <span class='symbol'>:busy</span> <span class='op'>=&gt;</span> <span class='symbol'>:available</span> 
-  <span class='kw'>end</span>
-<span class='kw'>end</span></pre>
-    </td>
-  </tr>
-</table>
-</div>
-    
   </div>
 
   <div id="instance_method_details" class="method_details_list">
@@ -1133,7 +987,7 @@ Checks whether :busy is the current state.
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Checks whether the event can be fired.
+Checks whether :fix_vehicle can be fired.
 </p>
 
 
@@ -1180,7 +1034,7 @@ The transition requirements to test against
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned from
+One or more initial states
 </p>
 </div>
         </li>
@@ -1192,7 +1046,7 @@ One or more states being transitioned from
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned to
+One or more target states
 </p>
 </div>
         </li>
@@ -1224,7 +1078,7 @@ Whether to guard transitions with conditionals
       
         &mdash;
         <div class='inline'><p>
-<tt>true</tt> if the event can be fired, otherwise <tt>false</tt>
+<tt>true</tt> if :fix_vehicle can be fired, otherwise <tt>false</tt>
 </p>
 </div>
       
@@ -1275,7 +1129,7 @@ Whether to guard transitions with conditionals
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Checks whether the event can be fired.
+Checks whether :tow_vehicle can be fired.
 </p>
 
 
@@ -1322,7 +1176,7 @@ The transition requirements to test against
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned from
+One or more initial states
 </p>
 </div>
         </li>
@@ -1334,7 +1188,7 @@ One or more states being transitioned from
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned to
+One or more target states
 </p>
 </div>
         </li>
@@ -1366,210 +1220,7 @@ Whether to guard transitions with conditionals
       
         &mdash;
         <div class='inline'><p>
-<tt>true</tt> if the event can be fired, otherwise <tt>false</tt>
-</p>
-</div>
-      
-    </li>
-  
-</ul>
-
-</div><table class="source_code">
-  <tr>
-    <td>
-      <pre class="lines">
-
-
-4
-5
-6
-7
-8
-9
-10
-11
-12</pre>
-    </td>
-    <td>
-      <pre class="code"><span class="info file"># File 'auto_shop.rb', line 4</span>
-
-<span class='id identifier rubyid_state_machine'>state_machine</span> <span class='symbol'>:initial</span> <span class='op'>=&gt;</span> <span class='symbol'>:available</span> <span class='kw'>do</span>
-  <span class='id identifier rubyid_event'>event</span> <span class='symbol'>:tow_vehicle</span> <span class='kw'>do</span>
-    <span class='id identifier rubyid_transition'>transition</span> <span class='symbol'>:available</span> <span class='op'>=&gt;</span> <span class='symbol'>:busy</span>
-  <span class='kw'>end</span>
-  
-  <span class='id identifier rubyid_event'>event</span> <span class='symbol'>:fix_vehicle</span> <span class='kw'>do</span>
-    <span class='id identifier rubyid_transition'>transition</span> <span class='symbol'>:busy</span> <span class='op'>=&gt;</span> <span class='symbol'>:available</span> 
-  <span class='kw'>end</span>
-<span class='kw'>end</span></pre>
-    </td>
-  </tr>
-</table>
-</div>
-    
-      <div class="method_details ">
-  <p class="signature " id="fire_events-instance_method">
-  
-    - (<tt>Boolean</tt>) <strong>fire_events</strong>(*events) 
-  
-
-  
-</p><div class="docstring">
-  <div class="discussion">
-    <p>
-Runs one or more events in parallel.
-</p>
-
-
-  </div>
-</div>
-<div class="tags">
-  <h3>Parameters:</h3>
-<ul class="param">
-  
-    <li>
-      
-        <span class='name'>events</span>
-      
-      
-        <span class='type'>(<tt>Array</tt>)</span>
-      
-      
-      
-        &mdash;
-        <div class='inline'><p>
-The list of events to fire
-</p>
-</div>
-      
-    </li>
-  
-</ul>
-
-<h3>Returns:</h3>
-<ul class="return">
-  
-    <li>
-      
-      
-        <span class='type'>(<tt>Boolean</tt>)</span>
-      
-      
-      
-        &mdash;
-        <div class='inline'><p>
-<tt>true</tt> if all events succeeded, otherwise <tt>false</tt>
-</p>
-</div>
-      
-    </li>
-  
-</ul>
-
-</div><table class="source_code">
-  <tr>
-    <td>
-      <pre class="lines">
-
-
-4
-5
-6
-7
-8
-9
-10
-11
-12</pre>
-    </td>
-    <td>
-      <pre class="code"><span class="info file"># File 'auto_shop.rb', line 4</span>
-
-<span class='id identifier rubyid_state_machine'>state_machine</span> <span class='symbol'>:initial</span> <span class='op'>=&gt;</span> <span class='symbol'>:available</span> <span class='kw'>do</span>
-  <span class='id identifier rubyid_event'>event</span> <span class='symbol'>:tow_vehicle</span> <span class='kw'>do</span>
-    <span class='id identifier rubyid_transition'>transition</span> <span class='symbol'>:available</span> <span class='op'>=&gt;</span> <span class='symbol'>:busy</span>
-  <span class='kw'>end</span>
-  
-  <span class='id identifier rubyid_event'>event</span> <span class='symbol'>:fix_vehicle</span> <span class='kw'>do</span>
-    <span class='id identifier rubyid_transition'>transition</span> <span class='symbol'>:busy</span> <span class='op'>=&gt;</span> <span class='symbol'>:available</span> 
-  <span class='kw'>end</span>
-<span class='kw'>end</span></pre>
-    </td>
-  </tr>
-</table>
-</div>
-    
-      <div class="method_details ">
-  <p class="signature " id="fire_events!-instance_method">
-  
-    - (<tt>Boolean</tt>) <strong>fire_events!</strong>(*events) 
-  
-
-  
-</p><div class="docstring">
-  <div class="discussion">
-    <p>
-Run one or more events in parallel, raising an exception if any fail.
-</p>
-
-
-  </div>
-</div>
-<div class="tags">
-  <h3>Parameters:</h3>
-<ul class="param">
-  
-    <li>
-      
-        <span class='name'>events</span>
-      
-      
-        <span class='type'>(<tt>Array</tt>)</span>
-      
-      
-      
-        &mdash;
-        <div class='inline'><p>
-The list of events to fire
-</p>
-</div>
-      
-    </li>
-  
-</ul>
-
-<h3>Returns:</h3>
-<ul class="return">
-  
-    <li>
-      
-      
-        <span class='type'>(<tt>Boolean</tt>)</span>
-      
-      
-      
-        &mdash;
-        <div class='inline'><p>
-<tt>true</tt> if all events succeeded
-</p>
-</div>
-      
-    </li>
-  
-</ul>
-<h3>Raises:</h3>
-<ul class="raise">
-  
-    <li>
-      
-      
-        <span class='type'>(<tt>StateMachine::InvalidTransition</tt>)</span>
-      
-      
-      
-        &mdash;
-        <div class='inline'><p>
-If any of the events fail
+<tt>true</tt> if :tow_vehicle can be fired, otherwise <tt>false</tt>
 </p>
 </div>
       
@@ -1620,7 +1271,7 @@ If any of the events fail
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Fires an arbitrary event with the given argument list
+Fires an arbitrary state event with the given argument list
 </p>
 
 
@@ -1658,7 +1309,7 @@ The name of the event to fire
       
         &mdash;
         <div class='inline'><p>
-Optional argument to include in the transition
+Optional arguments to include in the transition
 </p>
 </div>
       
@@ -1729,8 +1380,7 @@ Optional argument to include in the transition
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Fires the event, transitioning from the current state to the next valid
-state.
+Fires the :fix_vehicle event.
 </p>
 
 
@@ -1822,7 +1472,7 @@ Optional arguments to include in transition callbacks
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Fires the event, raising an exception if it fails.
+Fires the :fix_vehicle event, raising an exception if it fails.
 </p>
 
 
@@ -1933,7 +1583,7 @@ If the transition fails
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Gets the next transition that would be performed if the event were to be
+Gets the next transition that would be performed if :fix_vehicle were to be
 fired.
 </p>
 
@@ -1981,7 +1631,7 @@ The transition requirements to test against
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned from
+One or more initial states
 </p>
 </div>
         </li>
@@ -1993,7 +1643,7 @@ One or more states being transitioned from
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned to
+One or more target states
 </p>
 </div>
         </li>
@@ -2395,15 +2045,15 @@ If the state name is invalid
       <div class="method_details ">
   <p class="signature " id="state_events-instance_method">
   
-    - (<tt>Array</tt>) <strong>state_events</strong>(requirements = {}) 
+    - (<tt>Array&lt;Symbol&gt;</tt>) <strong>state_events</strong>(requirements = {}) 
   
 
   
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Gets the list of events that can be fired on the current object&#8217;s
-state (uses the <b>unqualified</b> event names)
+Gets the list of events that can be fired on the current state (uses the
+<b>unqualified</b> event names)
 </p>
 
 
@@ -2450,7 +2100,7 @@ The transition requirements to test against
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned from
+One or more initial states
 </p>
 </div>
         </li>
@@ -2462,7 +2112,7 @@ One or more states being transitioned from
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned to
+One or more target states
 </p>
 </div>
         </li>
@@ -2500,7 +2150,7 @@ Whether to guard transitions with conditionals
     <li>
       
       
-        <span class='type'>(<tt>Array</tt>)</span>
+        <span class='type'>(<tt>Array&lt;Symbol&gt;</tt>)</span>
       
       
       
@@ -2557,7 +2207,7 @@ The list of event names
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Gets the name of the state for the current value.
+Gets the internal name of the state for the current value.
 </p>
 
 
@@ -2577,7 +2227,7 @@ Gets the name of the state for the current value.
       
         &mdash;
         <div class='inline'><p>
-The name of the state
+The internal name of the state
 </p>
 </div>
       
@@ -2628,8 +2278,8 @@ The name of the state
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Gets the list of sequences of transitions that can be run from the current
-object&#8217;s state
+Gets the list of sequences of transitions that can be run for the current
+state
 </p>
 
 
@@ -2676,7 +2326,7 @@ The transition requirements to test against
             
           </span>
           &mdash; <div class='inline'><p>
-The initial state to start from
+The initial state
 </p>
 </div>
         </li>
@@ -2688,7 +2338,7 @@ The initial state to start from
             
           </span>
           &mdash; <div class='inline'><p>
-The target end state
+The target state
 </p>
 </div>
         </li>
@@ -2776,15 +2426,14 @@ The collection of paths
       <div class="method_details ">
   <p class="signature " id="state_transitions-instance_method">
   
-    - (<tt>Array</tt>) <strong>state_transitions</strong>(requirements = {}) 
+    - (<tt>Array&lt;StateMachine::Transition&gt;</tt>) <strong>state_transitions</strong>(requirements = {}) 
   
 
   
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Gets the list of transitions that can be made on the current object&#8217;s
-state
+Gets the list of transitions that can be made for the current state
 </p>
 
 
@@ -2831,7 +2480,7 @@ The transition requirements to test against
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned from
+One or more initial states
 </p>
 </div>
         </li>
@@ -2843,7 +2492,7 @@ One or more states being transitioned from
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned to
+One or more target states
 </p>
 </div>
         </li>
@@ -2881,13 +2530,13 @@ Whether to guard transitions with conditionals
     <li>
       
       
-        <span class='type'>(<tt>Array</tt>)</span>
+        <span class='type'>(<tt>Array&lt;StateMachine::Transition&gt;</tt>)</span>
       
       
       
         &mdash;
         <div class='inline'><p>
-The list of StateMachine::Transition instances
+The available transitions
 </p>
 </div>
       
@@ -2938,8 +2587,7 @@ The list of StateMachine::Transition instances
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Fires the event, transitioning from the current state to the next valid
-state.
+Fires the :tow_vehicle event.
 </p>
 
 
@@ -3031,7 +2679,7 @@ Optional arguments to include in transition callbacks
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Fires the event, raising an exception if it fails.
+Fires the :tow_vehicle event, raising an exception if it fails.
 </p>
 
 
@@ -3142,7 +2790,7 @@ If the transition fails
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Gets the next transition that would be performed if the event were to be
+Gets the next transition that would be performed if :tow_vehicle were to be
 fired.
 </p>
 
@@ -3190,7 +2838,7 @@ The transition requirements to test against
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned from
+One or more initial states
 </p>
 </div>
         </li>
@@ -3202,7 +2850,7 @@ One or more states being transitioned from
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned to
+One or more target states
 </p>
 </div>
         </li>
@@ -3280,7 +2928,7 @@ The transition that would be performed or <tt>nil</tt>
 </div>
     
     <div id="footer">
-  Generated on Sun Feb 12 22:47:10 2012 by 
+  Generated on Tue Feb 14 08:03:03 2012 by 
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.7.5 (ruby-1.9.2).
 </div>

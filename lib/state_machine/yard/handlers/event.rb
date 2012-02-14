@@ -6,16 +6,16 @@ module StateMachine
         handles method_call(:event)
         
         def process
-          if owner && owner.is_a?(Hash) && owner[:type] == :state_machine
-            event = {:type => :event, :state_machine => owner}
+          if owner.is_a?(StateMachine::Machine)
+            handler = self
+            statement = self.statement
             names = extract_node_names(statement.parameters(false))
             
             names.each do |name|
-              # Track the event
-              owner[:events] << name
-              
-              # Parse the block
-              parse_block(statement.last.last, :owner => event.merge(:name => name))
+              owner.event(name) do
+                # Parse the block
+                handler.parse_block(statement.last.last, :owner => self)
+              end
             end
           end
         end

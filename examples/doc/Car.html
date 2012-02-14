@@ -100,7 +100,7 @@ This class contains 1 state machine(s).
 
 
   <h3>state</h3>
-  
+  <p></p>
   
   
   <img alt="State machine diagram for state" src="Car_state.png" />
@@ -162,7 +162,7 @@ Checks whether :backing_up is the current state.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Checks whether the event can be fired.
+Checks whether :reverse can be fired.
 </p>
 </div></span>
   
@@ -186,8 +186,7 @@ Checks whether the event can be fired.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Fires the event, transitioning from the current state to the next valid
-state.
+Fires the :reverse event.
 </p>
 </div></span>
   
@@ -211,7 +210,7 @@ state.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Fires the event, raising an exception if it fails.
+Fires the :reverse event, raising an exception if it fails.
 </p>
 </div></span>
   
@@ -235,7 +234,7 @@ Fires the event, raising an exception if it fails.
 
   
     <span class="summary_desc"><div class='inline'><p>
-Gets the next transition that would be performed if the event were to be
+Gets the next transition that would be performed if :reverse were to be
 fired.
 </p>
 </div></span>
@@ -255,7 +254,7 @@ fired.
   
   
   <h3 class="inherited">Methods inherited from <span class='object_link'><a href="Vehicle.html" title="Vehicle (class)">Vehicle</a></span></h3>
-  <p class="inherited"><span class='object_link'><a href="Vehicle.html#can_crash%3F-instance_method" title="Vehicle#can_crash? (method)">#can_crash?</a></span>, <span class='object_link'><a href="Vehicle.html#can_idle%3F-instance_method" title="Vehicle#can_idle? (method)">#can_idle?</a></span>, <span class='object_link'><a href="Vehicle.html#can_ignite%3F-instance_method" title="Vehicle#can_ignite? (method)">#can_ignite?</a></span>, <span class='object_link'><a href="Vehicle.html#can_park%3F-instance_method" title="Vehicle#can_park? (method)">#can_park?</a></span>, <span class='object_link'><a href="Vehicle.html#can_repair%3F-instance_method" title="Vehicle#can_repair? (method)">#can_repair?</a></span>, <span class='object_link'><a href="Vehicle.html#can_shift_down%3F-instance_method" title="Vehicle#can_shift_down? (method)">#can_shift_down?</a></span>, <span class='object_link'><a href="Vehicle.html#can_shift_up%3F-instance_method" title="Vehicle#can_shift_up? (method)">#can_shift_up?</a></span>, <span class='object_link'><a href="Vehicle.html#crash-instance_method" title="Vehicle#crash (method)">#crash</a></span>, <span class='object_link'><a href="Vehicle.html#crash%21-instance_method" title="Vehicle#crash! (method)">#crash!</a></span>, <span class='object_link'><a href="Vehicle.html#crash_transition-instance_method" title="Vehicle#crash_transition (method)">#crash_transition</a></span>, <span class='object_link'><a href="Vehicle.html#fire_events-instance_method" title="Vehicle#fire_events (method)">#fire_events</a></span>, <span class='object_link'><a href="Vehicle.html#fire_events%21-instance_method" title="Vehicle#fire_events! (method)">#fire_events!</a></span>, <span class='object_link'><a href="Vehicle.html#fire_state_event-instance_method" title="Vehicle#fire_state_event (method)">#fire_state_event</a></span>, <span class='object_link'><a href="Vehicle.html#first_gear%3F-instance_method" title="Vehicle#first_gear? (method)">#first_gear?</a></span>, <span class='object_link'><a href="Vehicle.html#human_state_event_name-class_method" title="Vehicle.human_state_event_name (method)">human_state_event_name</a></span>, <span class='object_link'><a href="Vehicle.html#human_state_name-class_method" title="Vehicle.human_state_name (method)">human_state_name</a></span>, <span class='object_link'><a href="Vehicle.html#human_state_name-instance_method" title="Vehicle#human_state_name (method)">#human_state_name</a></span>, <span class='object_link'><a href="Vehicle.html#idle-instance_method" title="Vehicle#idle (method)">#idle</a></span>, <span class='object_link'><a href="Vehicle.html#idle%21-instance_method" title="Vehicle#idle! (method)">#idle!</a></span>, <span class='object_link'><a href="Vehicle.html#idle_transition-instance_method" title="Vehicle#idle_transition (method)">#idle_transition</a></span>, <span class='object_link'><a href="Vehicle.html#idling%3F-instance_method" title="Vehicle#idling? (method)">#idling?</a></span>, <span class='object_link'><a href="Vehicle.html#ignite-instance_method" title="Vehicle#ignite (method)">#ignite</a></span>, <span class='object_link'><a href="Vehicle.html#ignite%21-instance_method" title="Vehicle#ignite! (method)">#ignite!</a></span>, <span class='object_link'><a href="Vehicle.html#ignite_transition-instance_method" title="Vehicle#ignite_transition (method)">#ignite_transition</a></span>, <span class='object_link'><a href="Vehicle.html#park-instance_method" title="Vehicle#park (method)">#park</a></span>, <span class='object_link'><a href="Vehicle.html#park%21-instance_method" title="Vehicle#park! (method)">#park!</a></span>, <span class='object_link'><a href="Vehicle.html#park_transition-instance_method" title="Vehicle#park_transition (method)">#park_transition</a></span>, <span class='object_link'><a href="Vehicle.html#parked%3F-instance_method" title="Vehicle#parked? (method)">#parked?</a></span>, <span class='object_link'><a href="Vehicle.html#repair-instance_method" title="Vehicle#repair (method)">#repair</a></span>, <span class='object_link'><a href="Vehicle.html#repair%21-instance_method" title="Vehicle#repair! (method)">#repair!</a></span>, <span class='object_link'><a href="Vehicle.html#repair_transition-instance_method" title="Vehicle#repair_transition (method)">#repair_transition</a></span>, <span class='object_link'><a href="Vehicle.html#second_gear%3F-instance_method" title="Vehicle#second_gear? (method)">#second_gear?</a></span>, <span class='object_link'><a href="Vehicle.html#shift_down-instance_method" title="Vehicle#shift_down (method)">#shift_down</a></span>, <span class='object_link'><a href="Vehicle.html#shift_down%21-instance_method" title="Vehicle#shift_down! (method)">#shift_down!</a></span>, <span class='object_link'><a href="Vehicle.html#shift_down_transition-instance_method" title="Vehicle#shift_down_transition (method)">#shift_down_transition</a></span>, <span class='object_link'><a href="Vehicle.html#shift_up-instance_method" title="Vehicle#shift_up (method)">#shift_up</a></span>, <span class='object_link'><a href="Vehicle.html#shift_up%21-instance_method" title="Vehicle#shift_up! (method)">#shift_up!</a></span>, <span class='object_link'><a href="Vehicle.html#shift_up_transition-instance_method" title="Vehicle#shift_up_transition (method)">#shift_up_transition</a></span>, <span class='object_link'><a href="Vehicle.html#stalled%3F-instance_method" title="Vehicle#stalled? (method)">#stalled?</a></span>, <span class='object_link'><a href="Vehicle.html#state-instance_method" title="Vehicle#state (method)">#state</a></span>, <span class='object_link'><a href="Vehicle.html#state%3D-instance_method" title="Vehicle#state= (method)">#state=</a></span>, <span class='object_link'><a href="Vehicle.html#state%3F-instance_method" title="Vehicle#state? (method)">#state?</a></span>, <span class='object_link'><a href="Vehicle.html#state_events-instance_method" title="Vehicle#state_events (method)">#state_events</a></span>, <span class='object_link'><a href="Vehicle.html#state_machines-class_method" title="Vehicle.state_machines (method)">state_machines</a></span>, <span class='object_link'><a href="Vehicle.html#state_name-instance_method" title="Vehicle#state_name (method)">#state_name</a></span>, <span class='object_link'><a href="Vehicle.html#state_paths-instance_method" title="Vehicle#state_paths (method)">#state_paths</a></span>, <span class='object_link'><a href="Vehicle.html#state_transitions-instance_method" title="Vehicle#state_transitions (method)">#state_transitions</a></span>, <span class='object_link'><a href="Vehicle.html#third_gear%3F-instance_method" title="Vehicle#third_gear? (method)">#third_gear?</a></span></p>
+  <p class="inherited"><span class='object_link'><a href="Vehicle.html#can_crash%3F-instance_method" title="Vehicle#can_crash? (method)">#can_crash?</a></span>, <span class='object_link'><a href="Vehicle.html#can_idle%3F-instance_method" title="Vehicle#can_idle? (method)">#can_idle?</a></span>, <span class='object_link'><a href="Vehicle.html#can_ignite%3F-instance_method" title="Vehicle#can_ignite? (method)">#can_ignite?</a></span>, <span class='object_link'><a href="Vehicle.html#can_park%3F-instance_method" title="Vehicle#can_park? (method)">#can_park?</a></span>, <span class='object_link'><a href="Vehicle.html#can_repair%3F-instance_method" title="Vehicle#can_repair? (method)">#can_repair?</a></span>, <span class='object_link'><a href="Vehicle.html#can_shift_down%3F-instance_method" title="Vehicle#can_shift_down? (method)">#can_shift_down?</a></span>, <span class='object_link'><a href="Vehicle.html#can_shift_up%3F-instance_method" title="Vehicle#can_shift_up? (method)">#can_shift_up?</a></span>, <span class='object_link'><a href="Vehicle.html#crash-instance_method" title="Vehicle#crash (method)">#crash</a></span>, <span class='object_link'><a href="Vehicle.html#crash%21-instance_method" title="Vehicle#crash! (method)">#crash!</a></span>, <span class='object_link'><a href="Vehicle.html#crash_transition-instance_method" title="Vehicle#crash_transition (method)">#crash_transition</a></span>, <span class='object_link'><a href="Vehicle.html#fire_state_event-instance_method" title="Vehicle#fire_state_event (method)">#fire_state_event</a></span>, <span class='object_link'><a href="Vehicle.html#first_gear%3F-instance_method" title="Vehicle#first_gear? (method)">#first_gear?</a></span>, <span class='object_link'><a href="Vehicle.html#human_state_event_name-class_method" title="Vehicle.human_state_event_name (method)">human_state_event_name</a></span>, <span class='object_link'><a href="Vehicle.html#human_state_name-class_method" title="Vehicle.human_state_name (method)">human_state_name</a></span>, <span class='object_link'><a href="Vehicle.html#human_state_name-instance_method" title="Vehicle#human_state_name (method)">#human_state_name</a></span>, <span class='object_link'><a href="Vehicle.html#idle-instance_method" title="Vehicle#idle (method)">#idle</a></span>, <span class='object_link'><a href="Vehicle.html#idle%21-instance_method" title="Vehicle#idle! (method)">#idle!</a></span>, <span class='object_link'><a href="Vehicle.html#idle_transition-instance_method" title="Vehicle#idle_transition (method)">#idle_transition</a></span>, <span class='object_link'><a href="Vehicle.html#idling%3F-instance_method" title="Vehicle#idling? (method)">#idling?</a></span>, <span class='object_link'><a href="Vehicle.html#ignite-instance_method" title="Vehicle#ignite (method)">#ignite</a></span>, <span class='object_link'><a href="Vehicle.html#ignite%21-instance_method" title="Vehicle#ignite! (method)">#ignite!</a></span>, <span class='object_link'><a href="Vehicle.html#ignite_transition-instance_method" title="Vehicle#ignite_transition (method)">#ignite_transition</a></span>, <span class='object_link'><a href="Vehicle.html#park-instance_method" title="Vehicle#park (method)">#park</a></span>, <span class='object_link'><a href="Vehicle.html#park%21-instance_method" title="Vehicle#park! (method)">#park!</a></span>, <span class='object_link'><a href="Vehicle.html#park_transition-instance_method" title="Vehicle#park_transition (method)">#park_transition</a></span>, <span class='object_link'><a href="Vehicle.html#parked%3F-instance_method" title="Vehicle#parked? (method)">#parked?</a></span>, <span class='object_link'><a href="Vehicle.html#repair-instance_method" title="Vehicle#repair (method)">#repair</a></span>, <span class='object_link'><a href="Vehicle.html#repair%21-instance_method" title="Vehicle#repair! (method)">#repair!</a></span>, <span class='object_link'><a href="Vehicle.html#repair_transition-instance_method" title="Vehicle#repair_transition (method)">#repair_transition</a></span>, <span class='object_link'><a href="Vehicle.html#second_gear%3F-instance_method" title="Vehicle#second_gear? (method)">#second_gear?</a></span>, <span class='object_link'><a href="Vehicle.html#shift_down-instance_method" title="Vehicle#shift_down (method)">#shift_down</a></span>, <span class='object_link'><a href="Vehicle.html#shift_down%21-instance_method" title="Vehicle#shift_down! (method)">#shift_down!</a></span>, <span class='object_link'><a href="Vehicle.html#shift_down_transition-instance_method" title="Vehicle#shift_down_transition (method)">#shift_down_transition</a></span>, <span class='object_link'><a href="Vehicle.html#shift_up-instance_method" title="Vehicle#shift_up (method)">#shift_up</a></span>, <span class='object_link'><a href="Vehicle.html#shift_up%21-instance_method" title="Vehicle#shift_up! (method)">#shift_up!</a></span>, <span class='object_link'><a href="Vehicle.html#shift_up_transition-instance_method" title="Vehicle#shift_up_transition (method)">#shift_up_transition</a></span>, <span class='object_link'><a href="Vehicle.html#stalled%3F-instance_method" title="Vehicle#stalled? (method)">#stalled?</a></span>, <span class='object_link'><a href="Vehicle.html#state-instance_method" title="Vehicle#state (method)">#state</a></span>, <span class='object_link'><a href="Vehicle.html#state%3D-instance_method" title="Vehicle#state= (method)">#state=</a></span>, <span class='object_link'><a href="Vehicle.html#state%3F-instance_method" title="Vehicle#state? (method)">#state?</a></span>, <span class='object_link'><a href="Vehicle.html#state_events-instance_method" title="Vehicle#state_events (method)">#state_events</a></span>, <span class='object_link'><a href="Vehicle.html#state_name-instance_method" title="Vehicle#state_name (method)">#state_name</a></span>, <span class='object_link'><a href="Vehicle.html#state_paths-instance_method" title="Vehicle#state_paths (method)">#state_paths</a></span>, <span class='object_link'><a href="Vehicle.html#state_transitions-instance_method" title="Vehicle#state_transitions (method)">#state_transitions</a></span>, <span class='object_link'><a href="Vehicle.html#third_gear%3F-instance_method" title="Vehicle#third_gear? (method)">#third_gear?</a></span></p>
 
 
   <div id="instance_method_details" class="method_details_list">
@@ -359,7 +358,7 @@ Checks whether :backing_up is the current state.
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Checks whether the event can be fired.
+Checks whether :reverse can be fired.
 </p>
 
 
@@ -406,7 +405,7 @@ The transition requirements to test against
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned from
+One or more initial states
 </p>
 </div>
         </li>
@@ -418,7 +417,7 @@ One or more states being transitioned from
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned to
+One or more target states
 </p>
 </div>
         </li>
@@ -450,7 +449,7 @@ Whether to guard transitions with conditionals
       
         &mdash;
         <div class='inline'><p>
-<tt>true</tt> if the event can be fired, otherwise <tt>false</tt>
+<tt>true</tt> if :reverse can be fired, otherwise <tt>false</tt>
 </p>
 </div>
       
@@ -517,8 +516,7 @@ Whether to guard transitions with conditionals
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Fires the event, transitioning from the current state to the next valid
-state.
+Fires the :reverse event.
 </p>
 
 
@@ -626,7 +624,7 @@ Optional arguments to include in transition callbacks
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Fires the event, raising an exception if it fails.
+Fires the :reverse event, raising an exception if it fails.
 </p>
 
 
@@ -753,7 +751,7 @@ If the transition fails
 </p><div class="docstring">
   <div class="discussion">
     <p>
-Gets the next transition that would be performed if the event were to be
+Gets the next transition that would be performed if :reverse were to be
 fired.
 </p>
 
@@ -801,7 +799,7 @@ The transition requirements to test against
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned from
+One or more initial states
 </p>
 </div>
         </li>
@@ -813,7 +811,7 @@ One or more states being transitioned from
             
           </span>
           &mdash; <div class='inline'><p>
-One or more states being transitioned to
+One or more target states
 </p>
 </div>
         </li>
@@ -907,7 +905,7 @@ The transition that would be performed or <tt>nil</tt>
 </div>
     
     <div id="footer">
-  Generated on Sun Feb 12 22:47:09 2012 by 
+  Generated on Tue Feb 14 08:03:02 2012 by 
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.7.5 (ruby-1.9.2).
 </div>

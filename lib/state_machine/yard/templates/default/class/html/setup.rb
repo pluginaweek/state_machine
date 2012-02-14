@@ -1,3 +1,5 @@
+require 'tempfile'
+
 # Define where state machine descriptions will be rendered
 def init
   super
@@ -13,38 +15,16 @@ end
 def state_machines
   @state_machines ||= begin
     if state_machines = object['state_machines']
-      # Load up state_machine so that we can re-use the existing drawing implementation
-      require 'tempfile'
-      require 'state_machine/core'
-      
-      # Set up target path
-      base_path = File.dirname(serializer.serialized_path(object))
-      
-      state_machines.each do |name, state_machine|
-        image_name = "#{object.name}_#{name}"
-        image_path = "#{File.join(base_path, image_name)}.png"
-        
-        # Generate a machine with the parsed transitions
-        c = Class.new { extend StateMachine::MacroMethods }
-        machine = c.state_machine(name, :initial => state_machine[:options][:initial]) do
-          state_machine[:transitions].each do |transition|
-            self.transition(transition)
-          end
-        end
-        
-        # Draw to the file and serialize to the doc folder
-        file = Tempfile.new(['state_machine', '.png'])
-        begin
-          if machine.draw(:name => File.basename(file.path, '.png'), :path => File.dirname(file.path), :orientation => 'landscape')
-            serializer.serialize(image_path, file.read)
-            state_machine[:image] = image_path
-          end
-        ensure
-          # Clean up tempfile
-          file.close
-          file.unlink
-        end
+      state_machines.each do |name, machine|
+        serializer.serialize(state_machine_image_path(machine), machine[:image]) if machine[:image]
       end
     end
   end
+end
+
+# Generates the image path for the given machine's visualization
+def state_machine_image_path(machine)
+  base_path = File.dirname(serializer.serialized_path(object))
+  image_name = "#{object.name}_#{machine[:name]}"
+  "#{File.join(base_path, image_name)}.png"
 end

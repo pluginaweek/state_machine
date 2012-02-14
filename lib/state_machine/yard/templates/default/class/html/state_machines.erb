@@ -2,13 +2,11 @@
 
 This class contains <%= state_machines.count %> state machine(s).
 
-<% state_machines.each do |name, state_machine| %>
-  <h3><%= h(name) %></h3>
-  <% if description = state_machine[:description] %>
-  <p><%= h(description) %></p>
-  <% end %>
+<% state_machines.each do |name, machine| %>
+  <h3><%= h(machine[:name]) %></h3>
+  <p><%= h(machine[:description]) %></p>
   
-  <% if state_machine[:image] %>
-  <img alt="State machine diagram for <%= h(name) %>" src="<%= url_for(state_machine[:image]) %>" />
+  <% if machine[:image] %>
+  <img alt="State machine diagram for <%= h(machine[:name]) %>" src="<%= url_for(state_machine_image_path(machine)) %>" />
   <% end %>
 <% end %>
