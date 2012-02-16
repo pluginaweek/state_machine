@@ -407,17 +407,10 @@ module StateMachine
       # The default options to use for state machines using this integration
       @defaults = {:action => :save}
       
-      # Whether this integration is available.  Only true if ActiveRecord::Base
-      # is defined.
-      def self.available?
-        defined?(::ActiveRecord::Base)
-      end
-      
-      # Should this integration be used for state machines in the given class?
       # Classes that inherit from ActiveRecord::Base will automatically use
       # the ActiveRecord integration.
-      def self.matches?(klass)
-        klass <= ::ActiveRecord::Base
+      def self.matching_ancestors
+        %w(ActiveRecord::Base)
       end
       
       def self.extended(base) #:nodoc:

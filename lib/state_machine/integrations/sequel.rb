@@ -271,20 +271,12 @@ module StateMachine
       require 'state_machine/integrations/sequel/versions'
       
       # The default options to use for state machines using this integration
-      class << self; attr_reader :defaults; end
       @defaults = {:action => :save}
       
-      # Whether this integration is available.  Only true if Sequel::Model is
-      # defined.
-      def self.available?
-        defined?(::Sequel::Model)
-      end
-      
-      # Should this integration be used for state machines in the given class?
       # Classes that include Sequel::Model will automatically use the Sequel
       # integration.
-      def self.matches?(klass)
-        klass <= ::Sequel::Model
+      def self.matching_ancestors
+        %w(Sequel::Model)
       end
       
       # Forces the change in state to be recognized regardless of whether the

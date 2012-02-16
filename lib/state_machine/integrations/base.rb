@@ -18,16 +18,25 @@ module StateMachine
         end
         
         # Whether this integration is available for the current library.  This
-        # is usually only true if the ORM that the integration is for is
-        # currently defined.  Default is false.
+        # is only true if the ORM that the integration is for is currently
+        # defined.
         def available?
-          false
+          matching_ancestors.any? && Object.const_defined?(matching_ancestors[0].split('::')[0])
         end
         
-        # Whether the integration should be used for the given class.  Default
-        # is false.
+        # The list of ancestor names that cause this integration to matched.
+        def matching_ancestors
+          []
+        end
+        
+        # Whether the integration should be used for the given class.
         def matches?(klass)
-          false
+          matches_ancestors?(klass.ancestors.map(&:name))
+        end
+        
+        # Whether the integration should be used for the given list of ancestors.
+        def matches_ancestors?(ancestors)
+          (ancestors & matching_ancestors).any?
         end
         
         # Tracks the various version overrides for an integration

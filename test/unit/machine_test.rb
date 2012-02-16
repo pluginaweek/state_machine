@@ -511,61 +511,63 @@ class MachineWithCustomIntegrationTest < Test::Unit::TestCase
     integration = Module.new do
       include StateMachine::Integrations::Base
       
-      def self.available?
-        true
-      end
-      
-      def self.matches?(klass)
-        true
+      def self.matching_ancestors
+        ['MachineWithCustomIntegrationTest::Vehicle']
       end
     end
     
     StateMachine::Integrations.const_set('Custom', integration)
+    
+    superclass = Class.new
+    self.class.const_set('Vehicle', superclass)
+    
+    @klass = Class.new(superclass)
   end
   
   def test_should_be_extended_by_the_integration_if_explicit
-    machine = StateMachine::Machine.new(Class.new, :integration => :custom)
+    machine = StateMachine::Machine.new(@klass, :integration => :custom)
     assert (class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
   
   def test_should_not_be_extended_by_the_integration_if_implicit_but_not_available
     StateMachine::Integrations::Custom.class_eval do
-      def self.available?
-        false
+      def self.matching_ancestors
+        []
       end
     end
     
-    machine = StateMachine::Machine.new(Class.new)
+    machine = StateMachine::Machine.new(@klass)
     assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
 
   def test_should_not_be_extended_by_the_integration_if_implicit_but_not_matched
     StateMachine::Integrations::Custom.class_eval do
-      def self.matches?(klass)
-        false
+      def self.matching_ancestors
+        []
       end
     end
     
-    machine = StateMachine::Machine.new(Class.new)
+    machine = StateMachine::Machine.new(@klass)
     assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
 
   def test_should_be_extended_by_the_integration_if_implicit_and_available_and_matches
-    machine = StateMachine::Machine.new(Class.new)
+    machine = StateMachine::Machine.new(@klass)
     assert (class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
 
   def test_should_not_be_extended_by_the_integration_if_nil
-    machine = StateMachine::Machine.new(Class.new, :integration => nil)
+    machine = StateMachine::Machine.new(@klass, :integration => nil)
     assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
   
   def test_should_not_be_extended_by_the_integration_if_false
-    machine = StateMachine::Machine.new(Class.new, :integration => false)
+    machine = StateMachine::Machine.new(@klass, :integration => false)
     assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
   end
   
   def teardown
+    self.class.send(:remove_const, 'Vehicle')
     StateMachine::Integrations.send(:remove_const, 'Custom')
   end
 end

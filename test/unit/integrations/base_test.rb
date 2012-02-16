@@ -13,6 +13,10 @@ module BaseTest
       assert !StateMachine::Integrations::Base.available?
     end
     
+    def test_should_not_have_any_matching_ancestors
+      assert_equal [], StateMachine::Integrations::Base.matching_ancestors
+    end
+    
     def test_should_not_match_any_classes
       assert !StateMachine::Integrations::Base.matches?(Class.new)
     end

@@ -73,7 +73,19 @@ module StateMachine
     #   StateMachine::Integrations.match(MongoMapperVehicle)  # => StateMachine::Integrations::MongoMapper
     #   StateMachine::Integrations.match(SequelVehicle)       # => StateMachine::Integrations::Sequel
     def self.match(klass)
-      all.detect {|integration| integration.available? && integration.matches?(klass)}
+      all.detect {|integration| integration.matches?(klass)}
+    end
+    
+    # Attempts to find an integration that matches the given list of ancestors.
+    # This will look through all of the built-in integrations under the StateMachine::Integrations
+    # namespace and find one that successfully matches one of the ancestors.
+    # 
+    # == Examples
+    # 
+    #   StateMachine::Integrations.match([])                    # => nil
+    #   StateMachine::Integrations.match(['ActiveRecord::Base') # => StateMachine::Integrations::ActiveModel
+    def self.match_ancestors(ancestors)
+      all.detect {|integration| integration.matches_ancestors?(ancestors)}
     end
     
     # Finds an integration with the given name.  If the integration cannot be
