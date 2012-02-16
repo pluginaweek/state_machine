@@ -1,9 +1,11 @@
+language: ruby
 script: "bundle exec rake appraisal:integration test"
 rvm:
   - 1.8.7
   - 1.9.2
   - 1.9.3
-  - jruby
+  - jruby-18mode
+  - jruby-19mode
 env:
   - INTEGRATION=default
   - INTEGRATION=active_model
