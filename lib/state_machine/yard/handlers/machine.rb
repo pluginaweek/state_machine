@@ -94,7 +94,7 @@ module StateMachine
             end
             
             # Find the first ancestor that has the machine
-            namespace.inheritance_tree.detect do |ancestor|
+            loaded_inheritance_tree.detect do |ancestor|
               if ancestor != namespace
                 machine = globals.state_machines[ancestor.name][name]
                 break machine if machine
@@ -102,12 +102,15 @@ module StateMachine
             end
           end
           
+          # Gets members of the inheritance tree (excluding mixins) that have
+          # already been loaded by YARD
+          def loaded_inheritance_tree
+            namespace.inheritance_tree.select {|superclass| superclass.is_a?(::YARD::CodeObjects::ClassObject)}
+          end
+          
           # Gets the type of ORM integration being used
           def integration
-            @integration ||= begin
-              ancestors = (namespace.inheritance_tree + namespace.mixins).map(&:path)
-              Integrations.match_ancestors(ancestors)
-            end
+            @integration ||= Integrations.match_ancestors(namespace.inheritance_tree(true).map(&:path))
           end
           
           # Defines auto-generated macro methods for the given machine
@@ -135,9 +138,12 @@ module StateMachine
             ]
             m.parameters = ["event"]
             
-            # Only register attributes for integrations that aren't known to be
-            # backed by a data source
-            if [nil, Integrations::ActiveModel].include?(integration)
+            # Only register attributes when the accessor isn't explicitly defined
+            # by the class / superclass *and* isn't defined by inference from the
+            # ORM being used
+            attribute_accessor_defined = loaded_inheritance_tree.any? {|ancestor| ancestor.instance_attributes.include?(machine.attribute.to_sym)}
+            attribute_accessor_inferred = ![nil, Integrations::ActiveModel].include?(integration)
+            unless attribute_accessor_defined || attribute_accessor_inferred
               # Machine attribute getter
               register(m = ::YARD::CodeObjects::MethodObject.new(namespace, machine.attribute))
               m.docstring = [
