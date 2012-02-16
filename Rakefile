@@ -4,7 +4,6 @@ Bundler.setup
 
 require 'rake'
 require 'rake/testtask'
-require 'rcov/rcovtask'
 
 require 'appraisal'
 
@@ -20,16 +19,6 @@ Rake::TestTask.new(:test) do |t|
   t.libs << 'lib'
   t.test_files = integration ? Dir["test/unit/integrations/#{integration}_test.rb"] : Dir['test/{functional,unit}/*_test.rb'] + ['test/unit/integrations/base_test.rb']
   t.verbose = true
-end
-
-namespace :test do
-  desc "Test state_machine with Rcov."
-  Rcov::RcovTask.new(:rcov) do |t|
-    t.libs << 'lib'
-    t.test_files = Dir['test/**/*_test.rb']
-    t.rcov_opts << '--exclude="^(?!lib/)"'
-    t.verbose = true
-  end
 end
 
 namespace :appraisal do

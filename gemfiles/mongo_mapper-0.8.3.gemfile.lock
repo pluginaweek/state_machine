@@ -19,11 +19,14 @@ GEM
       activesupport (>= 2.3.4)
       jnunemaker-validatable (~> 1.8.4)
       plucky (~> 0.3.3)
+    multi_json (1.0.4)
     plucky (0.3.3)
       mongo (~> 1.0.1)
     rake (0.9.2.2)
-    rcov (0.9.11)
-    rcov (0.9.11-java)
+    simplecov (0.5.4)
+      multi_json (~> 1.0.3)
+      simplecov-html (~> 0.5.3)
+    simplecov-html (0.5.3)
 
 PLATFORMS
   java
@@ -36,5 +39,5 @@ DEPENDENCIES
   mongo_mapper (= 0.8.3)
   plucky (= 0.3.3)
   rake
-  rcov
+  simplecov
   state_machine!

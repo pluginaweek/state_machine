@@ -16,9 +16,12 @@ GEM
       activesupport (>= 2.3)
       jnunemaker-validatable (= 1.8.1)
       mongo (= 0.18.3)
+    multi_json (1.0.4)
     rake (0.9.2.2)
-    rcov (0.9.11)
-    rcov (0.9.11-java)
+    simplecov (0.5.4)
+      multi_json (~> 1.0.3)
+      simplecov-html (~> 0.5.3)
+    simplecov-html (0.5.3)
 
 PLATFORMS
   java
@@ -29,5 +32,5 @@ DEPENDENCIES
   appraisal (~> 0.4.0)
   mongo_mapper (= 0.7.0)
   rake
-  rcov
+  simplecov
   state_machine!
