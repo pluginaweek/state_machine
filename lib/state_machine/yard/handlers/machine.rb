@@ -102,6 +102,14 @@ module StateMachine
             end
           end
           
+          # Gets the type of ORM integration being used
+          def integration
+            @integration ||= begin
+              ancestors = (namespace.inheritance_tree + namespace.mixins).map(&:path)
+              Integrations.match_ancestors(ancestors)
+            end
+          end
+          
           # Defines auto-generated macro methods for the given machine
           def define_macro_methods(machine)
             return if inherited_machine(machine.name)
@@ -127,20 +135,24 @@ module StateMachine
             ]
             m.parameters = ["event"]
             
-            # Machine attribute getter
-            register(m = ::YARD::CodeObjects::MethodObject.new(namespace, machine.attribute))
-            m.docstring = [
-              "Gets the current value for the machine",
-              "@return The attribute value"
-            ]
-            
-            # Machine attribute setter
-            register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "#{machine.attribute}="))
-            m.docstring = [
-              "Sets the current value for the machine",
-              "@param new_#{machine.attribute} The new value to set"
-            ]
-            m.parameters = ["new_#{machine.attribute}"]
+            # Only register attributes for integrations that aren't known to be
+            # backed by a data source
+            if [nil, Integrations::ActiveModel].include?(integration)
+              # Machine attribute getter
+              register(m = ::YARD::CodeObjects::MethodObject.new(namespace, machine.attribute))
+              m.docstring = [
+                "Gets the current value for the machine",
+                "@return The attribute value"
+              ]
+              
+              # Machine attribute setter
+              register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "#{machine.attribute}="))
+              m.docstring = [
+                "Sets the current value for the machine",
+                "@param new_#{machine.attribute} The new value to set"
+              ]
+              m.parameters = ["new_#{machine.attribute}"]
+            end
             
             # Presence query
             register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "#{machine.name}?"))
