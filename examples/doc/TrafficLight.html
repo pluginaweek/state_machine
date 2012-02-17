@@ -108,6 +108,38 @@ This class contains 1 state machine(s).
 
 
 
+  <h2>Instance Attribute Summary <small>(<a href="#" class="summary_toggle">collapse</a>)</small></h2>
+  <ul class="summary">
+    
+      <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#state-instance_method" title="#state (instance method)">- (Object) <strong>state</strong> </a>
+    
+
+    
+  </span>
+  
+  
+    
+    
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>
+Gets the current attribute value for the machine.
+</p>
+</div></span>
+  
+</li>
+
+    
+  </ul>
+
 
 
 
@@ -372,54 +404,6 @@ Checks whether :proceed is the current state.
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#state-instance_method" title="#state (instance method)">- (Object) <strong>state</strong> </a>
-    
-
-    
-  </span>
-  
-  
-  
-  
-  
-  
-
-  
-    <span class="summary_desc"><div class='inline'><p>
-Gets the current value for the machine.
-</p>
-</div></span>
-  
-</li>
-
-      
-        <li class="public ">
-  <span class="summary_signature">
-    
-      <a href="#state%3D-instance_method" title="#state= (instance method)">- (Object) <strong>state=</strong>(new_state) </a>
-    
-
-    
-  </span>
-  
-  
-  
-  
-  
-  
-
-  
-    <span class="summary_desc"><div class='inline'><p>
-Sets the current value for the machine.
-</p>
-</div></span>
-  
-</li>
-
-      
-        <li class="public ">
-  <span class="summary_signature">
-    
       <a href="#state%3F-instance_method" title="#state? (instance method)">- (Boolean) <strong>state?</strong>(state_name) </a>
     
 
@@ -566,6 +550,77 @@ Checks whether :stop is the current state.
     </ul>
   
 
+
+  <div id="instance_attr_details" class="attr_details">
+    <h2>Instance Attribute Details</h2>
+    
+      
+      <span id="state=-instance_method"></span>
+      <span id="state-instance_method"></span>
+      <div class="method_details first">
+  <p class="signature first" id="state-instance_method">
+  
+    - (<tt>Object</tt>) <strong>state</strong> 
+  
+
+  
+</p><div class="docstring">
+  <div class="discussion">
+    <p>
+Gets the current attribute value for the machine
+</p>
+
+
+  </div>
+</div>
+<div class="tags">
+  
+<h3>Returns:</h3>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'></span>
+      
+      
+      
+        
+        <div class='inline'><p>
+The attribute value
+</p>
+</div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+4
+5
+6
+7
+8</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'traffic_light.rb', line 4</span>
+
+<span class='id identifier rubyid_state_machine'>state_machine</span> <span class='symbol'>:initial</span> <span class='op'>=&gt;</span> <span class='symbol'>:stop</span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_event'>event</span> <span class='symbol'>:cycle</span> <span class='kw'>do</span>
+    <span class='id identifier rubyid_transition'>transition</span> <span class='symbol'>:stop</span> <span class='op'>=&gt;</span> <span class='symbol'>:proceed</span><span class='comma'>,</span> <span class='symbol'>:proceed</span> <span class='op'>=&gt;</span> <span class='symbol'>:caution</span><span class='comma'>,</span> <span class='symbol'>:caution</span> <span class='op'>=&gt;</span> <span class='symbol'>:stop</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
 
 
   <div id="class_method_details" class="method_details_list">
@@ -1493,134 +1548,6 @@ Checks whether :proceed is the current state.
 </div>
     
       <div class="method_details ">
-  <p class="signature " id="state-instance_method">
-  
-    - (<tt>Object</tt>) <strong>state</strong> 
-  
-
-  
-</p><div class="docstring">
-  <div class="discussion">
-    <p>
-Gets the current value for the machine
-</p>
-
-
-  </div>
-</div>
-<div class="tags">
-  
-<h3>Returns:</h3>
-<ul class="return">
-  
-    <li>
-      
-      
-        <span class='type'></span>
-      
-      
-      
-        
-        <div class='inline'><p>
-The attribute value
-</p>
-</div>
-      
-    </li>
-  
-</ul>
-
-</div><table class="source_code">
-  <tr>
-    <td>
-      <pre class="lines">
-
-
-4
-5
-6
-7
-8</pre>
-    </td>
-    <td>
-      <pre class="code"><span class="info file"># File 'traffic_light.rb', line 4</span>
-
-<span class='id identifier rubyid_state_machine'>state_machine</span> <span class='symbol'>:initial</span> <span class='op'>=&gt;</span> <span class='symbol'>:stop</span> <span class='kw'>do</span>
-  <span class='id identifier rubyid_event'>event</span> <span class='symbol'>:cycle</span> <span class='kw'>do</span>
-    <span class='id identifier rubyid_transition'>transition</span> <span class='symbol'>:stop</span> <span class='op'>=&gt;</span> <span class='symbol'>:proceed</span><span class='comma'>,</span> <span class='symbol'>:proceed</span> <span class='op'>=&gt;</span> <span class='symbol'>:caution</span><span class='comma'>,</span> <span class='symbol'>:caution</span> <span class='op'>=&gt;</span> <span class='symbol'>:stop</span>
-  <span class='kw'>end</span>
-<span class='kw'>end</span></pre>
-    </td>
-  </tr>
-</table>
-</div>
-    
-      <div class="method_details ">
-  <p class="signature " id="state=-instance_method">
-  
-    - (<tt>Object</tt>) <strong>state=</strong>(new_state) 
-  
-
-  
-</p><div class="docstring">
-  <div class="discussion">
-    <p>
-Sets the current value for the machine
-</p>
-
-
-  </div>
-</div>
-<div class="tags">
-  <h3>Parameters:</h3>
-<ul class="param">
-  
-    <li>
-      
-        <span class='name'>new_state</span>
-      
-      
-        <span class='type'></span>
-      
-      
-      
-        &mdash;
-        <div class='inline'><p>
-The new value to set
-</p>
-</div>
-      
-    </li>
-  
-</ul>
-
-
-</div><table class="source_code">
-  <tr>
-    <td>
-      <pre class="lines">
-
-
-4
-5
-6
-7
-8</pre>
-    </td>
-    <td>
-      <pre class="code"><span class="info file"># File 'traffic_light.rb', line 4</span>
-
-<span class='id identifier rubyid_state_machine'>state_machine</span> <span class='symbol'>:initial</span> <span class='op'>=&gt;</span> <span class='symbol'>:stop</span> <span class='kw'>do</span>
-  <span class='id identifier rubyid_event'>event</span> <span class='symbol'>:cycle</span> <span class='kw'>do</span>
-    <span class='id identifier rubyid_transition'>transition</span> <span class='symbol'>:stop</span> <span class='op'>=&gt;</span> <span class='symbol'>:proceed</span><span class='comma'>,</span> <span class='symbol'>:proceed</span> <span class='op'>=&gt;</span> <span class='symbol'>:caution</span><span class='comma'>,</span> <span class='symbol'>:caution</span> <span class='op'>=&gt;</span> <span class='symbol'>:stop</span>
-  <span class='kw'>end</span>
-<span class='kw'>end</span></pre>
-    </td>
-  </tr>
-</table>
-</div>
-    
-      <div class="method_details ">
   <p class="signature " id="state?-instance_method">
   
     - (<tt>Boolean</tt>) <strong>state?</strong>(state_name) 
@@ -2294,7 +2221,7 @@ Checks whether :stop is the current state.
 </div>
     
     <div id="footer">
-  Generated on Tue Feb 14 08:03:03 2012 by 
+  Generated on Fri Feb 17 08:30:35 2012 by 
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.7.5 (ruby-1.9.2).
 </div>

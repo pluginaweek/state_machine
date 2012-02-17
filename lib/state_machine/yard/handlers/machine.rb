@@ -8,24 +8,17 @@ module StateMachine
         handles method_call(:state_machine)
         namespace_only
         
+        # The generated state machine
+        attr_reader :machine
+        
         def process
           # Cross-file storage for state machines
           globals.state_machines ||= Hash.new {|h, k| h[k] = {}}
           namespace['state_machines'] ||= {}
           
-          # Extract configuration
-          parameters = statement.parameters(false)
-          name = extract_name(parameters.first)
-          
           # Create new machine
-          if inherited_machine = self.inherited_machine(name)
-            klass = Class.new(inherited_machine.owner_class)
-            options = {}
-          else
-            klass = Class.new { extend StateMachine::MacroMethods }
-            options = extract_options(parameters.last)
-          end
-          machine = klass.state_machine(name, options) {}
+          klass = inherited_machine ? Class.new(inherited_machine.owner_class) : Class.new { extend StateMachine::MacroMethods }
+          @machine = klass.state_machine(name, options) {}
           
           # Track the state machine
           globals.state_machines[namespace.name][name] = machine
@@ -47,78 +40,101 @@ module StateMachine
           end
           
           # Define auto-generated methods
-          define_macro_methods(machine)
-          define_state_methods(machine)
-          define_event_methods(machine)
+          define_macro_methods
+          define_state_methods
+          define_event_methods
         end
         
         protected
-          # Extracts the state machine name from the given node
-          def extract_name(ast)
-            if ast && [:symbol_literal, :string_literal].include?(ast.type)
-              extract_node_name(ast)
-            else
-              :state
-            end
-          end
-          
-          # Extracts the state machine options from the given node.  Note that
-          # this will only extract a subset of the options supported.
-          def extract_options(ast)
-            options = {}
-            
-            if ast && ![:symbol_literal, :string_literal].include?(ast.type)
-              ast.children.each do |assoc|
-                key = extract_node_name(assoc[0])
-                # Only extract important options
-                next unless [:initial, :attribute, :namespace].include?(key)
-                
-                value = [:symbol_literal, :string_literal].include?(assoc[1].type) ? extract_node_name(assoc[1]) : assoc[1].source
-                options[key] = value
-              end
-            end
-            
-            options
-          end
-          
-          # Gets the machine with the given name that was inherited from a
-          # superclass.  This ensures each ancestor has been loaded prior to
-          # looking up their definitions.
-          def inherited_machine(name)
-            namespace.inheritance_tree.each do |ancestor|
-              begin
-                ensure_loaded!(ancestor)
-              rescue ::YARD::Handlers::NamespaceMissingError
-                # Ignore: just means that we can't access an ancestor
-              end
-            end
-            
-            # Find the first ancestor that has the machine
-            loaded_inheritance_tree.detect do |ancestor|
-              if ancestor != namespace
-                machine = globals.state_machines[ancestor.name][name]
-                break machine if machine
+          # Extracts the machine name's
+          def name
+            @name ||= begin
+              ast = statement.parameters.first
+              if ast && [:symbol_literal, :string_literal].include?(ast.type)
+                extract_node_name(ast)
+              else
+                :state
               end
             end
           end
           
-          # Gets members of the inheritance tree (excluding mixins) that have
-          # already been loaded by YARD
-          def loaded_inheritance_tree
-            namespace.inheritance_tree.select {|superclass| superclass.is_a?(::YARD::CodeObjects::ClassObject)}
+          # Extracts the machine options.  Note that this will only extract a
+          # subset of the options supported.
+          def options
+            @options ||= begin
+              options = {}
+              ast = statement.parameters(false).last
+              
+              if !inherited_machine && ast && ![:symbol_literal, :string_literal].include?(ast.type)
+                ast.children.each do |assoc|
+                  # Only extract important options
+                  key = extract_node_name(assoc[0])
+                  next unless [:initial, :attribute, :namespace].include?(key)
+                  
+                  value = extract_node_name(assoc[1])
+                  options[key] = value
+                end
+              end
+              
+              options
+            end
           end
           
-          # Gets the type of ORM integration being used
+          # Gets the machine that was inherited from a superclass.  This also
+          # ensures each ancestor has been loaded prior to looking up their definitions.
+          def inherited_machine
+            @inherited_machine ||= begin
+              namespace.inheritance_tree.each do |ancestor|
+                begin
+                  ensure_loaded!(ancestor)
+                rescue ::YARD::Handlers::NamespaceMissingError
+                  # Ignore: just means that we can't access an ancestor
+                end
+              end
+              
+              # Find the first ancestor that has the machine
+              loaded_superclasses.detect do |superclass|
+                if superclass != namespace
+                  machine = globals.state_machines[superclass.name][name]
+                  break machine if machine
+                end
+              end
+            end
+          end
+          
+          # Gets members of this class's superclasses have already been loaded
+          # by YARD
+          def loaded_superclasses
+            namespace.inheritance_tree.select {|ancestor| ancestor.is_a?(::YARD::CodeObjects::ClassObject)}
+          end
+          
+          # Gets a list of all attributes for the current class, including those
+          # that are inherited
+          def instance_attributes
+            attributes = {}
+            loaded_superclasses.each {|superclass| attributes.merge!(superclass.instance_attributes)}
+            attributes
+          end
+          
+          # Gets the type of ORM integration being used based on the list of
+          # ancestors (including mixins)
           def integration
-            @integration ||= Integrations.match_ancestors(namespace.inheritance_tree(true).map(&:path))
+            @integration ||= Integrations.match_ancestors(namespace.inheritance_tree(true).map {|ancestor| ancestor.path})
+          end
+          
+          # Gets the class type being used to define states.  Default is "Symbol".
+          def state_type
+            @state_type ||= machine.states.any? ? machine.states.map(&:name).compact.first.class.to_s : 'Symbol'
+          end
+          
+          # Gets the class type being used to define events.  Default is "Symbol".
+          def event_type
+            @event_type ||= machine.events.any? ? machine.events.first.name.class.to_s : 'Symbol'
           end
           
           # Defines auto-generated macro methods for the given machine
-          def define_macro_methods(machine)
-            return if inherited_machine(machine.name)
-            
-            state_type = machine.states.any? ? machine.states.map(&:name).compact.first.class.to_s : 'Symbol'
-            event_type = machine.events.any? ? machine.events.first.name.class.to_s : 'Symbol'
+          def define_macro_methods
+            return if inherited_machine
             
             # Human state name lookup
             register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "human_#{machine.attribute(:name)}", :class))
@@ -141,23 +157,26 @@ module StateMachine
             # Only register attributes when the accessor isn't explicitly defined
             # by the class / superclass *and* isn't defined by inference from the
             # ORM being used
-            attribute_accessor_defined = loaded_inheritance_tree.any? {|ancestor| ancestor.instance_attributes.include?(machine.attribute.to_sym)}
-            attribute_accessor_inferred = ![nil, Integrations::ActiveModel].include?(integration)
-            unless attribute_accessor_defined || attribute_accessor_inferred
+            unless integration || instance_attributes.include?(machine.attribute.to_sym)
+              attribute = machine.attribute
+              namespace.attributes[:instance][attribute] = {}
+              
               # Machine attribute getter
-              register(m = ::YARD::CodeObjects::MethodObject.new(namespace, machine.attribute))
+              register(m = ::YARD::CodeObjects::MethodObject.new(namespace, attribute))
+              namespace.attributes[:instance][attribute][:read] = m
               m.docstring = [
-                "Gets the current value for the machine",
+                "Gets the current attribute value for the machine",
                 "@return The attribute value"
               ]
               
               # Machine attribute setter
-              register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "#{machine.attribute}="))
+              register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "#{attribute}="))
+              namespace.attributes[:instance][attribute][:write] = m
               m.docstring = [
                 "Sets the current value for the machine",
-                "@param new_#{machine.attribute} The new value to set"
+                "@param new_#{attribute} The new value to set"
               ]
-              m.parameters = ["new_#{machine.attribute}"]
+              m.parameters = ["new_#{attribute}"]
             end
             
             # Presence query
@@ -235,22 +254,17 @@ module StateMachine
           end
           
           # Defines auto-generated event methods for the given machine
-          def define_event_methods(machine)
-            inherited_machine = self.inherited_machine(machine.name)
-            
-            events = machine.events
-            events.each do |event|
+          def define_event_methods
+            machine.events.each do |event|
               next if inherited_machine && inherited_machine.events[event.name]
-              
-              name_type = event.name.class.to_s
               
               # Event query
               register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "can_#{event.qualified_name}?"))
               m.docstring = [
                 "Checks whether #{event.name.inspect} can be fired.",
                 "@param [Hash] requirements The transition requirements to test against",
-                "@option requirements [#{name_type}] :from (the current state) One or more initial states",
-                "@option requirements [#{name_type}] :to One or more target states",
+                "@option requirements [#{state_type}] :from (the current state) One or more initial states",
+                "@option requirements [#{state_type}] :to One or more target states",
                 "@option requirements [Boolean] :guard Whether to guard transitions with conditionals",
                 "@return [Boolean] +true+ if #{event.name.inspect} can be fired, otherwise +false+"
               ]
@@ -261,8 +275,8 @@ module StateMachine
               m.docstring = [
                 "Gets the next transition that would be performed if #{event.name.inspect} were to be fired.",
                 "@param [Hash] requirements The transition requirements to test against",
-                "@option requirements [#{name_type}] :from (the current state) One or more initial states",
-                "@option requirements [#{name_type}] :to One or more target states",
+                "@option requirements [#{state_type}] :from (the current state) One or more initial states",
+                "@option requirements [#{state_type}] :to One or more target states",
                 "@option requirements [Boolean] :guard Whether to guard transitions with conditionals",
                 "@return [StateMachine::Transition] The transition that would be performed or +nil+"
               ]
@@ -290,11 +304,8 @@ module StateMachine
           end
           
           # Defines auto-generated state methods for the given machine
-          def define_state_methods(machine)
-            inherited_machine = self.inherited_machine(machine.name)
-            
-            states = machine.states
-            states.each do |state|
+          def define_state_methods
+            machine.states.each do |state|
               next if inherited_machine && inherited_machine.states[state.name]
               
               # State query
