@@ -69,7 +69,7 @@ module StateMachine
                 ast.children.each do |assoc|
                   # Only extract important options
                   key = extract_node_name(assoc[0])
-                  next unless [:initial, :attribute, :namespace].include?(key)
+                  next unless [:initial, :attribute, :namespace, :action].include?(key)
                   
                   value = extract_node_name(assoc[1])
                   options[key] = value
@@ -170,6 +170,28 @@ module StateMachine
               ]
               
               # Machine attribute setter
+              register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "#{attribute}="))
+              namespace.attributes[:instance][attribute][:write] = m
+              m.docstring = [
+                "Sets the current value for the machine",
+                "@param new_#{attribute} The new value to set"
+              ]
+              m.parameters = ["new_#{attribute}"]
+            end
+            
+            if machine.action || integration && integration.defaults[:action]
+              attribute = "#{machine.name}_event"
+              namespace.attributes[:instance][attribute] = {}
+              
+              # Machine event attribute getter
+              register(m = ::YARD::CodeObjects::MethodObject.new(namespace, attribute))
+              namespace.attributes[:instance][attribute][:read] = m
+              m.docstring = [
+                "Gets the current event attribute value for the machine",
+                "@return The event attribute value"
+              ]
+              
+              # Machine event attribute setter
               register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "#{attribute}="))
               namespace.attributes[:instance][attribute][:write] = m
               m.docstring = [
