@@ -21,7 +21,10 @@ module StateMachine
       module Observer
         def update_with_transition(args)
           observed_method, object, transition = args
-          send(observed_method, object, transition) if respond_to?(observed_method)
+          return unless respond_to?(observed_method)
+          return if disabled_for?(object)
+
+          send(observed_method, object, transition)
         end
       end
     end
