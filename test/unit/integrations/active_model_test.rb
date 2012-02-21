@@ -764,6 +764,37 @@ module ActiveModelTest
       @transition.perform
       assert_equal callbacks, instance.notifications
     end
+
+    def test_should_call_no_transition_callbacks_when_observers_disabled
+      callbacks = [
+        :before_ignite_from_parked_to_idling,
+        :before_ignite_from_parked,
+        :before_ignite_to_idling,
+        :before_ignite,
+        :before_transition_state_from_parked_to_idling,
+        :before_transition_state_from_parked,
+        :before_transition_state_to_idling,
+        :before_transition_state,
+        :before_transition
+      ]
+
+      notified = false
+      observer = new_observer(@model) do
+        callbacks.each do |callback|
+          define_method(callback) do |*args|
+            notifications << callback
+          end
+        end
+      end
+
+      instance = observer.instance
+
+      @model.observers.disable observer do
+        @transition.perform
+      end
+
+      assert_equal [], instance.notifications
+    end
     
     def test_should_pass_record_and_transition_to_before_callbacks
       observer = new_observer(@model) do
