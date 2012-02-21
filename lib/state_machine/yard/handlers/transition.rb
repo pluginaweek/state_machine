@@ -31,7 +31,14 @@ module StateMachine
             when :binary
               AllMatcher.instance - extract_node_names(ast.children.last)
             when :var_ref, :vcall
-              ast.jump(:ident).source == 'same' ? LoopbackMatcher.instance : AllMatcher.instance
+              case ast.source
+              when 'nil'
+                nil
+              when 'same'
+                LoopbackMatcher.instance
+              else
+                AllMatcher.instance
+              end
             end
           end
       end

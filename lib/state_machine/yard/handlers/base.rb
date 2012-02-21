@@ -6,10 +6,13 @@ module StateMachine
         private
           # Extracts the value from the node as either a string or symbol
           def extract_node_name(ast)
-            if ast.type == :string_literal
+            case ast.type
+            when :symbol_literal
+              ast.jump(:ident).source.to_sym
+            when :string_literal
               ast.jump(:tstring_content).source
             else
-              ast.jump(:ident).source.to_sym
+              nil
             end
           end
           

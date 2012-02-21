@@ -179,7 +179,7 @@ module StateMachine
               m.parameters = ["new_#{attribute}"]
             end
             
-            if machine.action || integration && integration.defaults[:action]
+            if integration && integration.defaults[:action] && !options.include?(:action) || options[:action]
               attribute = "#{machine.name}_event"
               namespace.attributes[:instance][attribute] = {}
               
@@ -328,7 +328,7 @@ module StateMachine
           # Defines auto-generated state methods for the given machine
           def define_state_methods
             machine.states.each do |state|
-              next if inherited_machine && inherited_machine.states[state.name]
+              next if inherited_machine && inherited_machine.states[state.name] || !state.name
               
               # State query
               register(m = ::YARD::CodeObjects::MethodObject.new(namespace, "#{state.qualified_name}?"))
