@@ -53,11 +53,16 @@ module StateMachine
     def evaluate_method(object, method, *args, &block)
       case method
         when Symbol
-          object.method(method).arity == 0 ? object.send(method, &block) : object.send(method, *args, &block)
+          if (method_defined?(method) || private_method_defined?(method)) && object.method(method).arity == 0
+            object.send(method, &block)
+          else
+            object.send(method, *args, &block)
+          end
+        
         when Proc, Method
           args.unshift(object)
           arity = method.arity
-          
+        
           # Procs don't support blocks in < Ruby 1.9, so it's tacked on as an
           # argument for consistency across versions of Ruby
           if block_given? && Proc === method && arity != 0
@@ -73,7 +78,7 @@ module StateMachine
             # These method types are only called with 0, 1, or n arguments
             args = args[0, arity] if [0, 1].include?(arity)
           end
-          
+        
           method.call(*args, &block)
         when String
           eval(method, object.instance_eval {binding}, &block)
