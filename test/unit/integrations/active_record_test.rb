@@ -1571,7 +1571,6 @@ module ActiveRecordTest
         :before_transition
       ]
       
-      notified = false
       observer = new_observer(@model) do
         callbacks.each do |callback|
           define_method(callback) do |*args|
@@ -1584,6 +1583,31 @@ module ActiveRecordTest
       
       @transition.perform
       assert_equal callbacks, instance.notifications
+    end
+    
+    def test_should_call_no_transition_callbacks_when_observers_disabled
+      return unless ::ActiveRecord::VERSION::MAJOR >= 3 && ::ActiveRecord::VERSION::MINOR >= 1
+      
+      callbacks = [
+        :before_ignite,
+        :before_transition
+      ]
+      
+      observer = new_observer(@model) do
+        callbacks.each do |callback|
+          define_method(callback) do |*args|
+            notifications << callback
+          end
+        end
+      end
+      
+      instance = observer.instance
+      
+      @model.observers.disable(observer) do
+        @transition.perform
+      end
+      
+      assert_equal [], instance.notifications
     end
     
     def test_should_pass_record_and_transition_to_before_callbacks

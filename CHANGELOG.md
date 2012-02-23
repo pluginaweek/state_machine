@@ -1,5 +1,6 @@
 # master
 
+* Fix observer callbacks being run when disabled in ActiveModel / ActiveRecord integrations
 * Add YARD integration for autogenerating documentation / embedding visualizations of state machines
 * Allow states / events to be drawn with their human name instead of their internal name
 

@@ -475,6 +475,7 @@ module StateMachine
         # Loads extensions to ActiveModel's Observers
         def load_observer_extensions
           require 'state_machine/integrations/active_model/observer'
+          require 'state_machine/integrations/active_model/observer_update'
         end
         
         # Adds a set of default callbacks that utilize the Observer extensions
@@ -568,14 +569,14 @@ module StateMachine
             ["_from_#{from}", nil].each do |from_segment|
               ["_to_#{to}", nil].each do |to_segment|
                 object.class.changed if object.class.respond_to?(:changed)
-                object.class.notify_observers('update_with_transition', [[event_segment, from_segment, to_segment].join, object, transition])
+                object.class.notify_observers('update_with_transition', ObserverUpdate.new([event_segment, from_segment, to_segment].join, object, transition))
               end
             end
           end
           
           # Generic updates
           object.class.changed if object.class.respond_to?(:changed)
-          object.class.notify_observers('update_with_transition', ["#{type}_transition", object, transition])
+          object.class.notify_observers('update_with_transition', ObserverUpdate.new("#{type}_transition", object, transition))
           
           true
         end
