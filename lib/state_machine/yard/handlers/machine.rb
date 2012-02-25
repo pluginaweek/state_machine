@@ -124,7 +124,7 @@ module StateMachine
           
           # Gets the class type being used to define states.  Default is "Symbol".
           def state_type
-            @state_type ||= machine.states.any? ? machine.states.map(&:name).compact.first.class.to_s : 'Symbol'
+            @state_type ||= machine.states.any? ? machine.states.map {|state| state.name}.compact.first.class.to_s : 'Symbol'
           end
           
           # Gets the class type being used to define events.  Default is "Symbol".

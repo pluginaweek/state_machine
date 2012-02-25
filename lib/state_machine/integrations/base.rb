@@ -31,7 +31,7 @@ module StateMachine
         
         # Whether the integration should be used for the given class.
         def matches?(klass)
-          matches_ancestors?(klass.ancestors.map(&:name))
+          matches_ancestors?(klass.ancestors.map {|ancestor| ancestor.name})
         end
         
         # Whether the integration should be used for the given list of ancestors.
