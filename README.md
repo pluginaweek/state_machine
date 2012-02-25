@@ -58,7 +58,7 @@ Some brief, high-level features include:
 * Inheritance
 * Internationalization
 * GraphViz visualization creator
-* YARD integration
+* YARD integration (Ruby 1.9+ only)
 * Flexible machine syntax
 
 Examples of the usage patterns for some of the above features are shown below.
@@ -986,7 +986,7 @@ autoload_plugins:
 
 Once enabled, simply generate your documentation like you normally do.
 
-*Note* that this currently only works for Ruby 1.9+.
+*Note* that this only works for Ruby 1.9+.
 
 ## Web Frameworks
 
