@@ -53,7 +53,9 @@ module StateMachine
     def evaluate_method(object, method, *args, &block)
       case method
         when Symbol
-          object.method(method).arity == 0 ? object.send(method, &block) : object.send(method, *args, &block)
+          klass = (class << object; self; end)
+          args = [] if (klass.method_defined?(method) || klass.private_method_defined?(method)) && object.method(method).arity == 0
+          object.send(method, *args, &block)
         when Proc, Method
           args.unshift(object)
           arity = method.arity
