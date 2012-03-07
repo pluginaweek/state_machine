@@ -1570,7 +1570,7 @@ module StateMachine
     #   before_transition :parked => :idling, :if => :moving?, :do => ...
     #   before_transition :on => :ignite, :unless => :seatbelt_on?, :do => ...
     # 
-    # === Accessing the transition
+    # == Accessing the transition
     # 
     # In addition to passing the object being transitioned, the actual
     # transition describing the context (e.g. event, from, to) can be accessed
@@ -1597,6 +1597,40 @@ module StateMachine
     # 
     # See StateMachine::Transition for more information about the
     # attributes available on the transition.
+    # 
+    # == Usage with delegates
+    # 
+    # As noted above, state_machine uses the callback method's argument list
+    # arity to determine whether to include the transition in the method call.
+    # If you're using delegates, such as those defined in ActiveSupport or
+    # Forwardable, the actual arity of the delegated method gets masked.  This
+    # means that callbacks which reference delegates will always get passed the
+    # transition as an argument.  For example:
+    # 
+    #   class Vehicle
+    #     extend Forwardable
+    #     delegate :refresh => :dashboard
+    #     
+    #     state_machine do
+    #       before_transition :refresh
+    #       ...
+    #     end
+    #     
+    #     def dashboard
+    #       @dashboard ||= Dashboard.new
+    #     end
+    #   end
+    #   
+    #   class Dashboard
+    #     def refresh(transition)
+    #       # ...
+    #     end
+    #   end
+    # 
+    # In the above example, <tt>Dashboard#refresh</tt> *must* defined a
+    # +transition+ argument.  Otherwise, an +ArgumentError+ exception will get
+    # raised.  The only way around this is to avoid the use of delegates and
+    # manually define the delegate method so that the correct arity is used.
     # 
     # == Examples
     # 
