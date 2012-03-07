@@ -108,6 +108,42 @@ module StateMachine
     #     end
     #   end
     # 
+    # === Within DataMapper Hooks
+    # 
+    # DataMapper protects against the potential for system stack errors resulting
+    # from infinite loops by preventing records from being saved multiple times
+    # within save hooks.  You need to be acutely aware of this when interacting
+    # with state_machine within save hooks.  There are two things to keep in mind:
+    # 
+    # 1. You cannot run a state_machine event during an `after :save/:create` hook.
+    # 2. If you need to run a state_machine event during a `before :save/:create/etc.`
+    #    hook, then you have to force the machine's action to be skipped by passing
+    #    `false` in as an argument to the event.
+    # 
+    # For example:
+    # 
+    #   class Vehicle
+    #     include DataMapper::Resource
+    #     ...
+    #     
+    #     state_machine :initial => :parked do
+    #       event :ignite do
+    #         transition :parked => :idling
+    #       end
+    #     end
+    #     
+    #     # This will allow the event to transition without attempting to save a second time
+    #     before :create { ignite(false) }
+    #     
+    #     # This will never work because DataMapper will refuse to save the
+    #     # changes since we're still inside of a transaction
+    #     # after :create { ignite }
+    #   end
+    # 
+    # While the above will work, in reality you should typically just set the
+    # `state_event` attribute in `#initialize` to automatically transition an
+    # object on creation.
+    # 
     # == Transactions
     # 
     # By default, the use of transactions during an event transition is
