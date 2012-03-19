@@ -343,7 +343,7 @@ module StateMachine
           raise unless @resume_block
         end
         
-        if @resume_block
+        if instance_variable_defined?(:@resume_block) && @resume_block
           @resume_block.call(halted, error)
         else
           halted
