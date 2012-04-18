@@ -11,6 +11,7 @@ require 'state_machine/state_collection'
 require 'state_machine/event_collection'
 require 'state_machine/path_collection'
 require 'state_machine/matcher_helpers'
+require 'state_machine/alternate_machine'
 
 module StateMachine
   # Represents a state machine for a particular attribute.  State machines
@@ -443,7 +444,7 @@ module StateMachine
           end
           
           # Evaluate DSL
-          machine.instance_eval(&block) if block_given?
+          machine.evaluate_with_syntax(options[:syntax], &block) if block_given?
         else
           # No existing machine: create a new one
           machine = new(owner_class, name, options, &block)
@@ -538,7 +539,7 @@ module StateMachine
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :attribute, :initial, :initialize, :action, :plural, :namespace, :integration, :messages, :use_transactions)
+      assert_valid_keys(options, :attribute, :initial, :initialize, :action, :plural, :namespace, :integration, :messages, :use_transactions, :syntax)
       
       # Find an integration that matches this machine's owner class
       if options.include?(:integration)
@@ -566,6 +567,8 @@ module StateMachine
       @action = options[:action]
       @use_transactions = options[:use_transactions]
       @initialize_state = options[:initialize]
+      @syntax = options[:syntax]
+      @plural = options[:plural]
       self.owner_class = owner_class
       self.initial_state = options[:initial] unless sibling_machines.any?
       
@@ -574,11 +577,11 @@ module StateMachine
       
       # Define class integration
       define_helpers
-      define_scopes(options[:plural])
+      define_scopes(@plural)
       after_initialize
       
       # Evaluate DSL
-      instance_eval(&block) if block_given?
+      evaluate_with_syntax(@syntax, &block) if block_given?
     end
     
     # Creates a copy of this machine in addition to copies of each associated
@@ -592,6 +595,29 @@ module StateMachine
       @states = @states.dup
       @states.machine = self
       @callbacks = {:before => @callbacks[:before].dup, :after => @callbacks[:after].dup, :failure => @callbacks[:failure].dup}
+    end
+    
+    def duplicate_to(clazz)
+      new_copy = self.clone
+      new_copy.owner_class = clazz
+      new_copy.define_helpers
+      new_copy.define_scopes(@plural)
+      new_copy.events.each { |event| event.send(:add_actions) }
+      new_copy.states.each { |state| state.send(:add_predicate) }
+      new_copy
+    end
+    
+    def evaluate_with_syntax(syntax, &block)
+      if syntax == :alternate
+        instance_eval(&alternate_syntax_eval(&block))
+      else
+        instance_eval(&block)
+      end
+    end
+    
+    def alternate_syntax_eval(&block)
+      alternate = AlternateMachine.new(&block)
+      alternate.to_state_machine
     end
     
     # Sets the class which is the owner of this state machine.  Any methods
