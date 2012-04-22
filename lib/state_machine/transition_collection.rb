@@ -73,9 +73,10 @@ module StateMachine
       end
     end
     
-    private
+    protected
       attr_reader :results #:nodoc:
       
+    private
       # Is this a valid set of transitions?  If the collection was creating with
       # any +false+ values for transitions, then the the collection will be
       # marked as invalid.

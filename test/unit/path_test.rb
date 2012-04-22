@@ -240,7 +240,7 @@ class PathWithGuardedTransitionsTest < Test::Unit::TestCase
   def test_should_not_walk_transitions_if_guard_enabled
     path = StateMachine::Path.new(@object, @machine)
     path.concat([
-      ignite_transition = StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
+      StateMachine::Transition.new(@object, @machine, :ignite, :parked, :idling)
     ])
     
     paths = []

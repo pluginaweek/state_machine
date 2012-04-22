@@ -489,7 +489,7 @@ module StateMachine
     @default_messages = {
       :invalid => 'is invalid',
       :invalid_event => 'cannot transition when %s',
-      :invalid_transition => 'cannot transition via "%s"'
+      :invalid_transition => 'cannot transition via "%1$s"'
     }
     
     # Whether to ignore any conflicts that are detected for helper methods that
@@ -498,7 +498,7 @@ module StateMachine
     @ignore_method_conflicts = false
     
     # The class that the machine is defined in
-    attr_accessor :owner_class
+    attr_reader :owner_class
     
     # The name of the machine, used for scoping methods generated for the
     # machine as a whole (not states or events)
@@ -542,7 +542,7 @@ module StateMachine
       
       # Find an integration that matches this machine's owner class
       if options.include?(:integration)
-        @integration = StateMachine::Integrations.find_by_name(options[:integration]) if options[:integration]
+        @integration = options[:integration] && StateMachine::Integrations.find_by_name(options[:integration])
       else
         @integration = StateMachine::Integrations.match(owner_class)
       end
@@ -566,6 +566,7 @@ module StateMachine
       @action = options[:action]
       @use_transactions = options[:use_transactions]
       @initialize_state = options[:initialize]
+      @action_hook_defined = false
       self.owner_class = owner_class
       self.initial_state = options[:initial] unless sibling_machines.any?
       
@@ -673,7 +674,7 @@ module StateMachine
     
     # Whether a dynamic initial state is being used in the machine
     def dynamic_initial_state?
-      @initial_state.is_a?(Proc)
+      instance_variable_defined?('@initial_state') && @initial_state.is_a?(Proc)
     end
     
     # Initializes the state on the given object.  Initial values are only set if
@@ -749,8 +750,8 @@ module StateMachine
         else
           name = self.name
           helper_module.class_eval do
-            define_method(method) do |*args|
-              block.call((scope == :instance ? self.class : self).state_machine(name), self, *args)
+            define_method(method) do |*block_args|
+              block.call((scope == :instance ? self.class : self).state_machine(name), self, *block_args)
             end
           end
         end
@@ -1074,7 +1075,11 @@ module StateMachine
     #   Vehicle.state_machine.read(vehicle, :event)     # => nil      # Equivalent to vehicle.state_event
     def read(object, attribute, ivar = false)
       attribute = self.attribute(attribute)
-      ivar ? object.instance_variable_get("@#{attribute}") : object.send(attribute)
+      if ivar
+        object.instance_variable_defined?("@#{attribute}") ? object.instance_variable_get("@#{attribute}") : nil
+      else
+        object.send(attribute)
+      end
     end
     
     # Sets a new value in the given object's attribute.
@@ -1865,7 +1870,15 @@ module StateMachine
     # Generates the message to use when invalidating the given object after
     # failing to transition on a specific event
     def generate_message(name, values = [])
-      (@messages[name] || self.class.default_messages[name]) % values.map {|value| value.last}
+      message = (@messages[name] || self.class.default_messages[name])
+      
+      # Check whether there are actually any values to interpolate to avoid
+      # any warnings
+      if message.scan(/%./).any? {|match| match != '%%'}
+        message % values.map {|value| value.last}
+      else
+        message
+      end
     end
     
     # Runs a transaction, rolling back any changes if the yielded block fails.

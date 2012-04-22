@@ -44,7 +44,7 @@ module StateMachine
       contexts = @contexts
       @nodes = []
       @contexts = []
-      @indices = @indices.inject({}) {|indices, (name, index)| indices[name] = {}; indices}
+      @indices = @indices.inject({}) {|indices, (name, *)| indices[name] = {}; indices}
       
       # Add nodes *prior* to copying over the contexts so that they don't get
       # evaluated multiple times

@@ -82,7 +82,7 @@ module StateMachine
         def define_state_initializer
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*args)
-              attrs, from_db = args
+              from_db = args[1]
               from_db ? super : self.class.state_machines.initialize_states(self) { super }
             end
           end_eval

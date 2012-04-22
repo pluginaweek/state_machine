@@ -86,7 +86,7 @@ module ActiveRecordTest
     end
     
     def test_should_have_defaults
-      assert_equal e = {:action => :save}, StateMachine::Integrations::ActiveRecord.defaults
+      assert_equal({:action => :save}, StateMachine::Integrations::ActiveRecord.defaults)
     end
     
     def test_should_have_a_locale_path
@@ -191,7 +191,7 @@ module ActiveRecordTest
     
     def test_should_set_attributes_prior_to_initialize_block
       state = nil
-      record = @model.new do |record|
+      @model.new do |record|
         state = record.state
       end
       
@@ -212,6 +212,7 @@ module ActiveRecordTest
       @model.class_eval do
         attr_accessor :state_during_setter
         
+        remove_method :value=
         define_method(:value=) do |value|
           self.state_during_setter = state
         end
@@ -275,7 +276,7 @@ module ActiveRecordTest
     
     def test_should_set_attributes_prior_to_initialize_block
       state = nil
-      record = @model.new do |record|
+      @model.new do |record|
         state = record.state
       end
       
@@ -296,6 +297,7 @@ module ActiveRecordTest
       @model.class_eval do
         attr_accessor :state_during_setter
         
+        remove_method :value=
         define_method(:value=) do |value|
           self.state_during_setter = state || 'nil'
         end
@@ -384,14 +386,14 @@ module ActiveRecordTest
       @machine = StateMachine::Machine.new(@model)
       @machine.state :state
       
-      assert_match /^Instance method "state\?" is already defined in ActiveRecordTest::Foo, use generic helper instead.*\n$/, $stderr.string
+      assert_match(/^Instance method "state\?" is already defined in ActiveRecordTest::Foo, use generic helper instead.*\n$/, $stderr.string)
     end
     
     def test_should_output_warning_with_same_machine_attribute
       @machine = StateMachine::Machine.new(@model, :public_state, :attribute => :state)
       @machine.state :state
       
-      assert_match /^Instance method "state\?" is already defined in ActiveRecordTest::Foo, use generic helper instead.*\n$/, $stderr.string
+      assert_match(/^Instance method "state\?" is already defined in ActiveRecordTest::Foo, use generic helper instead.*\n$/, $stderr.string)
     end
     
     def teardown
@@ -1023,7 +1025,7 @@ module ActiveRecordTest
   end
   
   class MachineWithFailedAfterCallbacksTest < BaseTestCase
-     def setup
+    def setup
       @callbacks = []
       
       @model = new_model
@@ -1649,7 +1651,7 @@ module ActiveRecordTest
     def test_should_continue_to_handle_non_state_machine_callbacks
       observer = new_observer(@model) do
         def before_save(object)
-          notifications << [:before_save, @object]
+          notifications << [:before_save, object]
         end
         
         def before_ignite(*args)
@@ -1660,7 +1662,7 @@ module ActiveRecordTest
       instance = observer.instance
       
       @transition.perform
-      assert_equal [:before_ignite, [:before_save, @object]], instance.notifications
+      assert_equal [:before_ignite, [:before_save, @record]], instance.notifications
     end
     
     def test_should_support_nil_from_states
@@ -1671,7 +1673,6 @@ module ActiveRecordTest
         :before_transition_state_from_nil
       ]
       
-      notified = false
       observer = new_observer(@model) do
         callbacks.each do |callback|
           define_method(callback) do |*args|
@@ -1695,7 +1696,6 @@ module ActiveRecordTest
         :before_transition_state_to_nil
       ]
       
-      notified = false
       observer = new_observer(@model) do
         callbacks.each do |callback|
           define_method(callback) do |*args|
@@ -1864,7 +1864,7 @@ module ActiveRecordTest
       
       def test_should_only_include_records_with_state_in_singular_with_scope
         parked = @model.create :state => 'parked'
-        idling = @model.create :state => 'idling'
+        @model.create :state => 'idling'
         
         assert_equal [parked], @model.with_state(:parked).find(:all)
       end

@@ -503,7 +503,7 @@ class TransitionWithBeforeCallbacksTest < Test::Unit::TestCase
     assert @run
   end
   
-  def test_should_succeed_if_block_success_is_false
+  def test_should_succeed_if_block_success_is_true
     @machine.before_transition {@run = true}
     assert_equal true, @transition.run_callbacks {{:success => true}}
     assert @run
@@ -584,6 +584,7 @@ class TransitionWithAfterCallbacksTest < Test::Unit::TestCase
   end
   
   def test_should_not_run_if_not_successful
+    @run = false
     @machine.after_transition {|object| @run = true}
     @transition.run_callbacks {{:success => false}}
     assert !@run
@@ -808,6 +809,7 @@ class TransitionWithAroundCallbacksTest < Test::Unit::TestCase
   end
   
   def test_should_only_run_before_if_block_success_is_false
+    @after_run = false
     @machine.around_transition {|block| @before_run = true; block.call; @after_run = true}
     assert_equal true, @transition.run_callbacks {{:success => false}}
     assert @before_run
@@ -967,6 +969,7 @@ class TransitionWithFailureCallbacksTest < Test::Unit::TestCase
   end
   
   def test_should_not_run_if_successful
+    @run = false
     @machine.after_failure {|object| @run = true}
     @transition.run_callbacks {{:success => true}}
     assert !@run
@@ -1175,6 +1178,7 @@ class TransitionWithBeforeCallbacksSkippedTest < Test::Unit::TestCase
   end
   
   def test_should_not_run_before_callbacks
+    @run = false
     @machine.before_transition {@run = true}
     
     assert_equal false, @transition.run_callbacks(:before => false)
@@ -1210,6 +1214,7 @@ class TransitionWithAfterCallbacksSkippedTest < Test::Unit::TestCase
   end
   
   def test_should_not_run_after_callbacks
+    @run = false
     @machine.after_transition {@run = true}
     
     assert_equal true, @transition.run_callbacks(:after => false)
@@ -1225,6 +1230,7 @@ class TransitionWithAfterCallbacksSkippedTest < Test::Unit::TestCase
     end
     
     def test_should_not_run_around_callbacks_after_yield
+      @run = false
       @machine.around_transition {|block| block.call; @run = true}
       
       assert_equal true, @transition.run_callbacks(:after => false)

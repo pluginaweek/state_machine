@@ -90,6 +90,7 @@ module StateMachine
       @machine = machine
       @args = []
       @transient = false
+      @resume_block = nil
       
       @event = machine.events.fetch(event)
       @from_state = machine.states.fetch(from_name)

@@ -164,6 +164,8 @@ class MachineCollectionFireTest < Test::Unit::TestCase
   end
   
   def test_should_run_failure_callbacks_if_any_event_cannot_transition
+    @state_failure_run = @alarm_state_failure_run = false
+    
     @machines[:state].after_failure {@state_failure_run = true}
     @machines[:alarm_state].after_failure {@alarm_state_failure_run = true}
     
@@ -246,6 +248,7 @@ class MachineCollectionFireWithTransactionsTest < Test::Unit::TestCase
   
   def test_should_run_failure_callbacks_if_not_successful
     @object.allow_save = false
+    @state_failure_run = @alarm_state_failure_run = false
     
     @machines[:state].after_failure {@state_failure_run = true}
     @machines[:alarm_state].after_failure {@alarm_state_failure_run = true}
@@ -313,6 +316,7 @@ class MachineCollectionFireWithValidationsTest < Test::Unit::TestCase
   def test_should_run_failure_callbacks_if_no_transitions_exist
     @object.state = 'idling'
     @object.alarm_state = 'off'
+    @state_failure_run = @alarm_state_failure_run = false
     
     @machines[:state].after_failure {@state_failure_run = true}
     @machines[:alarm_state].after_failure {@alarm_state_failure_run = true}

@@ -973,6 +973,7 @@ class EventWithMarshallingTest < Test::Unit::TestCase
   
   def test_should_marshal_during_action
     @klass.class_eval do
+      remove_method :save
       def save
         Marshal.dump(self)
       end

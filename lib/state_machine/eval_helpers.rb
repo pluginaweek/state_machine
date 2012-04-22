@@ -76,12 +76,12 @@ module StateMachine
             args = args[0, arity] if [0, 1].include?(arity)
           end
           
-          method.call(*args, &block)
+          method.is_a?(Proc) ? method.call(*args) : method.call(*args, &block)
         when String
           eval(method, object.instance_eval {binding}, &block)
         else
           raise ArgumentError, 'Methods must be a symbol denoting the method to call, a block to be invoked, or a string to be evaluated'
-        end
+      end
     end
   end
 end

@@ -707,6 +707,10 @@ class BranchWithMultipleUnlessConditionalsTest < Test::Unit::TestCase
 end
 
 class BranchWithConflictingConditionalsTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+  end
+  
   def test_should_match_if_if_is_true_and_unless_is_false
     branch = StateMachine::Branch.new(:if => lambda {true}, :unless => lambda {false})
     assert branch.match(@object)

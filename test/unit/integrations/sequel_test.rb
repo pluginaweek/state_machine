@@ -57,7 +57,7 @@ module SequelTest
     end
     
     def test_should_have_defaults
-      assert_equal e = {:action => :save}, StateMachine::Integrations::Sequel.defaults
+      assert_equal({:action => :save}, StateMachine::Integrations::Sequel.defaults)
     end
     
     def test_should_not_have_a_locale_path
@@ -160,7 +160,7 @@ module SequelTest
     
     def test_should_set_attributes_prior_to_initialize_block
       state = nil
-      record = @model.new do |record|
+      @model.new do |record|
         state = record.state
       end
       
@@ -182,6 +182,7 @@ module SequelTest
       @model.class_eval do
         attr_accessor :state_during_setter
         
+        remove_method :value=
         define_method(:value=) do |value|
           self.state_during_setter = state
         end
@@ -250,7 +251,7 @@ module SequelTest
     
     def test_should_set_attributes_prior_to_initialize_block
       state = nil
-      record = @model.new do |record|
+      @model.new do |record|
         state = record.state
       end
       
@@ -272,6 +273,7 @@ module SequelTest
       @model.class_eval do
         attr_accessor :state_during_setter
         
+        remove_method :value=
         define_method(:value=) do |value|
           self.state_during_setter = state || 'nil'
         end
@@ -913,7 +915,7 @@ module SequelTest
   end
   
   class MachineWithFailedAfterCallbacksTest < BaseTestCase
-     def setup
+    def setup
       callbacks = []
       
       @model = new_model
@@ -1422,7 +1424,7 @@ module SequelTest
     
     def test_should_only_include_records_with_state_in_singular_with_scope
       parked = @model.create :state => 'parked'
-      idling = @model.create :state => 'idling'
+      @model.create :state => 'idling'
       
       assert_equal [parked], @model.with_state(:parked).all
     end
@@ -1482,7 +1484,7 @@ module SequelTest
       @machine.state :idling, :value => lambda {'idling'}
       
       parked = @model.create :state => 'parked'
-      idling = @model.create :state => 'idling'
+      @model.create :state => 'idling'
       
       assert_equal [parked], @model.with_state(:parked).all
     end

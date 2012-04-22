@@ -71,7 +71,7 @@ module BaseTest
         end
       end
       
-      version1 = @integration.version '1.0' do
+      @integration.version '1.0' do
         def self.active?
           true
         end
@@ -81,7 +81,7 @@ module BaseTest
         end
       end
       
-      version2 = @integration.version '2.0' do
+      @integration.version '2.0' do
         def self.active?
           false
         end

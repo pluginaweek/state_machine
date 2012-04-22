@@ -485,7 +485,7 @@ end
 
 class CallbackWithApplicationTerminatorTest < Test::Unit::TestCase
   def setup
-    @original_terminator = StateMachine::Callback.bind_to_object
+    @original_terminator = StateMachine::Callback.terminator
     StateMachine::Callback.terminator = lambda {|result| result == false}
     
     @object = Object.new
@@ -502,7 +502,7 @@ class CallbackWithApplicationTerminatorTest < Test::Unit::TestCase
   end
   
   def teardown
-    StateMachine::Callback.bind_to_object = @original_bind_to_object
+    StateMachine::Callback.terminator = @original_terminator
   end
 end
 
@@ -597,6 +597,7 @@ class CallbackWithAroundTypeAndMultipleMethodsTest < Test::Unit::TestCase
   
   def test_should_halt_if_first_doesnt_yield
     class << @object
+      remove_method :run_1
       def run_1
         (@before_callbacks ||= []) << :run_1
       end
@@ -612,6 +613,7 @@ class CallbackWithAroundTypeAndMultipleMethodsTest < Test::Unit::TestCase
   
   def test_should_halt_if_last_doesnt_yield
     class << @object
+      remove_method :run_2
       def run_2
         (@before_callbacks ||= []) << :run_2
       end
@@ -624,6 +626,7 @@ class CallbackWithAroundTypeAndMultipleMethodsTest < Test::Unit::TestCase
   
   def test_should_not_evaluate_further_methods_if_after_halts
     class << @object
+      remove_method :run_2
       def run_2
         (@before_callbacks ||= []) << :run_2
         yield

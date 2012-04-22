@@ -109,13 +109,13 @@ class NodeCollectionWithoutIndicesTest < Test::Unit::TestCase
   end
   
   def test_should_not_allow_lookup
-    @collection << object = Object.new
+    @collection << Object.new
     exception = assert_raise(ArgumentError) { @collection[0] }
     assert_equal 'No indices configured', exception.message
   end
   
   def test_should_not_allow_fetching
-    @collection << object = Object.new
+    @collection << Object.new
     exception = assert_raise(ArgumentError) { @collection.fetch(0) }
     assert_equal 'No indices configured', exception.message
   end

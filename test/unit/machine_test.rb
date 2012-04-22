@@ -170,7 +170,7 @@ class MachineByDefaultTest < Test::Unit::TestCase
   end
   
   def test_should_extend_owner_class_with_class_methods
-    assert (class << @klass; ancestors; end).include?(StateMachine::ClassMethods)
+    assert((class << @klass; ancestors; end).include?(StateMachine::ClassMethods))
   end
   
   def test_should_include_instance_methods_in_owner_class
@@ -257,13 +257,12 @@ class MachineWithoutInitializationTest < Test::Unit::TestCase
   end
   
   def test_should_still_allow_manual_initialization
-    @klass.class_eval do
+    @klass.send(:include, Module.new do
       def initialize(attributes = {})
-        attributes.each {|attr, value| send("#{attr}=", value)}
         super()
         initialize_state_machines
       end
-    end
+    end)
     
     object = @klass.new
     assert_equal 'parked', object.state
@@ -319,7 +318,7 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
       end
     end
     klass = Class.new(base)
-    machine = StateMachine::Machine.new(klass, :initial => :parked)
+    StateMachine::Machine.new(klass, :initial => :parked)
     
     assert_equal 'parked', klass.new.state_on_init
   end
@@ -438,7 +437,7 @@ class MachineStateInitializationTest < Test::Unit::TestCase
   
   def test_should_write_to_hash_if_specified
     @machine.initialize_state(@object, :to => hash = {})
-    assert_equal expected = {'state' => 'parked'}, hash
+    assert_equal({'state' => 'parked'}, hash)
   end
   
   def test_should_not_write_to_object_if_writing_to_hash
@@ -526,44 +525,46 @@ class MachineWithCustomIntegrationTest < Test::Unit::TestCase
   
   def test_should_be_extended_by_the_integration_if_explicit
     machine = StateMachine::Machine.new(@klass, :integration => :custom)
-    assert (class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+    assert((class << machine; ancestors; end).include?(StateMachine::Integrations::Custom))
   end
   
   def test_should_not_be_extended_by_the_integration_if_implicit_but_not_available
     StateMachine::Integrations::Custom.class_eval do
+      class << self; remove_method :matching_ancestors; end
       def self.matching_ancestors
         []
       end
     end
     
     machine = StateMachine::Machine.new(@klass)
-    assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+    assert(!(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom))
   end
 
   def test_should_not_be_extended_by_the_integration_if_implicit_but_not_matched
     StateMachine::Integrations::Custom.class_eval do
+      class << self; remove_method :matching_ancestors; end
       def self.matching_ancestors
         []
       end
     end
     
     machine = StateMachine::Machine.new(@klass)
-    assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+    assert(!(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom))
   end
 
   def test_should_be_extended_by_the_integration_if_implicit_and_available_and_matches
     machine = StateMachine::Machine.new(@klass)
-    assert (class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+    assert((class << machine; ancestors; end).include?(StateMachine::Integrations::Custom))
   end
 
   def test_should_not_be_extended_by_the_integration_if_nil
     machine = StateMachine::Machine.new(@klass, :integration => nil)
-    assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+    assert(!(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom))
   end
   
   def test_should_not_be_extended_by_the_integration_if_false
     machine = StateMachine::Machine.new(@klass, :integration => false)
-    assert !(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+    assert(!(class << machine; ancestors; end).include?(StateMachine::Integrations::Custom))
   end
   
   def teardown
@@ -1563,7 +1564,7 @@ class MachineWithConflictingHelpersBeforeDefinitionTest < Test::Unit::TestCase
     assert_equal :human_state_event_name, @klass.human_state_event_name
   end
   
-  def test_should_not_redefine_attribute_writer
+  def test_should_not_redefine_attribute_reader
     assert_equal 'parked', @object.state
   end
   
@@ -1736,7 +1737,7 @@ class MachineWithConflictingHelpersAfterDefinitionTest < Test::Unit::TestCase
     assert_equal :human_state_event_name, @klass.human_state_event_name
   end
   
-  def test_should_not_redefine_attribute_writer
+  def test_should_not_redefine_attribute_reader
     assert_equal 'parked', @object.state
   end
   
@@ -2391,7 +2392,7 @@ class MachineWithEventMatchersTest < Test::Unit::TestCase
   end
   
   def test_should_track_referenced_events
-    event = @machine.event(StateMachine::BlacklistMatcher.new([:park]))
+    @machine.event(StateMachine::BlacklistMatcher.new([:park]))
     assert_equal [:park], @machine.events.map {|event| event.name}
   end
   
@@ -3166,7 +3167,7 @@ class MachineFinderWithExistingMachineOnSuperclassTest < Test::Unit::TestCase
   end
   
   def test_should_use_the_same_integration
-    assert (class << @machine; ancestors; end).include?(StateMachine::Integrations::Custom)
+    assert((class << @machine; ancestors; end).include?(StateMachine::Integrations::Custom))
   end
   
   def teardown
@@ -3210,22 +3211,22 @@ begin
     end
     
     def test_should_save_file_with_class_name_by_default
-      graph = @machine.draw
+      @machine.draw
       assert File.exists?('./Vehicle_state.png')
     end
     
     def test_should_allow_base_name_to_be_customized
-      graph = @machine.draw(:name => 'machine')
+      @machine.draw(:name => 'machine')
       assert File.exists?('./machine.png')
     end
     
     def test_should_allow_format_to_be_customized
-      graph = @machine.draw(:format => 'jpg')
+      @machine.draw(:format => 'jpg')
       assert File.exists?('./Vehicle_state.jpg')
     end
     
     def test_should_allow_path_to_be_customized
-      graph = @machine.draw(:path => "#{File.dirname(__FILE__)}/")
+      @machine.draw(:path => "#{File.dirname(__FILE__)}/")
       assert File.exists?("#{File.dirname(__FILE__)}/Vehicle_state.png")
     end
     

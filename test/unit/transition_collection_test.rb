@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class TransitionCollectionTest < Test::Unit::TestCase
   def test_should_raise_exception_if_invalid_option_specified
     exception = assert_raise(ArgumentError) {StateMachine::TransitionCollection.new([], :invalid => true)}
-    
+    assert_equal 'Invalid key(s): invalid', exception.message
   end
   
   def test_should_raise_exception_if_multiple_transitions_for_same_attribute_specified
@@ -107,12 +107,14 @@ class TransitionCollectionPartialInvalidTest < Test::Unit::TestCase
       attr_accessor :ran_transaction
     end
     
+    @callbacks = []
+    
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @machine.state :idling
     @machine.event :ignite
-    @machine.before_transition {@ran_before = true}
-    @machine.after_transition {@ran_after = true}
-    @machine.around_transition {|block| @ran_around_before = true; block.call; @ran_around_after = true}
+    @machine.before_transition {@callbacks << :before}
+    @machine.after_transition {@callbacks << :after}
+    @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
     
     class << @machine
       def within_transaction(object)
@@ -147,7 +149,7 @@ class TransitionCollectionPartialInvalidTest < Test::Unit::TestCase
   end
   
   def test_should_not_run_before_callbacks
-    assert !@ran_before
+    assert !@callbacks.include?(:before)
   end
   
   def test_should_not_persist_states
@@ -155,15 +157,15 @@ class TransitionCollectionPartialInvalidTest < Test::Unit::TestCase
   end
   
   def test_should_not_run_after_callbacks
-    assert !@ran_after
+    assert !@callbacks.include?(:after)
   end
   
   def test_should_not_run_around_callbacks_before_yield
-    assert !@ran_around_before
+    assert !@callbacks.include?(:around_before)
   end
   
   def test_should_not_run_around_callbacks_after_yield
-    assert !@ran_around_after
+    assert !@callbacks.include?(:around_after)
   end
 end
 
@@ -173,6 +175,7 @@ class TransitionCollectionValidTest < Test::Unit::TestCase
       attr_reader :persisted
       
       def initialize
+        @persisted = nil
         super
         @persisted = []
       end
@@ -557,6 +560,7 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
   
   def test_should_not_halt_if_action_fails_for_first_transition
     @klass.class_eval do
+      remove_method :save_state
       def save_state
         (@actions ||= []) << :save_state
         false
@@ -570,6 +574,7 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
   
   def test_should_halt_if_action_fails_for_second_transition
     @klass.class_eval do
+      remove_method :save_status
       def save_status
         (@actions ||= []) << :save_status
         false
@@ -582,6 +587,7 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
   
   def test_should_rollback_if_action_errors_for_first_transition
     @klass.class_eval do
+      remove_method :save_state
       def save_state
         raise ArgumentError
       end
@@ -594,6 +600,7 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
   
   def test_should_rollback_if_action_errors_for_second_transition
     @klass.class_eval do
+      remove_method :save_status
       def save_status
         raise ArgumentError
       end
@@ -606,6 +613,7 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
   
   def test_should_not_run_after_callbacks_if_action_fails_for_first_transition
     @klass.class_eval do
+      remove_method :save_state
       def save_state
         false
       end
@@ -623,6 +631,7 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
   
   def test_should_not_run_after_callbacks_if_action_fails_for_second_transition
     @klass.class_eval do
+      remove_method :save_status
       def save_status
         false
       end
@@ -640,6 +649,7 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
   
   def test_should_run_after_failure_callbacks_if_action_fails_for_first_transition
     @klass.class_eval do
+      remove_method :save_state
       def save_state
         false
       end
@@ -655,6 +665,7 @@ class TransitionCollectionWithDifferentActionsTest < Test::Unit::TestCase
   
   def test_should_run_after_failure_callbacks_if_action_fails_for_second_transition
     @klass.class_eval do
+      remove_method :save_status
       def save_status
         false
       end
@@ -979,7 +990,7 @@ class TransitionCollectionWithCallbacksTest < Test::Unit::TestCase
       
       def state=(value)
         @state = value
-        @saved_on_persist = @saved
+        @saved_on_persist = saved
       end
     end
     
@@ -994,7 +1005,7 @@ class TransitionCollectionWithCallbacksTest < Test::Unit::TestCase
       
       def state=(value)
         @state = value
-        @saved_on_persist = @saved
+        @saved_on_persist = saved
       end
     end
     
@@ -1112,10 +1123,12 @@ class TransitionCollectionWithSkippedAfterCallbacksTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     
+    @callbacks = []
+    
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
     @machine.state :idling
     @machine.event :ignite
-    @machine.after_transition {@ran_after = true}
+    @machine.after_transition {@callbacks << :after}
     
     @object = @klass.new
     
@@ -1130,12 +1143,12 @@ class TransitionCollectionWithSkippedAfterCallbacksTest < Test::Unit::TestCase
   end
   
   def test_should_not_run_after_callbacks
-    assert !@ran_after
+    assert !@callbacks.include?(:after)
   end
   
   def test_should_run_after_callbacks_on_subsequent_perform
     StateMachine::TransitionCollection.new([@transition]).perform
-    assert @ran_after
+    assert @callbacks.include?(:after)
   end
 end
 
@@ -1144,10 +1157,12 @@ if RUBY_PLATFORM != 'java'
     def setup
       @klass = Class.new
       
+      @callbacks = []
+      
       @machine = StateMachine::Machine.new(@klass, :initial => :parked)
       @machine.state :idling
       @machine.event :ignite
-      @machine.around_transition {|block| @ran_around_before = true; block.call; @ran_around_after = true}
+      @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
       
       @object = @klass.new
       
@@ -1162,19 +1177,19 @@ if RUBY_PLATFORM != 'java'
     end
     
     def test_should_not_run_around_callbacks_after_yield
-      assert !@ran_around_after
+      assert !@callbacks.include?(:around_after)
     end
     
     def test_should_run_around_callbacks_after_yield_on_subsequent_perform
       StateMachine::TransitionCollection.new([@transition]).perform
-      assert @ran_around_after
+      assert @callbacks.include?(:around_after)
     end
     
     def test_should_not_rerun_around_callbacks_before_yield_on_subsequent_perform
-      @ran_around_before = false
+      @callbacks = []
       StateMachine::TransitionCollection.new([@transition]).perform
       
-      assert !@ran_around_before
+      assert !@callbacks.include?(:around_before)
     end
   end
 else
@@ -1182,10 +1197,12 @@ else
     def setup
       @klass = Class.new
       
+      @callbacks = []
+      
       @machine = StateMachine::Machine.new(@klass, :initial => :parked)
       @machine.state :idling
       @machine.event :ignite
-      @machine.around_transition {|block| @ran_around_before = true; block.call; @ran_around_after = true}
+      @machine.around_transition {|block| @callbacks << :around_before; block.call; @callbacks << :around_after}
       
       @object = @klass.new
       
@@ -1453,6 +1470,7 @@ class TransitionCollectionWithActionHookMultipleTest < TransitionCollectionWithA
     @klass.class_eval do
       attr_reader :status_on_save, :status_event_on_save, :status_event_transition_on_save
       
+      remove_method :save
       def save
         @saved = true
         @state_on_save = state
@@ -1522,6 +1540,7 @@ class TransitionCollectionWithActionHookErrorTest < TransitionCollectionWithActi
     super
     
     @superclass.class_eval do
+      remove_method :save
       def save
         raise ArgumentError
       end
@@ -1767,7 +1786,8 @@ class AttributeTransitionCollectionWithCallbacksTest < Test::Unit::TestCase
     @state.around_transition {|object, transition, block| block.call; @around_state_event = object.state_event }
     @transitions.perform
     
-    assert_nil @state_event
+    assert_nil @after_state_event
+    assert_nil @around_state_event
   end
   
   def test_should_not_have_event_transitions_during_before_callbacks
@@ -2046,7 +2066,7 @@ class AttributeTransitionCollectionWithAroundCallbackAfterYieldHaltTest < Test::
   end
 end
 
-class AttributeTransitionCollectionWithAfterCallbackErrorTest < Test::Unit::TestCase
+class AttributeTransitionCollectionWithAroundCallbackAfterYieldErrorTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     

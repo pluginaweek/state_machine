@@ -15,9 +15,9 @@ module ActiveModelTest
         # Simple ActiveModel superclass
         parent = Class.new do
           def self.model_attribute(name)
-            define_method(name) { instance_variable_get("@#{name}") }
+            define_method(name) { instance_variable_defined?("@#{name}") ? instance_variable_get("@#{name}") : nil }
             define_method("#{name}=") do |value|
-              send("#{name}_will_change!") if self.class <= ActiveModel::Dirty && value != instance_variable_get("@#{name}")
+              send("#{name}_will_change!") if self.class <= ActiveModel::Dirty && value != send(name)
               instance_variable_set("@#{name}", value)
             end
           end
@@ -92,7 +92,7 @@ module ActiveModelTest
     end
     
     def test_should_have_no_defaults
-      assert_equal e = {}, StateMachine::Integrations::ActiveModel.defaults
+      assert_equal({}, StateMachine::Integrations::ActiveModel.defaults)
     end
     
     def test_should_have_a_locale_path
@@ -584,7 +584,7 @@ module ActiveModelTest
   end
   
   class MachineWithFailedAfterCallbacksTest < BaseTestCase
-     def setup
+    def setup
       @callbacks = []
       
       @model = new_model
@@ -867,7 +867,6 @@ module ActiveModelTest
         :before_transition_state_from_nil
       ]
       
-      notified = false
       observer = new_observer(@model) do
         callbacks.each do |callback|
           define_method(callback) do |*args|
@@ -891,7 +890,6 @@ module ActiveModelTest
         :before_transition_state_to_nil
       ]
       
-      notified = false
       observer = new_observer(@model) do
         callbacks.each do |callback|
           define_method(callback) do |*args|

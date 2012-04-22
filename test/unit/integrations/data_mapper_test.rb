@@ -18,7 +18,7 @@ module DataMapperTest
     end
     
     def teardown
-      @resources.uniq.each {|resource| DataMapperTest.send(:remove_const, resource)} if @resources
+      @resources.uniq.each {|resource| DataMapperTest.send(:remove_const, resource)} if instance_variable_defined?('@resources')
     end
     
     protected
@@ -74,7 +74,7 @@ module DataMapperTest
     end
     
     def test_should_have_defaults
-      assert_equal e = {:action => :save, :use_transactions => false}, StateMachine::Integrations::DataMapper.defaults
+      assert_equal({:action => :save, :use_transactions => false}, StateMachine::Integrations::DataMapper.defaults)
     end
     
     def test_should_not_have_a_locale_path
@@ -114,7 +114,7 @@ module DataMapperTest
     end
     
     def test_should_define_field_with_string_type
-      property = @resource.properties.detect {|property| property.name == :status}
+      property = @resource.properties.detect {|p| p.name == :status}
       assert_not_nil property
       
       if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('1.0.0')
@@ -134,7 +134,7 @@ module DataMapperTest
     end
     
     def test_should_not_redefine_field
-      property = @resource.properties.detect {|property| property.name == :status}
+      property = @resource.properties.detect {|p| p.name == :status}
       assert_not_nil property
       
       if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('1.0.0')
@@ -211,7 +211,7 @@ module DataMapperTest
     
     def test_should_not_allow_initialize_blocks
       block_args = nil
-      record = @resource.new do |*args|
+      @resource.new do |*args|
         block_args = args
       end
       
@@ -222,6 +222,7 @@ module DataMapperTest
       @resource.class_eval do
         attr_accessor :state_during_setter
         
+        remove_method :value=
         define_method(:value=) do |value|
           self.state_during_setter = state
         end
@@ -276,7 +277,7 @@ module DataMapperTest
     
     def test_should_not_allow_initialize_blocks
       block_args = nil
-      record = @resource.new do |*args|
+      @resource.new do |*args|
         block_args = args
       end
       
@@ -287,6 +288,7 @@ module DataMapperTest
       @resource.class_eval do
         attr_accessor :state_during_setter
         
+        remove_method :value=
         define_method(:value=) do |value|
           self.state_during_setter = state || 'nil'
         end
@@ -375,14 +377,14 @@ module DataMapperTest
       @machine = StateMachine::Machine.new(@resource)
       @machine.state :state
       
-      assert_match /^Instance method "state\?" is already defined in DataMapperTest::Foo :state instance helpers, use generic helper instead.*\n$/, $stderr.string
+      assert_match(/^Instance method "state\?" is already defined in DataMapperTest::Foo :state instance helpers, use generic helper instead.*\n$/, $stderr.string)
     end
     
-    def test_should_not_output_warning_with_same_machine_name
+    def test_should_not_output_warning_with_same_machine_attribute
       @machine = StateMachine::Machine.new(@resource, :public_state, :attribute => :state)
       @machine.state :state
       
-      assert_equal '', $stderr.string
+      assert_no_match(/^Instance method "state\?" is already defined.*\n$/, $stderr.string)
     end
     
     def teardown
@@ -595,14 +597,14 @@ module DataMapperTest
     end
     
     def test_should_include_state_in_changed_attributes
-      assert_equal e = {@resource.properties[:state] => 'idling'}, @record.dirty_attributes
+      assert_equal({@resource.properties[:state] => 'idling'}, @record.dirty_attributes)
     end
     
     def test_should_track_attribute_change
       if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
-        assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
+        assert_equal({@resource.properties[:state] => 'parked'}, @record.original_attributes)
       else
-        assert_equal e = {:state => 'parked'},  @record.original_values
+        assert_equal({:state => 'parked'},  @record.original_values)
       end
     end
     
@@ -611,9 +613,9 @@ module DataMapperTest
       transition.perform(false)
       
       if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
-        assert_equal e = {@resource.properties[:state] => 'parked'}, @record.original_attributes
+        assert_equal({@resource.properties[:state] => 'parked'}, @record.original_attributes)
       else
-        assert_equal e = {:state => 'parked'},  @record.original_values
+        assert_equal({:state => 'parked'},  @record.original_values)
       end
     end
     
@@ -636,7 +638,7 @@ module DataMapperTest
     end
     
     def test_should_not_include_state_in_changed_attributes
-      assert_equal e = {}, @record.dirty_attributes
+      assert_equal({}, @record.dirty_attributes)
     end
   end
   
@@ -656,14 +658,14 @@ module DataMapperTest
     end
     
     def test_should_include_state_in_changed_attributes
-      assert_equal e = {@resource.properties[:status] => 'idling'}, @record.dirty_attributes
+      assert_equal({@resource.properties[:status] => 'idling'}, @record.dirty_attributes)
     end
     
     def test_should_track_attribute_change
       if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
-        assert_equal e = {@resource.properties[:status] => 'parked'}, @record.original_attributes
+        assert_equal({@resource.properties[:status] => 'parked'}, @record.original_attributes)
       else
-        assert_equal e = {:status => 'parked'},  @record.original_values
+        assert_equal({:status => 'parked'},  @record.original_values)
       end
     end
     
@@ -672,9 +674,9 @@ module DataMapperTest
       transition.perform(false)
       
       if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
-        assert_equal e = {@resource.properties[:status] => 'parked'}, @record.original_attributes
+        assert_equal({@resource.properties[:status] => 'parked'}, @record.original_attributes)
       else
-        assert_equal e = {:status => 'parked'},  @record.original_values
+        assert_equal({:status => 'parked'},  @record.original_values)
       end
     end
   end
@@ -694,7 +696,7 @@ module DataMapperTest
     end
     
     def test_should_not_include_state_in_changed_attributes
-      assert_equal e = {}, @record.dirty_attributes
+      assert_equal({}, @record.dirty_attributes)
     end
   end
   
@@ -709,14 +711,14 @@ module DataMapperTest
     end
     
     def test_should_not_include_state_in_changed_attributes
-      assert_equal e = {}, @record.dirty_attributes
+      assert_equal({}, @record.dirty_attributes)
     end
     
     def test_should_not_track_attribute_change
       if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
-        assert_equal e = {}, @record.original_attributes
+        assert_equal({}, @record.original_attributes)
       else
-        assert_equal e = {},  @record.original_values
+        assert_equal({},  @record.original_values)
       end
     end
   end
@@ -968,7 +970,7 @@ module DataMapperTest
   end
   
   class MachineWithFailedAfterCallbacksTest < BaseTestCase
-     def setup
+    def setup
       callbacks = []
       
       @resource = new_resource
@@ -1526,7 +1528,7 @@ module DataMapperTest
     def test_should_call_before_transition_callback_if_requirements_match
       called = false
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         before_transition :from => :parked do
           called = true
         end
@@ -1539,7 +1541,7 @@ module DataMapperTest
     def test_should_not_call_before_transition_callback_if_requirements_do_not_match
       called = false
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         before_transition :from => :idling do
           called = true
         end
@@ -1552,7 +1554,7 @@ module DataMapperTest
     def test_should_pass_transition_to_before_callbacks
       callback_args = nil
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         before_transition do |*args|
           callback_args = args
         end
@@ -1565,7 +1567,7 @@ module DataMapperTest
     def test_should_call_after_transition_callback_if_requirements_match
       called = false
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         after_transition :from => :parked do
           called = true
         end
@@ -1578,7 +1580,7 @@ module DataMapperTest
     def test_should_not_call_after_transition_callback_if_requirements_do_not_match
       called = false
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         after_transition :from => :idling do
           called = true
         end
@@ -1591,7 +1593,7 @@ module DataMapperTest
     def test_should_pass_transition_to_after_callbacks
       callback_args = nil
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         after_transition do |*args|
           callback_args = args
         end
@@ -1604,7 +1606,7 @@ module DataMapperTest
     def test_should_call_around_transition_callback_if_requirements_match
       called = false
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         around_transition :from => :parked do |block|
           called = true
           block.call
@@ -1615,10 +1617,10 @@ module DataMapperTest
       assert called
     end
     
-    def test_should_not_call_after_transition_callback_if_requirements_do_not_match
+    def test_should_not_call_around_transition_callback_if_requirements_do_not_match
       called = false
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         around_transition :from => :idling do |block|
           called = true
           block.call
@@ -1632,7 +1634,7 @@ module DataMapperTest
     def test_should_pass_transition_to_around_callbacks
       callback_args = nil
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         around_transition do |*args|
           block = args.pop
           callback_args = args
@@ -1649,7 +1651,7 @@ module DataMapperTest
       
       called = false
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         after_transition_failure :on => :ignite do
           called = true
         end
@@ -1664,7 +1666,7 @@ module DataMapperTest
       
       called = false
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         after_transition_failure :on => :park do
           called = true
         end
@@ -1679,7 +1681,7 @@ module DataMapperTest
       
       callback_args = nil
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         after_transition_failure do |*args|
           callback_args = args
         end
@@ -1705,7 +1707,7 @@ module DataMapperTest
       called_state = false
       called_status = false
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         before_transition :state, :from => :parked do
           called_state = true
         end
@@ -1729,8 +1731,7 @@ module DataMapperTest
       
       called_attribute = nil
       
-      attributes = []
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         before_transition :state, :status, :from => :parked do |transition|
           called_attribute = transition.attribute
         end
@@ -1764,7 +1765,7 @@ module DataMapperTest
         notifications << :callback_around_after_transition
       end
       
-      observer = new_observer(@resource) do
+      new_observer(@resource) do
         before_transition do
           notifications << :observer_before_transition
         end
@@ -1813,7 +1814,7 @@ module DataMapperTest
     
     def test_should_only_include_records_with_state_in_singular_with_scope
       parked = @resource.create :state => 'parked'
-      idling = @resource.create :state => 'idling'
+      @resource.create :state => 'idling'
       
       assert_equal [parked], @resource.with_state(:parked)
     end

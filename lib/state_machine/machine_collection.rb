@@ -55,7 +55,6 @@ module StateMachine
         
         # Get the transition that will be performed for the event
         unless transition = event.transition_for(object)
-          machine = event.machine
           event.on_failure(object)
         end
         

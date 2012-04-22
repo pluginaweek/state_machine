@@ -2,8 +2,10 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class EventCollectionByDefaultTest < Test::Unit::TestCase
   def setup
-    @machine = StateMachine::Machine.new(Class.new)
+    @klass = Class.new
+    @machine = StateMachine::Machine.new(@klass)
     @events = StateMachine::EventCollection.new(@machine)
+    @object = @klass.new
   end
   
   def test_should_not_have_any_nodes

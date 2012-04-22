@@ -52,7 +52,7 @@ module MongoMapperTest
     end
     
     def test_should_have_defaults
-      assert_equal e = {:action => :save}, StateMachine::Integrations::MongoMapper.defaults
+      assert_equal({:action => :save}, StateMachine::Integrations::MongoMapper.defaults)
     end
     
     def test_should_have_a_locale_path
@@ -159,7 +159,7 @@ module MongoMapperTest
     
     def test_should_not_allow_initialize_blocks
       block_args = nil
-      record = @model.new do |*args|
+      @model.new do |*args|
         block_args = args
       end
       
@@ -170,6 +170,7 @@ module MongoMapperTest
       @model.class_eval do
         attr_accessor :state_during_setter
         
+        remove_method :value=
         define_method(:value=) do |value|
           self.state_during_setter = state
         end
@@ -224,7 +225,7 @@ module MongoMapperTest
     
     def test_should_not_allow_initialize_blocks
       block_args = nil
-      record = @model.new do |*args|
+      @model.new do |*args|
         block_args = args
       end
       
@@ -235,6 +236,7 @@ module MongoMapperTest
       @model.class_eval do
         attr_accessor :state_during_setter
         
+        remove_method :value=
         define_method(:value=) do |value|
           self.state_during_setter = state || 'nil'
         end
@@ -323,14 +325,14 @@ module MongoMapperTest
       @machine = StateMachine::Machine.new(@model)
       @machine.state :state
       
-      assert_match /^Instance method "state\?" is already defined in .*, use generic helper instead.*\n$/, $stderr.string
+      assert_match(/^Instance method "state\?" is already defined in .*, use generic helper instead.*\n$/, $stderr.string)
     end
     
     def test_should_output_warning_with_same_machine_attribute
       @machine = StateMachine::Machine.new(@model, :public_state, :attribute => :state)
       @machine.state :state
       
-      assert_match /^Instance method "state\?" is already defined in .*, use generic helper instead.*\n$/, $stderr.string
+      assert_match(/^Instance method "state\?" is already defined in .*, use generic helper instead.*\n$/, $stderr.string)
     end
     
     def teardown
@@ -920,7 +922,7 @@ module MongoMapperTest
   end
   
   class MachineWithFailedAfterCallbacksTest < BaseTestCase
-     def setup
+    def setup
       @callbacks = []
       
       @model = new_model
@@ -1364,11 +1366,6 @@ module MongoMapperTest
       assert_equal 'idling', @record.state
     end
     
-    def test_should_persist_new_state
-      @record.save!
-      assert_equal 'idling', @record.state
-    end
-    
     def test_should_run_after_callbacks
       ran_callback = false
       @machine.after_transition { ran_callback = true }
@@ -1439,7 +1436,7 @@ module MongoMapperTest
     
     def test_should_only_include_records_with_state_in_singular_with_scope
       parked = @model.create :state => 'parked'
-      idling = @model.create :state => 'idling'
+      @model.create :state => 'idling'
       
       assert_equal [parked], @model.with_state(:parked).to_a
     end

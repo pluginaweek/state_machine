@@ -376,9 +376,9 @@ module StateMachine
       def invalidate(object, attribute, message, values = [])
         if supports_validations?
           attribute = self.attribute(attribute)
-          options = values.inject({}) do |options, (key, value)|
-            options[key] = value
-            options
+          options = values.inject({}) do |h, (key, value)|
+            h[key] = value
+            h
           end
           
           default_options = default_error_message_options(object, attribute, message)
@@ -531,15 +531,15 @@ module StateMachine
         
         # Configures new states with the built-in humanize scheme
         def add_states(new_states)
-          super.each do |state|
-            state.human_name = lambda {|state, klass| translate(klass, :state, state.name)}
+          super.each do |new_state|
+            new_state.human_name = lambda {|state, klass| translate(klass, :state, state.name)}
           end
         end
         
         # Configures new event with the built-in humanize scheme
         def add_events(new_events)
-          super.each do |event|
-            event.human_name = lambda {|event, klass| translate(klass, :event, event.name)}
+          super.each do |new_event|
+            new_event.human_name = lambda {|event, klass| translate(klass, :event, event.name)}
           end
         end
         

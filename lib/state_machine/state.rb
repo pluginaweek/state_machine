@@ -74,11 +74,11 @@ module StateMachine
       @initial = options[:initial] == true
       
       if name
-        conflicting_machines = machine.owner_class.state_machines.select {|name, other_machine| other_machine != machine && other_machine.states[qualified_name, :qualified_name]}
+        conflicting_machines = machine.owner_class.state_machines.select {|other_name, other_machine| other_machine != machine && other_machine.states[qualified_name, :qualified_name]}
         
         # Output a warning if another machine has a conflicting qualified name
         # for a different attribute
-        if conflict = conflicting_machines.detect {|name, other_machine| other_machine.attribute != machine.attribute}
+        if conflict = conflicting_machines.detect {|other_name, other_machine| other_machine.attribute != machine.attribute}
           name, other_machine = conflict
           warn "State #{qualified_name.inspect} for #{machine.name.inspect} is already defined in #{other_machine.name.inspect}"
         elsif conflicting_machines.empty?
@@ -194,6 +194,7 @@ module StateMachine
         
         # Calls the method defined by the current state of the machine
         context.class_eval <<-end_eval, __FILE__, __LINE__ + 1
+          remove_method :#{method}
           def #{method}(*args, &block)
             self.class.state_machine(#{machine_name.inspect}).states.fetch(#{name.inspect}).call(self, #{method.inspect}, lambda {super(*args, &block)}, *args, &block)
           end

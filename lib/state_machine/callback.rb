@@ -175,9 +175,9 @@ module StateMachine
       # method passes the terminator.
       def run_methods(object, context = {}, index = 0, *args, &block)
         if type == :around
-          if method = @methods[index]
+          if current_method = @methods[index]
             yielded = false
-            evaluate_method(object, method, *args) do
+            evaluate_method(object, current_method, *args) do
               yielded = true
               run_methods(object, context, index + 1, *args, &block)
             end

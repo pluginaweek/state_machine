@@ -58,7 +58,7 @@ module StateMachine
       reset
       
       # Output a warning if another event has a conflicting qualified name
-      if conflict = machine.owner_class.state_machines.detect {|name, other_machine| other_machine != @machine && other_machine.events[qualified_name, :qualified_name]}
+      if conflict = machine.owner_class.state_machines.detect {|other_name, other_machine| other_machine != @machine && other_machine.events[qualified_name, :qualified_name]}
         name, other_machine = conflict
         warn "Event #{qualified_name.inspect} for #{machine.name.inspect} is already defined in #{other_machine.name.inspect}"
       else

@@ -19,6 +19,7 @@ Rake::TestTask.new(:test) do |t|
   t.libs << 'lib'
   t.test_files = integration ? Dir["test/unit/integrations/#{integration}_test.rb"] : Dir['test/{functional,unit}/*_test.rb'] + ['test/unit/integrations/base_test.rb']
   t.verbose = true
+  t.warning = true if ENV['WARNINGS']
 end
 
 namespace :appraisal do
