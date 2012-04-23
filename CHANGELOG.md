@@ -1,5 +1,6 @@
 # master
 
+* Generate a warning when both the ORM's backend and state_machine define the initial state for an attribute
 * Fix all Ruby warnings
 * Fix callbacks not working for methods that respond via method_missing [Balwant Kane]
 * Fix observer callbacks being run when disabled in ActiveModel / ActiveRecord integrations

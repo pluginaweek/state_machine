@@ -284,6 +284,8 @@ module MongoMapperTest
   
   class MachineWithColumnDefaultTest < BaseTestCase
     def setup
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
       @model = new_model do
         key :status, String, :default => 'idling'
       end
@@ -293,6 +295,14 @@ module MongoMapperTest
     
     def test_should_use_machine_default
       assert_equal 'parked', @record.status
+    end
+    
+    def test_should_generate_a_warning
+      assert_match(/Both MongoMapperTest::Foo and its :status machine have defined a default for "status". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
+    end
+    
+    def teardown
+      $stderr = @original_stderr
     end
   end
   
@@ -531,7 +541,7 @@ module MongoMapperTest
   class MachineMultipleTest < BaseTestCase
     def setup
       @model = new_model do
-        key :status, String, :default => 'idling'
+        key :status, String
       end
       @state_machine = StateMachine::Machine.new(@model, :initial => :parked)
       @status_machine = StateMachine::Machine.new(@model, :status, :initial => :idling)
@@ -627,7 +637,7 @@ module MongoMapperTest
   class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
     def setup
       @model = new_model do
-        key :status, String, :default => 'idling'
+        key :status, String
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @machine.event :ignite
@@ -658,7 +668,7 @@ module MongoMapperTest
   class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
     def setup
       @model = new_model do
-        key :status, String, :default => 'idling'
+        key :status, String
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @machine.event :park

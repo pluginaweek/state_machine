@@ -399,6 +399,16 @@ module StateMachine
           @supports_validations ||= ::DataMapper.const_defined?('Validate')
         end
         
+        # Checks for the existence of a db default for the machine's attribute
+        def owner_class_has_initial_state?
+          attribute_property && !attribute_property.default.nil?
+        end
+        
+        # Gets the property for this machine's attribute (if it exists)
+        def attribute_property
+          owner_class.properties.detect {|property| property.name == attribute}
+        end
+        
         # Pluralizes the name using the built-in inflector
         def pluralize(word)
           ::DataMapper::Inflector.pluralize(word.to_s)
@@ -417,7 +427,7 @@ module StateMachine
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
-          owner_class.property(attribute, String) unless owner_class.properties.detect {|property| property.name == attribute}
+          owner_class.property(attribute, String) unless attribute_property
           
           if supports_validations?
             name = self.name

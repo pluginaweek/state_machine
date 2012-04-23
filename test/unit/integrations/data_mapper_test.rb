@@ -336,6 +336,8 @@ module DataMapperTest
   
   class MachineWithColumnDefaultTest < BaseTestCase
     def setup
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
       @resource = new_resource do
         property :status, String, :default => 'idling'
       end
@@ -345,6 +347,14 @@ module DataMapperTest
     
     def test_should_use_machine_default
       assert_equal 'parked', @record.status
+    end
+    
+    def test_should_generate_a_warning
+      assert_match(/Both DataMapperTest::Foo and its :status machine have defined a default for "status". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
+    end
+    
+    def teardown
+      $stderr = @original_stderr
     end
   end
   
@@ -645,7 +655,7 @@ module DataMapperTest
   class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
     def setup
       @resource = new_resource do
-        property :status, String, :default => 'idling'
+        property :status, String
       end
       @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
       @machine.event :ignite
@@ -684,7 +694,7 @@ module DataMapperTest
   class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
     def setup
       @resource = new_resource do
-        property :status, String, :default => 'idling'
+        property :status, String
       end
       @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
       @machine.event :park

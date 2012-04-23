@@ -632,8 +632,18 @@ module StateMachine
       
       # Update all states to reflect the new initial state
       states.each {|state| state.initial = (state.name == @initial_state)}
+      
+      # Output a warning if there are conflicting initial states for the machine's
+      # attribute
+      if owner_class_has_initial_state?
+        warn(
+          "Both #{owner_class.name} and its #{name.inspect} machine have defined "\
+          "a default for \"#{attribute}\". Use only one or the other for defining "\
+          "defaults to avoid unexpected behaviors."
+        )
+      end
     end
-    
+      
     # Gets the initial state of the machine for the given object. If a dynamic
     # initial state was configured for this machine, then the object will be
     # passed into the lambda block to help determine the actual state.
@@ -2242,6 +2252,12 @@ module StateMachine
       # Always yields
       def transaction(object)
         yield
+      end
+      
+      # Whether the owner class already has an initial state defined for this
+      # machine's attribute.  By default, this is always false.
+      def owner_class_has_initial_state?
+        false
       end
       
       # Updates this machine based on the configuration of other machines in the

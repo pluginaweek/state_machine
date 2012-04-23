@@ -101,6 +101,10 @@ module ActiveRecordTest
         def self.connection
           raise ActiveRecord::ConnectionNotEstablished
         end
+        
+        def self.connected?
+          false
+        end
       end
     end
     
@@ -345,6 +349,8 @@ module ActiveRecordTest
   
   class MachineWithColumnDefaultTest < BaseTestCase
     def setup
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
       @model = new_model do
         connection.add_column :foo, :status, :string, :default => 'idling'
       end
@@ -354,6 +360,14 @@ module ActiveRecordTest
     
     def test_should_use_machine_default
       assert_equal 'parked', @record.status
+    end
+    
+    def test_should_generate_a_warning
+      assert_match(/Both ActiveRecordTest::Foo and its :status machine have defined a default for "status". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
+    end
+    
+    def teardown
+      $stderr = @original_stderr
     end
   end
   
@@ -695,7 +709,7 @@ module ActiveRecordTest
     class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
       def setup
         @model = new_model do
-          connection.add_column :foo, :status, :string, :default => 'idling'
+          connection.add_column :foo, :status, :string
         end
         @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
         @machine.event :ignite
@@ -726,7 +740,7 @@ module ActiveRecordTest
     class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
       def setup
         @model = new_model do
-          connection.add_column :foo, :status, :string, :default => 'idling'
+          connection.add_column :foo, :status, :string
         end
         @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
         @machine.event :park

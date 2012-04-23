@@ -303,6 +303,16 @@ module StateMachine
           action == :save
         end
         
+        # Checks for the existence of a db default for the machine's attribute
+        def owner_class_has_initial_state?
+          attribute_key && !attribute_key.default_value.nil?
+        end
+        
+        # Gets the Mongoid key for this machine's attribute (if it exists)
+        def attribute_key
+          owner_class.keys[attribute.to_s]
+        end
+        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
@@ -316,7 +326,7 @@ module StateMachine
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
-          owner_class.key(attribute, String) unless owner_class.keys.include?(attribute.to_s)
+          owner_class.key(attribute, String) unless attribute_key
           super
         end
         

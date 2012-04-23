@@ -307,6 +307,8 @@ module MongoidTest
   
   class MachineWithColumnDefaultTest < BaseTestCase
     def setup
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
       @model = new_model do
         field :status, :type => String, :default => 'idling'
       end
@@ -316,6 +318,14 @@ module MongoidTest
     
     def test_should_use_machine_default
       assert_equal 'parked', @record.status
+    end
+    
+    def test_should_generate_a_warning
+      assert_match(/Both MongoidTest::Foo and its :status machine have defined a default for "status". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
+    end
+    
+    def teardown
+      $stderr = @original_stderr
     end
   end
   
@@ -558,7 +568,7 @@ module MongoidTest
   class MachineMultipleTest < BaseTestCase
     def setup
       @model = new_model do
-        field :status, :type => String, :default => 'idling'
+        field :status, :type => String
       end
       @state_machine = StateMachine::Machine.new(@model, :initial => :parked)
       @status_machine = StateMachine::Machine.new(@model, :status, :initial => :idling)
@@ -664,7 +674,7 @@ module MongoidTest
   class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
     def setup
       @model = new_model do
-        field :status, :type => String, :default => 'idling'
+        field :status, :type => String
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @machine.event :ignite
@@ -695,7 +705,7 @@ module MongoidTest
   class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
     def setup
       @model = new_model do
-        field :status, :type => String, :default => 'idling'
+        field :status, :type => String
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @machine.event :park

@@ -424,6 +424,13 @@ module StateMachine
           action == :save
         end
         
+        # Checks for the existence of a db default for the machine's attribute
+        def owner_class_has_initial_state?
+          if owner_class.connected? && owner_class.table_exists? && column = owner_class.columns_hash[attribute.to_s]
+            !column.default.blank?
+          end
+        end
+        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object

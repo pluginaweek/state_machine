@@ -358,6 +358,16 @@ module StateMachine
           action == :save
         end
         
+        # Checks for the existence of a db default for the machine's attribute
+        def owner_class_has_initial_state?
+          attribute_field && !attribute_field.default.nil?
+        end
+        
+        # Gets the field for this machine's attribute (if it exists)
+        def attribute_field
+          owner_class.fields[attribute.to_s]
+        end
+        
         # Defines an initialization hook into the owner class for setting the
         # initial state of the machine *before* any attributes are set on the
         # object
@@ -377,7 +387,7 @@ module StateMachine
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
-          owner_class.field(attribute, :type => String) unless owner_class.fields.include?(attribute.to_s)
+          owner_class.field(attribute, :type => String) unless attribute_field
           super
         end
         
