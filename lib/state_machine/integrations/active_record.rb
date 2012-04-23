@@ -448,7 +448,7 @@ module StateMachine
             def column_defaults(*) #:nodoc:
               result = super
               # No need to pass in an object, since the overrides will be forced
-              self.state_machines.initialize_states(nil, :dynamic => false, :to => result)
+              self.state_machines.initialize_states(nil, :static => :force, :dynamic => false, :to => result)
               result
             end
           end_eval

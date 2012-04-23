@@ -17,7 +17,7 @@ module StateMachine
             end
             
             def set(*)
-              self.class.state_machines.initialize_states(self, :dynamic => false) if values.empty?
+              self.class.state_machines.initialize_states(self, :static => :force, :dynamic => false) if values.empty?
               super
             end
           end_eval

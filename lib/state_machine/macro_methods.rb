@@ -285,6 +285,35 @@ module StateMachine
     #   vehicle = Vehicle.new   # => #<Vehicle:0xb7c8dbf8 @state="parked">
     #   vehicle.state           # => "parked"
     # 
+    # You may also need to call the +initialize_state_machines+ helper manually
+    # in cases where you want to change how static / dynamic initial states get
+    # set.  For example, the following example forces the initialization of
+    # static states regardless of their current value:
+    # 
+    #   class Vehicle
+    #     state_machine :state, :initial => :parked do
+    #       state nil, :idling
+    #       ...
+    #     end
+    #     
+    #     def initialize(attributes = {})
+    #       @state = 'idling'
+    #       initialize_state_machines(:static => :force) do
+    #         ...
+    #       end
+    #     end
+    #   end
+    #   
+    #   vehicle = Vehicle.new   # => #<Vehicle:0xb7c8dbf8 @state="parked">
+    #   vehicle.state           # => "parked"
+    # 
+    # The above example is also noteworthy because it demonstrates how to avoid
+    # initialization issues when +nil+ is a valid state.  Without passing in
+    # <tt>:static => :force</tt>, state_machine would never have initialized
+    # the state because +nil+ (the default attribute value) would have been
+    # interpreted as a valid current state.  As a result, state_machine would
+    # have simply skipped initialization.
+    # 
     # == States
     # 
     # All of the valid states for the machine are automatically tracked based

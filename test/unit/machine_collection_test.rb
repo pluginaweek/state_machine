@@ -67,10 +67,10 @@ class MachineCollectionStateInitializationTest < Test::Unit::TestCase
     assert_equal 'active', @object.alarm_state
   end
   
-  def test_should_initialize_existing_static_states_by_default
+  def test_should_not_initialize_existing_static_states_by_default
     @object.state = 'idling'
     @machines.initialize_states(@object)
-    assert_equal 'parked', @object.state
+    assert_equal 'idling', @object.state
   end
   
   def test_should_initialize_existing_static_states_if_forced

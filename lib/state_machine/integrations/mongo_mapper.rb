@@ -319,7 +319,7 @@ module StateMachine
         def define_state_initializer
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*args)
-              self.class.state_machines.initialize_states(self) { super }
+              self.class.state_machines.initialize_states(self, :static => :force) { super }
             end
           end_eval
         end

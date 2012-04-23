@@ -375,7 +375,7 @@ module StateMachine
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*)
               @attributes ||= {}
-              self.class.state_machines.initialize_states(self, :dynamic => false)
+              self.class.state_machines.initialize_states(self, :static => :force, :dynamic => false)
               
               super do |*args|
                 self.class.state_machines.initialize_states(self, :static => false)

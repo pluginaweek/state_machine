@@ -232,7 +232,7 @@ module ActiveModelTest
     def setup
       @model = new_model
       @machine = StateMachine::Machine.new(@model, :initial => :parked, :integration => :active_model)
-      @machine.state nil, :idling
+      @machine.state :idling
     end
     
     def test_should_allow_nil_initial_state_when_static

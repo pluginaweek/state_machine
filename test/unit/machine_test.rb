@@ -298,7 +298,7 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
     assert_equal 'parked', @klass.new.state
   end
   
-  def test_should_still_set_initial_state_even_if_not_empty
+  def test_not_set_initial_state_even_if_not_empty
     @klass.class_eval do
       def initialize(attributes = {})
         self.state = 'idling'
@@ -306,7 +306,7 @@ class MachineWithStaticInitialStateTest < Test::Unit::TestCase
       end
     end
     object = @klass.new
-    assert_equal 'parked', object.state
+    assert_equal 'idling', object.state
   end
   
   def test_should_set_initial_state_prior_to_initialization
@@ -1978,8 +1978,9 @@ end
 class MachineWithCustomInitializeTest < Test::Unit::TestCase
   def setup
     @klass = Class.new do
-      def initialize
-        initialize_state_machines
+      def initialize(state = nil, options = {})
+        @state = state
+        initialize_state_machines(options)
       end
     end
     @machine = StateMachine::Machine.new(@klass, :initial => :parked)
@@ -1987,6 +1988,12 @@ class MachineWithCustomInitializeTest < Test::Unit::TestCase
   end
   
   def test_should_initialize_state
+    assert_equal 'parked', @object.state
+  end
+  
+  def test_should_allow_custom_options
+    @machine.state :idling
+    @object = @klass.new('idling', :static => :force)
     assert_equal 'parked', @object.state
   end
 end

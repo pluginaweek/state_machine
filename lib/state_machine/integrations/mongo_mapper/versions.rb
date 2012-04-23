@@ -14,7 +14,7 @@ module StateMachine
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*args)
               attrs, * = args
-              attrs && attrs.stringify_keys.key?('_id') ? super : self.class.state_machines.initialize_states(self) { super }
+              attrs && attrs.stringify_keys.key?('_id') ? super : self.class.state_machines.initialize_states(self, :static => :force) { super }
             end
           end_eval
         end
@@ -83,7 +83,7 @@ module StateMachine
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*args)
               from_db = args[1]
-              from_db ? super : self.class.state_machines.initialize_states(self) { super }
+              from_db ? super : self.class.state_machines.initialize_states(self, :static => :force) { super }
             end
           end_eval
         end

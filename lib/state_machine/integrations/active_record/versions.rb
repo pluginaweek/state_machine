@@ -10,7 +10,7 @@ module StateMachine
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def attributes_from_column_definition(*)
               result = super
-              self.class.state_machines.initialize_states(self, :dynamic => false, :to => result)
+              self.class.state_machines.initialize_states(self, :static => :force, :dynamic => false, :to => result)
               result
             end
           end_eval

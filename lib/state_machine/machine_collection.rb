@@ -25,7 +25,7 @@ module StateMachine
     #   writing to the object.  Default is to write directly to the object.
     def initialize_states(object, options = {})
       assert_valid_keys(options, :static, :dynamic, :to)
-      options = {:static => :force, :dynamic => true}.merge(options)
+      options = {:static => true, :dynamic => true}.merge(options)
       
       each_value do |machine| 
         machine.initialize_state(object, :force => options[:static] == :force, :to => options[:to]) unless machine.dynamic_initial_state?

@@ -19,7 +19,7 @@ module StateMachine
             # Initializes static states
             def apply_default_attributes(*)
               result = super
-              self.class.state_machines.initialize_states(self, :dynamic => false, :to => result) if new_record?
+              self.class.state_machines.initialize_states(self, :static => :force, :dynamic => false, :to => result) if new_record?
               result
             end
           end_eval

@@ -1,5 +1,6 @@
 # master
 
+* Fix static initial states always being set even when the state has already been initialized in non-ORM integrations
 * Generate a warning when both the ORM's backend and state_machine define the initial state for an attribute
 * Fix all Ruby warnings
 * Fix callbacks not working for methods that respond via method_missing [Balwant Kane]
