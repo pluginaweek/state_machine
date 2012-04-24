@@ -790,6 +790,64 @@ begin
       assert_equal 'park', @edges.first['label'].to_s.gsub('"', '')
     end
   end
+
+  class BranchDrawingWithIfConditionTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      states = [:parked, :idling]
+
+      graph = GraphViz.new('G')
+      states.each {|state| graph.add_node(state.to_s)}
+
+      @branch = StateMachine::Branch.new(:from => :idling, :to => :parked, :if => :some_condition)
+      @edges = @branch.draw(graph, :park, states)
+    end
+
+    def test_should_create_edges
+      assert_equal 1, @edges.size
+    end
+
+    def test_should_use_from_state_from_start_node
+      assert_equal 'idling', @edges.first.instance_variable_get('@xNodeOne')
+    end
+
+    def test_should_use_to_state_for_end_node
+      assert_equal 'parked', @edges.first.instance_variable_get('@xNodeTwo')
+    end
+
+    def test_should_use_event_name_as_label
+      assert_equal 'park if some_condition', @edges.first['label'].to_s.gsub('"', '')
+    end
+  end
+
+  class BranchDrawingWithUnlessConditionTest < Test::Unit::TestCase
+    def setup
+      @machine = StateMachine::Machine.new(Class.new)
+      states = [:parked, :idling]
+
+      graph = GraphViz.new('G')
+      states.each {|state| graph.add_node(state.to_s)}
+
+      @branch = StateMachine::Branch.new(:from => :idling, :to => :parked, :unless => :some_condition)
+      @edges = @branch.draw(graph, :park, states)
+    end
+
+    def test_should_create_edges
+      assert_equal 1, @edges.size
+    end
+
+    def test_should_use_from_state_from_start_node
+      assert_equal 'idling', @edges.first.instance_variable_get('@xNodeOne')
+    end
+
+    def test_should_use_to_state_for_end_node
+      assert_equal 'parked', @edges.first.instance_variable_get('@xNodeTwo')
+    end
+
+    def test_should_use_event_name_as_label
+      assert_equal 'park unless some_condition', @edges.first['label'].to_s.gsub('"', '')
+    end
+  end
   
   class BranchDrawingWithFromRequirementTest < Test::Unit::TestCase
     def setup
