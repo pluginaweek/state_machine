@@ -914,7 +914,7 @@ gem 'state_machine', :require => 'state_machine/core'
 ### Generating graphs
 
 This library comes with built-in support for generating di-graphs based on the
-events, states, and transitions defined for a state machine using [GraphViz](http://www.graphviz.org]).
+events, states, and transitions defined for a state machine using [GraphViz](http://www.graphviz.org).
 This requires that both the `ruby-graphviz` gem and graphviz library be
 installed on the system.
 
