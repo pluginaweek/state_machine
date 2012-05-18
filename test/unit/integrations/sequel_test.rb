@@ -136,17 +136,6 @@ module SequelTest
       assert_equal 'parked', record.state
     end
     
-    def test_should_set_initial_state_with_nil_attributes
-      @model.class_eval do
-        def set(hash)
-          super(hash || {})
-        end
-      end
-      
-      record = @model.new(nil)
-      assert_equal 'parked', record.state
-    end
-    
     def test_should_still_set_attributes
       record = @model.new(:value => 1)
       assert_equal 1, record.value

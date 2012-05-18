@@ -157,6 +157,10 @@ if RUBY_VERSION > "1.8.6"
     appraise "mongo_mapper-0.10.0" do
       gem "mongo_mapper", "0.10.0"
     end
+    
+    appraise "mongo_mapper-0.11.1" do
+      gem "mongo_mapper", "0.11.1"
+    end
   end
 end
   
@@ -176,6 +180,10 @@ if RUBY_VERSION > "1.8.6"
   
   appraise "mongoid-2.3.3" do
     gem "mongoid", "2.3.3"
+  end
+  
+  appraise "mongoid-2.4.10" do
+    gem "mongoid", "2.4.10"
   end
 end
 
@@ -223,6 +231,18 @@ end
 appraise "sequel-3.29.0" do
   gem "sqlite3-ruby", "1.3.1"
   gem "sequel", "3.29.0"
+end
+
+appraise "sequel-3.34.0" do
+  gem "sqlite3-ruby", "1.3.1"
+  gem "sequel", "3.34.0"
+end
+
+if RUBY_VERSION > "1.8.6"
+  appraise "sequel-3.35.0" do
+    gem "sqlite3-ruby", "1.3.1"
+    gem "sequel", "3.35.0"
+  end
 end
 
 # DataMapper

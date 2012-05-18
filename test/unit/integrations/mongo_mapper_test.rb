@@ -453,24 +453,26 @@ module MongoMapperTest
     end
   end
   
-  class MachineWithAliasedAttributeTest < BaseTestCase
-    def setup
-      @model = new_model do
-        alias_attribute :vehicle_status, :state
+  if !defined?(MongoMapper::Version) || MongoMapper::Version =~ /^0\.[5-8]\./
+    class MachineWithAliasedAttributeTest < BaseTestCase
+      def setup
+        @model = new_model do
+          alias_attribute :vehicle_status, :state
+        end
+        
+        @machine = StateMachine::Machine.new(@model, :status, :attribute => :vehicle_status)
+        @machine.state :parked
+        
+        @record = @model.new
       end
       
-      @machine = StateMachine::Machine.new(@model, :status, :attribute => :vehicle_status)
-      @machine.state :parked
-      
-      @record = @model.new
-    end
-    
-    def test_should_check_custom_attribute_for_predicate
-      @record.vehicle_status = nil
-      assert !@record.status?(:parked)
-      
-      @record.vehicle_status = 'parked'
-      assert @record.status?(:parked)
+      def test_should_check_custom_attribute_for_predicate
+        @record.vehicle_status = nil
+        assert !@record.status?(:parked)
+        
+        @record.vehicle_status = 'parked'
+        assert @record.status?(:parked)
+      end
     end
   end
   
@@ -1018,10 +1020,7 @@ module MongoMapperTest
   
   class MachineWithValidationsAndCustomAttributeTest < BaseTestCase
     def setup
-      @model = new_model do
-        alias_attribute :status, :state
-      end
-      
+      @model = new_model
       @machine = StateMachine::Machine.new(@model, :status, :attribute => :state)
       @machine.state :parked
       

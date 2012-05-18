@@ -1119,10 +1119,7 @@ module ActiveRecordTest
   
   class MachineWithValidationsAndCustomAttributeTest < BaseTestCase
     def setup
-      @model = new_model do
-        alias_attribute :status, :state
-      end
-      
+      @model = new_model
       @machine = StateMachine::Machine.new(@model, :status, :attribute => :state)
       @machine.state :parked
       
