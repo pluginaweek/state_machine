@@ -447,8 +447,8 @@ module StateMachine
           value = value ? value.to_s : 'nil'
           
           # Generate all possible translation keys
-          translations = ancestors.map {|ancestor| :"#{ancestor.model_name.underscore}.#{name}.#{group}.#{value}"}
-          translations.concat(ancestors.map {|ancestor| :"#{ancestor.model_name.underscore}.#{group}.#{value}"})
+          translations = ancestors.map {|ancestor| :"#{ancestor.model_name.to_s.underscore}.#{name}.#{group}.#{value}"}
+          translations.concat(ancestors.map {|ancestor| :"#{ancestor.model_name.to_s.underscore}.#{group}.#{value}"})
           translations.concat([:"#{name}.#{group}.#{value}", :"#{group}.#{value}", value.humanize.downcase])
           I18n.translate(translations.shift, :default => translations, :scope => [i18n_scope(klass), :state_machines])
         end

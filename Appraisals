@@ -71,6 +71,14 @@ if RUBY_VERSION > "1.8.6"
   end
 end
 
+if RUBY_VERSION > "1.9.2"
+  appraise "active_record-4.0.0" do
+    gem "sqlite3", "1.3.6"
+    gem 'active_record_deprecated_finders', '0.0.1', :git => 'git://github.com/rails/active_record_deprecated_finders.git'
+    gem "activerecord", "4.0.0.beta", :git => 'git://github.com/rails/rails.git'
+  end
+end
+
 # ActiveModel integrations
 if RUBY_VERSION > "1.8.6"
   appraise "active_model-3.0.0" do
@@ -87,6 +95,12 @@ if RUBY_VERSION > "1.8.6"
   
   appraise "active_model-3.2.1" do
     gem "activemodel", "3.2.1"
+  end
+end
+
+if RUBY_VERSION > "1.9.2"
+  appraise "active_model-4.0.0" do
+    gem "activemodel", "4.0.0.beta", :git => 'git://github.com/rails/rails.git'
   end
 end
 

@@ -2016,7 +2016,7 @@ module ActiveRecordTest
         @machine.state :idling
         
         @model.class_eval do
-          default_scope with_state(:parked, :idling)
+          default_scope { with_state(:parked, :idling) }
         end
       end
       
