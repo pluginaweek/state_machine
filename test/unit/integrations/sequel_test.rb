@@ -311,27 +311,84 @@ module SequelTest
     end
   end
   
-  class MachineWithColumnDefaultTest < BaseTestCase
+  class MachineWithSameColumnDefaultTest < BaseTestCase
     def setup
       @original_stderr, $stderr = $stderr, StringIO.new
       
       DB.create_table!(::Sequel::SQL::Identifier.new(:foo)) do
         primary_key :id
-        column :state, :string, :default => 'idling'
+        column :status, :string, :default => 'parked'
       end
       @model = new_model(false)
       @model.class_eval { get_db_schema(true) }
       
-      @machine = StateMachine::Machine.new(@model, :initial => :parked)
+      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @record = @model.new
     end
     
     def test_should_use_machine_default
-      assert_equal 'parked', @record.state
+      assert_equal 'parked', @record.status
+    end
+    
+    def test_should_not_generate_a_warning
+      assert_no_match(/have defined a different default/, $stderr.string)
+    end
+    
+    def teardown
+      $stderr = @original_stderr
+    end
+  end
+  
+  class MachineWithDifferentColumnDefaultTest < BaseTestCase
+    def setup
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
+      DB.create_table!(::Sequel::SQL::Identifier.new(:foo)) do
+        primary_key :id
+        column :status, :string, :default => 'idling'
+      end
+      @model = new_model(false)
+      @model.class_eval { get_db_schema(true) }
+      
+      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+      @record = @model.new
+    end
+    
+    def test_should_use_machine_default
+      assert_equal 'parked', @record.status
     end
     
     def test_should_generate_a_warning
-      assert_match(/Both SequelTest::Foo and its :state machine have defined a default for "state". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
+      assert_match(/Both SequelTest::Foo and its :status machine have defined a different default for "status". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
+    end
+    
+    def teardown
+      $stderr = @original_stderr
+    end
+  end
+  
+  class MachineWithDifferentIntegerColumnDefaultTest < BaseTestCase
+    def setup
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
+      DB.create_table!(::Sequel::SQL::Identifier.new(:foo)) do
+        primary_key :id
+        column :status, :integer, :default => 0
+      end
+      @model = new_model(false)
+      @model.class_eval { get_db_schema(true) }
+      
+      @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
+      @machine.state :parked, :value => 1
+      @record = @model.new
+    end
+    
+    def test_should_use_machine_default
+      assert_equal 1, @record.status
+    end
+    
+    def test_should_generate_a_warning
+      assert_match(/Both SequelTest::Foo and its :status machine have defined a different default for "status". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
     end
     
     def teardown

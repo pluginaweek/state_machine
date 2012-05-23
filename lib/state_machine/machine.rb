@@ -635,11 +635,12 @@ module StateMachine
       
       # Output a warning if there are conflicting initial states for the machine's
       # attribute
-      if owner_class_has_initial_state?
+      initial_state = states.detect {|state| state.initial}
+      if !owner_class_attribute_default.nil? && (dynamic_initial_state? || !owner_class_attribute_default_matches?(initial_state))
         warn(
           "Both #{owner_class.name} and its #{name.inspect} machine have defined "\
-          "a default for \"#{attribute}\". Use only one or the other for defining "\
-          "defaults to avoid unexpected behaviors."
+          "a different default for \"#{attribute}\". Use only one or the other for "\
+          "defining defaults to avoid unexpected behaviors."
         )
       end
     end
@@ -2254,10 +2255,16 @@ module StateMachine
         yield
       end
       
-      # Whether the owner class already has an initial state defined for this
-      # machine's attribute.  By default, this is always false.
-      def owner_class_has_initial_state?
-        false
+      # Gets the initial attribute value defined by the owner class (outside of
+      # the machine's definition). By default, this is always nil.
+      def owner_class_attribute_default
+        nil
+      end
+      
+      # Checks whether the given state matches the attribute default specified
+      # by the owner class
+      def owner_class_attribute_default_matches?(state)
+        state.matches?(owner_class_attribute_default)
       end
       
       # Updates this machine based on the configuration of other machines in the

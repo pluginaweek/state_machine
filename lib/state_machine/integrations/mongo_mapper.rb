@@ -303,9 +303,9 @@ module StateMachine
           action == :save
         end
         
-        # Checks for the existence of a db default for the machine's attribute
-        def owner_class_has_initial_state?
-          attribute_key && !attribute_key.default_value.nil?
+        # Gets the db default for the machine's attribute
+        def owner_class_attribute_default
+          attribute_key && attribute_key.default_value
         end
         
         # Gets the Mongoid key for this machine's attribute (if it exists)

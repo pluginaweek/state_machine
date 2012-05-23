@@ -372,11 +372,16 @@ module StateMachine
           action == :save ? :around_save : super
         end
         
-        # Checks for the existence of a db default for the machine's attribute
-        def owner_class_has_initial_state?
+        # Gets the db default for the machine's attribute
+        def owner_class_attribute_default
           if owner_class.db.table_exists?(owner_class.table_name) && column = owner_class.db_schema[attribute.to_sym]
-            !column[:default].nil?
+            column[:default]
           end
+        end
+        
+        # Uses the DB literal to match the default against the specified state
+        def owner_class_attribute_default_matches?(state)
+          owner_class.db.literal(state.value) == owner_class_attribute_default
         end
         
         # Creates a scope for finding records *with* a particular state or

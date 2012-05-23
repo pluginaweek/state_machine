@@ -334,7 +334,31 @@ module DataMapperTest
     end
   end
   
-  class MachineWithColumnDefaultTest < BaseTestCase
+  class MachineWithSameColumnDefaultTest < BaseTestCase
+    def setup
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
+      @resource = new_resource do
+        property :status, String, :default => 'parked'
+      end
+      @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
+      @record = @resource.new
+    end
+    
+    def test_should_use_machine_default
+      assert_equal 'parked', @record.status
+    end
+    
+    def test_should_not_generate_a_warning
+      assert_no_match(/have defined a different default/, $stderr.string)
+    end
+    
+    def teardown
+      $stderr = @original_stderr
+    end
+  end
+  
+  class MachineWithDifferentColumnDefaultTest < BaseTestCase
     def setup
       @original_stderr, $stderr = $stderr, StringIO.new
       
@@ -350,7 +374,32 @@ module DataMapperTest
     end
     
     def test_should_generate_a_warning
-      assert_match(/Both DataMapperTest::Foo and its :status machine have defined a default for "status". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
+      assert_match(/Both DataMapperTest::Foo and its :status machine have defined a different default for "status". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
+    end
+    
+    def teardown
+      $stderr = @original_stderr
+    end
+  end
+  
+  class MachineWithDifferentIntegerColumnDefaultTest < BaseTestCase
+    def setup
+      @original_stderr, $stderr = $stderr, StringIO.new
+      
+      @resource = new_resource do
+        property :status, Integer, :default => 0
+      end
+      @machine = StateMachine::Machine.new(@resource, :status, :initial => :parked)
+      @machine.state :parked, :value => 1
+      @record = @resource.new
+    end
+    
+    def test_should_use_machine_default
+      assert_equal 1, @record.status
+    end
+    
+    def test_should_generate_a_warning
+      assert_match(/Both DataMapperTest::Foo and its :status machine have defined a different default for "status". Use only one or the other for defining defaults to avoid unexpected behaviors\./, $stderr.string)
     end
     
     def teardown

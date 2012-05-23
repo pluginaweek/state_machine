@@ -2,7 +2,7 @@
 
 * Add initial support for ActiveRecord / ActiveModel 4.0.0 beta
 * Fix static initial states always being set even when the state has already been initialized in non-ORM integrations
-* Generate a warning when both the ORM's backend and state_machine define the initial state for an attribute
+* Generate a warning when the ORM's backend and state_machine define conflicting initial states for an attribute
 * Fix all Ruby warnings
 * Fix callbacks not working for methods that respond via method_missing [Balwant Kane]
 * Fix observer callbacks being run when disabled in ActiveModel / ActiveRecord integrations
