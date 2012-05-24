@@ -878,15 +878,26 @@ class MachineWithCustomPluralTest < Test::Unit::TestCase
     end
     
     StateMachine::Integrations.const_set('Custom', @integration)
-    @machine = StateMachine::Machine.new(Class.new, :integration => :custom, :plural => 'staties')
   end
   
   def test_should_define_a_singular_and_plural_with_scope
+    StateMachine::Machine.new(Class.new, :integration => :custom, :plural => 'staties')
     assert_equal %w(with_state with_staties), @integration.with_scopes
   end
   
   def test_should_define_a_singular_and_plural_without_scope
+    StateMachine::Machine.new(Class.new, :integration => :custom, :plural => 'staties')
     assert_equal %w(without_state without_staties), @integration.without_scopes
+  end
+  
+  def test_should_define_single_with_scope_if_singular_same_as_plural
+    StateMachine::Machine.new(Class.new, :integration => :custom, :plural => 'state')
+    assert_equal %w(with_state), @integration.with_scopes
+  end
+  
+  def test_should_define_single_without_scope_if_singular_same_as_plural
+    StateMachine::Machine.new(Class.new, :integration => :custom, :plural => 'state')
+    assert_equal %w(without_state), @integration.without_scopes
   end
   
   def teardown
@@ -1612,8 +1623,8 @@ class MachineWithConflictingHelpersBeforeDefinitionTest < Test::Unit::TestCase
       'Instance method "state_name"',
       'Instance method "human_state_name"',
       'Class method "with_state"',
-      'Class method "without_state"',
       'Class method "with_states"',
+      'Class method "without_state"',
       'Class method "without_states"'
     ].map {|method| "#{method} is already defined in #{@superclass.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n"}.join
     

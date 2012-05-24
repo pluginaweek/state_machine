@@ -2203,9 +2203,9 @@ module StateMachine
       def define_scopes(custom_plural = nil)
         plural = custom_plural || pluralize(name)
         
-        [name, plural].uniq.each do |name|
-          [:with, :without].each do |kind|
-            method = "#{kind}_#{name}"
+        [:with, :without].each do |kind|
+          [name, plural].map {|s| s.to_s}.uniq.each do |suffix|
+            method = "#{kind}_#{suffix}"
             
             if scope = send("create_#{kind}_scope", method)
               # Converts state names to their corresponding values so that they
