@@ -1220,8 +1220,8 @@ class TransitionWithAfterCallbacksSkippedTest < Test::Unit::TestCase
     assert_equal true, @transition.run_callbacks(:after => false)
     assert !@run
   end
-  
-  if RUBY_PLATFORM != 'java'
+
+  if StateMachine.callcc_supported?
     def test_should_run_around_callbacks_before_yield
       @machine.around_transition {|block| @run = true; block.call}
       
