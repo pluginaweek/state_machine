@@ -69,6 +69,25 @@ module StateMachine
     def events
       map {|path| path.events}.flatten.uniq
     end
+
+    # Check if some desirable and valid state is between initial and current machine state
+    # This cannot make all's world sense in Vehicle example, but think this state machine
+    #   serving a Order state: I'd like to notify all Orders owners (Customer) who has unless
+    #   paid their order successfully. So, you can: @object.state_from?(:paid). This will
+    #   return true to all states from initial state to paid.
+    #
+    # For example:
+    #   paths.state_from?(:paid)  # => true (if object has until paid status (or all before it)) 
+    def state_from?(desirable_state_name)
+      return false if @from_name.nil?
+      return true if desirable_state_name.to_sym == @from_name
+
+      all_machine_states = @machine.states.map{|state| state.name}.flatten.uniq.compact
+      return false unless all_machine_states.include? desirable_state_name
+
+      passed_state_index = all_machine_states.index(@from_name)
+      all_machine_states.index(desirable_state_name) <= passed_state_index
+    end
     
     private
       # Gets the initial set of paths to walk

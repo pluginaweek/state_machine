@@ -1858,7 +1858,19 @@ module StateMachine
     def paths_for(object, requirements = {})
       PathCollection.new(object, self, requirements)
     end
-    
+
+    # Check if some desirable and valid state is between initial and current machine state
+    # This cannot make all's world sense in Vehicle example, but think this state machine
+    #   serving a Order state: I'd like to notify all Orders owners (Customer) who has unless
+    #   paid their order successfully. So, you can: @object.state_from?(:paid). This will
+    #   return true to all states from initial state to paid.
+    #
+    # For example:
+    #   object.state_from?(:paid)  # => true (if object has until paid status (or all before it)) 
+    def state_from_for(object, state)
+      paths_for(object).state_from?(state)
+    end
+
     # Marks the given object as invalid with the given message.
     # 
     # By default, this is a no-op.
@@ -2095,6 +2107,11 @@ module StateMachine
         # Gets the paths of transitions available to the current object
         define_helper(:instance, attribute(:paths)) do |machine, object, *args|
           machine.paths_for(object, *args)
+        end
+
+        # Enable object check if any valid state is between any passed away state
+        define_helper(:instance, attribute("from?".to_sym)) do |machine, object, *args|
+          machine.state_from_for(object, args.first)
         end
       end
       

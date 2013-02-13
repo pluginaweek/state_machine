@@ -257,6 +257,10 @@ class VehicleTest < Test::Unit::TestCase
   def test_should_have_human_state_event_names
     assert_equal 'park', Vehicle.human_state_event_name(:park)
   end
+
+  def test_should_have_state_from
+    assert @vehicle.state_from? :parked
+  end
 end
 
 class VehicleUnsavedTest < Test::Unit::TestCase
@@ -453,6 +457,12 @@ class VehicleParkedTest < Test::Unit::TestCase
   
   def test_should_not_allow_park
     assert !@vehicle.park
+  end
+
+  def test_should_state_from_change_after_ignite
+    assert @vehicle.ignite
+    assert @vehicle.state_from? :idling
+    assert @vehicle.state_from? :parked
   end
   
   def test_should_allow_ignite

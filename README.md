@@ -245,6 +245,26 @@ vehicle.park!                   # => StateMachine::InvalidTransition: Cannot tra
 vehicle.state?(:parked)         # => false
 vehicle.state?(:invalid)        # => IndexError: :invalid is an invalid name
 
+# Check if machine has at least some state
+vehicle.state_from?(:first_gear)    # => true or false
+
+This will return `true` if `vehicle` state is at any of this states:
+
+* first_gear
+* second_gear
+* third_gear
+  
+The `state_from?` will make more sense with linear state machine. For example a state machine for your Order class. Let's consider that your Order has these states:
+
+* pending
+* check_payment
+* paid
+* shipping
+* shipped
+* done
+  
+You need to check if some `@order` has at least 'paid' state. You can easily use: `@order.state_from? :paid`. This will return true only if your `@order` has any of these states: `paid`, `shipping`, `shipped` and `done`.
+
 # Namespaced machines have uniquely-generated methods
 vehicle.alarm_state             # => 1
 vehicle.alarm_state_name        # => :active

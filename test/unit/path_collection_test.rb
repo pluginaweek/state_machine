@@ -31,6 +31,10 @@ class PathCollectionByDefaultTest < Test::Unit::TestCase
   def test_should_have_no_from_states
     assert_equal [], @paths.from_states
   end
+
+  def test_should_have_state_from_as_default_state
+    assert @paths.state_from? :parked
+  end
   
   def test_should_have_no_to_states
     assert_equal [], @paths.to_states
@@ -65,6 +69,11 @@ class PathCollectionTest < Test::Unit::TestCase
   def test_should_raise_exception_if_invalid_to_state_specified
     exception = assert_raise(IndexError) {StateMachine::PathCollection.new(@object, @machine, :to => :invalid)}
     assert_equal ':invalid is an invalid name', exception.message
+  end
+
+  def test_should_return_false_when_invalid_state_specified_to_state_from
+    paths = StateMachine::PathCollection.new(@object, @machine)
+    assert !paths.state_from?(:invalid)
   end
 end
 
@@ -111,6 +120,32 @@ class PathCollectionWithPathsTest < Test::Unit::TestCase
   
   def test_should_have_no_events
     assert_equal [:ignite, :shift_up], @paths.events
+  end
+
+  def test_should_have_state_from_some_state
+    assert @object.ignite
+    assert @object.state_from? :parked
+    assert @object.state_from? :idling
+    assert !@object.state_from?(:first_gear)
+  end
+
+  def test_should_have_state_from_with_any_transition
+    @machine.event :park do
+      transition [:idling, :first_gear] => :parked
+    end
+    
+    @machine.event :ignite do
+      transition :parked => :idling
+    end
+    
+    @machine.event :idle do
+      transition :first_gear => :idling
+    end
+
+    assert @object.ignite
+    assert @object.state_from?(:idling)
+    assert @object.state_from?(:parked)
+    assert !@object.state_from?(:stalled)
   end
 end
 
