@@ -309,6 +309,11 @@ if RUBY_VERSION > "1.8.6"
     gem "sqlite3-ruby", "1.3.1"
     gem "sequel", "3.35.0"
   end
+  
+  appraise "sequel-3.44.0" do
+    gem "sqlite3-ruby", "1.3.1"
+    gem "sequel", "3.44.0"
+  end
 end
 
 # DataMapper
