@@ -71,17 +71,19 @@ if RUBY_VERSION > "1.8.6"
     gem "activerecord", "3.1.1"
   end
   
-  appraise "active_record-3.2.1" do
+  appraise "active_record-3.2.12" do
     gem "sqlite3-ruby"
-    gem "activerecord", "3.2.1"
+    gem "activerecord", "3.2.12"
   end
 end
 
 if RUBY_VERSION > "1.9.2"
   appraise "active_record-4.0.0" do
     gem "sqlite3", "1.3.6"
-    gem 'active_record_deprecated_finders', '0.0.1', :git => 'git://github.com/rails/active_record_deprecated_finders.git'
-    gem "activerecord", "4.0.0.beta", :git => 'git://github.com/rails/rails.git'
+    gem "activerecord", "4.0.0.beta", :git => "git://github.com/rails/rails.git"
+    gem "activerecord-deprecated_finders", "0.0.3"
+    gem "protected_attributes", "1.0.0"
+    gem "rails-observers", "0.1.1"
   end
 end
 

@@ -18,6 +18,12 @@ rescue LoadError
   end
 end
 
+require 'active_record/version'
+if ::ActiveRecord::VERSION::MAJOR >= 4
+  require 'rails/observers/activerecord/active_record'
+  require 'active_record/mass_assignment_security'
+end
+
 # Establish database connection
 ActiveRecord::Base.establish_connection({'adapter' => 'sqlite3', 'database' => ':memory:'})
 ActiveRecord::Base.logger = Logger.new("#{File.dirname(__FILE__)}/../../active_record.log")
