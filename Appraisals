@@ -204,6 +204,11 @@ if RUBY_VERSION > "1.8.6"
     gem "mongoid", "2.3.3"
   end
   
+  appraise "mongoid-2.4.0" do
+    gem "mongo", "~> 1.7.0"
+    gem "mongoid", "2.4.0"
+  end
+  
   appraise "mongoid-2.4.10" do
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.4.10"

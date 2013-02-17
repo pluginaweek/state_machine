@@ -1,5 +1,6 @@
 # master
 
+* Fix aliased fields in Mongoid 2.4.0+ not being automatically detected
 * Add Mongoid 3.0.0+ support
 * Fix scopes getting generated multiple times when the singular / plural machine names are the same but of a different type (symbol vs. string)
 * Add initial support for ActiveRecord / ActiveModel 4.0.0 beta

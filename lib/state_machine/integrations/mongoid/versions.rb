@@ -25,6 +25,16 @@ module StateMachine
         end
       end
       
+      version '2.0.x - 2.3.x' do
+        def self.active?
+          ::Mongoid::VERSION =~ /^2\.[0-3]\./
+        end
+        
+        def attribute_field
+          owner_class.fields[attribute.to_s]
+        end
+      end
+      
       version '2.0.x - 2.2.x' do
         def self.active?
           ::Mongoid::VERSION =~ /^2\.[0-2]\./

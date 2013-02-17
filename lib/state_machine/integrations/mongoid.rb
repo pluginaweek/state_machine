@@ -365,7 +365,7 @@ module StateMachine
         
         # Gets the field for this machine's attribute (if it exists)
         def attribute_field
-          owner_class.fields[attribute.to_s]
+          owner_class.fields[attribute.to_s] || owner_class.fields[owner_class.aliased_fields[attribute.to_s]]
         end
         
         # Defines an initialization hook into the owner class for setting the
