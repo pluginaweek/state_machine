@@ -99,14 +99,16 @@ if RUBY_VERSION > "1.8.6"
     gem "activemodel", "3.1.1"
   end
   
-  appraise "active_model-3.2.1" do
-    gem "activemodel", "3.2.1"
+  appraise "active_model-3.2.12" do
+    gem "activemodel", "3.2.12"
   end
 end
 
 if RUBY_VERSION > "1.9.2"
   appraise "active_model-4.0.0" do
     gem "activemodel", "4.0.0.beta", :git => 'git://github.com/rails/rails.git'
+    gem "rails-observers", "0.1.1"
+    gem "protected_attributes", "1.0.0"
   end
 end
 

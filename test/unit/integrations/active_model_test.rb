@@ -1,7 +1,12 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
 require 'active_model'
-require 'active_model/observing'
+if defined?(::ActiveModel::VERSION) && ::ActiveModel::VERSION::MAJOR >= 4
+  require 'rails/observers/active_model/active_model'
+  require 'active_model/mass_assignment_security'
+else
+  require 'active_model/observing'
+end
 require 'active_support/all'
 
 module ActiveModelTest
