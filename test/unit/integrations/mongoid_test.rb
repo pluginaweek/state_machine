@@ -41,6 +41,28 @@ module MongoidTest
         model.delete_all
         model
       end
+      
+      # Creates a new Mongoid observer
+      def new_observer(model, &block)
+        observer = Class.new(Mongoid::Observer) do
+          attr_accessor :notifications
+          
+          def initialize
+            super
+            @notifications = []
+          end
+        end
+        
+        (class << observer; self; end).class_eval do
+          define_method(:name) do
+            "#{model.name}Observer"
+          end
+        end
+        
+        observer.observe(model)
+        observer.class_eval(&block) if block_given?
+        observer
+      end
   end
   
   class IntegrationTest < BaseTestCase
@@ -1529,6 +1551,186 @@ module MongoidTest
     def test_should_transition_on_custom_action
       @record.persist
       assert_equal 'idling', @record.state
+    end
+  end
+  
+  class MachineWithObserversTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.state :parked, :idling
+      @machine.event :ignite
+      @record = @model.new(:state => 'parked')
+      @transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, :idling)
+    end
+    
+    def test_should_call_all_transition_callback_permutations
+      callbacks = [
+        :before_ignite_from_parked_to_idling,
+        :before_ignite_from_parked,
+        :before_ignite_to_idling,
+        :before_ignite,
+        :before_transition_state_from_parked_to_idling,
+        :before_transition_state_from_parked,
+        :before_transition_state_to_idling,
+        :before_transition_state,
+        :before_transition
+      ]
+      
+      observer = new_observer(@model) do
+        callbacks.each do |callback|
+          define_method(callback) do |*args|
+            notifications << callback
+          end
+        end
+      end
+      
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal callbacks, instance.notifications
+    end
+    
+    def test_should_call_no_transition_callbacks_when_observers_disabled
+      return unless ::ActiveModel::VERSION::MAJOR >= 3 && ::ActiveModel::VERSION::MINOR >= 1
+      
+      callbacks = [
+        :before_ignite,
+        :before_transition
+      ]
+      
+      observer = new_observer(@model) do
+        callbacks.each do |callback|
+          define_method(callback) do |*args|
+            notifications << callback
+          end
+        end
+      end
+      
+      instance = observer.instance
+      
+      @model.observers.disable(observer) do
+        @transition.perform
+      end
+      
+      assert_equal [], instance.notifications
+    end
+    
+    def test_should_pass_record_and_transition_to_before_callbacks
+      observer = new_observer(@model) do
+        def before_transition(*args)
+          notifications << args
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [[@record, @transition]], instance.notifications
+    end
+    
+    def test_should_pass_record_and_transition_to_after_callbacks
+      observer = new_observer(@model) do
+        def after_transition(*args)
+          notifications << args
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [[@record, @transition]], instance.notifications
+    end
+    
+    def test_should_call_methods_outside_the_context_of_the_record
+      observer = new_observer(@model) do
+        def before_ignite(*args)
+          notifications << self
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [instance], instance.notifications
+    end
+    
+    def test_should_support_nil_from_states
+      callbacks = [
+        :before_ignite_from_nil_to_idling,
+        :before_ignite_from_nil,
+        :before_transition_state_from_nil_to_idling,
+        :before_transition_state_from_nil
+      ]
+      
+      observer = new_observer(@model) do
+        callbacks.each do |callback|
+          define_method(callback) do |*args|
+            notifications << callback
+          end
+        end
+      end
+      
+      instance = observer.instance
+      
+      transition = StateMachine::Transition.new(@record, @machine, :ignite, nil, :idling)
+      transition.perform
+      assert_equal callbacks, instance.notifications
+    end
+    
+    def test_should_support_nil_to_states
+      callbacks = [
+        :before_ignite_from_parked_to_nil,
+        :before_ignite_to_nil,
+        :before_transition_state_from_parked_to_nil,
+        :before_transition_state_to_nil
+      ]
+      
+      observer = new_observer(@model) do
+        callbacks.each do |callback|
+          define_method(callback) do |*args|
+            notifications << callback
+          end
+        end
+      end
+      
+      instance = observer.instance
+      
+      transition = StateMachine::Transition.new(@record, @machine, :ignite, :parked, nil)
+      transition.perform
+      assert_equal callbacks, instance.notifications
+    end
+  end
+  
+  class MachineWithNamespacedObserversTest < BaseTestCase
+    def setup
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model, :state, :namespace => 'alarm')
+      @machine.state :active, :off
+      @machine.event :enable
+      @record = @model.new(:state => 'off')
+      @transition = StateMachine::Transition.new(@record, @machine, :enable, :off, :active)
+    end
+    
+    def test_should_call_namespaced_before_event_method
+      observer = new_observer(@model) do
+        def before_enable_alarm(*args)
+          notifications << args
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [[@record, @transition]], instance.notifications
+    end
+    
+    def test_should_call_namespaced_after_event_method
+      observer = new_observer(@model) do
+        def after_enable_alarm(*args)
+          notifications << args
+        end
+      end
+      instance = observer.instance
+      
+      @transition.perform
+      assert_equal [[@record, @transition]], instance.notifications
     end
   end
   
