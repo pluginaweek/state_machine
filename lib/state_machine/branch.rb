@@ -140,10 +140,8 @@ module StateMachine
     # 
     # Each edge will be labeled with the name of the event that would cause the
     # transition.
-    # 
-    # The collection of edges generated on the graph will be returned.
     def draw(graph, event, valid_states)
-      state_requirements.inject([]) do |edges, state_requirement|
+      state_requirements.each do |state_requirement|
         # From states determined based on the known valid states
         from_states = state_requirement[:from].filter(valid_states)
         
@@ -160,11 +158,11 @@ module StateMachine
         # Generate an edge between each from and to state
         from_states.each do |from_state|
           from_state = from_state ? from_state.to_s : 'nil'
-          edges << graph.add_edge(from_state, loopback ? from_state : to_state, :label => event.to_s)
+          graph.add_edges(from_state, loopback ? from_state : to_state, :label => event.to_s)
         end
-        
-        edges
       end
+      
+      true
     end
     
     protected

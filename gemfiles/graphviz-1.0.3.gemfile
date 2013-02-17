@@ -2,6 +2,6 @@
 
 source "http://www.rubygems.org"
 
-gem "ruby-graphviz", "0.9.0"
+gem "ruby-graphviz", "1.0.3"
 
 gemspec :path=>"../"

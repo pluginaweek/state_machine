@@ -1,5 +1,7 @@
 # master
 
+* Fix deprecation warnings on ruby-graphviz 1.0.3+
+* Update minimum required ruby-graphviz version to 0.9.17
 * Fix aliased fields in Mongoid 2.4.0+ not being automatically detected
 * Add Mongoid 3.0.0+ support
 * Fix scopes getting generated multiple times when the singular / plural machine names are the same but of a different type (symbol vs. string)

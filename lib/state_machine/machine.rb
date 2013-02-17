@@ -1924,53 +1924,20 @@ module StateMachine
     #   "landscape").  Default is "portrait".
     # * <tt>:human_names</tt> - Whether to use human state / event names for
     #   node labels on the graph instead of the internal name.  Default is false.
-    def draw(options = {})
-      options = {
-        :name => "#{owner_class.name}_#{name}",
-        :path => '.',
-        :format => 'png',
-        :font => 'Arial',
-        :orientation => 'portrait',
-        :human_names => false
-      }.merge(options)
-      assert_valid_keys(options, :name, :path, :format, :font, :orientation, :human_names)
+    def draw(graph_options = {})
+      name = graph_options.delete(:name) || "#{owner_class.name}_#{self.name}"
+      draw_options = {:human_name => false}
+      draw_options[:human_name] = graph_options.delete(:human_names) if graph_options.include?(:human_names)
       
-      begin
-        # Load the graphviz library
-        require 'rubygems'
-        gem 'ruby-graphviz', '>=0.9.0'
-        require 'graphviz'
-        
-        graph = GraphViz.new('G', :rankdir => options[:orientation] == 'landscape' ? 'LR' : 'TB')
-        
-        # Add nodes
-        states.by_priority.each do |state|
-          node = state.draw(graph, :human_name => options[:human_names])
-          node.fontname = options[:font]
-        end
-        
-        # Add edges
-        events.each do |event|
-          edges = event.draw(graph, :human_name => options[:human_names])
-          edges.each {|edge| edge.fontname = options[:font]}
-        end
-        
-        # Generate the graph
-        graphvizVersion = Constants::RGV_VERSION.split('.')
-        file = File.join(options[:path], "#{options[:name]}.#{options[:format]}")
-        
-        if graphvizVersion[0] == '0' && graphvizVersion[1] == '9' && graphvizVersion[2] == '0'
-          outputOptions = {:output => options[:format], :file => file}
-        else
-          outputOptions = {options[:format] => file}
-        end
-        
-        graph.output(outputOptions)
-        graph
-      rescue LoadError => ex
-        $stderr.puts "Cannot draw the machine (#{ex.message}). `gem install ruby-graphviz` >= v0.9.0 and try again."
-        false
-      end
+      graph = Graph.new(name, graph_options)
+      
+      # Add nodes / edges
+      states.by_priority.each {|state| state.draw(graph, draw_options)}
+      events.each {|event| event.draw(graph, draw_options)}
+      
+      # Output result
+      graph.output
+      graph
     end
     
     # Determines whether an action hook was defined for firing attribute-based

@@ -867,8 +867,9 @@ begin
         transition :parked => :idling
       end
       
-      graph = GraphViz.new('G')
-      @node = @state.draw(graph)
+      graph = StateMachine::Graph.new('test')
+      @state.draw(graph)
+      @node = graph.get_node('parked')
     end
     
     def test_should_use_ellipse_shape
@@ -881,10 +882,6 @@ begin
     
     def test_should_set_height_to_one
       assert_equal '1', @node['height'].to_s.gsub('"', '')
-    end
-    
-    def test_should_use_stringified_name_as_name
-      assert_equal 'parked', Gem::Version.new(Constants::RGV_VERSION) <= Gem::Version.new('0.9.11') ? @node.name : @node.id
     end
     
     def test_should_use_description_as_label
@@ -900,8 +897,9 @@ begin
         transition :parked => :idling
       end
       
-      @graph = GraphViz.new('G')
-      @node = @state.draw(@graph)
+      @graph = StateMachine::Graph.new('test')
+      @state.draw(@graph)
+      @node = @graph.get_node('parked')
     end
     
     def test_should_use_ellipse_as_shape
@@ -919,12 +917,13 @@ begin
       @machine = StateMachine::Machine.new(Class.new)
       @machine.states << @state = StateMachine::State.new(@machine, nil)
       
-      graph = GraphViz.new('G')
-      @node = @state.draw(graph)
+      graph = StateMachine::Graph.new('test')
+      @state.draw(graph)
+      @node = graph.get_node('nil')
     end
     
-    def test_should_use_stringified_nil_as_name
-      assert_equal 'nil', Gem::Version.new(Constants::RGV_VERSION) <= Gem::Version.new('0.9.11') ? @node.name : @node.id
+    def test_should_have_a_node
+      assert_not_nil @node
     end
     
     def test_should_use_description_as_label
@@ -937,12 +936,13 @@ begin
       @machine = StateMachine::Machine.new(Class.new)
       @machine.states << @state = StateMachine::State.new(@machine, :parked, :value => lambda {})
       
-      graph = GraphViz.new('G')
-      @node = @state.draw(graph)
+      graph = StateMachine::Graph.new('test')
+      @state.draw(graph)
+      @node = graph.get_node('parked')
     end
     
-    def test_should_use_stringified_name_as_name
-      assert_equal 'parked', Gem::Version.new(Constants::RGV_VERSION) <= Gem::Version.new('0.9.11') ? @node.name : @node.id
+    def test_should_have_a_node
+      assert_not_nil @node
     end
     
     def test_should_use_description_as_label
@@ -958,8 +958,9 @@ begin
         transition :parked => :idling
       end
       
-      graph = GraphViz.new('G')
-      @node = @state.draw(graph)
+      graph = StateMachine::Graph.new('test')
+      @state.draw(graph)
+      @node = graph.get_node('parked')
     end
     
     def test_should_use_ellipse_as_shape
@@ -972,8 +973,9 @@ begin
       @machine = StateMachine::Machine.new(Class.new)
       @machine.states << @state = StateMachine::State.new(@machine, :parked)
       
-      graph = GraphViz.new('G')
-      @node = @state.draw(graph)
+      graph = StateMachine::Graph.new('test')
+      @state.draw(graph)
+      @node = graph.get_node('parked')
     end
     
     def test_should_use_doublecircle_as_shape
@@ -989,8 +991,9 @@ begin
         transition :parked => :idling
       end
       
-      graph = GraphViz.new('G')
-      @node = @state.draw(graph, :human_name => true)
+      graph = StateMachine::Graph.new('test')
+      @state.draw(graph, :human_name => true)
+      @node = graph.get_node('parked')
     end
     
     def test_should_use_description_with_human_name_as_label
@@ -998,5 +1001,5 @@ begin
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping GraphViz StateMachine::State tests. `gem install ruby-graphviz` >= v0.9.0 and try again.'
+  $stderr.puts 'Skipping GraphViz StateMachine::State tests. `gem install ruby-graphviz` >= v0.9.17 and try again.'
 end unless ENV['TRAVIS']

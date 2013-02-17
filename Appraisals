@@ -2,10 +2,8 @@ appraise "default" do
 end
 
 # GraphViz
-if RUBY_VERSION < "1.9.1"
-  appraise "graphviz-0.9.0" do
-    gem "ruby-graphviz", "0.9.0"
-  end
+appraise "graphviz-0.9.17" do
+  gem "ruby-graphviz", "0.9.17"
 end
 
 appraise "graphviz-0.9.21" do
@@ -14,6 +12,14 @@ end
 
 appraise "graphviz-1.0.0" do
   gem "ruby-graphviz", "1.0.0"
+end
+
+appraise "graphviz-1.0.3" do
+  gem "ruby-graphviz", "1.0.3"
+end
+
+appraise "graphviz-1.0.8" do
+  gem "ruby-graphviz", "1.0.8"
 end
 
 # ActiveRecord integrations

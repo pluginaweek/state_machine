@@ -232,13 +232,11 @@ module StateMachine
     # * +shape+ - The actual shape of the node.  If the state is a final
     #   state, then "doublecircle", otherwise "ellipse".
     # 
-    # The actual node generated on the graph will be returned.
-    # 
     # Configuration options:
     # * <tt>:human_name</tt> - Whether to use the state's human name for the
     #   node's label that gets drawn on the graph
     def draw(graph, options = {})
-      node = graph.add_node(name ? name.to_s : 'nil',
+      node = graph.add_nodes(name ? name.to_s : 'nil',
         :label => description(options),
         :width => '1',
         :height => '1',
@@ -246,9 +244,9 @@ module StateMachine
       )
       
       # Add open arrow for initial state
-      graph.add_edge(graph.add_node('starting_state', :shape => 'point'), node) if initial?
+      graph.add_edges(graph.add_nodes('starting_state', :shape => 'point'), node) if initial?
       
-      node
+      true
     end
     
     # Generates a nicely formatted description of this state's contents.

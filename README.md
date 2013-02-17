@@ -1151,4 +1151,4 @@ If using specific integrations:
 
 If graphing state machine:
 
-* [ruby-graphviz](http://github.com/glejeune/Ruby-Graphviz): 0.9.0 or later
+* [ruby-graphviz](http://github.com/glejeune/Ruby-Graphviz): 0.9.17 or later

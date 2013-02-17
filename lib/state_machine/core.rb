@@ -1,3 +1,8 @@
+module StateMachine
+  # Graphing extensions aren't required, so they're loaded when referenced
+  autoload :Graph, 'state_machine/graph'
+end
+
 # Load all of the core implementation required to use state_machine.  This
 # includes:
 # * StateMachine::MacroMethods which adds the state_machine DSL to your class

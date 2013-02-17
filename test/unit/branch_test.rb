@@ -767,27 +767,28 @@ begin
       @machine = StateMachine::Machine.new(Class.new)
       states = [:parked, :idling]
       
-      graph = GraphViz.new('G')
-      states.each {|state| graph.add_node(state.to_s)}
+      @graph = StateMachine::Graph.new('test')
+      states.each {|state| @graph.add_nodes(state.to_s)}
       
       @branch = StateMachine::Branch.new(:from => :idling, :to => :parked)
-      @edges = @branch.draw(graph, :park, states)
+      @branch.draw(@graph, :park, states)
+      @edge = @graph.get_edge_at_index(0)
     end
     
     def test_should_create_edges
-      assert_equal 1, @edges.size
+      assert_equal 1, @graph.edge_count
     end
     
     def test_should_use_from_state_from_start_node
-      assert_equal 'idling', @edges.first.instance_variable_get('@xNodeOne')
+      assert_equal 'idling', @edge.node_one(false)
     end
     
     def test_should_use_to_state_for_end_node
-      assert_equal 'parked', @edges.first.instance_variable_get('@xNodeTwo')
+      assert_equal 'parked', @edge.node_two(false)
     end
     
     def test_should_use_event_name_as_label
-      assert_equal 'park', @edges.first['label'].to_s.gsub('"', '')
+      assert_equal 'park', @edge['label'].to_s.gsub('"', '')
     end
   end
   
@@ -796,18 +797,18 @@ begin
       @machine = StateMachine::Machine.new(Class.new)
       states = [:parked, :idling, :first_gear]
       
-      graph = GraphViz.new('G')
-      states.each {|state| graph.add_node(state.to_s)}
+      @graph = StateMachine::Graph.new('test')
+      states.each {|state| @graph.add_nodes(state.to_s)}
       
       @branch = StateMachine::Branch.new(:from => [:idling, :first_gear], :to => :parked)
-      @edges = @branch.draw(graph, :park, states)
+      @branch.draw(@graph, :park, states)
     end
     
     def test_should_generate_edges_for_each_valid_from_state
       [:idling, :first_gear].each_with_index do |from_state, index|
-        edge = @edges[index]
-        assert_equal from_state.to_s, edge.instance_variable_get('@xNodeOne')
-        assert_equal 'parked', edge.instance_variable_get('@xNodeTwo')
+        edge = @graph.get_edge_at_index(index)
+        assert_equal from_state.to_s, edge.node_one(false)
+        assert_equal 'parked', edge.node_two(false)
       end
     end
   end
@@ -817,18 +818,18 @@ begin
       @machine = StateMachine::Machine.new(Class.new)
       states = [:parked, :idling, :first_gear]
       
-      graph = GraphViz.new('G')
-      states.each {|state| graph.add_node(state.to_s)}
+      @graph = StateMachine::Graph.new('test')
+      states.each {|state| @graph.add_nodes(state.to_s)}
       
       @branch = StateMachine::Branch.new(:except_from => :parked, :to => :parked)
-      @edges = @branch.draw(graph, :park, states)
+      @branch.draw(@graph, :park, states)
     end
     
     def test_should_generate_edges_for_each_valid_from_state
       %w(idling first_gear).each_with_index do |from_state, index|
-        edge = @edges[index]
-        assert_equal from_state, edge.instance_variable_get('@xNodeOne')
-        assert_equal 'parked', edge.instance_variable_get('@xNodeTwo')
+        edge = @graph.get_edge_at_index(index)
+        assert_equal from_state, edge.node_one(false)
+        assert_equal 'parked', edge.node_two(false)
       end
     end
   end
@@ -838,18 +839,18 @@ begin
       @machine = StateMachine::Machine.new(Class.new)
       states = [:parked, :idling, :first_gear]
       
-      graph = GraphViz.new('G')
-      states.each {|state| graph.add_node(state.to_s)}
+      @graph = StateMachine::Graph.new('test')
+      states.each {|state| @graph.add_nodes(state.to_s)}
       
       @branch = StateMachine::Branch.new(:to => :parked)
-      @edges = @branch.draw(graph, :park, states)
+      @branch.draw(@graph, :park, states)
     end
     
     def test_should_generate_edges_for_each_valid_from_state
       %w(parked idling first_gear).each_with_index do |from_state, index|
-        edge = @edges[index]
-        assert_equal from_state, edge.instance_variable_get('@xNodeOne')
-        assert_equal 'parked', edge.instance_variable_get('@xNodeTwo')
+        edge = @graph.get_edge_at_index(index)
+        assert_equal from_state, edge.node_one(false)
+        assert_equal 'parked', edge.node_two(false)
       end
     end
   end
@@ -858,16 +859,17 @@ begin
     def setup
       @machine = StateMachine::Machine.new(Class.new)
       
-      graph = GraphViz.new('G')
-      graph.add_node('parked')
+      graph = StateMachine::Graph.new('test')
+      graph.add_nodes('parked')
       
       @branch = StateMachine::Branch.new(:from => :parked)
-      @edges = @branch.draw(graph, :park, [:parked])
+      @branch.draw(graph, :park, [:parked])
+      @edge = graph.get_edge_at_index(0)
     end
     
     def test_should_create_loopback_edge
-      assert_equal 'parked', @edges.first.instance_variable_get('@xNodeOne')
-      assert_equal 'parked', @edges.first.instance_variable_get('@xNodeTwo')
+      assert_equal 'parked', @edge.node_one(false)
+      assert_equal 'parked', @edge.node_two(false)
     end
   end
   
@@ -875,18 +877,19 @@ begin
     def setup
       @machine = StateMachine::Machine.new(Class.new)
       
-      graph = GraphViz.new('G')
-      graph.add_node('parked')
+      graph = StateMachine::Graph.new('test')
+      graph.add_nodes('parked')
       
       @branch = StateMachine::Branch.new(:from => :idling, :to => nil)
-      @edges = @branch.draw(graph, :park, [nil, :idling])
+      @branch.draw(graph, :park, [nil, :idling])
+      @edge = graph.get_edge_at_index(0)
     end
     
     def test_should_generate_edges_for_each_valid_from_state
-      assert_equal 'idling', @edges.first.instance_variable_get('@xNodeOne')
-      assert_equal 'nil', @edges.first.instance_variable_get('@xNodeTwo')
+      assert_equal 'idling', @edge.node_one(false)
+      assert_equal 'nil', @edge.node_two(false)
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping GraphViz StateMachine::Branch tests. `gem install ruby-graphviz` >= v0.9.0 and try again.'
+  $stderr.puts 'Skipping GraphViz StateMachine::Branch tests. `gem install ruby-graphviz` >= v0.9.17 and try again.'
 end unless ENV['TRAVIS']

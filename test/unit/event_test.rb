@@ -1003,23 +1003,23 @@ begin
       @machine = StateMachine::Machine.new(Class.new, :initial => :parked)
       @machine.other_states(*states)
       
-      graph = GraphViz.new('G')
-      states.each {|state| graph.add_node(state.to_s)}
+      @graph = StateMachine::Graph.new('test')
+      states.each {|state| @graph.add_nodes(state.to_s)}
       
       @machine.events << @event = StateMachine::Event.new(@machine , :park)
       @event.transition :parked => :idling
       @event.transition :first_gear => :parked
       @event.transition :except_from => :parked, :to => :parked
       
-      @edges = @event.draw(graph)
+      @event.draw(@graph)
     end
     
     def test_should_generate_edges_for_each_transition
-      assert_equal 4, @edges.size
+      assert_equal 4, @graph.edge_count.size
     end
     
     def test_should_use_event_name_for_edge_label
-      assert_equal 'park', @edges.first['label'].to_s.gsub('"', '')
+      assert_equal 'park', @graph.get_edge_at_index(0)['label'].to_s.gsub('"', '')
     end
   end
   
@@ -1030,19 +1030,20 @@ begin
       @machine = StateMachine::Machine.new(Class.new, :initial => :parked)
       @machine.other_states(*states)
       
-      graph = GraphViz.new('G')
-      states.each {|state| graph.add_node(state.to_s)}
+      graph = StateMachine::Graph.new('test')
+      states.each {|state| graph.add_nodes(state.to_s)}
       
       @machine.events << @event = StateMachine::Event.new(@machine , :park, :human_name => 'Park')
       @event.transition :parked => :idling
       
-      @edges = @event.draw(graph, :human_name => true)
+      @event.draw(graph, :human_name => true)
+      @edge = graph.get_edge_at_index(0)
     end
     
     def test_should_use_event_human_name_for_edge_label
-      assert_equal 'Park', @edges.first['label'].to_s.gsub('"', '')
+      assert_equal 'Park', @edge['label'].to_s.gsub('"', '')
     end
   end
 rescue LoadError
-  $stderr.puts 'Skipping GraphViz StateMachine::Event tests. `gem install ruby-graphviz` >= v0.9.0 and try again.'
+  $stderr.puts 'Skipping GraphViz StateMachine::Event tests. `gem install ruby-graphviz` >= v0.9.17 and try again.'
 end unless ENV['TRAVIS']
