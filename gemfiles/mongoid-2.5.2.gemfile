@@ -2,8 +2,7 @@
 
 source "http://www.rubygems.org"
 
-gem "activemodel", "~> 3.1.0"
 gem "mongo", "~> 1.7.0"
-gem "mongoid", "2.0.0"
+gem "mongoid", "2.5.2"
 
 gemspec :path=>"../"

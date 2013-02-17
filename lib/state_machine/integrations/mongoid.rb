@@ -360,7 +360,7 @@ module StateMachine
         
         # Gets the db default for the machine's attribute
         def owner_class_attribute_default
-          attribute_field && attribute_field.default
+          attribute_field && attribute_field.default_val
         end
         
         # Gets the field for this machine's attribute (if it exists)
@@ -374,13 +374,15 @@ module StateMachine
         def define_state_initializer
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
             def initialize(*)
-              @attributes ||= {}
-              self.class.state_machines.initialize_states(self, :static => :force, :dynamic => false)
-              
               super do |*args|
                 self.class.state_machines.initialize_states(self, :static => false)
                 yield(*args) if block_given?
               end
+            end
+            
+            def apply_pre_processed_defaults
+              super
+              self.class.state_machines.initialize_states(self, :static => :force, :dynamic => false) if _building?
             end
           end_eval
         end

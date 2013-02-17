@@ -2,6 +2,7 @@
 
 source "http://www.rubygems.org"
 
+gem "mongo", "~> 1.7.0"
 gem "mongoid", "2.4.10"
 
 gemspec :path=>"../"

@@ -5,7 +5,11 @@ require 'mongoid/version'
 
 # Establish database connection
 Mongoid.configure do |config|
-  config.master = Mongo::Connection.new('127.0.0.1', 27017, :slave_ok => true).db('test')
+  if ::Mongoid::VERSION =~ /^2\./
+    config.master = Mongo::Connection.new('127.0.0.1', 27017, :slave_ok => true).db('test')
+  else
+    config.connect_to('test')
+  end
 end
 
 module MongoidTest
@@ -16,7 +20,6 @@ module MongoidTest
     protected
       # Creates a new Mongoid model (and the associated table)
       def new_model(table_name = :foo, &block)
-        
         model = Class.new do
           (class << self; self; end).class_eval do
             define_method(:name) { "MongoidTest::#{table_name.to_s.capitalize}" }
@@ -26,12 +29,16 @@ module MongoidTest
         
         model.class_eval do
           include Mongoid::Document
-          self.collection_name = table_name
+          if ::Mongoid::VERSION =~ /^2\./
+            self.collection_name = table_name
+          else
+            self.default_collection_name = table_name
+          end
           
           field :state, :type => String
         end
         model.class_eval(&block) if block_given?
-        model.collection.remove
+        model.delete_all
         model
       end
   end
@@ -190,7 +197,7 @@ module MongoidTest
       assert_equal 'parked', record.state
       
       record.state = 'idling'
-      record.process({})
+      record.attributes = {}
       assert_equal 'idling', record.state
     end
     
@@ -274,7 +281,7 @@ module MongoidTest
       assert_equal 'parked', record.state
       
       record.state = 'idling'
-      record.process({})
+      record.attributes = {}
       assert_equal 'idling', record.state
     end
     
@@ -605,6 +612,8 @@ module MongoidTest
     end
     
     def test_should_use_default_state_if_protected
+      Mongoid.logger = nil
+
       @model.class_eval do
         attr_protected :state
       end
@@ -1598,15 +1607,16 @@ module MongoidTest
       
       MongoidTest.const_set('Foo', @model)
       
-      @subclass = Class.new(@model) do
-        def self.name
-          'MongoidTest::SubFoo'
+      # Remove the #name override so that Mongoid picks up the subclass name
+      # properly
+      class << @model; remove_method(:name); end
+      @subclass = MongoidTest.class_eval <<-end_eval
+        class SubFoo < MongoidTest::Foo
+          self
         end
-      end
+      end_eval
       @subclass_machine = @subclass.state_machine(:state) {}
       @subclass_machine.state :parked, :idling, :first_gear
-      
-      MongoidTest.const_set('SubFoo', @subclass)
     end
     
     def test_should_only_include_records_with_subclass_states_in_with_scope

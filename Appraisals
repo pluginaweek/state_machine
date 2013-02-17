@@ -181,23 +181,56 @@ end
 # Mongoid integrations
 if RUBY_VERSION > "1.8.6"
   appraise "mongoid-2.0.0" do
+    gem "activemodel", "~> 3.1.0"
+    gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.0.0"
   end
   
   appraise "mongoid-2.1.4" do
+    gem "activemodel", "~> 3.1.0"
+    gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.1.4"
   end
   
   appraise "mongoid-2.2.4" do
+    gem "activemodel", "~> 3.1.0"
+    gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.2.4"
   end
   
   appraise "mongoid-2.3.3" do
+    gem "activemodel", "~> 3.1.0"
+    gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.3.3"
   end
   
   appraise "mongoid-2.4.10" do
+    gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.4.10"
+  end
+  
+  appraise "mongoid-2.5.2" do
+    gem "mongo", "~> 1.7.0"
+    gem "mongoid", "2.5.2"
+  end
+  
+  appraise "mongoid-2.6.0" do
+    gem "mongo", "~> 1.7.0"
+    gem "mongoid", "2.6.0"
+  end
+  
+  if RUBY_VERSION > "1.9.2"
+    appraise "mongoid-3.0.0" do
+      gem "mongoid", "3.0.0"
+    end
+    
+    appraise "mongoid-3.0.22" do
+      gem "mongoid", "3.0.22"
+    end
+    
+    appraise "mongoid-3.1.0" do
+      gem "mongoid", "3.1.0"
+    end
   end
 end
 
