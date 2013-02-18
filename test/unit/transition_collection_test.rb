@@ -1152,7 +1152,7 @@ class TransitionCollectionWithSkippedAfterCallbacksTest < Test::Unit::TestCase
   end
 end
 
-if RUBY_PLATFORM != 'java'
+if StateMachine.callcc_supported?
   class TransitionCollectionWithSkippedAfterCallbacksAndAroundCallbacksTest < Test::Unit::TestCase
     def setup
       @klass = Class.new
@@ -2136,8 +2136,8 @@ class AttributeTransitionCollectionMarshallingTest < Test::Unit::TestCase
       transitions.perform { true }
     end
   end
-  
-  if RUBY_PLATFORM != 'java'
+
+  if StateMachine.callcc_supported?
     def test_should_marshal_during_around_callbacks_before_yield
       @machine.around_transition {|object, transition, block| Marshal.dump(object); block.call}
       assert_nothing_raised do
