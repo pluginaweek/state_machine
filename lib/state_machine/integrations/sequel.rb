@@ -323,7 +323,6 @@ module StateMachine
         
         # Loads all of the Sequel plugins necessary to run
         def load_plugins
-          owner_class.plugin(:validation_class_methods)
           owner_class.plugin(:hook_class_methods)
         end
         
@@ -345,11 +344,13 @@ module StateMachine
         
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
-          name = self.name
-          owner_class.validates_each(attribute) do |record, attr, value|
-            machine = record.class.state_machine(name)
-            machine.invalidate(record, :state, :invalid) unless machine.states.match(record)
-          end
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+            def validate(*)
+              super
+              machine = self.class.state_machine(#{name.inspect})
+              machine.invalidate(self, :state, :invalid) unless machine.states.match(self)
+            end
+          end_eval
         end
         
         # Defines validation hooks if the machine's action is to save the model

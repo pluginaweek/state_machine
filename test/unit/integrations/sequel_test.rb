@@ -934,9 +934,9 @@ module SequelTest
   class MachineWithFailedActionTest < BaseTestCase
     def setup
       @model = new_model do
-        plugin(:validation_class_methods) if respond_to?(:plugin)
-        validates_each :state do |object, attribute, value|
-          object.errors[attribute] << 'is invalid' unless %w(first_gear).include?(value)
+        def validate
+          super
+          errors[:state] << 'is invalid' unless %w(first_gear).include?(state)
         end
       end
       
@@ -1104,7 +1104,10 @@ module SequelTest
       
       @machine = StateMachine::Machine.new(@model)
       @machine.state :first_gear do
-        validates_presence_of :seatbelt
+        def validate
+          super
+          errors[:seatbelt] << 'is not present' if seatbelt.nil?
+        end
       end
       @machine.other_states :parked
     end
@@ -1186,7 +1189,10 @@ module SequelTest
     def test_should_not_run_after_callbacks_with_failures_disabled_if_validation_fails
       @model.class_eval do
         attr_accessor :seatbelt
-        validates_presence_of :seatbelt
+        def validate
+          super
+          errors[:seatbelt] << 'is not present' if seatbelt.nil?
+        end
       end
       
       ran_callback = false
@@ -1199,7 +1205,10 @@ module SequelTest
     def test_should_run_failure_callbacks_if_validation_fails
       @model.class_eval do
         attr_accessor :seatbelt
-        validates_presence_of :seatbelt
+        def validate
+          super
+          errors[:seatbelt] << 'is not present' if seatbelt.nil?
+        end
       end
       
       ran_callback = false
@@ -1220,7 +1229,10 @@ module SequelTest
     def test_should_not_run_around_callbacks_after_yield_with_failures_disabled_if_validation_fails
       @model.class_eval do
         attr_accessor :seatbelt
-        validates_presence_of :seatbelt
+        def validate
+          super
+          errors[:seatbelt] << 'is not present' if seatbelt.nil?
+        end
       end
       
       ran_callback = [false]

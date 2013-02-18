@@ -86,6 +86,14 @@ module StateMachine
         def model_from_dataset(dataset)
           dataset.model_classes[nil]
         end
+        
+        def define_state_accessor
+          name = self.name
+          owner_class.validates_each(attribute) do |record, attr, value|
+            machine = record.class.state_machine(name)
+            machine.invalidate(record, :state, :invalid) unless machine.states.match(record)
+          end
+        end
       end
       
       version '2.8.x - 3.13.x' do

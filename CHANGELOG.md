@@ -1,5 +1,6 @@
 # master
 
+* Remove dependency on the validation_class_methods plugin for Sequel 2.12.0+ [Casey Howard]
 * Remove dependency on command-line git binaries from within the gemspec
 * Fix deprecation warnings on ruby-graphviz 1.0.3+
 * Update minimum required ruby-graphviz version to 0.9.17

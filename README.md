@@ -602,6 +602,8 @@ errors and callbacks.  For example,
 
 ```ruby
 class Vehicle < Sequel::Model
+  plugin :validation_class_methods
+  
   state_machine :initial => :parked do
     before_transition :parked => any - :parked, :do => :put_on_seatbelt
     after_transition any => :parked do |transition|
