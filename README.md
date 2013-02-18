@@ -822,6 +822,12 @@ state machines like so:
 class Vehicle
   attr_accessor :state
   
+  # Make sure the machine gets initialized so the initial state gets set properly
+  def initialize(*)
+    super
+    machine
+  end
+  
   # Replace this with an external source (like a db)
   def transitions
     [
@@ -835,38 +841,39 @@ class Vehicle
   # transitions defined from the source above
   def machine
     vehicle = self
-    @machine ||= Machine.new(vehicle, :initial => :parked) do
+    @machine ||= Machine.new(vehicle, :initial => :parked, :action => :save) do
       vehicle.transitions.each {|attrs| transition(attrs)}
-      
-      # Persist the state on the vehicle itself
-      after_transition do
-        vehicle.state = vehicle.machine.state
-        vehicle.save
-      end
     end
   end
   
   def save
     # Save the state change...
+    true
   end
 end
 
 # Generic class for building machines
 class Machine
   def self.new(object, *args, &block)
-    machine = Class.new do
-      def definition
-        self.class.state_machine
-      end
+    machine_class = Class.new
+    machine = machine_class.state_machine(*args, &block)
+    attribute = machine.attribute
+    action = machine.action
+    
+    # Delegate attributes
+    machine_class.class_eval do
+      define_method(:definition) { machine }
+      define_method(attribute) { object.send(attribute) }
+      define_method("#{attribute}=") {|value| object.send("#{attribute}=", value) }
+      define_method(action) { object.send(action) } if action
     end
-    machine.state_machine(*args, &block)
-    machine.new
+    
+    machine_class.new
   end
 end
 
-vehicle = Vehicle.new                   # => #<Vehicle:0xb7236b50>
-vehicle.machine                         # => #<#<Class:0xb723541c>:0xb722fa30 @state="parked">
-vehicle.machine.state                   # => "parked"
+vehicle = Vehicle.new                   # => #<Vehicle:0xb708412c @state="parked" ...>
+vehicle.state                           # => "parked"
 vehicle.machine.ignite                  # => true
 vehicle.machine.state                   # => "idling
 vehicle.state                           # => "idling"
