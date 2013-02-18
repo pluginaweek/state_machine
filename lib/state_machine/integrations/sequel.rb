@@ -323,7 +323,6 @@ module StateMachine
         
         # Loads all of the Sequel plugins necessary to run
         def load_plugins
-          owner_class.plugin(:validation_class_methods)
           owner_class.plugin(:hook_class_methods)
         end
         
