@@ -656,11 +656,11 @@ class MachineWithActionUndefinedTest < Test::Unit::TestCase
   end
   
   def test_should_define_an_event_transition_attribute_reader
-    assert @object.respond_to?(:state_event_transition)
+    assert @object.respond_to?(:state_event_transition, true)
   end
   
   def test_should_define_an_event_transition_attribute_writer
-    assert @object.respond_to?(:state_event_transition=)
+    assert @object.respond_to?(:state_event_transition=, true)
   end
   
   def test_should_not_define_action
@@ -692,11 +692,11 @@ class MachineWithActionDefinedInClassTest < Test::Unit::TestCase
   end
   
   def test_should_define_an_event_transition_attribute_reader
-    assert @object.respond_to?(:state_event_transition)
+    assert @object.respond_to?(:state_event_transition, true)
   end
   
   def test_should_define_an_event_transition_attribute_writer
-    assert @object.respond_to?(:state_event_transition=)
+    assert @object.respond_to?(:state_event_transition=, true)
   end
   
   def test_should_not_define_action
@@ -732,11 +732,11 @@ class MachineWithActionDefinedInIncludedModuleTest < Test::Unit::TestCase
   end
   
   def test_should_define_an_event_transition_attribute_reader
-    assert @object.respond_to?(:state_event_transition)
+    assert @object.respond_to?(:state_event_transition, true)
   end
   
   def test_should_define_an_event_transition_attribute_writer
-    assert @object.respond_to?(:state_event_transition=)
+    assert @object.respond_to?(:state_event_transition=, true)
   end
   
   def test_should_define_action
@@ -773,11 +773,11 @@ class MachineWithActionDefinedInSuperclassTest < Test::Unit::TestCase
   end
   
   def test_should_define_an_event_transition_attribute_reader
-    assert @object.respond_to?(:state_event_transition)
+    assert @object.respond_to?(:state_event_transition, true)
   end
   
   def test_should_define_an_event_transition_attribute_writer
-    assert @object.respond_to?(:state_event_transition=)
+    assert @object.respond_to?(:state_event_transition=, true)
   end
   
   def test_should_define_action
@@ -815,11 +815,11 @@ class MachineWithPrivateActionTest < Test::Unit::TestCase
   end
   
   def test_should_define_an_event_transition_attribute_reader
-    assert @object.respond_to?(:state_event_transition)
+    assert @object.respond_to?(:state_event_transition, true)
   end
   
   def test_should_define_an_event_transition_attribute_writer
-    assert @object.respond_to?(:state_event_transition=)
+    assert @object.respond_to?(:state_event_transition=, true)
   end
   
   def test_should_define_action
