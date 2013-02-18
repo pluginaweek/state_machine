@@ -125,6 +125,25 @@ class BranchWithMultipleFromRequirementsTest < Test::Unit::TestCase
   end
 end
 
+class BranchWithFromMatcherRequirementTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+    @branch = StateMachine::Branch.new(:from => StateMachine::BlacklistMatcher.new([:idling, :parked]))
+  end
+  
+  def test_should_match_if_included
+    assert @branch.matches?(@object, :from => :first_gear)
+  end
+  
+  def test_should_not_match_if_not_included
+    assert !@branch.matches?(@object, :from => :idling)
+  end
+  
+  def test_include_values_in_known_states
+    assert_equal [:idling, :parked], @branch.known_states
+  end
+end
+
 class BranchWithToRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
@@ -188,6 +207,25 @@ class BranchWithMultipleToRequirementsTest < Test::Unit::TestCase
   end
 end
 
+class BranchWithToMatcherRequirementTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+    @branch = StateMachine::Branch.new(:to => StateMachine::BlacklistMatcher.new([:idling, :parked]))
+  end
+  
+  def test_should_match_if_included
+    assert @branch.matches?(@object, :to => :first_gear)
+  end
+  
+  def test_should_not_match_if_not_included
+    assert !@branch.matches?(@object, :to => :idling)
+  end
+  
+  def test_include_values_in_known_states
+    assert_equal [:idling, :parked], @branch.known_states
+  end
+end
+
 class BranchWithOnRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
@@ -247,6 +285,21 @@ class BranchWithMultipleOnRequirementsTest < Test::Unit::TestCase
   end
 end
 
+class BranchWithOnMatcherRequirementTest < Test::Unit::TestCase
+  def setup
+    @object = Object.new
+    @branch = StateMachine::Branch.new(:on => StateMachine::BlacklistMatcher.new([:ignite, :park]))
+  end
+  
+  def test_should_match_if_included
+    assert @branch.matches?(@object, :on => :shift_up)
+  end
+  
+  def test_should_not_match_if_not_included
+    assert !@branch.matches?(@object, :on => :ignite)
+  end
+end
+
 class BranchWithExceptFromRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
@@ -298,6 +351,13 @@ class BranchWithMultipleExceptFromRequirementsTest < Test::Unit::TestCase
   
   def test_should_be_included_in_known_states
     assert_equal [:idling, :parked], @branch.known_states
+  end
+end
+
+class BranchWithExceptFromMatcherRequirementTest < Test::Unit::TestCase
+  def test_should_raise_an_exception
+    exception = assert_raise(ArgumentError) { StateMachine::Branch.new(:except_from => StateMachine::AllMatcher.instance) }
+    assert_equal ':except_from option cannot use matchers; use :from instead', exception.message
   end
 end
 
@@ -355,6 +415,13 @@ class BranchWithMultipleExceptToRequirementsTest < Test::Unit::TestCase
   end
 end
 
+class BranchWithExceptToMatcherRequirementTest < Test::Unit::TestCase
+  def test_should_raise_an_exception
+    exception = assert_raise(ArgumentError) { StateMachine::Branch.new(:except_to => StateMachine::AllMatcher.instance) }
+    assert_equal ':except_to option cannot use matchers; use :to instead', exception.message
+  end
+end
+
 class BranchWithExceptOnRequirementTest < Test::Unit::TestCase
   def setup
     @object = Object.new
@@ -387,6 +454,13 @@ class BranchWithExceptOnRequirementTest < Test::Unit::TestCase
   
   def test_should_not_be_included_in_known_states
     assert_equal [], @branch.known_states
+  end
+end
+
+class BranchWithExceptOnMatcherRequirementTest < Test::Unit::TestCase
+  def test_should_raise_an_exception
+    exception = assert_raise(ArgumentError) { StateMachine::Branch.new(:except_on => StateMachine::AllMatcher.instance) }
+    assert_equal ':except_on option cannot use matchers; use :on instead', exception.message
   end
 end
 

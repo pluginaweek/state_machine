@@ -173,9 +173,12 @@ module StateMachine
         assert_exclusive_keys(options, whitelist_option, blacklist_option)
         
         if options.include?(whitelist_option)
-          WhitelistMatcher.new(options[whitelist_option])
+          value = options[whitelist_option]
+          value.is_a?(Matcher) ? value : WhitelistMatcher.new(options[whitelist_option])
         elsif options.include?(blacklist_option)
-          BlacklistMatcher.new(options[blacklist_option])
+          value = options[blacklist_option]
+          raise ArgumentError, ":#{blacklist_option} option cannot use matchers; use :#{whitelist_option} instead" if value.is_a?(Matcher)
+          BlacklistMatcher.new(value)
         else
           AllMatcher.instance
         end

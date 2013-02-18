@@ -1,5 +1,6 @@
 # master
 
+* Fix all / any / same matchers not being able to be used in :from / :to options in transitions and callbacks
 * Fix ActiveModel locale paths not being loaded properly under certain JRuby environments [Brad Heller]
 * Remove dependency on the validation_class_methods plugin for Sequel 2.12.0+ [Casey Howard]
 * Remove dependency on command-line git binaries from within the gemspec
