@@ -940,6 +940,10 @@ To customize the image format / orientation:
 rake state_machine:draw FILE=vehicle.rb CLASS=Vehicle FORMAT=jpg ORIENTATION=landscape
 ```
 
+See http://rdoc.info/github/glejeune/Ruby-Graphviz/Constants for the list of
+supported image formats.  If resolution is an issue, the svg format may offer
+better results.
+
 To generate multiple state machine graphs:
 
 ```bash
