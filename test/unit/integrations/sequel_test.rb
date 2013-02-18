@@ -2,6 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
 require 'sequel'
 require 'logger'
+require 'stringio'
 
 # Establish database connection
 DB = Sequel.connect('sqlite:///', :loggers => [Logger.new("#{File.dirname(__FILE__)}/../../sequel.log")])
@@ -1105,7 +1106,7 @@ module SequelTest
       @machine = StateMachine::Machine.new(@model)
       @machine.state :first_gear do
         def validate
-          super
+          super if defined?(super)
           errors[:seatbelt] << 'is not present' if seatbelt.nil?
         end
       end
