@@ -1,8 +1,8 @@
 *.gem
-.bundle
-.yardoc
-coverage
-/doc
+.bundle/
+.yardoc/
+coverage/
+/doc/
 test/active_record.log
 test/data_mapper.log
 test/mongo_mapper.log

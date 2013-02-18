@@ -1,5 +1,6 @@
 # master
 
+* Remove dependency on command-line git binaries from within the gemspec
 * Fix deprecation warnings on ruby-graphviz 1.0.3+
 * Update minimum required ruby-graphviz version to 0.9.17
 * Fix aliased fields in Mongoid 2.4.0+ not being automatically detected
