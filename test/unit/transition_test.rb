@@ -1221,7 +1221,7 @@ class TransitionWithAfterCallbacksSkippedTest < Test::Unit::TestCase
     assert !@run
   end
   
-  if RUBY_PLATFORM != 'java'
+  if StateMachine::Transition.pause_supported?
     def test_should_run_around_callbacks_before_yield
       @machine.around_transition {|block| @run = true; block.call}
       
