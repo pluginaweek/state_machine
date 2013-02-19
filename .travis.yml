@@ -6,6 +6,8 @@ rvm:
   - 1.9.3
   - jruby-18mode
   - jruby-19mode
+  - rbx-18mode
+  - rbx-19mode
 env:
   - INTEGRATION=default
   - INTEGRATION=active_model
@@ -14,19 +16,57 @@ env:
   - INTEGRATION=mongoid
   - INTEGRATION=mongo_mapper
   - INTEGRATION=sequel
+services:
+  - mongodb
 notifications:
   disabled: true
 matrix:
   exclude:
-    - rvm: jruby
+    - rvm: jruby-18mode
       env: INTEGRATION=active_model
-    - rvm: jruby
+    - rvm: jruby-18mode
       env: INTEGRATION=active_record
-    - rvm: jruby
+    - rvm: jruby-18mode
       env: INTEGRATION=data_mapper
-    - rvm: jruby
+    - rvm: jruby-18mode
       env: INTEGRATION=mongoid
-    - rvm: jruby
+    - rvm: jruby-18mode
       env: INTEGRATION=mongo_mapper
-    - rvm: jruby
+    - rvm: jruby-18mode
+      env: INTEGRATION=sequel
+    - rvm: jruby-19mode
+      env: INTEGRATION=active_model
+    - rvm: jruby-19mode
+      env: INTEGRATION=active_record
+    - rvm: jruby-19mode
+      env: INTEGRATION=data_mapper
+    - rvm: jruby-19mode
+      env: INTEGRATION=mongoid
+    - rvm: jruby-19mode
+      env: INTEGRATION=mongo_mapper
+    - rvm: jruby-19mode
+      env: INTEGRATION=sequel
+    - rvm: rbx-18mode
+      env: INTEGRATION=active_model
+    - rvm: rbx-18mode
+      env: INTEGRATION=active_record
+    - rvm: rbx-18mode
+      env: INTEGRATION=data_mapper
+    - rvm: rbx-18mode
+      env: INTEGRATION=mongoid
+    - rvm: rbx-18mode
+      env: INTEGRATION=mongo_mapper
+    - rvm: rbx-18mode
+      env: INTEGRATION=sequel
+    - rvm: rbx-19mode
+      env: INTEGRATION=active_model
+    - rvm: rbx-19mode
+      env: INTEGRATION=active_record
+    - rvm: rbx-19mode
+      env: INTEGRATION=data_mapper
+    - rvm: rbx-19mode
+      env: INTEGRATION=mongoid
+    - rvm: rbx-19mode
+      env: INTEGRATION=mongo_mapper
+    - rvm: rbx-19mode
       env: INTEGRATION=sequel
