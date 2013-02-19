@@ -637,6 +637,55 @@ machines, see `StateMachine::Integrations::Sequel`.
 
 ## Additional Topics
 
+### Explicit vs. Implicit Event Transitions
+
+Every event defined for a state machine generates an instance method on the
+class that allows the event to be explicitly triggered.  Most of the examples in
+the state_machine documentation use this technique.  However, with some types of
+integrations, like ActiveRecord, you can also *implicitly* fire events by
+setting a special attribute on the instance.
+
+Suppose you're using the ActiveRecord integration and the following model is
+defined:
+
+```ruby
+class Vehicle < ActiveRecord::Base
+  state_machine :initial => :parked do
+    event :ignite do
+      transition :parked => :idling
+    end
+  end
+end
+```
+
+To trigger the `ignite` event, you would typically call the `Vehicle#ignite`
+method like so:
+
+```ruby
+vehicle = Vehicle.create    # => #<Vehicle id=1 state="parked" alarm_state="active">
+vehicle.ignite              # => true
+vehicle.state               # => "idling"
+```
+
+This is referred to as an *explicit* event transition.  The same behavior can
+also be achieved *implicitly* by setting the state event attribute and invoking
+the action associated with the state machine.  For example:
+
+```ruby
+vehicle = Vehicle.create        # => #<Vehicle id=1 state="parked" alarm_state="active">
+vehicle.state_event = "ignite"  # => "ignite"
+vehicle.save                    # => true
+vehicle.state                   # => "idling"
+vehicle.state_event             # => nil
+```
+
+As you can see, the `ignite` event was automatically triggered when the `save`
+action was called.  This is particularly useful if you want to allow users to
+drive the state transitions from a web API.
+
+See each integration's API documentation for more information on the implicit
+approach.
+
 ### Symbols vs. Strings
 
 In all of the examples used throughout the documentation, you'll notice that
