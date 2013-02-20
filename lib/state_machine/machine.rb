@@ -534,12 +534,16 @@ module StateMachine
     
     # Whether the machine will use transactions when firing events
     attr_reader :use_transactions
-    
+
+    # Which event helpers to disallow. Valid helpers:
+    #   :can, :transition, :nonstrict, :strict
+    attr_reader :disallowed_helpers
+
     # Creates a new state machine for the given attribute
     def initialize(owner_class, *args, &block)
       options = args.last.is_a?(Hash) ? args.pop : {}
-      assert_valid_keys(options, :attribute, :initial, :initialize, :action, :plural, :namespace, :integration, :messages, :use_transactions)
-      
+      assert_valid_keys(options, :attribute, :initial, :initialize, :action, :plural, :namespace, :integration, :messages, :use_transactions, :disallowed_helpers)
+
       # Find an integration that matches this machine's owner class
       if options.include?(:integration)
         @integration = options[:integration] && StateMachine::Integrations.find_by_name(options[:integration])
@@ -566,6 +570,7 @@ module StateMachine
       @action = options[:action]
       @use_transactions = options[:use_transactions]
       @initialize_state = options[:initialize]
+      @disallowed_helpers = options[:disallowed_helpers] || []
       @action_hook_defined = false
       self.owner_class = owner_class
       self.initial_state = options[:initial] unless sibling_machines.any?
