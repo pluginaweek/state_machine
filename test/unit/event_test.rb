@@ -1015,7 +1015,7 @@ begin
     end
     
     def test_should_generate_edges_for_each_transition
-      assert_equal 4, @graph.edge_count.size
+      assert_equal 4, @graph.edge_count
     end
     
     def test_should_use_event_name_for_edge_label
