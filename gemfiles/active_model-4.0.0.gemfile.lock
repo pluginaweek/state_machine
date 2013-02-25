@@ -36,10 +36,12 @@ GEM
       bundler
       rake
     atomic (1.0.1)
+    atomic (1.0.1-java)
     builder (3.1.4)
     erubis (2.7.0)
     i18n (0.6.1)
     json (1.7.7)
+    json (1.7.7-java)
     minitest (4.6.1)
     multi_json (1.6.1)
     protected_attributes (1.0.0)
@@ -62,6 +64,7 @@ GEM
     tzinfo (0.3.35)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES

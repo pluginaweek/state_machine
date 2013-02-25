@@ -477,7 +477,7 @@ module DataMapperTest
     
     def test_should_raise_exception_for_predicate_without_parameters
       exception = assert_raise(ArgumentError) { @record.state? }
-      assert_equal 'wrong number of arguments (1 for 2)', exception.message
+      assert_match /wrong number of arguments .*\(1 for 2\)/, exception.message
     end
     
     def test_should_return_false_for_predicate_if_does_not_match_current_value

@@ -28,8 +28,15 @@ GEM
       dm-core (~> 1.2.0)
     dm-validations (1.2.0)
       dm-core (~> 1.2.0)
+    do_jdbc (0.10.12-java)
+      data_objects (= 0.10.12)
     do_sqlite3 (0.10.12)
       data_objects (= 0.10.12)
+    do_sqlite3 (0.10.12-java)
+      data_objects (= 0.10.12)
+      do_jdbc (= 0.10.12)
+      jdbc-sqlite3 (>= 3.5.8)
+    jdbc-sqlite3 (3.7.2.1)
     multi_json (1.6.1)
     rake (10.0.3)
     simplecov (0.7.1)
@@ -38,6 +45,7 @@ GEM
     simplecov-html (0.7.1)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES

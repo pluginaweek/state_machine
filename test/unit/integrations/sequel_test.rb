@@ -5,7 +5,7 @@ require 'logger'
 require 'stringio'
 
 # Establish database connection
-DB = Sequel.connect('sqlite:///', :loggers => [Logger.new("#{File.dirname(__FILE__)}/../../sequel.log")])
+DB = Sequel.connect("#{RUBY_PLATFORM == 'java' ? 'jdbc:sqlite' : 'sqlite'}:///", :loggers => [Logger.new("#{File.dirname(__FILE__)}/../../sequel.log")])
 
 module SequelTest
   class BaseTestCase < Test::Unit::TestCase
@@ -441,7 +441,7 @@ module SequelTest
     
     def test_should_raise_exception_for_predicate_without_parameters
       exception = assert_raise(ArgumentError) { @record.state? }
-      assert_equal 'wrong number of arguments (1 for 2)', exception.message
+      assert_match /wrong number of arguments .*\(1 for 2\)/, exception.message
     end
     
     def test_should_return_false_for_predicate_if_does_not_match_current_value

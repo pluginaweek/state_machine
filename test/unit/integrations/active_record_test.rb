@@ -25,7 +25,7 @@ if ::ActiveRecord::VERSION::MAJOR >= 4
 end
 
 # Establish database connection
-ActiveRecord::Base.establish_connection({'adapter' => 'sqlite3', 'database' => ':memory:'})
+ActiveRecord::Base.establish_connection('adapter' => RUBY_PLATFORM == 'java' ? 'jdbcsqlite3' : 'sqlite3', 'database' => ':memory:')
 ActiveRecord::Base.logger = Logger.new("#{File.dirname(__FILE__)}/../../active_record.log")
 
 module ActiveRecordTest
