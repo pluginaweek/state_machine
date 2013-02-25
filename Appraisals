@@ -79,13 +79,13 @@ end
 
 if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1"
   appraise "active_record-3.1.1" do
-    gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
+    gem "sqlite3", "1.3.6", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "3.1.1"
     gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
   end
   
   appraise "active_record-3.2.12" do
-    gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
+    gem "sqlite3", "1.3.6", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "3.2.12"
     gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
   end
@@ -94,7 +94,7 @@ end
 if RUBY_VERSION > "1.9.2"
   appraise "active_record-4.0.0" do
     gem "sqlite3", "1.3.6"
-    gem "activerecord", "4.0.0.beta", :git => "git://github.com/rails/rails.git"
+    gem "activerecord", "4.0.0.beta", :git => "git://github.com/rails/rails.git", :ref => "4e286bf"
     gem "activerecord-deprecated_finders", "0.0.3"
     gem "protected_attributes", "1.0.0"
     gem "rails-observers", "0.1.1"
@@ -122,7 +122,7 @@ end
 
 if RUBY_VERSION > "1.9.2"
   appraise "active_model-4.0.0" do
-    gem "activemodel", "4.0.0.beta", :git => 'git://github.com/rails/rails.git'
+    gem "activemodel", "4.0.0.beta", :git => "git://github.com/rails/rails.git", :ref => "4e286bf"
     gem "rails-observers", "0.1.1"
     gem "protected_attributes", "1.0.0"
   end
