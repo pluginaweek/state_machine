@@ -1,5 +1,6 @@
 *.gem
 .bundle/
+.rbx/
 .yardoc/
 coverage/
 /doc/
