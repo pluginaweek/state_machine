@@ -241,6 +241,20 @@ module ActiveRecordTest
       assert_equal 'idling', record.state
     end
     
+    def test_should_persist_initial_state
+      record = @model.new
+      record.save
+      record.reload
+      assert_equal 'parked', record.state
+    end
+    
+    def test_should_persist_initial_state_on_dup
+      record = @model.create.dup
+      record.save
+      record.reload
+      assert_equal 'parked', record.state
+    end
+    
     def test_should_use_stored_values_when_loading_from_database
       @machine.state :idling
       
@@ -324,6 +338,20 @@ module ActiveRecordTest
       record.state = 'idling'
       record.attributes = {}
       assert_equal 'idling', record.state
+    end
+    
+    def test_should_persist_initial_state
+      record = @model.new
+      record.save
+      record.reload
+      assert_equal 'parked', record.state
+    end
+    
+    def test_should_persist_initial_state_on_dup
+      record = @model.create.dup
+      record.save
+      record.reload
+      assert_equal 'parked', record.state
     end
     
     def test_should_use_stored_values_when_loading_from_database
