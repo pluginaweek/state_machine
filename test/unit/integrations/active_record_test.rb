@@ -248,11 +248,13 @@ module ActiveRecordTest
       assert_equal 'parked', record.state
     end
     
-    def test_should_persist_initial_state_on_dup
-      record = @model.create.dup
-      record.save
-      record.reload
-      assert_equal 'parked', record.state
+    unless ::ActiveRecord::VERSION::MAJOR == 3 && ::ActiveRecord::VERSION::MINOR == 0
+      def test_should_persist_initial_state_on_dup
+        record = @model.create.dup
+        record.save
+        record.reload
+        assert_equal 'parked', record.state
+      end
     end
     
     def test_should_use_stored_values_when_loading_from_database
@@ -347,11 +349,13 @@ module ActiveRecordTest
       assert_equal 'parked', record.state
     end
     
-    def test_should_persist_initial_state_on_dup
-      record = @model.create.dup
-      record.save
-      record.reload
-      assert_equal 'parked', record.state
+    unless ::ActiveRecord::VERSION::MAJOR == 3 && ::ActiveRecord::VERSION::MINOR == 0
+      def test_should_persist_initial_state_on_dup
+        record = @model.create.dup
+        record.save
+        record.reload
+        assert_equal 'parked', record.state
+      end
     end
     
     def test_should_use_stored_values_when_loading_from_database
