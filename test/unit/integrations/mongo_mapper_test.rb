@@ -192,14 +192,14 @@ module MongoMapperTest
     def test_should_persist_initial_state
       record = @model.new
       record.save
-      record.reload
+      record = @model.find(record.id)
       assert_equal 'parked', record.state
     end
     
     def test_should_persist_initial_state_on_dup
       record = @model.create.dup
       record.save
-      record.reload
+      record = @model.find(record.id)
       assert_equal 'parked', record.state
     end
     
@@ -272,14 +272,14 @@ module MongoMapperTest
     def test_should_persist_initial_state
       record = @model.new
       record.save
-      record.reload
+      record = @model.find(record.id)
       assert_equal 'parked', record.state
     end
     
     def test_should_persist_initial_state_on_dup
       record = @model.create.dup
       record.save
-      record.reload
+      record = @model.find(record.id)
       assert_equal 'parked', record.state
     end
     
