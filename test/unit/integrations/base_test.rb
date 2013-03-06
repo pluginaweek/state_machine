@@ -98,6 +98,7 @@ module BaseTest
     
     def teardown
       StateMachine::Integrations.send(:remove_const, 'Custom')
+      super
     end
   end
 end

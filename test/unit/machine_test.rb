@@ -3216,7 +3216,7 @@ begin
   class MachineDrawingTest < Test::Unit::TestCase
     def setup
       @klass = Class.new do
-        def self.name; 'Vehicle'; end
+        def self.name; @name ||= "Vehicle_#{rand(1000000)}"; end
       end
       @machine = StateMachine::Machine.new(@klass, :initial => :parked)
       @machine.event :ignite do
@@ -3230,22 +3230,26 @@ begin
     
     def test_should_save_file_with_class_name_by_default
       @machine.draw
-      assert File.exists?('./Vehicle_state.png')
+      assert File.exists?("./#{@klass.name}_state.png")
     end
     
     def test_should_allow_base_name_to_be_customized
-      @machine.draw(:name => 'machine')
-      assert File.exists?('./machine.png')
+      name = "machine_#{rand(1000000)}"
+      @machine.draw(:name => name)
+      @path = "./#{name}.png"
+      assert File.exists?(@path)
     end
     
     def test_should_allow_format_to_be_customized
       @machine.draw(:format => 'jpg')
-      assert File.exists?('./Vehicle_state.jpg')
+      @path = "./#{@klass.name}_state.jpg"
+      assert File.exists?(@path)
     end
     
     def test_should_allow_path_to_be_customized
       @machine.draw(:path => "#{File.dirname(__FILE__)}/")
-      assert File.exists?("#{File.dirname(__FILE__)}/Vehicle_state.png")
+      @path = "#{File.dirname(__FILE__)}/#{@klass.name}_state.png"
+      assert File.exists?(@path)
     end
     
     def test_should_allow_orientation_to_be_landscape
@@ -3274,14 +3278,14 @@ begin
     end
     
     def teardown
-      FileUtils.rm Dir["{.,#{File.dirname(__FILE__)}}/*.{png,jpg}"]
+      FileUtils.rm Dir[@path || "./#{@klass.name}_state.png"]
     end
   end
   
   class MachineDrawingWithIntegerStatesTest < Test::Unit::TestCase
     def setup
       @klass = Class.new do
-        def self.name; 'Vehicle'; end
+        def self.name; @name ||= "Vehicle_#{rand(1000000)}"; end
       end
       @machine = StateMachine::Machine.new(@klass, :state_id, :initial => :parked)
       @machine.event :ignite do
@@ -3301,16 +3305,18 @@ begin
     end
     
     def test_should_draw_machine
-      assert File.exist?('./Vehicle_state_id.png')
-    ensure
-      FileUtils.rm('./Vehicle_state_id.png')
+      assert File.exist?("./#{@klass.name}_state_id.png")
+    end
+    
+    def teardown
+      FileUtils.rm Dir["./#{@klass.name}_state_id.png"]
     end
   end
   
   class MachineDrawingWithNilStatesTest < Test::Unit::TestCase
     def setup
       @klass = Class.new do
-        def self.name; 'Vehicle'; end
+        def self.name; @name ||= "Vehicle_#{rand(1000000)}"; end
       end
       @machine = StateMachine::Machine.new(@klass, :initial => :parked)
       @machine.event :ignite do
@@ -3329,16 +3335,18 @@ begin
     end
     
     def test_should_draw_machine
-      assert File.exist?('./Vehicle_state.png')
-    ensure
-      FileUtils.rm('./Vehicle_state.png')
+      assert File.exist?("./#{@klass.name}_state.png")
+    end
+    
+    def teardown
+      FileUtils.rm Dir["./#{@klass.name}_state.png"]
     end
   end
   
   class MachineDrawingWithDynamicStatesTest < Test::Unit::TestCase
     def setup
       @klass = Class.new do
-        def self.name; 'Vehicle'; end
+        def self.name; @name ||= "Vehicle_#{rand(1000000)}"; end
       end
       @machine = StateMachine::Machine.new(@klass, :initial => :parked)
       @machine.event :activate do
@@ -3357,16 +3365,18 @@ begin
     end
     
     def test_should_draw_machine
-      assert File.exist?('./Vehicle_state.png')
-    ensure
-      FileUtils.rm('./Vehicle_state.png')
+      assert File.exist?("./#{@klass.name}_state.png")
+    end
+    
+    def teardown
+      FileUtils.rm Dir["./#{@klass.name}_state.png"]
     end
   end
   
   class MachineClassDrawingTest < Test::Unit::TestCase
     def setup
       @klass = Class.new do
-        def self.name; 'Vehicle'; end
+        def self.name; @name ||= "Vehicle_#{rand(1000000)}"; end
       end
       @machine = StateMachine::Machine.new(@klass)
       @machine.event :ignite do
@@ -3382,15 +3392,15 @@ begin
     def test_should_load_files
       StateMachine::Machine.draw('Switch', :file => File.expand_path("#{File.dirname(__FILE__)}/../files/switch.rb"))
       assert defined?(::Switch)
-    ensure
-      FileUtils.rm('./Switch_state.png')
     end
     
     def test_should_allow_path_and_format_to_be_customized
       StateMachine::Machine.draw('Switch', :file => File.expand_path("#{File.dirname(__FILE__)}/../files/switch.rb"), :path => "#{File.dirname(__FILE__)}/", :format => 'jpg')
-      assert File.exist?("#{File.dirname(__FILE__)}/Switch_state.jpg")
-    ensure
-      FileUtils.rm("#{File.dirname(__FILE__)}/Switch_state.jpg")
+      assert File.exist?("#{File.dirname(__FILE__)}/#{Switch.name}_state.jpg")
+    end
+    
+    def teardown
+      FileUtils.rm Dir["{.,#{File.dirname(__FILE__)}}/#{Switch.name}_state.{jpg,png}"]
     end
   end
 rescue LoadError

@@ -18,14 +18,16 @@ module DataMapperTest
     end
     
     def teardown
+      super
       @resources.uniq.each {|resource| DataMapperTest.send(:remove_const, resource)} if instance_variable_defined?('@resources')
     end
     
     protected
       # Creates a new DataMapper resource (and the associated table)
       def new_resource(create_table = :foo, &block)
-        table_name = create_table || :foo
-        name = table_name.to_s.capitalize
+        base_table_name = create_table || :foo
+        name = base_table_name.to_s.capitalize
+        table_name = "#{base_table_name}_#{rand(1000000)}"
         
         resource = Class.new
         DataMapperTest.send(:remove_const, name) if DataMapperTest.const_defined?(name)
@@ -383,6 +385,7 @@ module DataMapperTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -407,6 +410,7 @@ module DataMapperTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -432,6 +436,7 @@ module DataMapperTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   

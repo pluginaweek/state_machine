@@ -77,7 +77,8 @@ begin
   
   class GraphOutputTest < Test::Unit::TestCase
     def setup
-      @graph = StateMachine::Graph.new('test')
+      @graph_name = "test_#{rand(1000000)}"
+      @graph = StateMachine::Graph.new(@graph_name)
       @graph.add_nodes('parked', :shape => 'ellipse')
       @graph.add_nodes('idling', :shape => 'ellipse')
       @graph.add_edges('parked', 'idling', :label => 'ignite')
@@ -85,9 +86,11 @@ begin
     end
     
     def test_should_save_file
-      assert File.exist?('./test.png')
-    ensure
-      FileUtils.rm('./test.png')
+      assert File.exist?("./#{@graph_name}.png")
+    end
+    
+    def teardown
+      FileUtils.rm Dir["./#{@graph_name}.png"]
     end
   end
 rescue LoadError

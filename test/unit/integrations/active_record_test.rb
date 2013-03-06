@@ -36,14 +36,15 @@ module ActiveRecordTest
     protected
       # Creates a new ActiveRecord model (and the associated table)
       def new_model(create_table = :foo, &block)
-        table_name = create_table || :foo
+        name = create_table || :foo
+        table_name = "#{name}_#{rand(1000000)}"
         
         model = Class.new(ActiveRecord::Base) do
-          connection.create_table(table_name, :force => true) {|t| t.string(:state)} if create_table
           self.table_name = table_name.to_s
+          connection.create_table(table_name, :force => true) {|t| t.string(:state)} if create_table
           
           (class << self; self; end).class_eval do
-            define_method(:name) { "ActiveRecordTest::#{table_name.to_s.capitalize}" }
+            define_method(:name) { "ActiveRecordTest::#{name.to_s.capitalize}" }
           end
         end
         model.class_eval(&block) if block_given?
@@ -124,7 +125,7 @@ module ActiveRecordTest
       @model = new_model(false)
       
       # Drop the table so that it definitely doesn't exist
-      @model.connection.drop_table(:foo) if @model.table_exists?
+      @model.connection.drop_table(@model.table_name) if @model.table_exists?
     end
     
     def test_should_allow_machine_creation
@@ -390,7 +391,7 @@ module ActiveRecordTest
       @original_stderr, $stderr = $stderr, StringIO.new
       
       @model = new_model do
-        connection.add_column :foo, :status, :string, :default => 'parked'
+        connection.add_column table_name, :status, :string, :default => 'parked'
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @record = @model.new
@@ -406,6 +407,7 @@ module ActiveRecordTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -414,7 +416,7 @@ module ActiveRecordTest
       @original_stderr, $stderr = $stderr, StringIO.new
       
       @model = new_model do
-        connection.add_column :foo, :status, :string, :default => 'idling'
+        connection.add_column table_name, :status, :string, :default => 'idling'
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @record = @model.new
@@ -430,6 +432,7 @@ module ActiveRecordTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -438,7 +441,7 @@ module ActiveRecordTest
       @original_stderr, $stderr = $stderr, StringIO.new
       
       @model = new_model do
-        connection.add_column :foo, :status, :integer, :default => 0
+        connection.add_column table_name, :status, :integer, :default => 0
       end
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @machine.state :parked, :value => 1
@@ -455,6 +458,7 @@ module ActiveRecordTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -499,6 +503,7 @@ module ActiveRecordTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -648,6 +653,7 @@ module ActiveRecordTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -697,7 +703,7 @@ module ActiveRecordTest
   class MachineMultipleTest < BaseTestCase
     def setup
       @model = new_model do
-        connection.add_column :foo, :status, :string
+        connection.add_column table_name, :status, :string
       end
       @state_machine = StateMachine::Machine.new(@model, :initial => :parked)
       @status_machine = StateMachine::Machine.new(@model, :status, :initial => :idling)
@@ -713,7 +719,7 @@ module ActiveRecordTest
   class MachineWithLoopbackTest < BaseTestCase
     def setup
       @model = new_model do
-        connection.add_column :foo, :updated_at, :datetime
+        connection.add_column table_name, :updated_at, :datetime
       end
       
       @machine = StateMachine::Machine.new(@model, :initial => :parked)
@@ -796,7 +802,7 @@ module ActiveRecordTest
     class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
       def setup
         @model = new_model do
-          connection.add_column :foo, :status, :string
+          connection.add_column table_name, :status, :string
         end
         @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
         @machine.event :ignite
@@ -827,7 +833,7 @@ module ActiveRecordTest
     class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
       def setup
         @model = new_model do
-          connection.add_column :foo, :status, :string
+          connection.add_column table_name, :status, :string
         end
         @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
         @machine.event :park
@@ -2071,7 +2077,7 @@ module ActiveRecordTest
         ActiveRecordTest.const_set('Company', @company)
         
         @vehicle = new_model(:vehicle) do
-          connection.add_column :vehicle, :company_id, :integer
+          connection.add_column table_name, :company_id, :integer
           belongs_to :company, :class_name => 'ActiveRecordTest::Company'
         end
         ActiveRecordTest.const_set('Vehicle', @vehicle)
@@ -2085,11 +2091,11 @@ module ActiveRecordTest
       end
       
       def test_should_find_records_in_with_scope
-        assert_equal [@mustang], @vehicle.with_states(:parked).find(:all, :include => :company, :conditions => 'company.state = "active"')
+        assert_equal [@mustang], @vehicle.with_states(:parked).find(:all, :joins => :company, :conditions => "#{@company.table_name}.state = \"active\"")
       end
       
       def test_should_find_records_in_without_scope
-        assert_equal [@mustang], @vehicle.without_states(:idling).find(:all, :include => :company, :conditions => 'company.state = "active"')
+        assert_equal [@mustang], @vehicle.without_states(:idling).find(:all, :joins => :company, :conditions => "#{@company.table_name}.state = \"active\"")
       end
       
       def teardown
@@ -2097,6 +2103,8 @@ module ActiveRecordTest
           remove_const('Vehicle')
           remove_const('Company')
         end
+        ActiveSupport::Dependencies.clear if defined?(ActiveSupport::Dependencies)
+        super
       end
     end
   else

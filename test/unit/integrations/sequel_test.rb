@@ -15,7 +15,8 @@ module SequelTest
     protected
       # Creates a new Sequel model (and the associated table)
       def new_model(create_table = :foo, &block)
-        table_name = create_table || :foo
+        name = create_table || :foo
+        table_name = "#{name}_#{rand(1000000)}"
         table_identifier = ::Sequel::SQL::Identifier.new(table_name)
         
         if !defined?(Sequel::VERSION) || Gem::Version.new(::Sequel::VERSION) <= Gem::Version.new('3.26.0')
@@ -32,7 +33,8 @@ module SequelTest
         model = Class.new(Sequel::Model) do
           self.raise_on_save_failure = false
           (class << self; self; end).class_eval do
-            define_method(:name) { "SequelTest::#{table_name.to_s.capitalize}" }
+            define_method(:name) { "SequelTest::#{name.to_s.capitalize}" }
+            define_method(:table_identifier) { table_identifier }
           end
           
           set_dataset(DB[table_identifier])
@@ -344,12 +346,15 @@ module SequelTest
     def setup
       @original_stderr, $stderr = $stderr, StringIO.new
       
-      DB.create_table!(::Sequel::SQL::Identifier.new(:foo)) do
+      @model = new_model(false)
+      DB.create_table!(@model.table_identifier) do
         primary_key :id
         column :status, :string, :default => 'parked'
       end
-      @model = new_model(false)
-      @model.class_eval { get_db_schema(true) }
+      @model.class_eval do
+        set_dataset(DB[table_identifier])
+        get_db_schema(true)
+      end
       
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @record = @model.new
@@ -372,12 +377,15 @@ module SequelTest
     def setup
       @original_stderr, $stderr = $stderr, StringIO.new
       
-      DB.create_table!(::Sequel::SQL::Identifier.new(:foo)) do
+      @model = new_model(false)
+      DB.create_table!(@model.table_identifier) do
         primary_key :id
         column :status, :string, :default => 'idling'
       end
-      @model = new_model(false)
-      @model.class_eval { get_db_schema(true) }
+      @model.class_eval do
+        set_dataset(DB[table_identifier])
+        get_db_schema(true)
+      end
       
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @record = @model.new
@@ -400,12 +408,15 @@ module SequelTest
     def setup
       @original_stderr, $stderr = $stderr, StringIO.new
       
-      DB.create_table!(::Sequel::SQL::Identifier.new(:foo)) do
+      @model = new_model(false)
+      DB.create_table!(@model.table_identifier) do
         primary_key :id
         column :status, :integer, :default => 0
       end
-      @model = new_model(false)
-      @model.class_eval { get_db_schema(true) }
+      @model.class_eval do
+        set_dataset(DB[table_identifier])
+        get_db_schema(true)
+      end
       
       @machine = StateMachine::Machine.new(@model, :status, :initial => :parked)
       @machine.state :parked, :value => 1
@@ -582,7 +593,7 @@ module SequelTest
   class MachineMultipleTest < BaseTestCase
     def setup
       @model = new_model
-      DB.alter_table :foo do
+      DB.alter_table(@model.table_identifier) do
         add_column :status, :string
       end
       @model.class_eval { get_db_schema(true) }
@@ -634,7 +645,7 @@ module SequelTest
         end
       end
       
-      DB.alter_table :foo do
+      DB.alter_table(@model.table_identifier) do
         add_column :updated_at, :datetime
       end
       @model.class_eval { get_db_schema(true) }
@@ -697,7 +708,7 @@ module SequelTest
   class MachineWithDirtyAttributesAndCustomAttributeTest < BaseTestCase
     def setup
       @model = new_model
-      DB.alter_table :foo do
+      DB.alter_table(@model.table_identifier) do
         add_column :status, :string
       end
       @model.class_eval { get_db_schema(true) }
@@ -720,7 +731,7 @@ module SequelTest
   class MachineWithDirtyAttributeAndCustomAttributesDuringLoopbackTest < BaseTestCase
     def setup
       @model = new_model
-      DB.alter_table :foo do
+      DB.alter_table(@model.table_identifier) do
         add_column :status, :string
       end
       @model.class_eval { get_db_schema(true) }
@@ -1455,7 +1466,7 @@ module SequelTest
         
         assert_equal 0, @model.count
       end
-      
+       
       def test_should_run_around_transition_within_transaction
         @machine.around_transition {|block| block.call; self.class.create; raise Sequel::Error::Rollback }
         
@@ -1651,7 +1662,7 @@ module SequelTest
       @vehicle = new_model(:vehicle) do
         many_to_one :company, :class => SequelTest::Company
       end
-      DB.alter_table :vehicle do
+      DB.alter_table(@vehicle.table_identifier) do
         add_column :company_id, :integer
       end
       @vehicle.class_eval { get_db_schema(true) }
@@ -1666,11 +1677,11 @@ module SequelTest
     end
     
     def test_should_find_records_in_with_scope
-      assert_equal [@mustang], @vehicle.with_states(:parked).join(:company, :id => :company_id).filter(:company__state => 'active').select(:vehicle.*).all
+      assert_equal [@mustang], @vehicle.with_states(:parked).join(@company.table_identifier.value, :id => :company_id).filter(:"#{@company.table_identifier.value}__state" => 'active').select(@vehicle.table_identifier.value.to_sym.*).all
     end
     
     def test_should_find_records_in_without_scope
-      assert_equal [@mustang], @vehicle.without_states(:idling).join(:company, :id => :company_id).filter(:company__state => 'active').select(:vehicle.*).all
+      assert_equal [@mustang], @vehicle.without_states(:idling).join(@company.table_identifier.value, :id => :company_id).filter(:"#{@company.table_identifier.value}__state" => 'active').select(@vehicle.table_identifier.value.to_sym.*).all
     end
     
     def teardown

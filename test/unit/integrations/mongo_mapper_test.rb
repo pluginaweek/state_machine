@@ -11,14 +11,23 @@ module MongoMapperTest
     def default_test
     end
     
+    def teardown
+      if @table_names
+        MongoMapper.database.collections.each {|c| c.drop if @table_names.include?(c.name)}
+      end
+    end
+    
     protected
       # Creates a new MongoMapper model (and the associated table)
-      def new_model(table_name = :foo, &block)
+      def new_model(name = :foo, &block)
+        table_name = "#{name}_#{rand(1000000)}"
+        @table_names ||= []
+        @table_names << table_name
         
         model = Class.new do
           (class << self; self; end).class_eval do
-            define_method(:name) { "MongoMapperTest::#{table_name.to_s.capitalize}" }
-            define_method(:to_s) { name }
+            define_method(:name) { "MongoMapperTest::#{name.to_s.capitalize}" }
+            define_method(:to_s) { self.name }
           end
         end
         
@@ -29,7 +38,6 @@ module MongoMapperTest
           key :state, String
         end
         model.class_eval(&block) if block_given?
-        model.collection.remove
         model
       end
   end

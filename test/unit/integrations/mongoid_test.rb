@@ -5,7 +5,7 @@ require 'mongoid/version'
 
 # Establish database connection
 Mongoid.configure do |config|
-  if ::Mongoid::VERSION =~ /^2\./
+  if Mongoid::VERSION =~ /^2\./
     config.master = Mongo::Connection.new('127.0.0.1', 27017, :slave_ok => true).db('test')
   else
     config.connect_to('test')
@@ -17,13 +17,24 @@ module MongoidTest
     def default_test
     end
     
+    def teardown
+      if @table_names
+        db = Mongoid::VERSION =~ /^2\./ ? Mongoid.master : Mongoid::Sessions.default
+        db.collections.each {|c| c.drop if @table_names.include?(c.name)}
+      end
+    end
+    
     protected
       # Creates a new Mongoid model (and the associated table)
-      def new_model(table_name = :foo, &block)
+      def new_model(name = :foo, &block)
+        table_name = "#{name}_#{rand(1000000)}"
+        @table_names ||= []
+        @table_names << table_name
+        
         model = Class.new do
           (class << self; self; end).class_eval do
-            define_method(:name) { "MongoidTest::#{table_name.to_s.capitalize}" }
-            define_method(:to_s) { name }
+            define_method(:name) { "MongoidTest::#{name.to_s.capitalize}" }
+            define_method(:to_s) { self.name }
           end
         end
         
@@ -38,7 +49,6 @@ module MongoidTest
           field :state, :type => String
         end
         model.class_eval(&block) if block_given?
-        model.delete_all
         model
       end
       
@@ -383,6 +393,7 @@ module MongoidTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -407,6 +418,7 @@ module MongoidTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -432,6 +444,7 @@ module MongoidTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -476,6 +489,7 @@ module MongoidTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -646,6 +660,7 @@ module MongoidTest
     
     def teardown
       $stderr = @original_stderr
+      super
     end
   end
   
@@ -1896,6 +1911,7 @@ module MongoidTest
     def teardown
       MongoidTest.send(:remove_const, 'SubFoo')
       MongoidTest.send(:remove_const, 'Foo')
+      super
     end
   end
   
