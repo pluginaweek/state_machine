@@ -504,8 +504,7 @@ module DataMapperTest
     end
     
     def test_should_raise_exception_for_predicate_without_parameters
-      exception = assert_raise(ArgumentError) { @record.state? }
-      assert_match /wrong number of arguments .*\(1 for 2\)/, exception.message
+      assert_raise(ArgumentError) { @record.state? }
     end
     
     def test_should_return_false_for_predicate_if_does_not_match_current_value
@@ -1253,7 +1252,11 @@ module DataMapperTest
           ran_callback = false
           @machine.around_transition {|block| ran_callback = true; block.call }
           
-          @record.valid?
+          begin
+            @record.valid?
+          rescue ArgumentError
+            raise if StateMachine::Transition.pause_supported?
+          end
           assert ran_callback
         end
         
@@ -1308,7 +1311,11 @@ module DataMapperTest
           ran_callback = [false]
           @machine.around_transition {|block| block.call; ran_callback[0] = true }
           
-          @record.valid?
+          begin
+            @record.valid?
+          rescue ArgumentError
+            raise if StateMachine::Transition.pause_supported?
+          end
           assert !ran_callback[0]
         end
         
@@ -1325,7 +1332,11 @@ module DataMapperTest
           ran_callback = [false]
           @machine.around_transition {|block| block.call; ran_callback[0] = true }
           
-          @record.valid?
+          begin
+            @record.valid?
+          rescue ArgumentError
+            raise if StateMachine::Transition.pause_supported?
+          end
           assert !ran_callback[0]
         end
         

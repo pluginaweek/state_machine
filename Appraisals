@@ -63,13 +63,15 @@ if RUBY_VERSION < "2.0.0"
   end
 end
 
-if RUBY_VERSION > "1.8.6"
+if RUBY_VERSION > "1.8.6" && RUBY_PLATFORM != "java"
   appraise "active_record-3.0.0" do
     gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "3.0.0"
     gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
   end
+end
 
+if RUBY_VERSION > "1.8.6"
   appraise "active_record-3.0.5" do
     gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "3.0.5"
@@ -77,7 +79,7 @@ if RUBY_VERSION > "1.8.6"
   end
 end
 
-if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1"
+if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1" && RUBY_VERSION < "2.0.0"
   appraise "active_record-3.1.1" do
     gem "sqlite3", "1.3.6", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "3.1.1"
@@ -87,6 +89,14 @@ if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1"
   appraise "active_record-3.2.12" do
     gem "sqlite3", "1.3.6", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "3.2.12"
+    gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
+  end
+end
+
+if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1"
+  appraise "active_record-3.2.13.rc1" do
+    gem "sqlite3", "1.3.6", :platform => [:ruby, :mswin, :mingw]
+    gem "activerecord", "3.2.13.rc1"
     gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
   end
 end
@@ -102,7 +112,7 @@ if RUBY_VERSION > "1.9.2"
 end
 
 # ActiveModel integrations
-if RUBY_VERSION > "1.8.6"
+if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0"
   appraise "active_model-3.0.0" do
     gem "activemodel", "3.0.0"
   end
@@ -117,6 +127,12 @@ if RUBY_VERSION > "1.8.6"
   
   appraise "active_model-3.2.12" do
     gem "activemodel", "3.2.12"
+  end
+end
+
+if RUBY_VERSION > "1.8.6"
+  appraise "active_model-3.2.13.rc1" do
+    gem "activemodel", "3.2.13.rc1"
   end
 end
 
@@ -156,7 +172,9 @@ if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0"
     gem "activesupport", "2.3.11"
     gem "mongo_mapper", "0.7.0"
   end
+end
 
+if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0" && (!defined?(RUBY_ENGINE) || RUBY_ENGINE != 'rbx')
   appraise "mongo_mapper-0.7.5" do
     gem "activesupport", "2.3.11"
     gem "mongo_mapper", "0.7.5"
@@ -175,7 +193,9 @@ if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0"
     gem "plucky", "0.3.3"
     gem "mongo_mapper", "0.8.3"
   end
+end
 
+if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0"
   appraise "mongo_mapper-0.8.4" do
     gem "activesupport", "2.3.11"
     gem "mongo_mapper", "0.8.4"
@@ -187,31 +207,34 @@ if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0"
   end
 end
 
+# MongoMapper 0.9.0+ breaks on Ruby 1.9.1
 if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1" && RUBY_VERSION < "2.0.0"
   appraise "mongo_mapper-0.9.0" do
     gem "mongo_mapper", "0.9.0"
   end
 end
 
-# MongoMapper 0.9.0+ breaks on Ruby 1.9.1
 if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1"
   appraise "mongo_mapper-0.10.0" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongo_mapper", "0.10.0"
   end
   
   appraise "mongo_mapper-0.11.2" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
     gem "mongo_mapper", "0.11.2"
   end
   
   appraise "mongo_mapper-0.12.0" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
     gem "mongo_mapper", "0.12.0"
   end
 end
   
 # Mongoid integrations
-if RUBY_VERSION > "1.8.6"
+if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0"
   appraise "mongoid-2.0.0" do
     gem "activemodel", "~> 3.1.0"
     gem "mongo", "~> 1.7.0"
@@ -235,23 +258,29 @@ if RUBY_VERSION > "1.8.6"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.3.3"
   end
-  
+end
+
+if RUBY_VERSION > "1.8.6"
   appraise "mongoid-2.4.0" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.4.0"
   end
   
   appraise "mongoid-2.4.10" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.4.10"
   end
   
   appraise "mongoid-2.5.2" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.5.2"
   end
   
   appraise "mongoid-2.6.0" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.6.0"
   end
@@ -259,14 +288,17 @@ end
 
 if RUBY_VERSION > "1.9.2"
   appraise "mongoid-3.0.0" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongoid", "3.0.0"
   end
   
   appraise "mongoid-3.0.22" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongoid", "3.0.22"
   end
   
   appraise "mongoid-3.1.0" do
+    gem "activemodel", "3.2.13.rc1"
     gem "mongoid", "3.1.0"
   end
 end
@@ -374,9 +406,7 @@ if RUBY_VERSION < "1.9.1" && RUBY_PLATFORM != 'java' && (!defined?(RUBY_ENGINE) 
     gem "data_objects", "0.9.11"
     gem "do_sqlite3", "0.9.11"
   end
-end
 
-if RUBY_VERSION < "1.9.1" && RUBY_PLATFORM != 'java'
   appraise "data_mapper-0.10.2" do
     gem "dm-core", "0.10.2"
     gem "dm-migrations", "0.10.2"

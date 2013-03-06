@@ -87,7 +87,7 @@ module StateMachine
     # Determines whether the curreny ruby implementation supports pausing and
     # resuming transitions
     def self.pause_supported?
-      RUBY_PLATFORM != 'java' && (!defined?(RUBY_ENGINE) || RUBY_ENGINE != 'rbx')
+      !defined?(RUBY_ENGINE) || %w(ruby maglev).include?(RUBY_ENGINE)
     end
     
     # Creates a new, specific transition

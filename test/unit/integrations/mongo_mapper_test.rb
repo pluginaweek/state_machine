@@ -1206,7 +1206,11 @@ module MongoMapperTest
       ran_callback = false
       @machine.around_transition {|block| ran_callback = true; block.call }
       
-      @record.valid?
+      begin
+        @record.valid?
+      rescue ArgumentError
+        raise if StateMachine::Transition.pause_supported?
+      end
       assert ran_callback
     end
     
@@ -1240,7 +1244,11 @@ module MongoMapperTest
       ran_callback = false
       @machine.around_transition {|block| block.call; ran_callback = true }
       
-      @record.valid?
+      begin
+        @record.valid?
+      rescue ArgumentError
+        raise if StateMachine::Transition.pause_supported?
+      end
       assert !ran_callback
     end
     
