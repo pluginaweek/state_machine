@@ -1175,7 +1175,8 @@ The following caveats should be noted when using state_machine:
 
 * Overridden event methods won't get invoked when using attribute-based event transitions
 * **DataMapper**: Attribute-based event transitions are disabled when using dm-validations 0.9.4 - 0.9.6
-* **JRuby**: around_transition callbacks in ORM integrations won't work on JRuby since it doesn't support continuations
+* **DataMapper**: Transitions cannot persist states when run from after :create / :save callbacks
+* **JRuby / Rubinius**: around_transition callbacks in ORM integrations won't work on JRuby since it doesn't support continuations
 * **Factory Girl**: Dynamic initial states don't work because of the way factory_girl
   builds objects.  You can work around this in a few ways:
   1. Use a default state that is common across all objects and rely on events to
