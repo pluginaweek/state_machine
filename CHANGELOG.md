@@ -1,5 +1,10 @@
 # master
 
+* Completely rewrite ORM action hooks to behave more consistently across the board
+* Change transitions to be executed the same whether using ORM save actions or not
+* Fix around_transition callbacks not being executed properly in ORM integrations
+* Fix additional transitions not being able to be fired in transition callbacks
+* Add documentation on the order in which transition callbacks run within ORM integrations
 * Update README to include a topic on explicit vs. implicit event transitions [Nathan Long]
 * Fix around_transition pausing not being marked as unsupported for rubinius [Daniel Huckstep]
 * Fix all / any / same matchers not being able to be used in :from / :to options in transitions and callbacks

@@ -23,6 +23,23 @@ module StateMachine
         def owner_class_attribute_default
           attribute_field && attribute_field.default
         end
+        
+        def define_action_hook
+          if action_hook == :save
+            define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+              def insert(*)
+                self.class.state_machine(#{name.inspect}).send(:around_save, self) { super.persisted? }
+                self
+              end
+              
+              def update(*)
+                self.class.state_machine(#{name.inspect}).send(:around_save, self) { super }
+              end
+            end_eval
+          else
+            super
+          end
+        end
       end
       
       version '2.0.x - 2.3.x' do
@@ -57,31 +74,6 @@ module StateMachine
               result
             end
           end_eval
-        end
-        
-        def define_action_hook
-          # +around+ callbacks don't have direct access to results until AS 3.1
-          owner_class.set_callback(:save, :after, 'value', :prepend => true) if action_hook == :save
-          super
-        end
-      end
-      
-      version '2.0.x' do
-        def self.active?
-          ::Mongoid::VERSION =~ /^2\.0\./
-        end
-        
-        # Forces the change in state to be recognized regardless of whether the
-        # state value actually changed
-        def write(object, attribute, value, *args)
-          result = super
-          
-          if (attribute == :state || attribute == :event && value) && !object.send("#{self.attribute}_changed?")
-            current = read(object, :state)
-            object.changes[self.attribute.to_s] = [attribute == :event ? current : value, current]
-          end
-          
-          result
         end
       end
     end

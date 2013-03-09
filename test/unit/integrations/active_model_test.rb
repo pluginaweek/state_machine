@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
 require 'active_model'
-if defined?(::ActiveModel::VERSION) && ::ActiveModel::VERSION::MAJOR >= 4
+if defined?(ActiveModel::VERSION) && ActiveModel::VERSION::MAJOR >= 4
   require 'rails/observers/active_model/active_model'
   require 'active_model/mass_assignment_security'
 else
@@ -517,11 +517,21 @@ module ActiveModelTest
     def test_should_run_around_callbacks
       before_called = false
       after_called = false
-      @machine.around_transition {|block| before_called = true; block.call; after_called = true}
+      ensure_called = 0
+      @machine.around_transition do |block|
+        before_called = true
+        begin
+          block.call
+        ensure
+          ensure_called += 1
+        end
+        after_called = true
+      end
       
       @transition.perform
       assert before_called
       assert after_called
+      assert_equal ensure_called, 1
     end
     
     def test_should_include_transition_states_in_known_states
@@ -803,7 +813,7 @@ module ActiveModelTest
     end
     
     def test_should_call_no_transition_callbacks_when_observers_disabled
-      return unless ::ActiveModel::VERSION::MAJOR >= 3 && ::ActiveModel::VERSION::MINOR >= 1
+      return unless ActiveModel::VERSION::MAJOR >= 3 && ActiveModel::VERSION::MINOR >= 1
       
       callbacks = [
         :before_ignite,

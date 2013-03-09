@@ -888,11 +888,21 @@ module MongoMapperTest
     def test_should_run_around_callbacks
       before_called = false
       after_called = false
-      @machine.around_transition {|block| before_called = true; block.call; after_called = true}
+      ensure_called = 0
+      @machine.around_transition do |block|
+        before_called = true
+        begin
+          block.call
+        ensure
+          ensure_called += 1
+        end
+        after_called = true
+      end
       
       @transition.perform
       assert before_called
       assert after_called
+      assert_equal ensure_called, 1
     end
     
     def test_should_include_transition_states_in_known_states
@@ -924,6 +934,29 @@ module MongoMapperTest
       @transition.perform
       
       assert_equal [1, 2, 3], @record.callback_result
+    end
+    
+    def test_should_run_in_expected_order
+      expected = [
+        :before_transition, :before_validation, :after_validation,
+        :before_save, :before_create, :after_create, :after_save,
+        :after_transition
+      ]
+      
+      callbacks = []
+      @model.before_validation { callbacks << :before_validation }
+      @model.after_validation { callbacks << :after_validation }
+      @model.before_save { callbacks << :before_save }
+      @model.before_create { callbacks << :before_create }
+      @model.after_create { callbacks << :after_create }
+      @model.after_save { callbacks << :after_save }
+      
+      @machine.before_transition { callbacks << :before_transition }
+      @machine.after_transition { callbacks << :after_transition }
+      
+      @transition.perform
+      
+      assert_equal expected, callbacks
     end
   end
   
@@ -977,6 +1010,42 @@ module MongoMapperTest
       def test_should_not_run_further_callbacks
         assert_equal [:before_1], @callbacks
       end
+    end
+  end
+  
+  class MachineNestedActionTest < BaseTestCase
+    def setup
+      @callbacks = []
+      
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
+      
+      @record = @model.new(:state => 'parked')
+    end
+    
+    def test_should_allow_transition_prior_to_creation_if_skipping_action
+      record = @record
+      @model.before_create { record.ignite(false) }
+      result = @record.save
+      
+      assert_equal true, result
+      assert_equal "idling", @record.state
+      @record = @model.find(@record.id)
+      assert_equal "idling", @record.state
+    end
+    
+    def test_should_allow_transition_after_creation
+      record = @record
+      @model.after_create { record.ignite }
+      result = @record.save
+      
+      assert_equal true, result
+      assert_equal "idling", @record.state
+      @record = @model.find(@record.id)
+      assert_equal "idling", @record.state
     end
   end
   
@@ -1401,6 +1470,34 @@ module MongoMapperTest
       
       @record.save
       assert ran_callback
+    end
+    
+    def test_should_allow_additional_transitions_to_new_state_in_after_transitions
+      @machine.event :park do
+        transition :idling => :parked
+      end
+      
+      @machine.after_transition(:on => :ignite) { @record.park }
+      
+      @record.save
+      assert_equal 'parked', @record.state
+      
+      @record = @model.find(@record.id)
+      assert_equal 'parked', @record.state
+    end
+    
+    def test_should_allow_additional_transitions_to_previous_state_in_after_transitions
+      @machine.event :shift_up do
+        transition :idling => :first_gear
+      end
+      
+      @machine.after_transition(:on => :ignite) { @record.shift_up }
+      
+      @record.save
+      assert_equal 'first_gear', @record.state
+      
+      @record = @model.find(@record.id)
+      assert_equal 'first_gear', @record.state
     end
   end
   

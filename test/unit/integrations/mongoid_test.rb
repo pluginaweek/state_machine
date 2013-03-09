@@ -40,7 +40,7 @@ module MongoidTest
         
         model.class_eval do
           include Mongoid::Document
-          if ::Mongoid::VERSION =~ /^2\./
+          if Mongoid::VERSION =~ /^2\./
             self.collection_name = table_name
           else
             self.default_collection_name = table_name
@@ -796,22 +796,12 @@ module MongoidTest
       @transition.perform(false)
     end
     
-    if ::Mongoid::VERSION =~ /^2\.0\./
-      def test_should_include_state_in_changed_attributes
-        assert_equal %w(state), @record.changed
-      end
-      
-      def test_should_not_track_attribute_changes
-        assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
-      end
-    else
-      def test_should_not_include_state_in_changed_attributes
-        assert_equal [], @record.changed
-      end
-      
-      def test_should_not_track_attribute_changes
-        assert_equal nil, @record.send(:attribute_change, 'state')
-      end
+    def test_should_not_include_state_in_changed_attributes
+      assert_equal [], @record.changed
+    end
+    
+    def test_should_not_track_attribute_changes
+      assert_equal nil, @record.send(:attribute_change, 'state')
     end
   end
   
@@ -860,22 +850,12 @@ module MongoidTest
       @transition.perform(false)
     end
     
-    if ::Mongoid::VERSION =~ /^2\.0\./
-      def test_should_include_state_in_changed_attributes
-        assert_equal %w(status), @record.changed
-      end
-      
-      def test_should_track_attribute_changes
-        assert_equal %w(parked parked), @record.send(:attribute_change, 'status')
-      end
-    else
-      def test_should_include_state_in_changed_attributes
-        assert_equal [], @record.changed
-      end
-      
-      def test_should_track_attribute_changes
-        assert_equal nil, @record.send(:attribute_change, 'status')
-      end
+    def test_should_include_state_in_changed_attributes
+      assert_equal [], @record.changed
+    end
+    
+    def test_should_track_attribute_changes
+      assert_equal nil, @record.send(:attribute_change, 'status')
     end
   end
   
@@ -889,34 +869,12 @@ module MongoidTest
       @record.state_event = 'ignite'
     end
     
-    if ::Mongoid::VERSION =~ /^2\.0\./
-      def test_should_include_state_in_changed_attributes
-        assert_equal %w(state), @record.changed
-      end
-      
-      def test_should_track_attribute_change
-        assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
-      end
-      
-      def test_should_not_reset_changes_on_multiple_changes
-        @record.state_event = 'ignite'
-        assert_equal %w(parked parked), @record.send(:attribute_change, 'state')
-      end
-      
-      def test_should_not_include_state_in_changed_attributes_if_nil
-        @record = @model.create
-        @record.state_event = nil
-        
-        assert_equal [], @record.changed
-      end
-    else
-      def test_should_not_include_state_in_changed_attributes
-        assert_equal [], @record.changed
-      end
-      
-      def test_should_not_track_attribute_change
-        assert_equal nil, @record.send(:attribute_change, 'state')
-      end
+    def test_should_not_include_state_in_changed_attributes
+      assert_equal [], @record.changed
+    end
+    
+    def test_should_not_track_attribute_change
+      assert_equal nil, @record.send(:attribute_change, 'state')
     end
   end
   
@@ -1014,11 +972,21 @@ module MongoidTest
     def test_should_run_around_callbacks
       before_called = false
       after_called = false
-      @machine.around_transition {|block| before_called = true; block.call; after_called = true}
+      ensure_called = 0
+      @machine.around_transition do |block|
+        before_called = true
+        begin
+          block.call
+        ensure
+          ensure_called += 1
+        end
+        after_called = true
+      end
       
       @transition.perform
       assert before_called
       assert after_called
+      assert_equal ensure_called, 1
     end
     
     def test_should_include_transition_states_in_known_states
@@ -1050,6 +1018,29 @@ module MongoidTest
       @transition.perform
       
       assert_equal [1, 2, 3], @record.callback_result
+    end
+    
+    def test_should_run_in_expected_order
+      expected = [
+        :before_transition, :before_validation, :after_validation,
+        :before_save, :before_create, :after_create, :after_save,
+        :after_transition
+      ]
+      
+      callbacks = []
+      @model.before_validation { callbacks << :before_validation }
+      @model.after_validation { callbacks << :after_validation }
+      @model.before_save { callbacks << :before_save }
+      @model.before_create { callbacks << :before_create }
+      @model.after_create { callbacks << :after_create }
+      @model.after_save { callbacks << :after_save }
+      
+      @machine.before_transition { callbacks << :before_transition }
+      @machine.after_transition { callbacks << :after_transition }
+      
+      @transition.perform
+      
+      assert_equal expected, callbacks
     end
   end
   
@@ -1085,6 +1076,44 @@ module MongoidTest
     
     def test_should_not_run_further_callbacks
       assert_equal [:before_1], @callbacks
+    end
+  end
+  
+  class MachineNestedActionTest < BaseTestCase
+    def setup
+      @callbacks = []
+      
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
+      
+      @record = @model.new(:state => 'parked')
+    end
+    
+    def test_should_allow_transition_prior_to_creation_if_skipping_action
+      record = @record
+      @model.before_create { record.ignite(false) }
+      result = @record.save
+      
+      assert_equal true, result
+      assert_equal "idling", @record.state
+      @record.reload
+      assert_equal "idling", @record.state
+    end
+    
+    if Mongoid::VERSION !~ /^2\.1\./
+      def test_should_allow_transition_after_creation
+        record = @record
+        @model.after_create { record.ignite }
+        result = @record.save
+        
+        assert_equal true, result
+        assert_equal "idling", @record.state
+        @record.reload
+        assert_equal "idling", @record.state
+      end
     end
   end
   
@@ -1503,6 +1532,34 @@ module MongoidTest
       
       @record.save
       assert ran_callback
+    end
+    
+    def test_should_allow_additional_transitions_to_new_state_in_after_transitions
+      @machine.event :park do
+        transition :idling => :parked
+      end
+      
+      @machine.after_transition(:on => :ignite) { @record.park }
+      
+      @record.save
+      assert_equal 'parked', @record.state
+      
+      @record.reload
+      assert_equal 'parked', @record.state
+    end
+    
+    def test_should_allow_additional_transitions_to_previous_state_in_after_transitions
+      @machine.event :shift_up do
+        transition :idling => :first_gear
+      end
+      
+      @machine.after_transition(:on => :ignite) { @record.shift_up }
+      
+      @record.save
+      assert_equal 'first_gear', @record.state
+      
+      @record.reload
+      assert_equal 'first_gear', @record.state
     end
   end
   

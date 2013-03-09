@@ -182,21 +182,6 @@ module StateMachine
     #     end
     #   end
     # 
-    # If using the +save+ action for the machine, this option will be ignored as
-    # the transaction behavior will depend on the +save+ implementation within
-    # DataMapper.  To avoid this, use a different action like so:
-    # 
-    #   class Vehicle
-    #     include DataMapper::Resource
-    #     ...
-    #     
-    #     state_machine :initial => :parked, :use_transactions => false, :action => :save_state do
-    #       ...
-    #     end
-    #     
-    #     alias_method :save_state, :save
-    #   end
-    # 
     # == Validation errors
     # 
     # If an event fails to successfully fire because there are no matching
@@ -338,6 +323,26 @@ module StateMachine
     # The failure callback creates +TransitionLog+ records using a second
     # connection to the database, allowing them to be saved without being
     # affected by rollbacks in the +Vehicle+ resource's transaction.
+    # 
+    # === Callback Order
+    # 
+    # Callbacks occur in the following order.  Callbacks specific to state_machine
+    # are bolded.  The remaining callbacks are part of ActiveRecord.
+    # 
+    # * (-) save
+    # * (-) begin transaction (if enabled)
+    # * (1) *before_transition*
+    # * (2) before :valid?
+    # * (-) valid?
+    # * (3) after :valid?
+    # * (4) before :save
+    # * (-) save
+    # * (5) before :create
+    # * (-) create
+    # * (6) after :create
+    # * (7) after :save
+    # * (8) *after_transition*
+    # * (-) end transaction (if enabled)
     module DataMapper
       include Base
       
@@ -440,20 +445,40 @@ module StateMachine
         
         # Adds hooks into validation for automatically firing events
         def define_action_helpers
-          super
-          
-          if action == :save && supports_validations?
+          if action_hook == :save
+            define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+              def save(*)
+                result = self.class.state_machines.transitions(self, :save).perform { super }
+                assert_save_successful(:save, result)
+                result
+              end
+              
+              def save!(*)
+                result = self.class.state_machines.transitions(self, :save).perform { super }
+                assert_save_successful(:save!, result)
+                result
+              end
+              
+              def save_self(*)
+                self.class.state_machines.transitions(self, :save).perform { super }
+              end
+            end_eval
+            
+            define_validation_hook
+          else
+            super
+          end
+        end
+        
+        # Adds hooks into validation for automatically firing events
+        def define_validation_hook
+          if supports_validations?
             define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
               def valid?(*)
                 self.class.state_machines.transitions(self, :save, :after => false).perform { super }
               end
             end_eval
           end
-        end
-        
-        # Uses internal save hooks if using the :save action
-        def action_hook
-          action == :save ? :save_self : super
         end
         
         # Creates a scope for finding records *with* a particular state or

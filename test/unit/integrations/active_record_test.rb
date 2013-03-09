@@ -19,7 +19,7 @@ rescue LoadError
 end
 
 require 'active_record/version'
-if ::ActiveRecord::VERSION::MAJOR >= 4
+if ActiveRecord::VERSION::MAJOR >= 4
   require 'rails/observers/activerecord/active_record'
   require 'active_record/mass_assignment_security'
 end
@@ -211,7 +211,7 @@ module ActiveRecordTest
     
     def test_should_set_attributes_prior_to_after_initialize_hook
       state = nil
-      @model.class_eval {define_method(:after_initialize) {}} if ::ActiveRecord::VERSION::MAJOR <= 2
+      @model.class_eval {define_method(:after_initialize) {}} if ActiveRecord::VERSION::MAJOR <= 2
       @model.after_initialize do |record|
         state = record.state
       end
@@ -249,7 +249,7 @@ module ActiveRecordTest
       assert_equal 'parked', record.state
     end
     
-    unless ::ActiveRecord::VERSION::MAJOR == 3 && ::ActiveRecord::VERSION::MINOR == 0
+    unless ActiveRecord::VERSION::MAJOR == 3 && ActiveRecord::VERSION::MINOR == 0
       def test_should_persist_initial_state_on_dup
         record = @model.create.dup
         record.save
@@ -312,7 +312,7 @@ module ActiveRecordTest
     
     def test_should_set_attributes_prior_to_after_initialize_hook
       state = nil
-      @model.class_eval {define_method(:after_initialize) {}} if ::ActiveRecord::VERSION::MAJOR <= 2
+      @model.class_eval {define_method(:after_initialize) {}} if ActiveRecord::VERSION::MAJOR <= 2
       @model.after_initialize do |record|
         state = record.state
       end
@@ -350,7 +350,7 @@ module ActiveRecordTest
       assert_equal 'parked', record.state
     end
     
-    unless ::ActiveRecord::VERSION::MAJOR == 3 && ::ActiveRecord::VERSION::MINOR == 0
+    unless ActiveRecord::VERSION::MAJOR == 3 && ActiveRecord::VERSION::MINOR == 0
       def test_should_persist_initial_state_on_dup
         record = @model.create.dup
         record.save
@@ -1019,11 +1019,21 @@ module ActiveRecordTest
     def test_should_run_around_callbacks
       before_called = false
       after_called = false
-      @machine.around_transition {|block| before_called = true; block.call; after_called = true}
+      ensure_called = 0
+      @machine.around_transition do |block|
+        before_called = true
+        begin
+          block.call
+        ensure
+          ensure_called += 1
+        end
+        after_called = true
+      end
       
       @transition.perform
       assert before_called
       assert after_called
+      assert_equal ensure_called, 1
     end
     
     def test_should_include_transition_states_in_known_states
@@ -1055,6 +1065,33 @@ module ActiveRecordTest
       @transition.perform
       
       assert_equal [1, 2, 3], @record.callback_result
+    end
+    
+    def test_should_run_in_expected_order
+      expected = [
+        :before_transition, :before_validation, :after_validation,
+        :before_save, :before_create, :after_create, :after_save,
+        :after_transition
+      ]
+      
+      callbacks = []
+      @model.before_validation { callbacks << :before_validation }
+      @model.after_validation { callbacks << :after_validation }
+      @model.before_save { callbacks << :before_save }
+      @model.before_create { callbacks << :before_create }
+      @model.after_create { callbacks << :after_create }
+      @model.after_save { callbacks << :after_save }
+      if @model.respond_to?(:after_commit)
+        @model.after_commit { callbacks << :after_commit }
+        expected << :after_commit
+      end
+      
+      @machine.before_transition { callbacks << :before_transition }
+      @machine.after_transition { callbacks << :after_transition }
+      
+      @transition.perform
+      
+      assert_equal expected, callbacks
     end
   end
   
@@ -1090,6 +1127,42 @@ module ActiveRecordTest
     
     def test_should_not_run_further_callbacks
       assert_equal [:before_1], @callbacks
+    end
+  end
+  
+  class MachineNestedActionTest < BaseTestCase
+    def setup
+      @callbacks = []
+      
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
+      
+      @record = @model.new(:state => 'parked')
+    end
+    
+    def test_should_allow_transition_prior_to_creation_if_skipping_action
+      record = @record
+      @model.before_create { record.ignite(false) }
+      result = @record.save
+      
+      assert_equal true, result
+      assert_equal "idling", @record.state
+      @record.reload
+      assert_equal "idling", @record.state
+    end
+    
+    def test_should_allow_transition_after_creation
+      record = @record
+      @model.after_create { record.ignite }
+      result = @record.save
+      
+      assert_equal true, result
+      assert_equal "idling", @record.state
+      @record.reload
+      assert_equal "idling", @record.state
     end
   end
   
@@ -1540,6 +1613,40 @@ module ActiveRecordTest
       
       assert_equal 0, @model.count
     end
+    
+    def test_should_allow_additional_transitions_to_new_state_in_after_transitions
+      @machine.event :park do
+        transition :idling => :parked
+      end
+      
+      @machine.after_transition(:on => :ignite) { @record.park }
+      
+      @record.save
+      assert_equal 'parked', @record.state
+      
+      @record.reload
+      assert_equal 'parked', @record.state
+    end
+    
+    def test_should_allow_additional_transitions_to_previous_state_in_after_transitions
+      @machine.event :shift_up do
+        transition :idling => :first_gear
+      end
+      
+      @machine.after_transition(:on => :ignite) { @record.shift_up }
+      
+      @record.save
+      assert_equal 'first_gear', @record.state
+      
+      @record.reload
+      assert_equal 'first_gear', @record.state
+    end
+    
+    def test_should_return_nil_on_manual_rollback
+      @machine.before_transition { raise ActiveRecord::Rollback }
+      
+      assert_equal nil, @record.save
+    end
   end
   
   class MachineWithEventAttributesOnSaveBangTest < BaseTestCase
@@ -1700,7 +1807,7 @@ module ActiveRecordTest
     end
     
     def test_should_call_no_transition_callbacks_when_observers_disabled
-      return unless ::ActiveRecord::VERSION::MAJOR >= 3 && ::ActiveRecord::VERSION::MINOR >= 1
+      return unless ActiveRecord::VERSION::MAJOR >= 3 && ActiveRecord::VERSION::MINOR >= 1
       
       callbacks = [
         :before_ignite,

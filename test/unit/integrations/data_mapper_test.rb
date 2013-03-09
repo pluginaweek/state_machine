@@ -1,16 +1,16 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
 require 'dm-core'
-require 'dm-core/version' unless defined?(::DataMapper::VERSION)
+require 'dm-core/version' unless defined?(DataMapper::VERSION)
 require 'dm-observer'
 
-if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
+if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('0.10.3')
   require 'dm-migrations'
 end
 
 # Establish database connection
 DataMapper.setup(:default, 'sqlite3::memory:')
-DataObjects::Sqlite3.logger = DataObjects::Logger.new("#{File.dirname(__FILE__)}/../../data_mapper.log", :info)
+DataObjects::Sqlite3.logger = DataObjects::Logger.new("#{File.dirname(__FILE__)}/../../data_mapper.log", :debug)
 
 module DataMapperTest
   class BaseTestCase < Test::Unit::TestCase
@@ -119,7 +119,7 @@ module DataMapperTest
       property = @resource.properties.detect {|p| p.name == :status}
       assert_not_nil property
       
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('1.0.0')
+      if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('1.0.0')
         assert_instance_of DataMapper::Property::String, property
       else
         assert_equal String, property.type
@@ -139,7 +139,7 @@ module DataMapperTest
       property = @resource.properties.detect {|p| p.name == :status}
       assert_not_nil property
       
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('1.0.0')
+      if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('1.0.0')
         assert_instance_of DataMapper::Property::Integer, property
       else
         assert_equal Integer, property.type
@@ -617,7 +617,7 @@ module DataMapperTest
       assert_equal 'idling', record.state
     end
     
-    if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.9.8')
+    if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('0.9.8')
       def test_should_raise_exception_if_protected
         resource = new_resource do
           protected :state=
@@ -692,7 +692,7 @@ module DataMapperTest
     end
     
     def test_should_track_attribute_change
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+      if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('0.10.0')
         assert_equal({@resource.properties[:state] => 'parked'}, @record.original_attributes)
       else
         assert_equal({:state => 'parked'},  @record.original_values)
@@ -703,7 +703,7 @@ module DataMapperTest
       transition = StateMachine::Transition.new(@record, @machine, :ignite, :idling, :idling)
       transition.perform(false)
       
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+      if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('0.10.0')
         assert_equal({@resource.properties[:state] => 'parked'}, @record.original_attributes)
       else
         assert_equal({:state => 'parked'},  @record.original_values)
@@ -753,7 +753,7 @@ module DataMapperTest
     end
     
     def test_should_track_attribute_change
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+      if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('0.10.0')
         assert_equal({@resource.properties[:status] => 'parked'}, @record.original_attributes)
       else
         assert_equal({:status => 'parked'},  @record.original_values)
@@ -764,7 +764,7 @@ module DataMapperTest
       transition = StateMachine::Transition.new(@record, @machine, :ignite, :idling, :idling)
       transition.perform(false)
       
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+      if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('0.10.0')
         assert_equal({@resource.properties[:status] => 'parked'}, @record.original_attributes)
       else
         assert_equal({:status => 'parked'},  @record.original_values)
@@ -806,7 +806,7 @@ module DataMapperTest
     end
     
     def test_should_not_track_attribute_change
-      if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+      if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('0.10.0')
         assert_equal({}, @record.original_attributes)
       else
         assert_equal({},  @record.original_values)
@@ -840,7 +840,7 @@ module DataMapperTest
   end
   
   begin
-    if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.3')
+    if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('0.10.3')
       require 'dm-transactions'
     end
     
@@ -941,12 +941,22 @@ module DataMapperTest
     
     def test_should_run_around_callbacks
       before_called = false
-      after_called = [false]
-      @machine.around_transition {|block| before_called = true; block.call; after_called[0] = true}
+      after_called = false
+      ensure_called = 0
+      @machine.around_transition do |block|
+        before_called = true
+        begin
+          block.call
+        ensure
+          ensure_called += 1
+        end
+        after_called = true
+      end
       
       @transition.perform
       assert before_called
-      assert after_called[0]
+      assert after_called
+      assert_equal ensure_called, 1
     end
     
     def test_should_run_around_callbacks_with_the_context_of_the_record
@@ -980,6 +990,36 @@ module DataMapperTest
       @transition.perform
       
       assert_equal [1, 2, 3], @record.callback_result
+    end
+    
+    def test_should_run_in_expected_order
+      # Avoid Ruby 2.0.0 stack too deep issues
+      @resource.class_eval do
+        def valid?(*)
+          super
+        end
+      end
+      
+      expected = [
+        :before_transition, :before_validation, :after_validation,
+        :before_save, :before_create, :after_create, :after_save,
+        :after_transition
+      ]
+      
+      callbacks = []
+      @resource.before(:valid?) { callbacks << :before_validation }
+      @resource.after(:valid?) { callbacks << :after_validation }
+      @resource.before(:save) { callbacks << :before_save }
+      @resource.before(:create) { callbacks << :before_create }
+      @resource.after(:create) { callbacks << :after_create }
+      @resource.after(:save) { callbacks << :after_save }
+      
+      @machine.before_transition { callbacks << :before_transition }
+      @machine.after_transition { callbacks << :after_transition }
+      
+      @transition.perform
+      
+      assert_equal expected, callbacks
     end
   end
   
@@ -1017,6 +1057,42 @@ module DataMapperTest
     
     def test_should_not_run_further_callbacks
       assert_equal [:before_1], @callbacks
+    end
+  end
+  
+  if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('1.0.0')
+    class MachineNestedActionTest < BaseTestCase
+      def setup
+        @callbacks = []
+        
+        @resource = new_resource
+        @machine = StateMachine::Machine.new(@resource)
+        @machine.event :ignite do
+          transition :parked => :idling
+        end
+        
+        @record = @resource.new(:state => 'parked')
+      end
+      
+      def test_should_allow_transition_prior_to_creation_if_skipping_action
+        record = @record
+        @resource.before(:create) { record.ignite }
+        result = @record.save
+        
+        assert_equal true, result
+        assert_equal "idling", @record.state
+        @record.reload
+        assert_equal "idling", @record.state
+      end
+      
+      def test_should_not_allow_transition_after_creation
+        record = @record
+        @resource.after(:create) { record.ignite(false) }
+        
+        result = @record.save
+        
+        assert_equal false, result
+      end
     end
   end
   
@@ -1215,7 +1291,7 @@ module DataMapperTest
     end
     
     # See README caveats
-    if Gem::Version.new(::DataMapper::VERSION) > Gem::Version.new('0.9.6')
+    if Gem::Version.new(DataMapper::VERSION) > Gem::Version.new('0.9.6')
       class MachineWithEventAttributesOnValidationTest < BaseTestCase
         def setup
           @resource = new_resource
@@ -1483,10 +1559,38 @@ module DataMapperTest
           assert_equal false, @record.save
           assert_equal 1, @resource.all.size
         end
+        
+        def test_should_allow_additional_transitions_to_new_state_in_after_transitions
+          @machine.event :park do
+            transition :idling => :parked
+          end
+          
+          @machine.after_transition(:on => :ignite) { park }
+          
+          @record.save
+          assert_equal 'parked', @record.state
+          
+          @record.reload
+          assert_equal 'parked', @record.state
+        end
+        
+        def test_should_allow_additional_transitions_to_previous_state_in_after_transitions
+          @machine.event :shift_up do
+            transition :idling => :first_gear
+          end
+          
+          @machine.after_transition(:on => :ignite) { shift_up }
+          
+          @record.save
+          assert_equal 'first_gear', @record.state
+          
+          @record.reload
+          assert_equal 'first_gear', @record.state
+        end
       end
     end
     
-    if Gem::Version.new(::DataMapper::VERSION) >= Gem::Version.new('0.10.0')
+    if Gem::Version.new(DataMapper::VERSION) >= Gem::Version.new('0.10.0')
       class MachineWithEventAttributesOnSaveBangTest < BaseTestCase
         def setup
           @resource = new_resource
@@ -1569,7 +1673,7 @@ module DataMapperTest
       end
     end
     
-    if Gem::Version.new(::DataMapper::VERSION) > Gem::Version.new('0.9.6')
+    if Gem::Version.new(DataMapper::VERSION) > Gem::Version.new('0.9.6')
       class MachineWithEventAttributesOnCustomActionTest < BaseTestCase
         def setup
           @superclass = new_resource do

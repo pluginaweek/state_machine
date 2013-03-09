@@ -134,18 +134,6 @@ module StateMachine
     #     end
     #   end
     # 
-    # If using the +save+ action for the machine, this option will be ignored as
-    # the transaction will be created by Sequel within +save+.  To avoid
-    # this, use a different action like so:
-    # 
-    #   class Vehicle < Sequel::Model
-    #     state_machine :initial => :parked, :use_transactions => false, :action => :save_state do
-    #       ...
-    #     end
-    #     
-    #     alias_method :save_state, :save
-    #   end
-    # 
     # == Validation errors
     # 
     # If an event fails to successfully fire because there are no matching
@@ -265,6 +253,26 @@ module StateMachine
     # The +TransitionLog+ model uses a second connection to the database that
     # allows new records to be saved without being affected by rollbacks in the
     # +Vehicle+ model's transaction.
+    # 
+    # === Callback Order
+    # 
+    # Callbacks occur in the following order.  Callbacks specific to state_machine
+    # are bolded.  The remaining callbacks are part of Sequel.
+    # 
+    # * (-) save
+    # * (-) begin transaction (if enabled)
+    # * (1) *before_transition*
+    # * (2) before_validation
+    # * (-) validate
+    # * (3) after_validation
+    # * (4) before_save
+    # * (5) before_create
+    # * (-) create
+    # * (6) after_create
+    # * (7) after_save
+    # * (8) *after_transition*
+    # * (-) end transaction (if enabled)
+    # * (9) after_commit
     module Sequel
       include Base
       
@@ -359,6 +367,43 @@ module StateMachine
           define_validation_hook if action == :save
         end
         
+        # Uses around callbacks to run state events if using the :save hook
+        def define_action_hook
+          if action == :save
+            define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+              def #{action_hook}(*args)
+                opts = args.last.is_a?(Hash) ? args.last : {}
+                yielded = false
+                result = self.class.state_machine(#{name.inspect}).send(:around_save, self) do
+                  yielded = true
+                  super
+                end
+                
+                if yielded || result
+                  result
+                else
+                  #{handle_save_failure}
+                end
+              end
+            end_eval
+          else
+            super
+          end
+        end
+        
+        # Handles how save failures (due to invalid transitions) are raised
+        def handle_save_failure
+          'raise_hook_failure(:before_transition) if raise_on_failure?(opts)'
+        end
+        
+        # Runs state events around the machine's :save action
+        def around_save(object)
+          result = transaction(object) do
+            object.class.state_machines.transitions(object, action).perform { yield }
+          end
+          result
+        end
+        
         # Adds hooks into validation for automatically firing events
         def define_validation_hook
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
@@ -366,11 +411,6 @@ module StateMachine
               self.class.state_machines.transitions(self, :save, :after => false).perform { super }
             end
           end_eval
-        end
-        
-        # Uses internal save hooks if using the :save action
-        def action_hook
-          action == :save ? :around_save : super
         end
         
         # Gets the db default for the machine's attribute
@@ -426,7 +466,11 @@ module StateMachine
         # Runs a new database transaction, rolling back any changes if the
         # yielded block fails (i.e. returns false).
         def transaction(object)
-          object.db.transaction {raise ::Sequel::Error::Rollback unless yield}
+          result = nil
+          object.db.transaction do
+            raise ::Sequel::Error::Rollback unless result = yield
+          end
+          result
         end
         
         # Creates a new callback in the callback chain, always ensuring that

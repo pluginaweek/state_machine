@@ -17,9 +17,9 @@ module SequelTest
       def new_model(create_table = :foo, &block)
         name = create_table || :foo
         table_name = "#{name}_#{rand(1000000)}"
-        table_identifier = ::Sequel::SQL::Identifier.new(table_name)
+        table_identifier = Sequel::SQL::Identifier.new(table_name)
         
-        if !defined?(Sequel::VERSION) || Gem::Version.new(::Sequel::VERSION) <= Gem::Version.new('3.26.0')
+        if !defined?(Sequel::VERSION) || Gem::Version.new(Sequel::VERSION) <= Gem::Version.new('3.26.0')
           class << table_identifier
             alias_method :original_to_s, :to_s
             def to_s(*args); args.empty? ? inspect : original_to_s(*args); end
@@ -891,12 +891,22 @@ module SequelTest
     
     def test_should_run_around_callbacks
       before_called = false
-      after_called = [false]
-      @machine.around_transition {|block| before_called = true; block.call; after_called[0] = true}
+      after_called = false
+      ensure_called = 0
+      @machine.around_transition do |block|
+        before_called = true
+        begin
+          block.call
+        ensure
+          ensure_called += 1
+        end
+        after_called = true
+      end
       
       @transition.perform
       assert before_called
-      assert after_called[0]
+      assert after_called
+      assert_equal ensure_called, 1
     end
     
     def test_should_run_around_callbacks_with_the_context_of_the_record
@@ -930,6 +940,33 @@ module SequelTest
       @transition.perform
       
       assert_equal [1, 2, 3], @record.callback_result
+    end
+    
+    def test_should_run_in_expected_order
+      expected = [
+        :before_transition, :before_validation, :after_validation,
+        :before_save, :before_create, :after_create, :after_save,
+        :after_transition
+      ]
+      
+      callbacks = []
+      @model.before_validation { callbacks << :before_validation }
+      @model.after_validation { callbacks << :after_validation }
+      @model.before_save { callbacks << :before_save }
+      @model.before_create { callbacks << :before_create }
+      @model.after_create { callbacks << :after_create }
+      @model.after_save { callbacks << :after_save }
+      if @model.respond_to?(:after_commit)
+        @model.after_commit { callbacks << :after_commit }
+        expected << :after_commit
+      end
+      
+      @machine.before_transition { callbacks << :before_transition }
+      @machine.after_transition { callbacks << :after_transition }
+      
+      @transition.perform
+      
+      assert_equal expected, callbacks
     end
   end
   
@@ -967,6 +1004,44 @@ module SequelTest
     
     def test_should_not_run_further_callbacks
       assert_equal [:before_1], @callbacks
+    end
+  end
+  
+  class MachineNestedActionTest < BaseTestCase
+    def setup
+      @callbacks = []
+      
+      @model = new_model
+      @machine = StateMachine::Machine.new(@model)
+      @machine.event :ignite do
+        transition :parked => :idling
+      end
+      
+      @record = @model.new(:state => 'parked')
+    end
+    
+    def test_should_allow_transition_prior_to_creation_if_skipping_action
+      record = @record
+      @model.before_create { record.ignite(false) }
+      result = @record.save
+      
+      assert result
+      assert_equal "idling", @record.state
+      @record.reload
+      assert_equal "idling", @record.state
+    end
+    
+    if !defined?(Sequel::VERSION) || !%w(2.10.0 2.11.0).include?(Sequel::VERSION)
+      def test_should_allow_transition_after_creation
+        record = @record
+        @model.after_create { record.ignite }
+        result = @record.save
+        
+        assert result
+        assert_equal "idling", @record.state
+        @record.reload
+        assert_equal "idling", @record.state
+      end
     end
   end
   
@@ -1407,29 +1482,17 @@ module SequelTest
       assert !ran_callback
     end
     
-    if defined?(Sequel::MAJOR) && Sequel::MAJOR >= 3 && Sequel::MINOR >= 7
-      def test_should_not_run_failure_callbacks_if_fails
-        @model.before_create {|record| false}
-        
-        ran_callback = false
-        @machine.after_failure { ran_callback = true }
-        
-        @record.save
-        assert !ran_callback
-      end
-    else
-      def test_should_run_failure_callbacks_if_fails
-        @model.before_create {|record| false}
-        
-        ran_callback = false
-        @machine.after_failure { ran_callback = true }
-        
-        @record.save
-        assert ran_callback
-      end
+    def test_should_run_failure_callbacks_if_fails
+      @model.before_create {|record| false}
+      
+      ran_callback = false
+      @machine.after_failure { ran_callback = true }
+      
+      @record.save
+      assert ran_callback
     end
     
-    def test_should_not_run_before_transitions_within_transaction
+    def test_should_run_before_transitions_within_transaction
       @machine.before_transition { self.class.create; raise Sequel::Error::Rollback }
       
       begin
@@ -1437,7 +1500,7 @@ module SequelTest
       rescue Sequel::Error::Rollback
       end
       
-      assert_equal 1, @model.count
+      assert_equal 0, @model.count
     end
     
     def test_should_not_run_around_callbacks_with_failures_disabled_if_fails
@@ -1458,44 +1521,54 @@ module SequelTest
       assert ran_callback[0]
     end
     
-    if defined?(Sequel::MAJOR) && (Sequel::MAJOR >= 3 || Sequel::MAJOR == 2 && Sequel::MINOR == 12)
-      def test_should_run_after_transitions_within_transaction
-        @machine.after_transition { self.class.create; raise Sequel::Error::Rollback }
-        
-        @record.save
-        
-        assert_equal 0, @model.count
-      end
-       
-      def test_should_run_around_transition_within_transaction
-        @machine.around_transition {|block| block.call; self.class.create; raise Sequel::Error::Rollback }
-        
-        @record.save
-        
-        assert_equal 0, @model.count
-      end
-    else
-      def test_should_not_run_after_transitions_within_transaction
-        @machine.after_transition { self.class.create; raise Sequel::Error::Rollback }
-        
-        begin
-          @record.save
-        rescue Sequel::Error::Rollback
-        end
-        
-        assert_equal 2, @model.count
+    def test_should_run_after_transitions_within_transaction
+      @machine.after_transition { self.class.create; raise Sequel::Error::Rollback }
+      
+      @record.save
+      
+      assert_equal 0, @model.count
+    end
+    
+    def test_should_run_around_transition_within_transaction
+      @machine.around_transition {|block| block.call; self.class.create; raise Sequel::Error::Rollback }
+      
+      @record.save
+      
+      assert_equal 0, @model.count
+    end
+    
+    def test_should_allow_additional_transitions_to_new_state_in_after_transitions
+      @machine.event :park do
+        transition :idling => :parked
       end
       
-      def test_should_not_run_around_transition_within_transaction
-        @machine.around_transition {|block| block.call; self.class.create; raise Sequel::Error::Rollback }
-        
-        begin
-          @record.save
-        rescue Sequel::Error::Rollback
-        end
-        
-        assert_equal 2, @model.count
+      @machine.after_transition(:on => :ignite) { park }
+      
+      @record.save
+      assert_equal 'parked', @record.state
+      
+      @record.reload
+      assert_equal 'parked', @record.state
+    end
+    
+    def test_should_allow_additional_transitions_to_previous_state_in_after_transitions
+      @machine.event :shift_up do
+        transition :idling => :first_gear
       end
+      
+      @machine.after_transition(:on => :ignite) { shift_up }
+      
+      @record.save
+      assert_equal 'first_gear', @record.state
+      
+      @record.reload
+      assert_equal 'first_gear', @record.state
+    end
+    
+    def test_should_return_nil_on_manual_rollback
+      @machine.before_transition { raise Sequel::Error::Rollback }
+      
+      assert_equal nil, @record.save
     end
   end
   

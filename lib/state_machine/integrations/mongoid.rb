@@ -283,6 +283,22 @@ module StateMachine
     #     end
     #   end
     # 
+    # === Callback Order
+    # 
+    # Callbacks occur in the following order.  Callbacks specific to state_machine
+    # are bolded.  The remaining callbacks are part of Mongoid.
+    # 
+    # * (-) save
+    # * (1) *before_transition*
+    # * (-) valid
+    # * (2) before_validation
+    # * (3) after_validation
+    # * (4) before_save
+    # * (5) before_create
+    # * (6) after_create
+    # * (7) after_save
+    # * (8) *after_transition*
+    # 
     # == Internationalization
     # 
     # Any error message that is generated from performing invalid transitions
@@ -396,7 +412,20 @@ module StateMachine
         # Uses around callbacks to run state events if using the :save hook
         def define_action_hook
           if action_hook == :save
-            owner_class.set_callback(:save, :around, self, :prepend => true)
+            define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+              def insert(*)
+                self.class.state_machine(#{name.inspect}).send(:around_save, self) { super.persisted? }
+                self
+              end
+              
+              def update(*)
+                self.class.state_machine(#{name.inspect}).send(:around_save, self) { super }
+              end
+              
+              def upsert(*)
+                self.class.state_machine(#{name.inspect}).send(:around_save, self) { super }
+              end
+            end_eval
           else
             super
           end

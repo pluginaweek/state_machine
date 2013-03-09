@@ -136,18 +136,6 @@ module StateMachine
     #     end
     #   end
     # 
-    # If using the +save+ action for the machine, this option will be ignored as
-    # the transaction will be created by ActiveRecord within +save+.  To avoid
-    # this, use a different action like so:
-    # 
-    #   class Vehicle < ActiveRecord::Base
-    #     state_machine :initial => :parked, :use_transactions => false, :action => :save_state do
-    #       ...
-    #     end
-    #     
-    #     alias_method :save_state, :save
-    #   end
-    # 
     # == Validations
     # 
     # As mentioned in StateMachine::Machine#state, you can define behaviors,
@@ -289,6 +277,27 @@ module StateMachine
     # The +TransitionLog+ model establishes a second connection to the database
     # that allows new records to be saved without being affected by rollbacks
     # in the +Vehicle+ model's transaction.
+    # 
+    # === Callback Order
+    # 
+    # Callbacks occur in the following order.  Callbacks specific to state_machine
+    # are bolded.  The remaining callbacks are part of ActiveRecord.
+    # 
+    # * (-) save
+    # * (-) begin transaction (if enabled)
+    # * (1) *before_transition*
+    # * (-) valid
+    # * (2) before_validation
+    # * (-) validate
+    # * (3) after_validation
+    # * (4) before_save
+    # * (5) before_create
+    # * (-) create
+    # * (6) after_create
+    # * (7) after_save
+    # * (8) *after_transition*
+    # * (-) end transaction (if enabled)
+    # * (9) after_commit
     # 
     # == Observers
     # 
@@ -469,7 +478,15 @@ module StateMachine
         # Uses around callbacks to run state events if using the :save hook
         def define_action_hook
           if action_hook == :save
-            owner_class.set_callback(:save, :around, self, :prepend => true)
+            define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+              def save(*)
+                self.class.state_machine(#{name.inspect}).send(:around_save, self) { super }
+              end
+              
+              def save!(*)
+                self.class.state_machine(#{name.inspect}).send(:around_save, self) { super } || raise(ActiveRecord::RecordInvalid.new(self))
+              end
+            end_eval
           else
             super
           end
@@ -477,7 +494,9 @@ module StateMachine
         
         # Runs state events around the machine's :save action
         def around_save(object)
-          object.class.state_machines.transitions(object, action).perform { yield }
+          transaction(object) do
+            object.class.state_machines.transitions(object, action).perform { yield }
+          end
         end
         
         # Creates a scope for finding records *with* a particular state or
@@ -502,7 +521,11 @@ module StateMachine
         # an ActiveRecord::Rollback exception if the yielded block fails
         # (i.e. returns false).
         def transaction(object)
-          object.class.transaction {raise ::ActiveRecord::Rollback unless yield}
+          result = nil
+          object.class.transaction do
+            raise ::ActiveRecord::Rollback unless result = yield
+          end
+          result
         end
         
         # Defines a new named scope with the given name
