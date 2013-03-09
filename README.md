@@ -1200,9 +1200,13 @@ end
 
 ## Dependencies
 
-* Ruby 1.8.6 or later
+Ruby versions officially supported and tested:
 
-If using specific integrations:
+* Ruby (MRI) 1.8.6+
+* JRuby (1.8, 1.9)
+* Rubinius (1.8, 1.9)
+
+ORM versions officially supported and tested:
 
 * [ActiveModel](http://rubyonrails.org) integration: 3.0.0 or later
 * [ActiveRecord](http://rubyonrails.org) integration: 2.0.0 or later
