@@ -6,11 +6,14 @@ require 'mongoid/version'
 # Establish database connection
 Mongoid.configure do |config|
   if Mongoid::VERSION =~ /^2\./
-    config.master = Mongo::Connection.new('127.0.0.1', 27017, :slave_ok => true).db('test')
+    connection = Mongo::Connection.new('127.0.0.1', 27017, :slave_ok => true, :logger => Logger.new("#{File.dirname(__FILE__)}/../../mongoid.log"))
+    config.master = connection.db('test')
   else
+    Mongoid.logger = Moped.logger = Logger.new("#{File.dirname(__FILE__)}/../../mongoid.log")
     config.connect_to('test')
   end
 end
+
 
 module MongoidTest
   class BaseTestCase < Test::Unit::TestCase
