@@ -397,8 +397,12 @@ module StateMachine
             end
             
             def apply_pre_processed_defaults
+              defaults = {}
+              self.class.state_machines.initialize_states(self, :static => :force, :dynamic => false, :to => defaults)
+              defaults.each do |attr, value|
+                send(:"\#{attr}=", value) unless attributes.include?(attr)
+              end
               super
-              self.class.state_machines.initialize_states(self, :static => :force, :dynamic => false) if _building?
             end
           end_eval
         end

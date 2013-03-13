@@ -1,5 +1,6 @@
 # master
 
+* Fix Mongoid integration not setting initial state attributes properly for associations
 * Completely rewrite ORM action hooks to behave more consistently across the board
 * Change transitions to be executed the same whether using ORM save actions or not
 * Fix around_transition callbacks not being executed properly in ORM integrations
