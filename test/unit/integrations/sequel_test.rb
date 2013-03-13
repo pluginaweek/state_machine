@@ -128,7 +128,7 @@ module SequelTest
   
   class MachineWithStaticInitialStateTest < BaseTestCase
     def setup
-      @model = new_model do
+      @model = new_model(:vehicle) do
         attr_accessor :value
       end
       @machine = StateMachine::Machine.new(@model, :initial => :parked)
@@ -222,6 +222,77 @@ module SequelTest
       
       record = @model[@model.create(:state => nil).id]
       assert_nil record.state
+    end
+    
+    def test_should_use_stored_values_when_loading_for_many_association
+      @machine.state :idling
+      
+      DB.alter_table(@model.table_identifier) do
+        add_column :owner_id, :integer
+      end
+      @model.class_eval { get_db_schema(true) }
+      SequelTest.const_set('Vehicle', @model)
+      
+      owner_model = new_model(:owner) do
+        one_to_many :vehicles, :class_name => 'SequelTest::Vehicle'
+      end
+      SequelTest.const_set('Owner', owner_model)
+      
+      owner = owner_model.create
+      record = @model.create(:state => 'idling', :owner_id => owner.id)
+      assert_equal 'idling', owner.vehicles[0].state
+    end
+    
+    if defined?(Sequel::VERSION) && Gem::Version.new(Sequel::VERSION) >= Gem::Version.new('3.10.0')
+      def test_should_use_stored_values_when_loading_for_one_association
+        @machine.state :idling
+        
+        DB.alter_table(@model.table_identifier) do
+          add_column :owner_id, :integer
+        end
+        @model.class_eval { get_db_schema(true) }
+        SequelTest.const_set('Vehicle', @model)
+        
+        owner_model = new_model(:owner) do
+          one_to_one :vehicle, :class_name => 'SequelTest::Vehicle'
+        end
+        SequelTest.const_set('Owner', owner_model)
+        
+        owner = owner_model.create
+        record = @model.create(:state => 'idling', :owner_id => owner.id)
+        owner.reload
+        assert_equal 'idling', owner.vehicle.state
+      end
+    end
+    
+    def test_should_use_stored_values_when_loading_for_belongs_to_association
+      @machine.state :idling
+      
+      SequelTest.const_set('Vehicle', @model)
+      
+      driver_model = new_model(:driver) do
+        DB.alter_table(table_identifier) do
+          add_column :vehicle_id, :integer
+        end
+        get_db_schema(true)
+        
+        many_to_one :vehicle, :class_name => 'SequelTest::Vehicle'
+      end
+
+      SequelTest.const_set('Driver', driver_model)
+      
+      record = @model.create(:state => 'idling')
+      driver = driver_model.create(:vehicle_id => record.id)
+      assert_equal 'idling', driver.vehicle.state
+    end
+    
+    def teardown
+      SequelTest.class_eval do
+        remove_const('Vehicle') if defined?(SequelTest::Vehicle)
+        remove_const('Owner') if defined?(SequelTest::Owner)
+        remove_const('Driver') if defined?(SequelTest::Driver)
+      end
+      super
     end
   end
   

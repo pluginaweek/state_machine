@@ -144,7 +144,7 @@ module MongoMapperTest
   
   class MachineWithStaticInitialStateTest < BaseTestCase
     def setup
-      @model = new_model do
+      @model = new_model(:vehicle) do
         attr_accessor :value
       end
       @machine = StateMachine::Machine.new(@model, :initial => :parked)
@@ -223,6 +223,65 @@ module MongoMapperTest
       
       record = @model.find(@model.create(:state => nil).id)
       assert_nil record.state
+    end
+    
+    if defined?(MongoMapper::Version) && MongoMapper::Version !~ /^0\.[5-8]\./
+      def test_should_use_stored_values_when_loading_for_many_association
+        @machine.state :idling
+        
+        @model.belongs_to :owner, :class_name => 'MongoMapperTest::Owner'
+        MongoMapperTest.const_set('Vehicle', @model)
+        
+        owner_model = new_model(:owner) do
+          many :vehicles, :class_name => 'MongoMapperTest::Vehicle'
+        end
+        MongoMapperTest.const_set('Owner', owner_model)
+        
+        owner = owner_model.create
+        record = @model.create(:state => 'idling', :owner_id => owner.id)
+        assert_equal 'idling', owner.vehicles[0].state
+      end
+      
+      def test_should_use_stored_values_when_loading_for_one_association
+        @machine.state :idling
+        
+        @model.belongs_to :owner, :class_name => 'MongoMapperTest::Owner'
+        MongoMapperTest.const_set('Vehicle', @model)
+        
+        owner_model = new_model(:owner) do
+          one :vehicle, :class_name => 'MongoMapperTest::Vehicle'
+        end
+        MongoMapperTest.const_set('Owner', owner_model)
+        
+        owner = owner_model.create
+        record = @model.create(:state => 'idling', :owner_id => owner.id)
+        owner.reload
+        assert_equal 'idling', owner.vehicle.state
+      end
+      
+      def test_should_use_stored_values_when_loading_for_belongs_to_association
+        @machine.state :idling
+        
+        MongoMapperTest.const_set('Vehicle', @model)
+        
+        driver_model = new_model(:driver) do
+          belongs_to :vehicle, :class_name => 'MongoMapperTest::Vehicle'
+        end
+        MongoMapperTest.const_set('Driver', driver_model)
+        
+        record = @model.create(:state => 'idling')
+        driver = driver_model.create(:vehicle_id => record.id)
+        assert_equal 'idling', driver.vehicle.state
+      end
+    end
+    
+    def teardown
+      MongoMapperTest.class_eval do
+        remove_const('Vehicle') if defined?(MongoMapperTest::Vehicle)
+        remove_const('Owner') if defined?(MongoMapperTest::Owner)
+        remove_const('Driver') if defined?(MongoMapperTest::Driver)
+      end
+      super
     end
   end
   

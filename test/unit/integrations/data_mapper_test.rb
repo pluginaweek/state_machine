@@ -184,7 +184,7 @@ module DataMapperTest
   
   class MachineWithStaticInitialStateTest < BaseTestCase
     def setup
-      @resource = new_resource do
+      @resource = new_resource(:vehicle) do
         attr_accessor :value
       end
       @machine = StateMachine::Machine.new(@resource, :initial => :parked)
@@ -269,6 +269,52 @@ module DataMapperTest
       
       record = @resource.get(@resource.create(:state => nil).id)
       assert_nil record.state
+    end
+    
+    def test_should_use_stored_values_when_loading_for_many_association
+      @machine.state :idling
+      
+      @resource.property :owner_id, Integer
+      @resource.auto_migrate!
+      
+      owner_resource = new_resource(:owner) do
+        has n, :vehicles
+      end
+      
+      owner = owner_resource.create
+      record = @resource.new(:state => 'idling')
+      record.owner_id = owner.id
+      record.save
+      assert_equal 'idling', owner.vehicles[0].state
+    end
+    
+    def test_should_use_stored_values_when_loading_for_one_association
+      @machine.state :idling
+      
+      @resource.property :owner_id, Integer
+      @resource.auto_migrate!
+      
+      owner_resource = new_resource(:owner) do
+        has 1, :vehicle
+      end
+      
+      owner = owner_resource.create
+      record = @resource.new(:state => 'idling')
+      record.owner_id = owner.id
+      record.save
+      assert_equal 'idling', owner.vehicle.state
+    end
+    
+    def test_should_use_stored_values_when_loading_for_belongs_to_association
+      @machine.state :idling
+      
+      driver_resource = new_resource(:driver) do
+        belongs_to :vehicle
+      end
+      
+      record = @resource.create(:state => 'idling')
+      driver = driver_resource.create(:vehicle_id => record.id)
+      assert_equal 'idling', driver.vehicle.state
     end
   end
   

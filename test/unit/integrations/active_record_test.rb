@@ -170,7 +170,7 @@ module ActiveRecordTest
   
   class MachineWithStaticInitialStateTest < BaseTestCase
     def setup
-      @model = new_model do
+      @model = new_model(:vehicle) do
         attr_accessor :value
       end
       @machine = StateMachine::Machine.new(@model, :initial => :parked)
@@ -270,6 +270,68 @@ module ActiveRecordTest
       
       record = @model.find(@model.create(:state => nil).id)
       assert_nil record.state
+    end
+    
+    def test_should_use_stored_values_when_loading_for_many_association
+      @machine.state :idling
+      
+      @model.connection.add_column @model.table_name, :owner_id, :integer
+      @model.reset_column_information
+      ActiveRecordTest.const_set('Vehicle', @model)
+      
+      owner_model = new_model(:owner) do
+        has_many :vehicles, :class_name => 'ActiveRecordTest::Vehicle'
+      end
+      ActiveRecordTest.const_set('Owner', owner_model)
+      
+      owner = owner_model.create
+      record = @model.create(:state => 'idling', :owner_id => owner.id)
+      assert_equal 'idling', owner.vehicles[0].state
+    end
+    
+    def test_should_use_stored_values_when_loading_for_one_association
+      @machine.state :idling
+      
+      @model.connection.add_column @model.table_name, :owner_id, :integer
+      @model.reset_column_information
+      ActiveRecordTest.const_set('Vehicle', @model)
+      
+      owner_model = new_model(:owner) do
+        has_one :vehicle, :class_name => 'ActiveRecordTest::Vehicle'
+      end
+      ActiveRecordTest.const_set('Owner', owner_model)
+      
+      owner = owner_model.create
+      record = @model.create(:state => 'idling', :owner_id => owner.id)
+      assert_equal 'idling', owner.vehicle.state
+    end
+    
+    def test_should_use_stored_values_when_loading_for_belongs_to_association
+      @machine.state :idling
+      
+      ActiveRecordTest.const_set('Vehicle', @model)
+      
+      driver_model = new_model(:driver) do
+        connection.add_column table_name, :vehicle_id, :integer
+        
+        belongs_to :vehicle, :class_name => 'ActiveRecordTest::Vehicle'
+      end
+
+      ActiveRecordTest.const_set('Driver', driver_model)
+      
+      record = @model.create(:state => 'idling')
+      driver = driver_model.create(:vehicle_id => record.id)
+      assert_equal 'idling', driver.vehicle.state
+    end
+    
+    def teardown
+      ActiveRecordTest.class_eval do
+        remove_const('Vehicle') if defined?(ActiveRecordTest::Vehicle)
+        remove_const('Owner') if defined?(ActiveRecordTest::Owner)
+        remove_const('Driver') if defined?(ActiveRecordTest::Driver)
+      end
+      ActiveSupport::Dependencies.clear if defined?(ActiveSupport::Dependencies)
+      super
     end
   end
   
