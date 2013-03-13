@@ -2,6 +2,7 @@
 
 source "http://www.rubygems.org"
 
+gem "extlib", "0.9.16"
 gem "dm-core", "0.10.2"
 gem "dm-migrations", "0.10.2"
 gem "dm-validations", "0.10.2"

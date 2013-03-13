@@ -32,7 +32,7 @@ GEM
     do_sqlite3 (0.9.7)
       data_objects (= 0.9.7)
       hoe (>= 1.8.2)
-    extlib (0.9.16)
+    extlib (0.9.8)
     hoe (3.5.0)
       rake (>= 0.8, < 11.0)
     multi_json (1.6.1)
@@ -61,6 +61,7 @@ DEPENDENCIES
   dm-observer (= 0.9.7)
   dm-validations (= 0.9.7)
   do_sqlite3 (= 0.9.7)
+  extlib (= 0.9.8)
   rake
   simplecov
   state_machine!

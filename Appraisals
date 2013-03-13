@@ -232,7 +232,7 @@ if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1"
     gem "mongo_mapper", "0.12.0"
   end
 end
-  
+
 # Mongoid integrations
 if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0"
   appraise "mongoid-2.0.0" do
@@ -390,6 +390,7 @@ if RUBY_VERSION < "1.9.1" && RUBY_PLATFORM != 'java' && (!defined?(RUBY_ENGINE) 
   end
 
   appraise "data_mapper-0.9.7" do
+    gem "extlib", "0.9.8"
     gem "dm-core", "0.9.7"
     gem "dm-migrations", "0.9.7"
     gem "dm-validations", "0.9.7"
@@ -399,6 +400,7 @@ if RUBY_VERSION < "1.9.1" && RUBY_PLATFORM != 'java' && (!defined?(RUBY_ENGINE) 
   end
 
   appraise "data_mapper-0.9.11" do
+    gem "extlib", "0.9.11"
     gem "dm-core", "0.9.11"
     gem "dm-migrations", "0.9.11"
     gem "dm-validations", "0.9.11"
@@ -408,6 +410,7 @@ if RUBY_VERSION < "1.9.1" && RUBY_PLATFORM != 'java' && (!defined?(RUBY_ENGINE) 
   end
 
   appraise "data_mapper-0.10.2" do
+    gem "extlib", "0.9.16"
     gem "dm-core", "0.10.2"
     gem "dm-migrations", "0.10.2"
     gem "dm-validations", "0.10.2"

@@ -50,6 +50,7 @@ DEPENDENCIES
   dm-observer (= 0.10.2)
   dm-validations (= 0.10.2)
   do_sqlite3 (= 0.10.2)
+  extlib (= 0.9.16)
   rake
   simplecov
   state_machine!

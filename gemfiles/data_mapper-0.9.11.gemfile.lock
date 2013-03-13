@@ -31,7 +31,7 @@ GEM
     do_sqlite3 (0.9.11)
       data_objects (= 0.9.11)
       hoe (>= 1.8.2)
-    extlib (0.9.16)
+    extlib (0.9.11)
     hoe (3.5.0)
       rake (>= 0.8, < 11.0)
     launchy (2.0.3)
@@ -65,6 +65,7 @@ DEPENDENCIES
   dm-observer (= 0.9.11)
   dm-validations (= 0.9.11)
   do_sqlite3 (= 0.9.11)
+  extlib (= 0.9.11)
   rake
   simplecov
   state_machine!
