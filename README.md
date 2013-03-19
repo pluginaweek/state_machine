@@ -743,6 +743,29 @@ v.state?('parked')  # => true
 v.state?(:parked)   # => true
 ```
 
+**Note** that none of this actually has to do with the type of the value that
+gets stored.  By default, all state values are assumed to be string -- regardless
+of whether the state names are symbols or strings.  If you want to store states
+as symbols instead you'll have to be explicit about it:
+
+```ruby
+class Vehicle
+  state_machine :initial => :parked do
+    event :ignite do
+      transition :parked => :idling
+    end
+    
+    states.each do |state|
+      self.state(state.name, :value => state.name.to_sym)
+    end
+  end
+end
+
+v = Vehicle.new     # => #<Vehicle:0xb71da5f8 @state=:parked>
+v.state?('parked')  # => true
+v.state?(:parked)   # => true
+```
+
 ### Syntax flexibility
 
 Although state_machine introduces a simplified syntax, it still remains
