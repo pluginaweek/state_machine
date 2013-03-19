@@ -55,6 +55,14 @@ if RUBY_VERSION < "1.9.1"
   end
 end
 
+if RUBY_VERSION < "1.9.2"
+  appraise "active_record-2.3.5" do
+    gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
+    gem "activerecord", "2.3.5"
+    gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
+  end
+end
+
 if RUBY_VERSION < "2.0.0"
   appraise "active_record-2.3.12" do
     gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]

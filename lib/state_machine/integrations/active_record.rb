@@ -486,6 +486,10 @@ module StateMachine
               def save!(*)
                 self.class.state_machine(#{name.inspect}).send(:around_save, self) { super } || raise(ActiveRecord::RecordInvalid.new(self))
               end
+              
+              def changed_for_autosave?
+                super || self.class.state_machines.any? {|name, machine| machine.action == :save && machine.read(self, :event)}
+              end
             end_eval
           else
             super
