@@ -312,28 +312,42 @@ if RUBY_VERSION > "1.9.2"
 end
 
 # Sequel integrations
-appraise "sequel-2.8.0" do
-  gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
-  gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
-  gem "sequel", "2.8.0"
+if RUBY_VERSION < "1.9.2"
+  appraise "sequel-2.8.0" do
+    gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
+    gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
+    gem "sequel", "2.8.0"
+  end
+
+  appraise "sequel-2.11.0" do
+    gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
+    gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
+    gem "sequel", "2.11.0"
+  end
+
+  appraise "sequel-2.12.0" do
+    gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
+    gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
+    gem "sequel", "2.12.0"
+  end
+
+  appraise "sequel-3.0.0" do
+    gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
+    gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
+    gem "sequel", "3.0.0"
+  end
+
+  appraise "sequel-3.4.0" do
+    gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
+    gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
+    gem "sequel", "3.4.0"
+  end
 end
 
-appraise "sequel-2.11.0" do
+appraise "sequel-3.10.0" do
   gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
   gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
-  gem "sequel", "2.11.0"
-end
-
-appraise "sequel-2.12.0" do
-  gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
-  gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
-  gem "sequel", "2.12.0"
-end
-
-appraise "sequel-3.0.0" do
-  gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
-  gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
-  gem "sequel", "3.0.0"
+  gem "sequel", "3.10.0"
 end
 
 appraise "sequel-3.13.0" do
@@ -455,16 +469,17 @@ appraise "data_mapper-1.0.2" do
   gem "dm-sqlite-adapter", "1.0.2"
 end
 
-appraise "data_mapper-1.1.0" do
-  gem "dm-core", "1.1.0"
-  gem "dm-migrations", "1.1.0"
-  gem "dm-validations", "1.1.0"
-  gem "dm-observer", "1.1.0"
-  gem "dm-transactions", "1.1.0"
-  gem "dm-sqlite-adapter", "1.1.0"
-end
 
 if RUBY_VERSION > "1.8.6"
+  appraise "data_mapper-1.1.0" do
+    gem "dm-core", "1.1.0"
+    gem "dm-migrations", "1.1.0"
+    gem "dm-validations", "1.1.0"
+    gem "dm-observer", "1.1.0"
+    gem "dm-transactions", "1.1.0"
+    gem "dm-sqlite-adapter", "1.1.0"
+  end
+  
   appraise "data_mapper-1.2.0" do
     gem "dm-core", "1.2.0"
     gem "dm-migrations", "1.2.0"

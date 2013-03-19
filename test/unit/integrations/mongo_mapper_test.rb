@@ -1560,6 +1560,45 @@ module MongoMapperTest
     end
   end
   
+  if defined?(MongoMapper::Version) && MongoMapper::Version !~ /^0\.[5-8]\./
+    class MachineWithEventAttributesOnAutosaveTest < BaseTestCase
+      def setup
+        @vehicle_model = new_model(:vehicle) do
+          belongs_to :owner, :class_name => 'MongoMapperTest::Owner'
+        end
+        MongoMapperTest.const_set('Vehicle', @vehicle_model)
+        
+        @owner_model = new_model(:owner)
+        MongoMapperTest.const_set('Owner', @owner_model)
+        
+        machine = StateMachine::Machine.new(@vehicle_model)
+        machine.event :ignite do
+          transition :parked => :idling
+        end
+        
+        @owner = @owner_model.create
+        @vehicle = @vehicle_model.create(:state => 'parked', :owner_id => @owner.id)
+      end
+      
+      def test_should_persist_many_association
+        @owner_model.many :vehicles, :class_name => 'MongoMapperTest::Vehicle', :autosave => true
+        @owner.vehicles[0].state_event = 'ignite'
+        @owner.save
+        
+        @vehicle.reload
+        assert_equal 'idling', @vehicle.state
+      end
+      
+      def teardown
+        MongoMapperTest.class_eval do
+          remove_const('Vehicle')
+          remove_const('Owner')
+        end
+        super
+      end
+    end
+  end
+  
   class MachineWithEventAttributesOnSaveBangTest < BaseTestCase
     def setup
       @model = new_model

@@ -1643,6 +1643,64 @@ module SequelTest
     end
   end
   
+  if defined?(Sequel::VERSION) && Gem::Version.new(Sequel::VERSION) >= Gem::Version.new('3.4.0')
+    class MachineWithEventAttributesOnAutosaveTest < BaseTestCase
+      def setup
+        @vehicle_model = new_model(:vehicle)
+        DB.alter_table(@vehicle_model.table_identifier) do
+          add_column :owner_id, :integer
+        end
+        @vehicle_model.class_eval { get_db_schema(true) }
+        SequelTest.const_set('Vehicle', @vehicle_model)
+        
+        @owner_model = new_model(:owner) do
+          plugin :nested_attributes
+        end
+        SequelTest.const_set('Owner', @owner_model)
+        
+        machine = StateMachine::Machine.new(@vehicle_model)
+        machine.event :ignite do
+          transition :parked => :idling
+        end
+        
+        @owner = @owner_model.create
+        @vehicle = @vehicle_model.create(:state => 'parked', :owner_id => @owner.id)
+      end
+      
+      def test_should_persist_many_association
+        @owner_model.one_to_many :vehicles, :class_name => 'SequelTest::Vehicle'
+        @owner_model.nested_attributes :vehicles
+        
+        @owner.vehicles_attributes = [{:id => @vehicle.id, :state_event => 'ignite'}]
+        @owner.save
+        
+        @vehicle.reload
+        assert_equal 'idling', @vehicle.state
+      end
+      
+      if Gem::Version.new(Sequel::VERSION) >= Gem::Version.new('3.10.0')
+        def test_should_persist_one_association
+          @owner_model.one_to_one :vehicle, :class_name => 'SequelTest::Vehicle'
+          @owner_model.nested_attributes :vehicle
+          
+          @owner.vehicle_attributes = {:id => @vehicle.id, :state_event => 'ignite'}
+          @owner.save
+          
+          @vehicle.reload
+          assert_equal 'idling', @vehicle.state
+        end
+      end
+      
+      def teardown
+        SequelTest.class_eval do
+          remove_const('Vehicle')
+          remove_const('Owner')
+        end
+        super
+      end
+    end
+  end
+  
   class MachineWithEventAttributesOnCustomActionTest < BaseTestCase
     def setup
       @superclass = new_model do
