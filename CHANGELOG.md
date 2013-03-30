@@ -1,5 +1,7 @@
 # master
 
+## 1.2.0 / 2013-03-30
+
 * Allow multiple whitelisted / blacklisted :to states when definining transitions
 * Fix event attributes not being processed when saved via association autosaving
 * Fix Mongoid integration not setting initial state attributes properly for associations
