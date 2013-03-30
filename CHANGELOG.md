@@ -1,5 +1,6 @@
 # master
 
+* Allow multiple whitelisted / blacklisted :to states when definining transitions
 * Fix event attributes not being processed when saved via association autosaving
 * Fix Mongoid integration not setting initial state attributes properly for associations
 * Completely rewrite ORM action hooks to behave more consistently across the board

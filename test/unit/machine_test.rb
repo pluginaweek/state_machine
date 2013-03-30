@@ -2505,11 +2505,6 @@ class MachineWithTransitionsTest < Test::Unit::TestCase
     assert_equal 'Must specify :on event', exception.message
   end
   
-  def test_should_not_allow_except_to_option
-    exception = assert_raise(ArgumentError) {@machine.transition(:except_to => :parked, :on => :ignite)}
-    assert_equal 'Invalid key(s): except_to', exception.message
-  end
-  
   def test_should_not_allow_except_on_option
     exception = assert_raise(ArgumentError) {@machine.transition(:except_on => :ignite, :on => :ignite)}
     assert_equal 'Invalid key(s): except_on', exception.message
@@ -2525,6 +2520,10 @@ class MachineWithTransitionsTest < Test::Unit::TestCase
   
   def test_should_allow_except_from_option
     assert_nothing_raised {@machine.transition(:except_from => :idling, :on => :ignite)}
+  end
+  
+  def test_should_allow_except_to_option
+    assert_nothing_raised {@machine.transition(:except_to => :parked, :on => :ignite)}
   end
   
   def test_should_allow_implicit_options
