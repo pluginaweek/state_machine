@@ -690,16 +690,11 @@ class StateWithContextTest < Test::Unit::TestCase
   end
   
   def test_should_not_use_context_methods_as_owner_class_methods
-    assert_not_equal @speed_method, @klass.instance_method(:speed)
-    assert_not_equal @rpm_method, @klass.instance_method(:rpm)
+    assert_not_equal @speed_method, @state.context_methods[:speed]
+    assert_not_equal @rpm_method, @state.context_methods[:rpm]
   end
   
   def test_should_use_context_methods_as_aliased_owner_class_methods
-    assert_not_equal @speed_method, @klass.instance_method("__state_idling_speed_#{@context.object_id}__")
-    assert_not_equal @rpm_method, @klass.instance_method("__state_idling_rpm_#{@context.object_id}__")
-  end
-  
-  def test_should_include_context_methods_in_state_methods
     assert_equal @speed_method, @state.context_methods[:"__state_idling_speed_#{@context.object_id}__"]
     assert_equal @rpm_method, @state.context_methods[:"__state_idling_rpm_#{@context.object_id}__"]
   end
@@ -750,16 +745,11 @@ class StateWithMultipleContextsTest < Test::Unit::TestCase
   end
   
   def test_should_not_use_context_methods_as_owner_class_methods
-    assert_not_equal @speed_method, @klass.instance_method(:speed)
-    assert_not_equal @rpm_method, @klass.instance_method(:rpm)
+    assert_not_equal @speed_method, @state.context_methods[:speed]
+    assert_not_equal @rpm_method, @state.context_methods[:rpm]
   end
   
   def test_should_use_context_methods_as_aliased_owner_class_methods
-    assert_not_equal @speed_method, @klass.instance_method("__state_idling_speed_#{@context.object_id}__")
-    assert_not_equal @rpm_method, @klass.instance_method("__state_idling_rpm_#{@context.object_id}__")
-  end
-  
-  def test_should_include_context_methods_in_state_methods
     assert_equal @speed_method, @state.context_methods[:"__state_idling_speed_#{@context.object_id}__"]
     assert_equal @rpm_method, @state.context_methods[:"__state_idling_rpm_#{@context.object_id}__"]
   end
@@ -900,42 +890,44 @@ class StateWithValidMethodCallForCurrentStateTest < Test::Unit::TestCase
   end
 end
 
-class StateWithValidInheritedMethodCallForCurrentStateTest < Test::Unit::TestCase
-  def setup
-    @superclass = Class.new do
-      def speed(arg = nil)
-        [arg]
+if RUBY_VERSION > '1.8.7'
+  class StateWithValidInheritedMethodCallForCurrentStateTest < Test::Unit::TestCase
+    def setup
+      @superclass = Class.new do
+        def speed(arg = nil)
+          [arg]
+        end
       end
-    end
-    @klass = Class.new(@superclass)
-    @machine = StateMachine::Machine.new(@klass, :initial => :idling)
-    @ancestors = @klass.ancestors
-    @state = @machine.state(:idling)
-    @state.context do
-      def speed(arg = nil)
-        [arg] + super(2)
+      @klass = Class.new(@superclass)
+      @machine = StateMachine::Machine.new(@klass, :initial => :idling)
+      @ancestors = @klass.ancestors
+      @state = @machine.state(:idling)
+      @state.context do
+        def speed(arg = nil)
+          [arg] + super(2)
+        end
       end
-    end
-    
-    @object = @klass.new
-  end
-  
-  def test_should_not_raise_an_exception
-    assert_nothing_raised { @state.call(@object, :speed, :method_missing => lambda {raise}) }
-  end
-  
-  def test_should_be_able_to_call_super
-    assert_equal [1, 2], @state.call(@object, :speed, 1)
-  end
-  
-  def test_should_allow_redefinition
-    @state.context do
-      def speed(arg = nil)
-        [arg] + super(3)
-      end
+      
+      @object = @klass.new
     end
     
-    assert_equal [1, 3], @state.call(@object, :speed, 1)
+    def test_should_not_raise_an_exception
+      assert_nothing_raised { @state.call(@object, :speed, :method_missing => lambda {raise}) }
+    end
+    
+    def test_should_be_able_to_call_super
+      assert_equal [1, 2], @state.call(@object, :speed, 1)
+    end
+    
+    def test_should_allow_redefinition
+      @state.context do
+        def speed(arg = nil)
+          [arg] + super(3)
+        end
+      end
+      
+      assert_equal [1, 3], @state.call(@object, :speed, 1)
+    end
   end
 end
 
