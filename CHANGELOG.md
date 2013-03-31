@@ -1,5 +1,6 @@
 # master
 
+* Raise InvalidContext error when the current state does not define a state-driven behavior
 * Fix target state being indeterminate for transitions that use blacklists
 * Allow super to be called within state-driven behaviors
 

@@ -225,7 +225,16 @@ module StateMachine
       elsif method_missing = options[:method_missing]
         # Dispatch to the superclass since the object either isn't in this state
         # or this state doesn't handle the method
-        method_missing.call
+        begin
+          method_missing.call
+        rescue NoMethodError => ex
+          if ex.name.to_s == options[:method_name].to_s && ex.args == args
+            # No valid context for this method
+            raise InvalidContext.new(object, "State #{state.name.inspect} for #{machine.name.inspect} is not a valid context for calling ##{options[:method_name]}")
+          else
+            raise
+          end
+        end
       end
     end
     
