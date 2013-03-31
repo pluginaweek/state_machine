@@ -147,7 +147,8 @@ module StateMachine
           to = if match[:to].is_a?(LoopbackMatcher)
             from
           else
-            values = requirements.include?(:to) ? [requirements[:to]].flatten : [from] | machine.states.keys(:name)
+            values = requirements.include?(:to) ? [requirements[:to]].flatten : [from] | machine.states.map {|state| state.name}
+            
             match[:to].filter(values).first
           end
           

@@ -1,5 +1,6 @@
 # master
 
+* Fix target state being indeterminate for transitions that use blacklists
 * Allow super to be called within state-driven behaviors
 
 ## 1.2.0 / 2013-03-30
