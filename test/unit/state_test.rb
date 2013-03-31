@@ -36,7 +36,7 @@ class StateByDefaultTest < Test::Unit::TestCase
   
   def test_should_not_have_any_methods
     expected = {}
-    assert_equal expected, @state.methods
+    assert_equal expected, @state.context_methods
   end
 end
 
@@ -79,7 +79,7 @@ class StateTest < Test::Unit::TestCase
   end
   
   def test_should_use_pretty_inspect
-    assert_equal '#<StateMachine::State name=:parked value="parked" initial=false context=[]>', @state.inspect
+    assert_equal '#<StateMachine::State name=:parked value="parked" initial=false>', @state.inspect
   end
 end
 
@@ -632,8 +632,14 @@ class StateAfterBeingCopiedTest < Test::Unit::TestCase
     @copied_state = @state.dup
   end
   
-  def test_should_not_have_the_same_collection_of_methods
-    assert_not_same @state.methods, @copied_state.methods
+  def test_should_not_have_the_context
+    state_context = nil
+    @state.context { state_context = self }
+    
+    copied_state_context = nil
+    @copied_state.context { copied_state_context = self }
+    
+    assert_not_same state_context, copied_state_context
   end
 end
 
@@ -644,9 +650,12 @@ class StateWithContextTest < Test::Unit::TestCase
     @ancestors = @klass.ancestors
     @machine.states << @state = StateMachine::State.new(@machine, :idling)
     
+    context = nil
     speed_method = nil
     rpm_method = nil
-    @state.context do
+    @result = @state.context do
+      context = self
+      
       def speed
         0
       end
@@ -658,17 +667,26 @@ class StateWithContextTest < Test::Unit::TestCase
       rpm_method = instance_method(:rpm)
     end
     
+    @context = context
     @speed_method = speed_method
     @rpm_method = rpm_method
   end
   
+  def test_should_return_true
+    assert_equal true, @result
+  end
+  
   def test_should_include_new_module_in_owner_class
     assert_not_equal @ancestors, @klass.ancestors
-    assert_equal 1, @klass.ancestors.size - @ancestors.size
+    assert_equal [@context], @klass.ancestors - @ancestors
   end
   
   def test_should_define_each_context_method_in_owner_class
     %w(speed rpm).each {|method| assert @klass.method_defined?(method)}
+  end
+  
+  def test_should_define_aliased_context_method_in_owner_class
+    %w(speed rpm).each {|method| assert @klass.method_defined?("__state_idling_#{method}_#{@context.object_id}__")}
   end
   
   def test_should_not_use_context_methods_as_owner_class_methods
@@ -676,9 +694,14 @@ class StateWithContextTest < Test::Unit::TestCase
     assert_not_equal @rpm_method, @klass.instance_method(:rpm)
   end
   
+  def test_should_use_context_methods_as_aliased_owner_class_methods
+    assert_not_equal @speed_method, @klass.instance_method("__state_idling_speed_#{@context.object_id}__")
+    assert_not_equal @rpm_method, @klass.instance_method("__state_idling_rpm_#{@context.object_id}__")
+  end
+  
   def test_should_include_context_methods_in_state_methods
-    assert_equal @speed_method, @state.methods[:speed]
-    assert_equal @rpm_method, @state.methods[:rpm]
+    assert_equal @speed_method, @state.context_methods[:"__state_idling_speed_#{@context.object_id}__"]
+    assert_equal @rpm_method, @state.context_methods[:"__state_idling_rpm_#{@context.object_id}__"]
   end
 end
 
@@ -689,14 +712,17 @@ class StateWithMultipleContextsTest < Test::Unit::TestCase
     @ancestors = @klass.ancestors
     @machine.states << @state = StateMachine::State.new(@machine, :idling)
     
+    context = nil
     speed_method = nil
     @state.context do
+      context = self
       def speed
         0
       end
       
       speed_method = instance_method(:speed)
     end
+    @context = context
     @speed_method = speed_method
     
     rpm_method = nil
@@ -712,11 +738,15 @@ class StateWithMultipleContextsTest < Test::Unit::TestCase
   
   def test_should_include_new_module_in_owner_class
     assert_not_equal @ancestors, @klass.ancestors
-    assert_equal 2, @klass.ancestors.size - @ancestors.size
+    assert_equal [@context], @klass.ancestors - @ancestors
   end
   
   def test_should_define_each_context_method_in_owner_class
     %w(speed rpm).each {|method| assert @klass.method_defined?(method)}
+  end
+  
+  def test_should_define_aliased_context_method_in_owner_class
+    %w(speed rpm).each {|method| assert @klass.method_defined?("__state_idling_#{method}_#{@context.object_id}__")}
   end
   
   def test_should_not_use_context_methods_as_owner_class_methods
@@ -724,9 +754,14 @@ class StateWithMultipleContextsTest < Test::Unit::TestCase
     assert_not_equal @rpm_method, @klass.instance_method(:rpm)
   end
   
+  def test_should_use_context_methods_as_aliased_owner_class_methods
+    assert_not_equal @speed_method, @klass.instance_method("__state_idling_speed_#{@context.object_id}__")
+    assert_not_equal @rpm_method, @klass.instance_method("__state_idling_rpm_#{@context.object_id}__")
+  end
+  
   def test_should_include_context_methods_in_state_methods
-    assert_equal @speed_method, @state.methods[:speed]
-    assert_equal @rpm_method, @state.methods[:rpm]
+    assert_equal @speed_method, @state.context_methods[:"__state_idling_speed_#{@context.object_id}__"]
+    assert_equal @rpm_method, @state.context_methods[:"__state_idling_rpm_#{@context.object_id}__"]
   end
 end
 
@@ -759,27 +794,37 @@ class StateWithRedefinedContextMethodTest < Test::Unit::TestCase
     @machine = StateMachine::Machine.new(@klass)
     @machine.states << @state = StateMachine::State.new(@machine, 'on')
     
+    old_context = nil
     old_speed_method = nil
     @state.context do
+      old_context = self
       def speed
         0
       end
       old_speed_method = instance_method(:speed)
     end
+    @old_context = old_context
     @old_speed_method = old_speed_method
     
+    current_context = nil
     current_speed_method = nil
     @state.context do
+      current_context = self
       def speed
         'green'
       end
       current_speed_method = instance_method(:speed)
     end
+    @current_context = current_context
     @current_speed_method = current_speed_method
   end
   
   def test_should_track_latest_defined_method
-    assert_equal @current_speed_method, @state.methods[:speed]
+    assert_equal @current_speed_method, @state.context_methods[:"__state_on_speed_#{@current_context.object_id}__"]
+  end
+  
+  def test_should_have_the_same_context
+    assert_equal @current_context, @old_context
   end
 end
 
@@ -799,7 +844,7 @@ class StateWithInvalidMethodCallTest < Test::Unit::TestCase
   end
   
   def test_should_call_method_missing_arg
-    assert_equal 1, @state.call(@object, :invalid, lambda {1})
+    assert_equal 1, @state.call(@object, :invalid, :method_missing => lambda {1})
   end
 end
 
@@ -819,11 +864,11 @@ class StateWithValidMethodCallForDifferentStateTest < Test::Unit::TestCase
   end
   
   def test_should_call_method_missing_arg
-    assert_equal 1, @state.call(@object, :speed, lambda {1})
+    assert_equal 1, @state.call(@object, :speed, :method_missing => lambda {1})
   end
 end
 
-class StateWithValidMethodCallForCurrentStaeTest < Test::Unit::TestCase
+class StateWithValidMethodCallForCurrentStateTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
     @machine = StateMachine::Machine.new(@klass, :initial => :idling)
@@ -839,11 +884,11 @@ class StateWithValidMethodCallForCurrentStaeTest < Test::Unit::TestCase
   end
   
   def test_should_not_raise_an_exception
-    assert_nothing_raised { @state.call(@object, :speed, lambda {raise}) }
+    assert_nothing_raised { @state.call(@object, :speed, :method_missing => lambda {raise}) }
   end
   
   def test_should_pass_arguments_through
-    assert_equal 1, @state.call(@object, :speed, lambda {}, 1)
+    assert_equal 1, @state.call(@object, :speed, 1, :method_missing => lambda {})
   end
   
   def test_should_pass_blocks_through
@@ -851,7 +896,46 @@ class StateWithValidMethodCallForCurrentStaeTest < Test::Unit::TestCase
   end
   
   def test_should_pass_both_arguments_and_blocks_through
-    assert_equal [1, 2], @state.call(@object, :speed, lambda {}, 1) {2}
+    assert_equal [1, 2], @state.call(@object, :speed, 1, :method_missing => lambda {}) {2}
+  end
+end
+
+class StateWithValidInheritedMethodCallForCurrentStateTest < Test::Unit::TestCase
+  def setup
+    @superclass = Class.new do
+      def speed(arg = nil)
+        [arg]
+      end
+    end
+    @klass = Class.new(@superclass)
+    @machine = StateMachine::Machine.new(@klass, :initial => :idling)
+    @ancestors = @klass.ancestors
+    @state = @machine.state(:idling)
+    @state.context do
+      def speed(arg = nil)
+        [arg] + super(2)
+      end
+    end
+    
+    @object = @klass.new
+  end
+  
+  def test_should_not_raise_an_exception
+    assert_nothing_raised { @state.call(@object, :speed, :method_missing => lambda {raise}) }
+  end
+  
+  def test_should_be_able_to_call_super
+    assert_equal [1, 2], @state.call(@object, :speed, 1)
+  end
+  
+  def test_should_allow_redefinition
+    @state.context do
+      def speed(arg = nil)
+        [arg] + super(3)
+      end
+    end
+    
+    assert_equal [1, 3], @state.call(@object, :speed, 1)
   end
 end
 

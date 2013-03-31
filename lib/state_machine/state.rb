@@ -41,12 +41,6 @@ module StateMachine
     # state
     attr_accessor :matcher
     
-    # Tracks all of the methods that have been defined for the machine's owner
-    # class when objects are in this state.
-    # 
-    # Maps :method_name => UnboundMethod
-    attr_reader :methods
-    
     # Creates a new state within the context of the given machine.
     # 
     # Configuration options:
@@ -70,8 +64,8 @@ module StateMachine
       @value = options.include?(:value) ? options[:value] : name && name.to_s
       @cache = options[:cache]
       @matcher = options[:if]
-      @methods = {}
       @initial = options[:initial] == true
+      @context = StateContext.new(self)
       
       if name
         conflicting_machines = machine.owner_class.state_machines.select {|other_name, other_machine| other_machine != machine && other_machine.states[qualified_name, :qualified_name]}
@@ -89,11 +83,11 @@ module StateMachine
       end
     end
     
-    # Creates a copy of this state in addition to the list of associated
-    # methods to prevent conflicts across different states.
+    # Creates a copy of this state, excluding the context to prevent conflicts
+    # across different machines.
     def initialize_copy(orig) #:nodoc:
       super
-      @methods = methods.dup
+      @context = StateContext.new(self)
     end
     
     # Determines whether there are any states that can be transitioned to from
@@ -184,28 +178,36 @@ module StateMachine
     # This can be called multiple times.  Each time a new context is created,
     # a new module will be included in the owner class.
     def context(&block)
-      machine_name = machine.name
+      # Include the context
+      context = @context
+      machine.owner_class.class_eval { include context }
       
-      # Evaluate the method definitions
-      context = StateContext.new(self)
+      # Evaluate the method definitions and track which ones were added
+      old_methods = context_methods
       context.class_eval(&block)
-      context.instance_methods.each do |method|
-        methods[method.to_sym] = context.instance_method(method)
-        
-        # Calls the method defined by the current state of the machine
+      new_methods = context_methods.to_a.select {|(name, method)| old_methods[name] != method}
+      
+      # Alias new methods so that the only execute when the object is in this state
+      new_methods.each do |(method_name, method)|
+        context_name = context_name_for(method_name)
         context.class_eval <<-end_eval, __FILE__, __LINE__ + 1
-          remove_method :#{method}
-          def #{method}(*args, &block)
-            self.class.state_machine(#{machine_name.inspect}).states.fetch(#{name.inspect}).call(self, #{method.inspect}, lambda {super(*args, &block)}, *args, &block)
+          alias_method :"#{context_name}", :#{method_name}
+          def #{method_name}(*args, &block)
+            state = self.class.state_machine(#{machine.name.inspect}).states.fetch(#{name.inspect})
+            options = {:method_missing => lambda {super(*args, &block)}, :method_name => #{method_name.inspect}}
+            state.call(self, :"#{context_name}", *(args + [options]), &block)
           end
         end_eval
       end
       
-      # Include the context so that it can be bound to the owner class (the
-      # context is considered an ancestor, so it's allowed to be bound)
-      machine.owner_class.class_eval { include context }
-      
-      context
+      true
+    end
+    
+    # The list of methods that have been defined in this state's context
+    def context_methods
+      @context.instance_methods.inject({}) do |methods, name|
+        methods.merge(name.to_sym => @context.instance_method(name))
+      end
     end
     
     # Calls a method defined in this state's context on the given object.  All
@@ -213,14 +215,17 @@ module StateMachine
     # 
     # If the method has never been defined for this state, then a NoMethodError
     # will be raised.
-    def call(object, method, method_missing = nil, *args, &block)
-      if machine.states.matches?(object, name) && context_method = methods[method.to_sym]
-        # Method is defined by the state: proxy it through
-        context_method.bind(object).call(*args, &block)
-      else
+    def call(object, method, *args, &block)
+      options = args.last.is_a?(Hash) ? args.pop : {}
+      options = {:method_name => method}.merge(options)
+      state = machine.states.match!(object)
+      
+      if state == self && object.respond_to?(method)
+        object.send(method, *args, &block)
+      elsif method_missing = options[:method_missing]
         # Dispatch to the superclass since the object either isn't in this state
         # or this state doesn't handle the method
-        method_missing.call if method_missing
+        method_missing.call
       end
     end
     
@@ -256,7 +261,7 @@ module StateMachine
     #   state = StateMachine::State.new(machine, :parked, :value => 1, :initial => true)
     #   state   # => #<StateMachine::State name=:parked value=1 initial=true context=[]>
     def inspect
-      attributes = [[:name, name], [:value, @value], [:initial, initial?], [:context, methods.keys]]
+      attributes = [[:name, name], [:value, @value], [:initial, initial?]]
       "#<#{self.class} #{attributes.map {|attr, value| "#{attr}=#{value.inspect}"} * ' '}>"
     end
     
@@ -273,6 +278,11 @@ module StateMachine
         machine.define_helper(:instance, "#{qualified_name}?") do |machine, object|
           machine.states.matches?(object, name)
         end
+      end
+      
+      # Generates the name of the method containing the actual implementation
+      def context_name_for(method)
+        :"__#{machine.name}_#{name}_#{method}_#{@context.object_id}__"
       end
   end
 end

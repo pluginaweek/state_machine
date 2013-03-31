@@ -2214,12 +2214,12 @@ class MachineWithStatesWithBehaviorsTest < Test::Unit::TestCase
   end
   
   def test_should_define_behaviors_for_each_state
-    assert_not_nil @parked.methods[:speed]
-    assert_not_nil @idling.methods[:speed]
+    assert_not_nil @parked.context_methods[:speed]
+    assert_not_nil @idling.context_methods[:speed]
   end
   
   def test_should_define_different_behaviors_for_each_state
-    assert_not_equal @parked.methods[:speed], @idling.methods[:speed]
+    assert_not_equal @parked.context_methods[:speed], @idling.context_methods[:speed]
   end
 end
 

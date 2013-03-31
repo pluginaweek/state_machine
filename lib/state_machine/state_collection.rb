@@ -94,7 +94,7 @@ module StateMachine
       order = select {|state| state.initial}.map {|state| state.name}
       
       machine.events.each {|event| order += event.known_states}
-      order += select {|state| state.methods.any?}.map {|state| state.name}
+      order += select {|state| state.context_methods.any?}.map {|state| state.name}
       order += keys(:name) - machine.callbacks.values.flatten.map {|callback| callback.known_states}.flatten
       order += keys(:name)
       

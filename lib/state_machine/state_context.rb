@@ -2,6 +2,10 @@ require 'state_machine/assertions'
 require 'state_machine/eval_helpers'
 
 module StateMachine
+  # A method was called in an invalid state context
+  class InvalidContext < Error
+  end
+  
   # Represents a module which will get evaluated within the context of a state.
   # 
   # Class-level methods are proxied to the owner class, injecting a custom
