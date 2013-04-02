@@ -6,9 +6,19 @@ PATH
 GEM
   remote: http://www.rubygems.org/
   specs:
+    activesupport (2.3.11)
     appraisal (0.5.1)
       bundler
       rake
+    bson (1.0)
+    jnunemaker-validatable (1.8.4)
+      activesupport (>= 2.3.4)
+    mongo (1.0)
+      bson (= 1.0)
+    mongo_mapper (0.7.5)
+      activesupport (>= 2.3.4)
+      jnunemaker-validatable (= 1.8.4)
+      mongo (= 1.0)
     multi_json (1.0.4)
     rake (0.9.2.2)
     simplecov (0.5.4)
@@ -21,7 +31,9 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  activesupport (= 2.3.11)
   appraisal (~> 0.5.0)
+  mongo_mapper (= 0.7.5)
   rake
   simplecov
   state_machine!
