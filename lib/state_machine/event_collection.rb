@@ -1,3 +1,5 @@
+require 'state_machine/node_collection'
+
 module StateMachine
   # Represents a collection of events in a state machine
   class EventCollection < NodeCollection
