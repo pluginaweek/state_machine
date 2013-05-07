@@ -662,7 +662,7 @@ To trigger the `ignite` event, you would typically call the `Vehicle#ignite`
 method like so:
 
 ```ruby
-vehicle = Vehicle.create    # => #<Vehicle id=1 state="parked" alarm_state="active">
+vehicle = Vehicle.create    # => #<Vehicle id=1 state="parked">
 vehicle.ignite              # => true
 vehicle.state               # => "idling"
 ```
@@ -672,7 +672,7 @@ also be achieved *implicitly* by setting the state event attribute and invoking
 the action associated with the state machine.  For example:
 
 ```ruby
-vehicle = Vehicle.create        # => #<Vehicle id=1 state="parked" alarm_state="active">
+vehicle = Vehicle.create        # => #<Vehicle id=1 state="parked">
 vehicle.state_event = "ignite"  # => "ignite"
 vehicle.save                    # => true
 vehicle.state                   # => "idling"
