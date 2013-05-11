@@ -1208,7 +1208,14 @@ The following caveats should be noted when using state_machine:
   re-initialize states after the fact:
 
 ```ruby
-# Re-initialize in FactoryGirl
+# Re-initialize in FactoryGirl 3.3+
+FactoryGirl.define do
+  after(:build) do |user|
+    user.send(:initialize_state_machines, :dynamic => :force)
+  end
+end
+
+# Re-initialize in FactoryGirl before version 3.3
 FactoryGirl.define do
   factory :vehicle do
     after_build {|user| user.send(:initialize_state_machines, :dynamic => :force)}
