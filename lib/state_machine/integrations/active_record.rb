@@ -525,11 +525,15 @@ module StateMachine
         # an ActiveRecord::Rollback exception if the yielded block fails
         # (i.e. returns false).
         def transaction(object)
-          result = nil
-          object.class.transaction do
-            raise ::ActiveRecord::Rollback unless result = yield
+          if object.class.state_machines[name].use_transactions
+            result = nil
+            object.class.transaction do
+              raise ::ActiveRecord::Rollback unless result = yield
+            end
+            result
+          else
+            yield
           end
-          result
         end
         
         # Defines a new named scope with the given name
