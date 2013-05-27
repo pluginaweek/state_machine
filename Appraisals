@@ -29,25 +29,25 @@ if RUBY_VERSION < "1.9.1"
     gem "activerecord", "2.0.0"
     gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
   end
-  
+
   appraise "active_record_2.0.5" do
     gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "2.0.5"
     gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
   end
-  
+
   appraise "active_record_2.1.0" do
     gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "2.1.0"
     gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
   end
-  
+
   appraise "active_record_2.1.2" do
     gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "2.1.2"
     gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
   end
-  
+
   appraise "active_record_2.2.3" do
     gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "2.2.3"
@@ -93,7 +93,7 @@ if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1" && RUBY_VERSION < "2.0.0"
     gem "activerecord", "3.1.1"
     gem "activerecord-jdbcsqlite3-adapter", "1.2.7", :platform => :jruby
   end
-  
+
   appraise "active_record_3.2.12" do
     gem "sqlite3", "1.3.6", :platform => [:ruby, :mswin, :mingw]
     gem "activerecord", "3.2.12"
@@ -112,7 +112,7 @@ end
 if RUBY_VERSION > "1.9.2"
   appraise "active_record_4.0.0" do
     gem "sqlite3", "1.3.6"
-    gem "activerecord", "4.0.0.beta1", :git => "git://github.com/rails/rails.git", :ref => "92d6dac"
+    gem "activerecord", "4.0.0.rc1"
     gem "activerecord-deprecated_finders", "0.0.3"
     gem "protected_attributes", "1.0.0"
     gem "rails-observers", "0.1.1"
@@ -132,7 +132,7 @@ if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0"
   appraise "active_model_3.1.1" do
     gem "activemodel", "3.1.1"
   end
-  
+
   appraise "active_model_3.2.12" do
     gem "activemodel", "3.2.12"
   end
@@ -146,7 +146,7 @@ end
 
 if RUBY_VERSION > "1.9.2"
   appraise "active_model_4.0.0" do
-    gem "activemodel", "4.0.0.beta", :git => "git://github.com/rails/rails.git", :ref => "4e286bf"
+    gem "activemodel", "4.0.0.rc1"
     gem "rails-observers", "0.1.1"
     gem "protected_attributes", "1.0.0"
   end
@@ -227,13 +227,13 @@ if RUBY_VERSION > "1.8.6" && RUBY_VERSION != "1.9.1"
     gem "activemodel", "3.2.13.rc1"
     gem "mongo_mapper", "0.10.0"
   end
-  
+
   appraise "mongo_mapper_0.11.2" do
     gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
     gem "mongo_mapper", "0.11.2"
   end
-  
+
   appraise "mongo_mapper_0.12.0" do
     gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
@@ -248,19 +248,19 @@ if RUBY_VERSION > "1.8.6" && RUBY_VERSION < "2.0.0"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.0.0"
   end
-  
+
   appraise "mongoid_2.1.4" do
     gem "activemodel", "~> 3.1.0"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.1.4"
   end
-  
+
   appraise "mongoid_2.2.4" do
     gem "activemodel", "~> 3.1.0"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.2.4"
   end
-  
+
   appraise "mongoid_2.3.3" do
     gem "activemodel", "~> 3.1.0"
     gem "mongo", "~> 1.7.0"
@@ -274,19 +274,19 @@ if RUBY_VERSION > "1.8.6"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.4.0"
   end
-  
+
   appraise "mongoid_2.4.10" do
     gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.4.10"
   end
-  
+
   appraise "mongoid_2.5.2" do
     gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
     gem "mongoid", "2.5.2"
   end
-  
+
   appraise "mongoid_2.6.0" do
     gem "activemodel", "3.2.13.rc1"
     gem "mongo", "~> 1.7.0"
@@ -299,12 +299,12 @@ if RUBY_VERSION > "1.9.2"
     gem "activemodel", "3.2.13.rc1"
     gem "mongoid", "3.0.0"
   end
-  
+
   appraise "mongoid_3.0.22" do
     gem "activemodel", "3.2.13.rc1"
     gem "mongoid", "3.0.22"
   end
-  
+
   appraise "mongoid_3.1.0" do
     gem "activemodel", "3.2.13.rc1"
     gem "mongoid", "3.1.0"
@@ -392,7 +392,7 @@ if RUBY_VERSION > "1.8.6"
     gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
     gem "sequel", "3.35.0"
   end
-  
+
   appraise "sequel_3.44.0" do
     gem "sqlite3-ruby", "1.3.1", :platform => [:ruby, :mswin, :mingw]
     gem "jdbc-sqlite3", "3.7.2", :platform => :jruby
@@ -479,7 +479,7 @@ if RUBY_VERSION > "1.8.6"
     gem "dm-transactions", "1.1.0"
     gem "dm-sqlite-adapter", "1.1.0"
   end
-  
+
   appraise "data_mapper_1.2.0" do
     gem "dm-core", "1.2.0"
     gem "dm-migrations", "1.2.0"
