@@ -12,7 +12,7 @@ task :default => :test
 
 desc "Test state_machine."
 Rake::TestTask.new(:test) do |t|
-  integration = %w(active_model active_record data_mapper mongoid mongo_mapper sequel).detect do |name|
+  integration = %w(active_model_2 active_model_3 active_model_4 active_record_2 active_record_3 active_record_4 data_mapper mongoid mongo_mapper sequel).detect do |name|
     Bundler.default_gemfile.to_s.include?(name)
   end
   

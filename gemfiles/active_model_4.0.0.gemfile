@@ -2,7 +2,7 @@
 
 source "http://www.rubygems.org"
 
-gem "activemodel", "4.0.0.beta", :git=>"git://github.com/rails/rails.git", :ref=>"4e286bf"
+gem "activemodel", "4.0.0"
 gem "rails-observers", "0.1.1"
 gem "protected_attributes", "1.0.0"
 

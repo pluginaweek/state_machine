@@ -4,16 +4,22 @@ rvm:
   - 1.8.7
   - 1.9.2
   - 1.9.3
+  - 2.0.0
   - jruby-18mode
   - jruby-19mode
   - rbx-18mode
   - rbx-19mode
 env:
   - INTEGRATION=default
-  - INTEGRATION=active_model
-  - INTEGRATION=active_record
+  - INTEGRATION=active_model_2
+  - INTEGRATION=active_model_3
+  - INTEGRATION=active_model_4
+  - INTEGRATION=active_record_2
+  - INTEGRATION=active_record_3
+  - INTEGRATION=active_record_4
   - INTEGRATION=data_mapper
-  - INTEGRATION=mongoid
+  - INTEGRATION=mongoid_2
+  - INTEGRATION=mongoid_3
   - INTEGRATION=mongo_mapper
   - INTEGRATION=sequel
 services:
@@ -22,50 +28,70 @@ notifications:
   disabled: true
 matrix:
   exclude:
+    - rvm: 1.8.7
+      env: INTEGRATION=active_model_4
+    - rvm: 1.8.7
+      env: INTEGRATION=active_record_4
+    - rvm: 1.8.7
+      env: INTEGRATION=mongoid_3
+    - rvm: 1.9.2
+      env: INTEGRATION=active_model_4
+    - rvm: 1.9.2
+      env: INTEGRATION=active_record_4
+    - rvm: 1.9.2
+      env: INTEGRATION=mongoid_3
+    - rvm: 2.0.0
+      env: INTEGRATION=data_mapper
+    - rvm: 2.0.0
+      env: INTEGRATION=mongoid_2
     - rvm: jruby-18mode
-      env: INTEGRATION=active_model
+      env: INTEGRATION=active_model_4
     - rvm: jruby-18mode
-      env: INTEGRATION=active_record
+      env: INTEGRATION=active_record_4
     - rvm: jruby-18mode
       env: INTEGRATION=data_mapper
     - rvm: jruby-18mode
-      env: INTEGRATION=mongoid
+      env: INTEGRATION=mongoid_2
     - rvm: jruby-18mode
       env: INTEGRATION=mongo_mapper
     - rvm: jruby-18mode
       env: INTEGRATION=sequel
     - rvm: jruby-19mode
-      env: INTEGRATION=active_model
+      env: INTEGRATION=active_model_2
     - rvm: jruby-19mode
-      env: INTEGRATION=active_record
+      env: INTEGRATION=active_record_2
     - rvm: jruby-19mode
       env: INTEGRATION=data_mapper
     - rvm: jruby-19mode
-      env: INTEGRATION=mongoid
+      env: INTEGRATION=mongoid_2
+    - rvm: jruby-19mode
+      env: INTEGRATION=mongoid_3
     - rvm: jruby-19mode
       env: INTEGRATION=mongo_mapper
     - rvm: jruby-19mode
       env: INTEGRATION=sequel
     - rvm: rbx-18mode
-      env: INTEGRATION=active_model
+      env: INTEGRATION=active_model_4
     - rvm: rbx-18mode
-      env: INTEGRATION=active_record
+      env: INTEGRATION=active_record_4
     - rvm: rbx-18mode
       env: INTEGRATION=data_mapper
     - rvm: rbx-18mode
-      env: INTEGRATION=mongoid
+      env: INTEGRATION=mongoid_2
+    - rvm: rbx-18mode
+      env: INTEGRATION=mongoid_3
     - rvm: rbx-18mode
       env: INTEGRATION=mongo_mapper
     - rvm: rbx-18mode
       env: INTEGRATION=sequel
     - rvm: rbx-19mode
-      env: INTEGRATION=active_model
+      env: INTEGRATION=active_model_2
     - rvm: rbx-19mode
-      env: INTEGRATION=active_record
+      env: INTEGRATION=active_record_2
     - rvm: rbx-19mode
       env: INTEGRATION=data_mapper
     - rvm: rbx-19mode
-      env: INTEGRATION=mongoid
+      env: INTEGRATION=mongoid_2
     - rvm: rbx-19mode
       env: INTEGRATION=mongo_mapper
     - rvm: rbx-19mode
