@@ -46,6 +46,26 @@ class InvalidTransitionTest < Test::Unit::TestCase
   end
 end
 
+class InvalidTransitionWithNamedClassTest < Test::Unit::TestCase
+  def setup
+    @klass = Class.new do
+      def self.name; 'NamedClass'; end
+    end
+    @machine = StateMachine::Machine.new(@klass)
+    @state = @machine.state :parked
+    @machine.event :ignite
+    
+    @object = @klass.new
+    @object.state = 'parked'
+    
+    @invalid_transition = StateMachine::InvalidTransition.new(@object, @machine, :ignite)
+  end
+
+  def test_should_generate_a_message
+    assert_equal 'Cannot transition NamedClass state via :ignite from :parked', @invalid_transition.message
+  end
+end
+
 class InvalidTransitionWithNamespaceTest < Test::Unit::TestCase
   def setup
     @klass = Class.new
@@ -76,7 +96,7 @@ class InvalidTransitionWithNamespaceTest < Test::Unit::TestCase
   end
 end
 
-class InvalidTransitionWithIntegrationTest < Test::Unit::TestCase
+module InvalidTransitionIntegrationTestMethods
   def setup
     StateMachine::Integrations.const_set('Custom', Module.new do
       include StateMachine::Integrations::Base
@@ -86,9 +106,7 @@ class InvalidTransitionWithIntegrationTest < Test::Unit::TestCase
       end
     end)
     
-    @klass = Class.new do
-      attr_accessor :errors
-    end
+    @klass = create_class
     @machine = StateMachine::Machine.new(@klass, :integration => :custom)
     @machine.state :parked
     @machine.event :ignite
@@ -100,16 +118,45 @@ class InvalidTransitionWithIntegrationTest < Test::Unit::TestCase
   def test_should_generate_a_message_without_reasons_if_empty
     @object.errors = ''
     invalid_transition = StateMachine::InvalidTransition.new(@object, @machine, :ignite)
-    assert_equal 'Cannot transition state via :ignite from :parked', invalid_transition.message
+    assert_equal "Cannot transition #{expected_class_name}state via :ignite from :parked", invalid_transition.message
   end
   
   def test_should_generate_a_message_with_error_reasons_if_errors_found
     @object.errors = 'Id is invalid, Name is invalid'
     invalid_transition = StateMachine::InvalidTransition.new(@object, @machine, :ignite)
-    assert_equal 'Cannot transition state via :ignite from :parked (Reason(s): Id is invalid, Name is invalid)', invalid_transition.message
+    assert_equal "Cannot transition #{expected_class_name}state via :ignite from :parked (Reason(s): Id is invalid, Name is invalid)", invalid_transition.message
   end
-  
+
   def teardown
     StateMachine::Integrations.send(:remove_const, 'Custom')
+  end
+end
+
+class InvalidTransitionWithIntegrationTest < Test::Unit::TestCase
+  include InvalidTransitionIntegrationTestMethods
+
+  def create_class
+    Class.new do
+      attr_accessor :errors
+    end
+  end
+
+  def expected_class_name
+    ''
+  end
+end
+
+class InvalidTransitionWithNamedClassAndIntegrationTest < Test::Unit::TestCase
+  include InvalidTransitionIntegrationTestMethods
+
+  def create_class
+    Class.new do
+      attr_accessor :errors
+      def self.name; 'IntegrationNamedClass'; end
+    end
+  end
+  
+  def expected_class_name
+    @object.class.name + ' '
   end
 end
