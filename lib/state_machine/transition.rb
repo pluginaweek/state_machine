@@ -17,7 +17,7 @@ module StateMachine
       @event = machine.events.fetch(event)
       errors = machine.errors_for(object)
       
-      message = "Cannot transition #{machine.name} via :#{self.event} from #{from_name.inspect}"
+      message = "Cannot transition #{object.class.name && object.class.name + ' '}#{machine.name} via :#{self.event} from #{from_name.inspect}"
       message << " (Reason(s): #{errors})" unless errors.empty?
       super(object, message)
     end
