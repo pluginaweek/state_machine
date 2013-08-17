@@ -2179,7 +2179,7 @@ module ActiveRecordTest
     end
   end
   
-  if ActiveRecord.const_defined?(:NamedScope)
+  if ActiveRecord::VERSION::MAJOR >= 3
     class MachineWithScopesTest < BaseTestCase
       def setup
         @model = new_model

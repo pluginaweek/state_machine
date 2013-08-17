@@ -2,6 +2,6 @@
 
 source "http://www.rubygems.org"
 
-gem "activemodel", "3.2.13.rc1"
+gem "activemodel", "3.2.13"
 
 gemspec :path=>"../"
