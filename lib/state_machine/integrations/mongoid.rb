@@ -426,6 +426,10 @@ module StateMachine
                 self.class.state_machine(#{name.inspect}).send(:around_save, self) { super }
               end
               
+              def update_document(*)
+                self.class.state_machine(#{name.inspect}).send(:around_save, self) { super }
+              end              
+              
               def upsert(*)
                 self.class.state_machine(#{name.inspect}).send(:around_save, self) { super }
               end
