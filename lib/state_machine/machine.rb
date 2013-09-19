@@ -156,7 +156,7 @@ module StateMachine
   #   actually stored as nil):
   # 
   #     class Vehicle
-  #        state_machine :initial => :pending
+  #        state_machine :initial => :pending do
   #         after_transition :pending => :parked, :do => :track_initial_transition
   #         
   #         event :park do
@@ -175,7 +175,7 @@ module StateMachine
   #   actually stored as nil):
   # 
   #     class Vehicle < ActiveRecord::Base
-  #       state_machine :initial => :pending
+  #       state_machine :initial => :pending do
   #         after_transition :pending => :parked, :do => :track_initial_transition
   #         
   #         event :park do

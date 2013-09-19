@@ -1211,7 +1211,7 @@ The following caveats should be noted when using state_machine:
 # Re-initialize in FactoryGirl
 FactoryGirl.define do
   factory :vehicle do
-    after_build {|user| user.send(:initialize_state_machines, :dynamic => :force)}
+    after(:build) {|user| user.send(:initialize_state_machines, :dynamic => :force)}
   end
 end
 
