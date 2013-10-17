@@ -481,12 +481,28 @@ module StateMachine
         # Adds a set of default callbacks that utilize the Observer extensions
         def add_default_callbacks
           if supports_observers?
-            callbacks[:before] << Callback.new(:before) {|object, transition| notify(:before, object, transition)}
-            callbacks[:after] << Callback.new(:after) {|object, transition| notify(:after, object, transition)}
-            callbacks[:failure] << Callback.new(:failure) {|object, transition| notify(:after_failure_to, object, transition)}
+            callbacks[:before] << Callback.new(:before, &observer_callback(:before, self.name))
+            callbacks[:after] << Callback.new(:after, &observer_callback(:after, self.name))
+            callbacks[:failure] << Callback.new(:failure, &observer_callback(:failure, self.name))
           end
         end
         
+        # Bind the state machine name and callback type to the callback binding
+        def observer_callback(callback_type, state_machine_name)
+          lambda do |type, state_machine_name|
+            if StateMachine::Callback.bind_to_object
+              lambda do |transition|
+                state_machine = self.class.state_machine(state_machine_name)
+                state_machine.send(:notify, callback_type, self, transition)
+              end
+            else
+              lambda do |object, transition|
+                notify(callback_type, object, transition)
+              end
+            end
+          end.call(callback_type, state_machine_name)
+        end
+
         # Skips defining reader/writer methods since this is done automatically
         def define_state_accessor
           name = self.name
