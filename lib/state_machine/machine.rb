@@ -473,7 +473,13 @@ module StateMachine
           # Navigate through the namespace structure to get to the class
           klass = Object
           class_name.split('::').each do |name|
-            klass = klass.const_defined?(name) ? klass.const_get(name) : klass.const_missing(name)
+            klass_is_defined = begin
+              klass.const_defined?(name, false)
+            rescue
+              # fallback for ruby version < 1.9
+              klass.const_defined?(name)
+            end
+            klass = klass_is_defined ? klass.const_get(name) : klass.const_missing(name)
           end
           
           # Draw each of the class's state machines
