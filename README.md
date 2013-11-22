@@ -913,7 +913,7 @@ class Vehicle
   # transitions defined from the source above
   def machine
     vehicle = self
-    @machine ||= Machine.new(vehicle, :initial => :parked, :action => :save) do
+    @machine ||= Machine.new(Vehicle, :initial => :parked, :action => :save) do
       vehicle.transitions.each {|attrs| transition(attrs)}
     end
   end
