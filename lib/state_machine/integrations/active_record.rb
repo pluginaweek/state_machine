@@ -35,6 +35,10 @@ module StateMachine
     #   vehicle.ignite                    # => true
     #   vehicle.reload                    # => #<Vehicle id: 1, name: "Ford Explorer", state: "idling">
     # 
+    # *Note* that if you want a transition to update additional attributes of the record, 
+    # either the changes need to be made in a +before_transition+ callback or you need 
+    # to save the record manually.
+    #
     # == Events
     # 
     # As described in StateMachine::InstanceMethods#state_machine, event
