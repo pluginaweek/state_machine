@@ -568,7 +568,6 @@ module StateMachine
       @initialize_state = options[:initialize]
       @action_hook_defined = false
       self.owner_class = owner_class
-      self.initial_state = options[:initial] unless sibling_machines.any?
       
       # Merge with sibling machine configurations
       add_sibling_machine_configs
@@ -580,6 +579,7 @@ module StateMachine
       
       # Evaluate DSL
       instance_eval(&block) if block_given?
+      self.initial_state = options[:initial] unless sibling_machines.any?
     end
     
     # Creates a copy of this machine in addition to copies of each associated
