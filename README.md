@@ -514,7 +514,7 @@ class Vehicle
   state_machine :initial => :parked do
     before_transition :parked => any - :parked, :do => :put_on_seatbelt
     after_transition any => :parked do |vehicle, transition|
-      vehicle.seatbelt = 'off' # self is the record
+      vehicle.seatbelt = 'off'
     end
     around_transition :benchmark
     
@@ -566,7 +566,7 @@ class Vehicle
   state_machine :initial => :parked do
     before_transition :parked => any - :parked, :do => :put_on_seatbelt
     after_transition any => :parked do |vehicle, transition|
-      vehicle.seatbelt = 'off' # self is the record
+      vehicle.seatbelt = 'off'
     end
     around_transition :benchmark
     
