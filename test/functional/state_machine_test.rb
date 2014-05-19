@@ -686,7 +686,14 @@ class VehicleStalledTest < Test::Unit::TestCase
     assert @vehicle.auto_shop.busy?
     assert_equal 1, @vehicle.auto_shop.num_customers
   end
-  
+
+  def test_should_allow_busy_shop_to_repair_vehicle
+    assert @vehicle.stalled?
+    assert @vehicle.auto_shop.busy?
+    @vehicle.repair(false)
+    assert 'parked', @vehicle.state
+  end
+
   def test_should_have_an_increased_insurance_premium
     assert_equal 150, @vehicle.insurance_premium
   end
