@@ -1,7 +1,11 @@
-# state_machine [![Build Status](https://secure.travis-ci.org/pluginaweek/state_machine.png "Build Status")](http://travis-ci.org/pluginaweek/state_machine) [![Dependency Status](https://gemnasium.com/pluginaweek/state_machine.png "Dependency Status")](https://gemnasium.com/pluginaweek/state_machine)
+# state_machine [![Build Status](https://secure.travis-ci.org/damncabbage/state_machine.png "Build Status")](http://travis-ci.org/damncabbage/state_machine)
 
-*state_machine* adds support for creating state machines for attributes on any
-Ruby class.
+*state_machine* adds support for creating state machines for attributes on any Ruby class.
+
+## Warning
+
+This is a fork of [pluginaweek/state_machine](https://github.com/pluginaweek/state_machine), for the purpose of supporting a single application that needs features not present in the (currently unmaintained) trunk.
+
 
 ## Resources
 
@@ -47,7 +51,7 @@ Some brief, high-level features include:
 * Multiple state machines on a single class
 * Namespaced state machines
 * before/after/around/failure transition hooks with explicit transition requirements
-* Integration with ActiveModel, ActiveRecord, DataMapper, Mongoid, MongoMapper, and Sequel
+* Integration with ActiveModel and ActiveRecord
 * State predicates
 * State-driven instance / class behavior
 * State values of any data type
@@ -306,10 +310,6 @@ The integrations currently available include:
 
 * ActiveModel classes
 * ActiveRecord models
-* DataMapper resources
-* Mongoid models
-* MongoMapper models
-* Sequel models
 
 A brief overview of these integrations is described below.
 
@@ -428,212 +428,6 @@ end
 For more information about the various behaviors added for ActiveRecord state
 machines, see `StateMachine::Integrations::ActiveRecord`.
 
-### DataMapper
-
-Like the ActiveRecord integration, the DataMapper integration adds support for
-database transactions, automatically saving the record, named scopes, Extlib-like
-callbacks, validation errors, and observers.  For example,
-
-```ruby
-class Vehicle
-  include DataMapper::Resource
-  
-  property :id, Serial
-  property :state, String
-  
-  state_machine :initial => :parked do
-    before_transition :parked => any - :parked, :do => :put_on_seatbelt
-    after_transition any => :parked do |transition|
-      self.seatbelt = 'off' # self is the record
-    end
-    around_transition :benchmark
-    
-    event :ignite do
-      transition :parked => :idling
-    end
-    
-    state :first_gear, :second_gear do
-      validates_presence_of :seatbelt_on
-    end
-  end
-  
-  def put_on_seatbelt
-    ...
-  end
-  
-  def benchmark
-    ...
-    yield
-    ...
-  end
-end
-
-class VehicleObserver
-  include DataMapper::Observer
-  
-  observe Vehicle
-  
-  # Callback for :ignite event *before* the transition is performed
-  before_transition :on => :ignite do |transition|
-    # log message (self is the record)
-  end
-  
-  # Generic transition callback *after* the transition is performed
-  after_transition do |transition|
-    Audit.log(self, transition) # self is the record
-  end
-  
-  around_transition do |transition, block|
-    # mark start time
-    block.call
-    # mark stop time
-  end
-  
-  # Generic callback after the transition fails to perform
-  after_transition_failure do |transition|
-    Audit.log(self, transition) # self is the record
-  end
-end
-```
-
-**Note** that the DataMapper::Observer integration is optional and only available
-when the dm-observer library is installed.
-
-For more information about the various behaviors added for DataMapper state
-machines, see `StateMachine::Integrations::DataMapper`.
-
-### Mongoid
-
-The Mongoid integration adds support for automatically saving the record,
-basic scopes, validation errors, and observers.  For example,
-
-```ruby
-class Vehicle
-  include Mongoid::Document
-  
-  state_machine :initial => :parked do
-    before_transition :parked => any - :parked, :do => :put_on_seatbelt
-    after_transition any => :parked do |vehicle, transition|
-      vehicle.seatbelt = 'off' # self is the record
-    end
-    around_transition :benchmark
-    
-    event :ignite do
-      transition :parked => :idling
-    end
-    
-    state :first_gear, :second_gear do
-      validates_presence_of :seatbelt_on
-    end
-  end
-  
-  def put_on_seatbelt
-    ...
-  end
-  
-  def benchmark
-    ...
-    yield
-    ...
-  end
-end
-
-class VehicleObserver < Mongoid::Observer
-  # Callback for :ignite event *before* the transition is performed
-  def before_ignite(vehicle, transition)
-    # log message
-  end
-  
-  # Generic transition callback *after* the transition is performed
-  def after_transition(vehicle, transition)
-    Audit.log(vehicle, transition)
-  end
-end
-```
-
-For more information about the various behaviors added for Mongoid state
-machines, see `StateMachine::Integrations::Mongoid`.
-
-### MongoMapper
-
-The MongoMapper integration adds support for automatically saving the record,
-basic scopes, validation errors and callbacks.  For example,
-
-```ruby
-class Vehicle
-  include MongoMapper::Document
-  
-  state_machine :initial => :parked do
-    before_transition :parked => any - :parked, :do => :put_on_seatbelt
-    after_transition any => :parked do |vehicle, transition|
-      vehicle.seatbelt = 'off' # self is the record
-    end
-    around_transition :benchmark
-    
-    event :ignite do
-      transition :parked => :idling
-    end
-    
-    state :first_gear, :second_gear do
-      validates_presence_of :seatbelt_on
-    end
-  end
-  
-  def put_on_seatbelt
-    ...
-  end
-  
-  def benchmark
-    ...
-    yield
-    ...
-  end
-end
-```
-
-For more information about the various behaviors added for MongoMapper state
-machines, see `StateMachine::Integrations::MongoMapper`.
-
-### Sequel
-
-Like the ActiveRecord integration, the Sequel integration adds support for
-database transactions, automatically saving the record, named scopes, validation
-errors and callbacks.  For example,
-
-```ruby
-class Vehicle < Sequel::Model
-  plugin :validation_class_methods
-  
-  state_machine :initial => :parked do
-    before_transition :parked => any - :parked, :do => :put_on_seatbelt
-    after_transition any => :parked do |transition|
-      self.seatbelt = 'off' # self is the record
-    end
-    around_transition :benchmark
-    
-    event :ignite do
-      transition :parked => :idling
-    end
-    
-    state :first_gear, :second_gear do
-      validates_presence_of :seatbelt_on
-    end
-  end
-  
-  def put_on_seatbelt
-    ...
-  end
-  
-  def benchmark
-    ...
-    yield
-    ...
-  end
-end
-```
-
-For more information about the various behaviors added for Sequel state
-machines, see `StateMachine::Integrations::Sequel`.
 
 ## Additional Topics
 
@@ -1234,10 +1028,6 @@ ORM versions officially supported and tested:
 
 * [ActiveModel](http://rubyonrails.org) integration: 3.0.0 or later
 * [ActiveRecord](http://rubyonrails.org) integration: 2.0.0 or later
-* [DataMapper](http://datamapper.org) integration: 0.9.4 or later
-* [Mongoid](http://mongoid.org) integration: 2.0.0 or later
-* [MongoMapper](http://mongomapper.com) integration: 0.5.5 or later
-* [Sequel](http://sequel.rubyforge.org) integration: 2.8.0 or later
 
 If graphing state machine:
 
