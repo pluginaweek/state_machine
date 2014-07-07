@@ -64,18 +64,6 @@ class IntegrationFinderTest < Test::Unit::TestCase
     assert_equal StateMachine::Integrations::ActiveRecord, StateMachine::Integrations.find_by_name(:active_record)
   end
   
-  def test_should_find_data_mapper
-    assert_equal StateMachine::Integrations::DataMapper, StateMachine::Integrations.find_by_name(:data_mapper)
-  end
-  
-  def test_should_find_mongo_mapper
-    assert_equal StateMachine::Integrations::MongoMapper, StateMachine::Integrations.find_by_name(:mongo_mapper)
-  end
-  
-  def test_should_find_sequel
-    assert_equal StateMachine::Integrations::Sequel, StateMachine::Integrations.find_by_name(:sequel)
-  end
-  
   def test_should_raise_an_exception_if_invalid
     exception = assert_raise(StateMachine::IntegrationNotFound) { StateMachine::Integrations.find_by_name(:invalid) }
     assert_equal ':invalid is an invalid integration', exception.message
