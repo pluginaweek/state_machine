@@ -1149,6 +1149,42 @@ to the end of your application's Rakefile in order for the above task to work:
 require 'tasks/state_machine'
 ```
 
+#### Rails 4 View and Controller Example
+
+A simple example of handling events from views:-
+
+Example show.html.erb will display all the available events for the current state
+
+```ruby
+<% @vehicle.state_events do |event| %>
+    <%= link_to event, vehicle_path(@vehicle, event: event), method: :patch %>
+<% end %>
+```
+
+Here is a simple example of the vehicles_controller.rb using the update action to support event transitions. Authorisation would also need to be added to prevent other events or methods being triggered from the url. 
+
+```ruby
+  def update
+    event = params[:event]
+
+    if event 
+      if @vehicle.state_events.include?(event.to_sym) and @vehicle.public_send(event)
+        redirect_to vehicle_path(vehicle), notice: 'Vehicle state was changed.'
+      else
+        redirect :back, notice: 'Vehicle state NOT CHANGED'
+      end
+    else
+      if @vehicle.update(vehicle_params)
+        redirect_to vehicle_path(vehicle), notice: 'Vehicle was successfully updated.'
+      else
+        render :edit
+      end
+    end
+  end
+``` 
+
+
+
 ### Merb
 
 #### Rake tasks
