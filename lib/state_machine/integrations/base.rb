@@ -78,7 +78,7 @@ module StateMachine
         # support i18n.
         def locale_path
           path = "#{File.dirname(__FILE__)}/#{integration_name}/locale.rb"
-          path if File.exists?(path)
+          path if File.exist?(path)
         end
         
         # Extends the given object with any version overrides that are currently
