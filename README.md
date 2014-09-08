@@ -7,7 +7,7 @@ Ruby class.
 
 API
 
-* http://rdoc.info/github/pluginaweek/state_machine/master/frames
+* http://rdoc.info/github/pluginaweek/state_machine/
 
 Bugs
 
