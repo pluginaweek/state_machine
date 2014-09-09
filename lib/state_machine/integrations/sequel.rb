@@ -318,8 +318,14 @@ module StateMachine
       
       # Pluralizes the name using the built-in inflector
       def pluralize(word)
-        load_inflector
-        super
+        word = word.to_s
+
+        if word.respond_to?(:pluralize)
+          word.pluralize
+        else
+          load_inflector
+          super
+        end
       end
       
       protected
