@@ -503,7 +503,7 @@ class StateWithConflictingHelpersBeforeDefinitionTest < Test::Unit::TestCase
   end
   
   def test_should_output_warning
-    assert_equal "Instance method \"parked?\" is already defined in #{@superclass.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Instance method \"parked?\" is already defined in #{@superclass.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   end
   
   def teardown
@@ -596,7 +596,7 @@ class StateWithConflictingMachineNameTest < Test::Unit::TestCase
   
   def test_should_output_warning_if_name_conflicts
     StateMachine::State.new(@state_machine, :state)
-    assert_equal "Instance method \"state?\" is already defined in #{@klass} :state instance helpers, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Instance method \"state?\" is already defined in #{@klass} :state instance helpers, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   end
   
   def teardown

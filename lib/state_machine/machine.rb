@@ -496,6 +496,10 @@ module StateMachine
     # get generated for a machine's owner class.  Default is false.
     class << self; attr_accessor :ignore_method_conflicts; end
     @ignore_method_conflicts = false
+
+    # Weather to silence the warning for method conflicts
+    class << self; attr_accessor :silence_method_conflicts; end
+    @silence_method_conflicts = false
     
     # The class that the machine is defined in
     attr_reader :owner_class
@@ -757,7 +761,7 @@ module StateMachine
       if block_given?
         if !self.class.ignore_method_conflicts && conflicting_ancestor = owner_class_ancestor_has_method?(scope, method)
           ancestor_name = conflicting_ancestor.name && !conflicting_ancestor.name.empty? ? conflicting_ancestor.name : conflicting_ancestor.to_s
-          warn "#{scope == :class ? 'Class' : 'Instance'} method \"#{method}\" is already defined in #{ancestor_name}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true."
+          warn "#{scope == :class ? 'Class' : 'Instance'} method \"#{method}\" is already defined in #{ancestor_name}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message." unless self.class.silence_method_conflicts
         else
           name = self.name
           helper_module.class_eval do

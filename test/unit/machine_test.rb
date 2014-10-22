@@ -1152,7 +1152,7 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(klass)
     
     machine.define_helper(:instance, :park) {}
-    assert_equal "Instance method \"park\" is already defined in #{superclass.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Instance method \"park\" is already defined in #{superclass.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   ensure
     $stderr = @original_stderr
   end
@@ -1173,7 +1173,7 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(klass)
     
     machine.define_helper(:instance, :park) {}
-    assert_equal "Instance method \"park\" is already defined in #{superclass1.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Instance method \"park\" is already defined in #{superclass1.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   ensure
     $stderr = @original_stderr
   end
@@ -1192,7 +1192,7 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(klass)
     
     machine.define_helper(:instance, :park) {}
-    assert_equal "Instance method \"park\" is already defined in #{mod.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Instance method \"park\" is already defined in #{mod.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   ensure
     $stderr = @original_stderr
   end
@@ -1238,6 +1238,44 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
     $stderr = @original_stderr
   end
   
+  def test_should_not_warn_if_silencing_method_conflicts
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    StateMachine::Machine.silence_method_conflicts = true
+    
+    superclass = Class.new do
+      def park
+      end
+    end
+    klass = Class.new(superclass)
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:instance, :park) {true}
+    assert_equal '', $stderr.string
+  ensure
+    StateMachine::Machine.silence_method_conflicts = false
+    $stderr = @original_stderr
+  end
+
+  def test_should_not_override_method_if_only_silencing_method_conflicts
+    require 'stringio'
+    @original_stderr, $stderr = $stderr, StringIO.new
+    StateMachine::Machine.silence_method_conflicts = true
+    
+    superclass = Class.new do
+      def park
+      end
+    end
+    klass = Class.new(superclass)
+    machine = StateMachine::Machine.new(klass)
+    
+    machine.define_helper(:instance, :park) {true}
+    assert_equal nil, klass.new.park
+  ensure
+    StateMachine::Machine.silence_method_conflicts = false
+    $stderr = @original_stderr
+  end
+  
   def test_should_define_nonexistent_methods
     @machine.define_helper(:instance, :park) {false}
     assert_equal false, @object.park
@@ -1250,7 +1288,7 @@ class MachineWithInstanceHelpersTest < Test::Unit::TestCase
     @machine.define_helper(:instance, :park) {}
     @machine.define_helper(:instance, :park) {}
     
-    assert_equal "Instance method \"park\" is already defined in #{@klass} :state instance helpers, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Instance method \"park\" is already defined in #{@klass} :state instance helpers, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   ensure
     $stderr = @original_stderr
   end
@@ -1334,7 +1372,7 @@ class MachineWithClassHelpersTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(klass)
     
     machine.define_helper(:class, :park) {}
-    assert_equal "Class method \"park\" is already defined in #{superclass.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Class method \"park\" is already defined in #{superclass.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   ensure
     $stderr = @original_stderr
   end
@@ -1355,7 +1393,7 @@ class MachineWithClassHelpersTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(klass)
     
     machine.define_helper(:class, :park) {}
-    assert_equal "Class method \"park\" is already defined in #{superclass1.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Class method \"park\" is already defined in #{superclass1.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   ensure
     $stderr = @original_stderr
   end
@@ -1374,7 +1412,7 @@ class MachineWithClassHelpersTest < Test::Unit::TestCase
     machine = StateMachine::Machine.new(klass)
     
     machine.define_helper(:class, :park) {}
-    assert_equal "Class method \"park\" is already defined in #{mod.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Class method \"park\" is already defined in #{mod.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   ensure
     $stderr = @original_stderr
   end
@@ -1432,7 +1470,7 @@ class MachineWithClassHelpersTest < Test::Unit::TestCase
     @machine.define_helper(:class, :states) {}
     @machine.define_helper(:class, :states) {}
     
-    assert_equal "Class method \"states\" is already defined in #{@klass} :state class helpers, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n", $stderr.string
+    assert_equal "Class method \"states\" is already defined in #{@klass} :state class helpers, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n", $stderr.string
   ensure
     $stderr = @original_stderr
   end
@@ -1626,7 +1664,7 @@ class MachineWithConflictingHelpersBeforeDefinitionTest < Test::Unit::TestCase
       'Class method "with_states"',
       'Class method "without_state"',
       'Class method "without_states"'
-    ].map {|method| "#{method} is already defined in #{@superclass.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true.\n"}.join
+    ].map {|method| "#{method} is already defined in #{@superclass.to_s}, use generic helper instead or set StateMachine::Machine.ignore_method_conflicts = true. Set StateMachine::Machine.silence_method_conflicts to suppress this warning message.\n"}.join
     
     assert_equal expected, $stderr.string
   end
