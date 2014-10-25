@@ -701,8 +701,8 @@ module StateMachine
       if state && (options[:force] || initialize_state?(object))
         value = state.value
         
-        if hash = options[:to]
-          hash[attribute.to_s] = value
+        if attribute_set = options[:to]
+          attribute_set.write_from_user(attribute.to_s, value)
         else
           write(object, :state, value)
         end
