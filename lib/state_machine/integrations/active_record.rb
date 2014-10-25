@@ -454,7 +454,7 @@ module StateMachine
           # can be overridden for a new object *prior* to the processing of the
           # attributes passed into #initialize
           define_helper :class, <<-end_eval, __FILE__, __LINE__ + 1
-            def column_defaults(*) #:nodoc:
+            def default_attributes(*) #:nodoc:
               result = super
               # No need to pass in an object, since the overrides will be forced
               self.state_machines.initialize_states(nil, :static => :force, :dynamic => false, :to => result)
