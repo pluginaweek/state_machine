@@ -24,20 +24,8 @@ module StateMachine
     # * <tt>:to</tt> - A hash to write the initialized state to instead of
     #   writing to the object.  Default is to write directly to the object.
     def initialize_states(object, options = {})
-      assert_valid_keys(options, :static, :dynamic, :to)
-      options = {:static => true, :dynamic => true}.merge(options)
-      
-      each_value do |machine| 
-        machine.initialize_state(object, :force => options[:static] == :force, :to => options[:to]) unless machine.dynamic_initial_state?
-      end if options[:static]
-      
-      result = yield if block_given?
-      
-      each_value do |machine|
-        machine.initialize_state(object, :force => options[:dynamic] == :force, :to => options[:to]) if machine.dynamic_initial_state?
-      end if options[:dynamic]
-      
-      result
+      options = { :force => false }.merge(options)
+      each_value { |machine| machine.initialize_state object, options }
     end
     
     # Runs one or more events in parallel on the given object.  See
