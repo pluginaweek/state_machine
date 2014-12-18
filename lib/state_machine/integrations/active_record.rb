@@ -440,35 +440,12 @@ module StateMachine
           end
         end
         
-        # Defines an initialization hook into the owner class for setting the
-        # initial state of the machine *before* any attributes are set on the
-        # object
-        def define_state_initializer
-          define_static_state_initializer
-          define_dynamic_state_initializer
-        end
-        
-        # Initializes static states
-        def define_static_state_initializer
-          # This is the only available hook where the default set of attributes
-          # can be overridden for a new object *prior* to the processing of the
-          # attributes passed into #initialize
-          define_helper :class, <<-end_eval, __FILE__, __LINE__ + 1
-            def column_defaults(*) #:nodoc:
-              result = super
-              # No need to pass in an object, since the overrides will be forced
-              self.state_machines.initialize_states(nil, :static => :force, :dynamic => false, :to => result)
-              result
-            end
-          end_eval
-        end
-        
         # Initializes dynamic states
-        def define_dynamic_state_initializer
+        def define_state_initializer
           define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
-            def initialize(*)
-              super do |*args|
-                self.class.state_machines.initialize_states(self, :static => false)
+            def initialize(attributes = nil, options = {})
+              super(attributes, options) do |*args|
+                self.class.state_machines.initialize_states self
                 yield(*args) if block_given?
               end
             end
