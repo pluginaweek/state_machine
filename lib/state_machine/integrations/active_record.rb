@@ -461,6 +461,14 @@ module StateMachine
               result
             end
           end_eval
+
+          define_helper :class, <<-end_eval, __FILE__, __LINE__ + 1
+            def _default_attributes #:nodoc:
+              result = super
+              self.state_machines.initialize_states(nil, :static => :force, :dynamic => false, :to => result)
+              result
+            end
+          end_eval
         end
         
         # Initializes dynamic states
