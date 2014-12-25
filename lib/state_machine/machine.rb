@@ -700,9 +700,13 @@ module StateMachine
       state = initial_state(object)
       if state && (options[:force] || initialize_state?(object))
         value = state.value
-        
+
         if hash = options[:to]
-          hash[attribute.to_s] = value
+          if hash.is_a?(Hash)
+            hash[attribute.to_s] = value
+          else # for ActiveRecord 4.2. hash.is_a?(Activerecord::AttributeSet)
+            hash.write_cast_value(attribute.to_s, value)
+          end
         else
           write(object, :state, value)
         end
