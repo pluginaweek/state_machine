@@ -29,9 +29,14 @@ module StateMachine
     # * +from+ / +except_from+
     # * +to+ / +except_to+
     attr_reader :known_states
-    
+
+    # Line where transition was defined
+    attr_reader :transition_defined_in
+
     # Creates a new branch
     def initialize(options = {}) #:nodoc:
+      @transition_defined_in = options.delete(:transition_defined_in)
+
       # Build conditionals
       @if_condition = options.delete(:if)
       @unless_condition = options.delete(:unless)
