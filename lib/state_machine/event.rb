@@ -108,7 +108,9 @@ module StateMachine
       # Only a certain subset of explicit options are allowed for transition
       # requirements
       assert_valid_keys(options, :from, :to, :except_from, :except_to, :if, :unless) if (options.keys - [:from, :to, :on, :except_from, :except_to, :except_on, :if, :unless]).empty?
-      
+
+      options[:transition_defined_in] = caller[0]
+
       branches << branch = Branch.new(options.merge(:on => name))
       @known_states |= branch.known_states
       branch
@@ -151,8 +153,8 @@ module StateMachine
             
             match[:to].filter(values).first
           end
-          
-          return Transition.new(object, machine, name, from, to, !custom_from_state)
+
+          return Transition.new(object, machine, name, from, to, !custom_from_state, branch)
         end
       end
       
