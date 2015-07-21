@@ -797,6 +797,24 @@ class Vehicle
 end
 ```
 
+#### Transition labels
+
+If you would prefer a custom label on a graphviz generated graph, specify
+the `:graph_label` option on the transition statement.
+
+For example:
+
+```ruby
+
+class Vehicle
+  state_machine :initial => :parked do
+
+  state :parked do
+    transition :to => :idling, :on => [:ignite, :shift_up], :if => :seatbelt_on?, :graph_label => "Seatbelt is ON"
+  end
+end
+```
+
 #### Transition context
 
 Some flexibility is provided around the context in which transitions can be

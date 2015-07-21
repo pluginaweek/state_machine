@@ -1170,6 +1170,28 @@ begin
     end
   end
   
+  class EventDrawingWithCustomBranchLabelTest < Test::Unit::TestCase
+    def setup
+      states = [:parked, :idling]
+      
+      @machine = StateMachine::Machine.new(Class.new, :initial => :parked)
+      @machine.other_states(*states)
+      
+      graph = StateMachine::Graph.new('test')
+      states.each {|state| graph.add_nodes(state.to_s)}
+      
+      @machine.events << @event = StateMachine::Event.new(@machine , :park, :human_name => 'Park')
+      @event.transition :parked => :idling, :graph_label => "extra graph label"
+      
+      @event.draw(graph, :human_name => true)
+      @edge = graph.get_edge_at_index(0)
+    end
+    
+    def test_should_use_event_human_name_for_edge_label
+      assert_equal 'extra graph label', @edge['label'].to_s.gsub('"', '')
+    end
+  end
+
   class EventDrawingWithHumanNameTest < Test::Unit::TestCase
     def setup
       states = [:parked, :idling]

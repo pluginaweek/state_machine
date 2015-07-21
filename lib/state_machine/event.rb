@@ -194,7 +194,7 @@ module StateMachine
       @branches = []
       @known_states = []
     end
-    
+   
     # Draws a representation of this event on the given graph.  This will
     # create 1 or more edges on the graph for each branch (i.e. transition)
     # configured.
@@ -205,10 +205,16 @@ module StateMachine
     def draw(graph, options = {})
       valid_states = machine.states.by_priority.map {|state| state.name}
       branches.each do |branch|
-        branch.draw(graph, options[:human_name] ? human_name : name, valid_states)
+        branch.draw(graph, graph_label(branch, options), valid_states)
       end
       
       true
+    end
+    
+    def graph_label(branch, options = {})
+       graph_label_name = (options[:human_name] ? human_name : name).to_s
+
+       branch.graph_label ? branch.graph_label : graph_label_name
     end
     
     # Generates a nicely formatted description of this event's contents.
