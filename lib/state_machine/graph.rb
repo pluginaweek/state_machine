@@ -86,7 +86,7 @@ module StateMachine
     
     # The ruby-graphviz version data
     def version
-      Constants::RGV_VERSION.split('.')
+      GraphViz::Constants::RGV_VERSION.split('.')
     end
   end
 end
