@@ -3261,7 +3261,7 @@ begin
       assert_equal 'TB', graph['rankdir'].to_s.gsub('"', '')
     end
     
-    if Constants::RGV_VERSION != '0.9.0'
+    if GraphViz::Constants::RGV_VERSION != '0.9.0'
       def test_should_allow_human_names_to_be_displayed
         @machine.event :ignite, :human_name => 'Ignite'
         @machine.state :parked, :human_name => 'Parked'

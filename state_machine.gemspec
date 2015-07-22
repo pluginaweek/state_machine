@@ -17,6 +17,8 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files  = %w(README.md CHANGELOG.md LICENSE)
   
   s.add_development_dependency("rake")
+  s.add_development_dependency("test-unit")
   s.add_development_dependency("simplecov")
+  s.add_development_dependency("ruby-graphviz")
   s.add_development_dependency("appraisal", "~> 0.5.0")
 end

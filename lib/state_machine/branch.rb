@@ -29,12 +29,16 @@ module StateMachine
     # * +from+ / +except_from+
     # * +to+ / +except_to+
     attr_reader :known_states
-    
+   
+    # An optional, custom, label to add to the graph when drawing the branch.
+    attr_reader :graph_label
+   
     # Creates a new branch
     def initialize(options = {}) #:nodoc:
       # Build conditionals
       @if_condition = options.delete(:if)
       @unless_condition = options.delete(:unless)
+      @graph_label      = options.delete(:graph_label)
       
       # Build event requirement
       @event_requirement = build_matcher(options, :on, :except_on)
