@@ -1,72 +1,18 @@
 language: ruby
-script: "bundle exec rake appraisal:integration test"
+sudo: false
+cache: bundler
+
 rvm:
-  - 1.8.7
-  - 1.9.2
-  - 1.9.3
-  - jruby-18mode
-  - jruby-19mode
-  - rbx-18mode
-  - rbx-19mode
-env:
-  - INTEGRATION=default
-  - INTEGRATION=active_model
-  - INTEGRATION=active_record
-  - INTEGRATION=data_mapper
-  - INTEGRATION=mongoid
-  - INTEGRATION=mongo_mapper
-  - INTEGRATION=sequel
-services:
-  - mongodb
-notifications:
-  disabled: true
+  - 2.1
+  - 2.2
+  - jruby
+  - rbx-2
+
+gemfile:
+  - gemfiles/active_record_4.1.gemfile
+  - gemfiles/active_record_4.2.gemfile
+
 matrix:
-  exclude:
-    - rvm: jruby-18mode
-      env: INTEGRATION=active_model
-    - rvm: jruby-18mode
-      env: INTEGRATION=active_record
-    - rvm: jruby-18mode
-      env: INTEGRATION=data_mapper
-    - rvm: jruby-18mode
-      env: INTEGRATION=mongoid
-    - rvm: jruby-18mode
-      env: INTEGRATION=mongo_mapper
-    - rvm: jruby-18mode
-      env: INTEGRATION=sequel
-    - rvm: jruby-19mode
-      env: INTEGRATION=active_model
-    - rvm: jruby-19mode
-      env: INTEGRATION=active_record
-    - rvm: jruby-19mode
-      env: INTEGRATION=data_mapper
-    - rvm: jruby-19mode
-      env: INTEGRATION=mongoid
-    - rvm: jruby-19mode
-      env: INTEGRATION=mongo_mapper
-    - rvm: jruby-19mode
-      env: INTEGRATION=sequel
-    - rvm: rbx-18mode
-      env: INTEGRATION=active_model
-    - rvm: rbx-18mode
-      env: INTEGRATION=active_record
-    - rvm: rbx-18mode
-      env: INTEGRATION=data_mapper
-    - rvm: rbx-18mode
-      env: INTEGRATION=mongoid
-    - rvm: rbx-18mode
-      env: INTEGRATION=mongo_mapper
-    - rvm: rbx-18mode
-      env: INTEGRATION=sequel
-    - rvm: rbx-19mode
-      env: INTEGRATION=active_model
-    - rvm: rbx-19mode
-      env: INTEGRATION=active_record
-    - rvm: rbx-19mode
-      env: INTEGRATION=data_mapper
-    - rvm: rbx-19mode
-      env: INTEGRATION=mongoid
-    - rvm: rbx-19mode
-      env: INTEGRATION=mongo_mapper
-    - rvm: rbx-19mode
-      env: INTEGRATION=sequel
+  allow_failures:
+    - rvm: jruby
+    - rvm: rbx-2
