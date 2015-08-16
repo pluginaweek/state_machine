@@ -364,7 +364,6 @@ module StateMachine
     #     activerecord:
     #       errors:
     #         messages:
-    #           invalid: "is invalid"
     #           # %{value} = attribute value, %{state} = Human state name
     #           invalid_event: "cannot transition when %{state}"
     #           # %{value} = attribute value, %{event} = Human event name, %{state} = Human current state name
@@ -380,7 +379,7 @@ module StateMachine
     #       errors:
     #         models:
     #           user:
-    #             invalid: "is not valid"
+    #             invalid_event: "is not valid"
     # 
     # In addition to the above, you can also provide translations for the
     # various states / events in each state machine.  Using the Vehicle example,
