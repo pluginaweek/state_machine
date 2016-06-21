@@ -416,7 +416,7 @@ module StateMachine
         # Gets the db default for the machine's attribute
         def owner_class_attribute_default
           if owner_class.db.table_exists?(owner_class.table_name) && column = owner_class.db_schema[attribute.to_sym]
-            column[:default]
+            column[:ruby_default]
           end
         end
         
