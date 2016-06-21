@@ -422,7 +422,7 @@ module StateMachine
         
         # Uses the DB literal to match the default against the specified state
         def owner_class_attribute_default_matches?(state)
-          owner_class.db.literal(state.value) == owner_class_attribute_default
+          state.value == owner_class_attribute_default
         end
         
         # Creates a scope for finding records *with* a particular state or
