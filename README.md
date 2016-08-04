@@ -1013,7 +1013,7 @@ To save files to a specific path:
 rake state_machine:draw FILE=vehicle.rb CLASS=Vehicle TARGET=files
 ```
 
-To customize the image format / orientation:
+To customize the image format / orientation (try svg format if resolution is an issue):
 
 ```bash
 rake state_machine:draw FILE=vehicle.rb CLASS=Vehicle FORMAT=jpg ORIENTATION=landscape
