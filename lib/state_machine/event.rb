@@ -235,23 +235,23 @@ module StateMachine
         # Checks whether the event can be fired on the current object
         machine.define_helper(:instance, "can_#{qualified_name}?") do |machine, object, *args|
           machine.event(name).can_fire?(object, *args)
-        end
-        
+        end unless @machine.disallowed_helpers.include?(:can)
+
         # Gets the next transition that would be performed if the event were
         # fired now
         machine.define_helper(:instance, "#{qualified_name}_transition") do |machine, object, *args|
           machine.event(name).transition_for(object, *args)
-        end
-        
+        end unless @machine.disallowed_helpers.include?(:transition)
+
         # Fires the event
         machine.define_helper(:instance, qualified_name) do |machine, object, *args|
           machine.event(name).fire(object, *args)
-        end
-        
+        end unless @machine.disallowed_helpers.include?(:nonstrict)
+
         # Fires the event, raising an exception if it fails
         machine.define_helper(:instance, "#{qualified_name}!") do |machine, object, *args|
-          object.send(qualified_name, *args) || raise(StateMachine::InvalidTransition.new(object, machine, name))
-        end
+          machine.event(name).fire(object, *args) || raise(StateMachine::InvalidTransition.new(object, machine, name))
+        end unless @machine.disallowed_helpers.include?(:strict)
       end
   end
 end
