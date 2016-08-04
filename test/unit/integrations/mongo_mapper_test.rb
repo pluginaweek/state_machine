@@ -1736,6 +1736,7 @@ module MongoMapperTest
       @model.create :state => 'idling'
       
       assert_equal [parked], @model.with_state(:parked).to_a
+      assert_equal [parked], @model.with_state('parked').to_a
     end
     
     def test_should_create_plural_with_scope
@@ -1747,6 +1748,7 @@ module MongoMapperTest
       idling = @model.create :state => 'idling'
       
       assert_equal [parked, idling], @model.with_states(:parked, :idling).to_a
+      assert_equal [parked, idling], @model.with_states('parked', 'idling').to_a
     end
     
     def test_should_allow_lookup_by_string_name
@@ -1765,6 +1767,7 @@ module MongoMapperTest
       idling = @model.create :state => 'idling'
       
       assert_equal [parked], @model.without_state(:idling).to_a
+      assert_equal [parked], @model.without_state('idling').to_a
     end
     
     def test_should_create_plural_without_scope
@@ -1777,6 +1780,7 @@ module MongoMapperTest
       first_gear = @model.create :state => 'first_gear'
       
       assert_equal [parked, idling], @model.without_states(:first_gear).to_a
+      assert_equal [parked, idling], @model.without_states('first_gear').to_a
     end
     
     if defined?(MongoMapper::Version) && !(MongoMapper::Version =~ /^0\.[5-7]\./)
@@ -1785,6 +1789,7 @@ module MongoMapperTest
         idling = @model.create :state => 'idling'
         
         assert_equal [idling], @model.without_state(:parked).with_state(:idling).all
+        assert_equal [idling], @model.without_state('parked').with_state('idling').all
       end
     end
   end

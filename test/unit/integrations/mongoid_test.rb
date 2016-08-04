@@ -1993,6 +1993,7 @@ module MongoidTest
       @model.create :state => 'idling'
       
       assert_equal [parked], @model.with_state(:parked).to_a
+      assert_equal [parked], @model.with_state('parked').to_a
     end
     
     def test_should_create_plural_with_scope
@@ -2004,6 +2005,7 @@ module MongoidTest
       idling = @model.create :state => 'idling'
       
       assert_equal [parked, idling], @model.with_states(:parked, :idling).to_a
+      assert_equal [parked, idling], @model.with_state('parked', 'idling').to_a
     end
     
     def test_should_allow_lookup_by_string_name
@@ -2022,6 +2024,7 @@ module MongoidTest
       idling = @model.create :state => 'idling'
       
       assert_equal [parked], @model.without_state(:idling).to_a
+      assert_equal [parked], @model.without_state('idling').to_a
     end
     
     def test_should_create_plural_without_scope
@@ -2034,6 +2037,7 @@ module MongoidTest
       first_gear = @model.create :state => 'first_gear'
       
       assert_equal [parked, idling], @model.without_states(:first_gear).to_a
+      assert_equal [parked, idling], @model.without_states('first_gear').to_a
     end
     
     def test_should_allow_chaining_scopes
@@ -2041,6 +2045,7 @@ module MongoidTest
       idling = @model.create :state => 'idling'
       
       assert_equal [idling], @model.without_state(:parked).with_state(:idling).all
+      assert_equal [idling], @model.without_state('parked').with_state('idling').to_a
     end
   end
   

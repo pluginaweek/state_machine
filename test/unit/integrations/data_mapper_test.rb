@@ -2070,6 +2070,7 @@ module DataMapperTest
       @resource.create :state => 'idling'
       
       assert_equal [parked], @resource.with_state(:parked)
+      assert_equal [parked], @resource.with_state('parked')
     end
     
     def test_should_create_plural_with_scope
@@ -2081,6 +2082,7 @@ module DataMapperTest
       idling = @resource.create :state => 'idling'
       
       assert_equal [parked, idling], @resource.with_states(:parked, :idling)
+       assert_equal [parked, idling], @resource.with_states('parked', 'idling')
     end
     
     def test_should_allow_lookup_by_string_name
@@ -2099,6 +2101,7 @@ module DataMapperTest
       idling = @resource.create :state => 'idling'
       
       assert_equal [parked], @resource.without_state(:idling)
+      assert_equal [parked], @resource.without_state('idling')
     end
     
     def test_should_create_plural_without_scope
@@ -2111,6 +2114,7 @@ module DataMapperTest
       first_gear = @resource.create :state => 'first_gear'
       
       assert_equal [parked, idling], @resource.without_states(:first_gear)
+      assert_equal [parked, idling], @resource.without_states('first_gear')
     end
     
     def test_should_allow_chaining_scopes
@@ -2118,6 +2122,7 @@ module DataMapperTest
       idling = @resource.create :state => 'idling'
       
       assert_equal [idling], @resource.without_state(:parked).with_state(:idling)
+      assert_equal [idling], @resource.without_state('parked').with_state('idling')
     end
   end
   

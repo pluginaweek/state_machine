@@ -2197,6 +2197,7 @@ module ActiveRecordTest
         @model.create :state => 'idling'
         
         assert_equal [parked], @model.with_state(:parked).find(:all)
+        assert_equal [parked], @model.with_state('parked').find(:all)
       end
       
       def test_should_create_plural_with_scope
@@ -2208,6 +2209,7 @@ module ActiveRecordTest
         idling = @model.create :state => 'idling'
         
         assert_equal [parked, idling], @model.with_states(:parked, :idling).find(:all)
+        assert_equal [parked, idling], @model.with_state('parked', 'idling').find(:all)
       end
       
       def test_should_allow_lookup_by_string_name
@@ -2226,6 +2228,7 @@ module ActiveRecordTest
         idling = @model.create :state => 'idling'
         
         assert_equal [parked], @model.without_state(:idling).find(:all)
+        assert_equal [parked], @model.without_state('idling').find(:all)
       end
       
       def test_should_create_plural_without_scope
@@ -2238,6 +2241,7 @@ module ActiveRecordTest
         first_gear = @model.create :state => 'first_gear'
         
         assert_equal [parked, idling], @model.without_states(:first_gear).find(:all)
+        assert_equal [parked, idling], @model.without_states('first_gear').find(:all)
       end
       
       def test_should_allow_chaining_scopes
@@ -2245,6 +2249,7 @@ module ActiveRecordTest
         idling = @model.create :state => 'idling'
         
         assert_equal [idling], @model.without_state(:parked).with_state(:idling).find(:all)
+        assert_equal [idling], @model.without_state('parked').with_state('idling').find(:all)
       end
     end
     
