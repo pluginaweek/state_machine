@@ -302,6 +302,11 @@ out-of-the-box integrations are available for some of the more popular Ruby
 libraries.  These integrations add library-specific behavior, allowing for state
 machines to work more tightly with the conventions defined by those libraries.
 
+One feature they share is the ability to set an `event=` attribute, which
+will cause that transition to happen when an action is fired. For instance,
+`vehicle.state_event = 'ignite'` will not immediately change the vehicle's
+state, but will do so when `save` is called.
+
 The integrations currently available include:
 
 * ActiveModel classes
