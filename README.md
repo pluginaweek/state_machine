@@ -426,7 +426,7 @@ end
 ```
 
 For more information about the various behaviors added for ActiveRecord state
-machines, see `StateMachine::Integrations::ActiveRecord`.
+machines, see [`StateMachine::Integrations::ActiveRecord`](lib/state_machine/integrations/active_record.rb).
 
 ### DataMapper
 
