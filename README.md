@@ -1042,13 +1042,6 @@ in the class.  The generated files will use an output filename of the format
 For examples of actual images generated using this task, see those under the
 examples folder.
 
-### Interactive graphs
-
-Jean Bovet's [Visual Automata Simulator](http://www.cs.usfca.edu/~jbovet/vas.html)
-is a great tool for "simulating, visualizing and transforming finite state
-automata and Turing Machines".  It can help in the creation of states and events
-for your models.  It is cross-platform, written in Java.
-
 ### Generating documentation
 
 If you use YARD to generate documentation for your projects, state_machine can
