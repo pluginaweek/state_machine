@@ -3229,26 +3229,26 @@ begin
     
     def test_should_save_file_with_class_name_by_default
       @machine.draw
-      assert File.exists?("./#{@klass.name}_state.png")
+      assert File.exist?("./#{@klass.name}_state.png")
     end
     
     def test_should_allow_base_name_to_be_customized
       name = "machine_#{rand(1000000)}"
       @machine.draw(:name => name)
       @path = "./#{name}.png"
-      assert File.exists?(@path)
+      assert File.exist?(@path)
     end
     
     def test_should_allow_format_to_be_customized
       @machine.draw(:format => 'jpg')
       @path = "./#{@klass.name}_state.jpg"
-      assert File.exists?(@path)
+      assert File.exist?(@path)
     end
     
     def test_should_allow_path_to_be_customized
       @machine.draw(:path => "#{File.dirname(__FILE__)}/")
       @path = "#{File.dirname(__FILE__)}/#{@klass.name}_state.png"
-      assert File.exists?(@path)
+      assert File.exist?(@path)
     end
     
     def test_should_allow_orientation_to_be_landscape
