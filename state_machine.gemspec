@@ -16,8 +16,8 @@ Gem::Specification.new do |s|
   s.rdoc_options      = %w(--line-numbers --inline-source --title state_machine --main README.md)
   s.extra_rdoc_files  = %w(README.md CHANGELOG.md LICENSE)
 
-  s.add_development_dependency("rake", "<= 10.5.0")
-  s.add_development_dependency("simplecov", "0.11.1")
-  s.add_development_dependency("docile", "1.1.5")
-  s.add_development_dependency("appraisal", "~> 0.5.0")
+  s.add_development_dependency("rake", "~> 13.1.0")
+  s.add_development_dependency("simplecov")
+  s.add_development_dependency("docile", "~> 1.4.0")
+  s.add_development_dependency("appraisal", "~> 2.5.0")
 end

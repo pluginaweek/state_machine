@@ -4,6 +4,10 @@
 * Fix target state being indeterminate for transitions that use blacklists
 * Allow super to be called within state-driven behaviors
 
+## 2.0.0 - 2025-03-04
+
+* Added Ruby 3.2 support for legacy projects, a very few changes such as `File.exists` and `Object#taint` fixes
+
 ## 1.2.0 / 2013-03-30
 
 * Allow multiple whitelisted / blacklisted :to states when definining transitions

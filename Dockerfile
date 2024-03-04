@@ -1,3 +1,4 @@
+# This file is used to compare changes with "original" version of this gem.
 FROM ruby:1.9.3
 
 RUN mkdir /app
