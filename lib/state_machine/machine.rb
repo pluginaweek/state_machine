@@ -701,7 +701,7 @@ module StateMachine
       if state && (options[:force] || initialize_state?(object))
         value = state.value
         
-        if hash = options[:to]
+        if hash = options[:to].dup
           hash[attribute.to_s] = value
         else
           write(object, :state, value)

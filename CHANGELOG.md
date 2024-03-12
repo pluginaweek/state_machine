@@ -3,6 +3,7 @@
 * Raise InvalidContext error when the current state does not define a state-driven behavior
 * Fix target state being indeterminate for transitions that use blacklists
 * Allow super to be called within state-driven behaviors
+* Fix issue with Rails 6.1+ where ActiveRecord.column_defaults returns `frozen` hash
 
 ## 1.2.0 / 2013-03-30
 
